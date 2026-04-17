@@ -1,0 +1,77 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile containing role.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "description": "User email address" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "role": { "type": "string", "enum": ["teacher", "student"], "description": "User role in the platform" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp" }
+      },
+      "required": ["uid", "email", "role", "createdAt"]
+    },
+    "MathTask": {
+      "title": "MathTask",
+      "description": "A digitized math task with pedagogical insights and knowledge graph links.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Title of the task" },
+        "original_text": { "type": "string", "description": "Original text of the task" },
+        "solution_steps": { "type": "array", "items": { "type": "string" }, "description": "Solution steps in LaTeX" },
+        "latex_formulas": { "type": "array", "items": { "type": "string" }, "description": "Extracted LaTeX formulas" },
+        "nanobanana_prompt": { "type": "string", "description": "English prompt for NanoBanana" },
+        "source_url": { "type": "string", "description": "Source URL or image ID" },
+        "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags for the task" },
+        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"], "description": "Difficulty level" },
+        "dok_level": { "type": "integer", "description": "Depth of Knowledge level" },
+        "grade_level": { "type": "string", "description": "Target grade level" },
+        "curriculum_topic": { "type": "string", "description": "Curriculum topic" },
+        "pedagogical_insights": {
+          "type": "object",
+          "properties": {
+            "common_pitfalls": { "type": "array", "items": { "type": "string" } },
+            "socratic_questions": { "type": "array", "items": { "type": "string" } },
+            "modern_context_suggestion": { "type": "string" },
+            "teaching_strategy": { "type": "string" },
+            "prerequisites": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "related_task_ids": { "type": "array", "items": { "type": "string" }, "description": "IDs of related tasks in the knowledge graph" },
+        "prerequisite_task_ids": { "type": "array", "items": { "type": "string" }, "description": "IDs of prerequisite tasks" },
+        "author_uid": { "type": "string", "description": "User ID of the author" },
+        "created_at": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["title", "original_text", "author_uid", "created_at"]
+    },
+    "Todo": {
+      "title": "Todo",
+      "description": "A to-do list task for a user.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string", "description": "The task text" },
+        "completed": { "type": "boolean", "description": "Whether the task is completed" },
+        "dueDate": { "type": "string", "format": "date", "description": "Due date of the task" },
+        "userId": { "type": "string", "description": "User ID of the owner" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["text", "completed", "userId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Collection of user profiles with roles."
+    },
+    "/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/MathTask" },
+      "description": "Collection of extracted math tasks."
+    },
+    "/todos/{todoId}": {
+      "schema": { "$ref": "#/entities/Todo" },
+      "description": "Collection of user to-do tasks."
+    }
+  }
+}

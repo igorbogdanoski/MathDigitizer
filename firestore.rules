@@ -1,0 +1,205 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: tasks
+    // Document ID: Auto-generated
+    // Fields:
+    //   - title: string (required, max 200 chars)
+    //   - original_text: string (required, max 5000 chars)
+    //   - solution_steps: list of strings (required, max 50 items)
+    //   - latex_formulas: list of strings (required, max 50 items)
+    //   - nanobanana_prompt: string (required, max 2000 chars)
+    //   - source_url: string (required, max 1000 chars)
+    //   - tags: list of strings (required, max 10 items)
+    //   - difficulty: string (required, 'easy', 'medium', 'hard')
+    //   - author_uid: string (required, immutable)
+    //   - type: string (optional, 'theory' or 'task')
+    //   - dok_level: number (optional, 1-4)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.author_uid;
+    }
+
+    function uidUnchanged() {
+      return !('author_uid' in request.resource.data) || request.resource.data.author_uid == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('author_uid' in request.resource.data) || request.resource.data.author_uid == resource.data.author_uid;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string &&
+        dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    function isValidList(listData, maxSize) {
+      return listData is list && listData.size() <= maxSize;
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // Domain Validators
+    function isValidTask(data) {
+      let allowedFields = ['title', 'original_text', 'solution_steps', 'latex_formulas', 'nanobanana_prompt', 'source_url', 'tags', 'difficulty', 'author_uid', 'created_at', 'type', 'dok_level', 'grade_level', 'curriculum_topic'];
+      
+      return hasOnlyAllowedFields(allowedFields) &&
+             validStringLength('title', 1, 200) &&
+             validStringLength('original_text', 1, 5000) &&
+             validStringLength('nanobanana_prompt', 1, 2000) &&
+             validStringLength('source_url', 1, 1000) &&
+             isValidList(data.solution_steps, 50) &&
+             isValidList(data.latex_formulas, 50) &&
+             isValidList(data.tags, 10) &&
+             data.difficulty in ['easy', 'medium', 'hard'] &&
+             data.author_uid is string && data.author_uid.size() > 0 && data.author_uid.size() < 50 &&
+             isValidDateString(data.created_at) &&
+             (!('type' in data) || data.type in ['theory', 'task']) &&
+             (!('dok_level' in data) || (data.dok_level is number && data.dok_level >= 1 && data.dok_level <= 4)) &&
+             (!('grade_level' in data) || (data.grade_level is string && data.grade_level.size() <= 100)) &&
+             (!('curriculum_topic' in data) || (data.curriculum_topic is string && data.curriculum_topic.size() <= 100));
+    }
+
+    function isValidTodo(data) {
+      let allowedFields = ['text', 'completed', 'dueDate', 'userId', 'createdAt'];
+      
+      return hasOnlyAllowedFields(allowedFields) &&
+             validStringLength('text', 1, 1000) &&
+             data.completed is bool &&
+             data.userId is string && data.userId.size() > 0 && data.userId.size() < 50 &&
+             isValidDateString(data.createdAt) &&
+             (!('dueDate' in data) || data.dueDate == null || (data.dueDate is string && data.dueDate.size() <= 100));
+    }
+
+    function isValidUserProfile(data) {
+      let allowedFields = ['uid', 'email', 'displayName', 'role', 'createdAt', 'isPro'];
+      return hasOnlyAllowedFields(allowedFields) &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 50 &&
+             data.email is string && data.email.size() > 0 && data.email.size() < 100 &&
+             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() < 100 &&
+             data.role in ['teacher', 'student'] &&
+             isValidDateString(data.createdAt) &&
+             (!('isPro' in data) || data.isPro is bool);
+    }
+
+    match /user_stats/{userId} {
+      allow read: if isAuthenticated();
+      
+      allow create: if isAuthenticated() && 
+                    request.resource.data.uid == request.auth.uid &&
+                    userId == request.auth.uid;
+                    
+      allow update: if isAuthenticated() && 
+                    isOwner(userId) &&
+                    (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['uid']));
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      
+      allow create: if isAuthenticated() && 
+                    isValidUserProfile(request.resource.data) && 
+                    request.resource.data.uid == request.auth.uid &&
+                    userId == request.auth.uid;
+                    
+      allow update: if isAuthenticated() && 
+                    isOwner(userId) &&
+                    isValidUserProfile(request.resource.data) && 
+                    request.resource.data.uid == resource.data.uid &&
+                    areImmutableFieldsUnchanged(['createdAt', 'role']); // Prevent role escalation
+    }
+
+    match /tasks/{taskId} {
+      // Allow any authenticated user to read tasks (shared library)
+      allow read: if isAuthenticated();
+      
+      // Allow creation if authenticated, task is valid, and author_uid matches the user
+      allow create: if isAuthenticated() && 
+                    isValidTask(request.resource.data) && 
+                    uidUnchanged();
+                    
+      // Allow updates if owner, task is valid, and immutable fields are unchanged
+      allow update: if isDocOwner() && 
+                    isValidTask(request.resource.data) && 
+                    uidNotModified() &&
+                    areImmutableFieldsUnchanged(['created_at']);
+                    
+      // Allow deletion if owner
+      allow delete: if isDocOwner();
+    }
+
+    match /todos/{todoId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isAuthenticated() && 
+                    isValidTodo(request.resource.data) && 
+                    request.resource.data.userId == request.auth.uid;
+                    
+      allow update: if isAuthenticated() && 
+                    resource.data.userId == request.auth.uid &&
+                    isValidTodo(request.resource.data) && 
+                    request.resource.data.userId == resource.data.userId &&
+                    areImmutableFieldsUnchanged(['createdAt']);
+                    
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /classrooms/{classroomId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.teacherId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        resource.data.teacherId == request.auth.uid || 
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['studentIds']))
+      );
+      allow delete: if isAuthenticated() && resource.data.teacherId == request.auth.uid;
+    }
+
+    match /assignments/{assignmentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+
+    match /student_progress/{progressId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.studentId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.studentId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.studentId == request.auth.uid;
+    }
+  }
+}

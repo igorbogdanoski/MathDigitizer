@@ -1,0 +1,5 @@
+{
+  "name": "MathDigitizer Pro",
+  "description": "Едукативна платформа за дигитализација на математички задачи од видео содржини користејќи Gemini AI и LaTeX.",
+  "requestFramePermissions": []
+}
