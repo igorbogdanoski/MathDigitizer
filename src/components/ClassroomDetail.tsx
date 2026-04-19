@@ -4,9 +4,9 @@ import { doc, getDoc, collection, query, where, getDocs, addDoc } from 'firebase
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Classroom, Assignment, UserProfile, MathTask } from '../lib/schema';
-import { BookOpen, Users, ArrowLeft, Loader2, Plus, Calendar, CheckCircle2, Circle, X, PieChart as PieChartIcon } from 'lucide-react';
+import { BookOpen, Users, ArrowLeft, Loader2, Plus, Calendar, CheckCircle2, Circle, X, PieChart as PieChartIcon, BrainCircuit, Activity, AlertTriangle } from 'lucide-react';
 import { Button } from './ui/Button';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { LiveCanvas } from './LiveCanvas';
 
 const classMasteryData = [
@@ -26,7 +26,7 @@ export const ClassroomDetail: React.FC = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [students, setStudents] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'assignments' | 'canvas'>('assignments');
+  const [activeTab, setActiveTab] = useState<'assignments' | 'canvas' | 'telemetry'>('telemetry'); // Default to telemetry for the wow factor
 
   // Modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -157,10 +157,21 @@ export const ClassroomDetail: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6">
+      <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6 overflow-x-auto no-scrollbar">
+        <button
+          onClick={() => setActiveTab('telemetry')}
+          className={`px-6 py-3 font-medium text-sm border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${
+            activeTab === 'telemetry' 
+              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400' 
+              : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+          }`}
+        >
+          <PieChartIcon className="w-4 h-4" />
+          Cognitive Matrix
+        </button>
         <button
           onClick={() => setActiveTab('assignments')}
-          className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+          className={`px-6 py-3 font-medium text-sm border-b-2 whitespace-nowrap transition-colors ${
             activeTab === 'assignments' 
               ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400' 
               : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
@@ -170,12 +181,13 @@ export const ClassroomDetail: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('canvas')}
-          className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+          className={`px-6 py-3 font-medium text-sm border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${
             activeTab === 'canvas' 
-              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400' 
+              ? 'border-emerald-600 text-emerald-600' 
               : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
           }`}
         >
+          <Circle className="w-2 h-2 fill-emerald-500 text-emerald-500 animate-pulse" />
           Интерактивна Табла (Live)
         </button>
       </div>
@@ -183,6 +195,147 @@ export const ClassroomDetail: React.FC = () => {
       {activeTab === 'canvas' ? (
         <div className="h-[600px] w-full">
           <LiveCanvas classroomId={id!} />
+        </div>
+      ) : activeTab === 'telemetry' ? (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+           <div className="bg-indigo-600 rounded-3xl p-8 text-white shadow-xl flex items-center justify-between">
+              <div>
+                 <h2 className="text-2xl font-black mb-2 flex items-center gap-2">
+                   <BrainCircuit className="w-6 h-6" /> Cognitive Class Telemetry
+                 </h2>
+                 <p className="text-indigo-200">
+                   Анализа на размислувањето и развојот на интелигенцијата на класот низ Блумовата Таксономија и DOK (Depth of Knowledge) нивоата.
+                 </p>
+              </div>
+              <div className="hidden md:flex gap-4">
+                 <div className="bg-white/10 backdrop-blur rounded-xl p-4 text-center min-w-[120px]">
+                    <div className="text-3xl font-black">74%</div>
+                    <div className="text-xs uppercase tracking-widest text-indigo-200 mt-1">Class Health</div>
+                 </div>
+                 <div className="bg-white/10 backdrop-blur rounded-xl p-4 text-center min-w-[120px]">
+                    <div className="text-3xl font-black">1.8</div>
+                    <div className="text-xs uppercase tracking-widest text-indigo-200 mt-1">Avg DOK</div>
+                 </div>
+              </div>
+           </div>
+
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* DoK Progress */}
+              <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
+                <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-50 dark:bg-blue-900/20 rounded-full blur-3xl"></div>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 relative z-10 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-blue-500" />
+                  Depth of Knowledge (DOK) Развој
+                </h3>
+                <div className="space-y-6 relative z-10">
+                   {[
+                     { level: 1, label: 'Меморија и Репродукција', match: 90, color: 'bg-emerald-500' },
+                     { level: 2, label: 'Вештини и Концепти', match: 65, color: 'bg-blue-500' },
+                     { level: 3, label: 'Стратешко размислување', match: 30, color: 'bg-amber-500' },
+                     { level: 4, label: 'Проширено размислување', match: 12, color: 'bg-red-500' },
+                   ].map(item => (
+                     <div key={item.level}>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="font-bold text-slate-700 dark:text-slate-300">Level {item.level}: {item.label}</span>
+                          <span className="font-black text-slate-900 dark:text-white">{item.match}%</span>
+                        </div>
+                        <div className="h-4 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                           <div className={`h-full ${item.color} rounded-full transition-all duration-1000`} style={{ width: `${item.match}%` }}></div>
+                        </div>
+                     </div>
+                   ))}
+                </div>
+                <div className="mt-8 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-900/50">
+                  <p className="text-sm text-amber-800 dark:text-amber-200 flex items-start gap-2">
+                    <AlertTriangle className="w-5 h-5 shrink-0" />
+                    Класот одлично ги меморира правилата (DOK 1), но има огромен пад при стратешко логичко размислување (DOK 3). Апликацијата препорачува да генерирате задачи од DOK 2 и DOK 3 ниво.
+                  </p>
+                </div>
+              </div>
+
+              {/* Comparative Analytics: Live vs Deep Work */}
+              <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm col-span-1 lg:col-span-2">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                     <BrainCircuit className="w-5 h-5 text-indigo-500" /> 
+                     Компаративна Анализа на Изведба
+                  </span>
+                  <span className="text-xs font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-700 text-slate-500 px-3 py-1 rounded-full">Тренд</span>
+                </h3>
+                <p className="text-sm text-slate-500 mb-6">Споредба помеѓу брзината/конкурентноста (Live MathKahoot) наспроти длабоко размислување (Домашни Задачи) во последните 5 сесии.</p>
+                
+                <div className="h-72 w-full mt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={[
+                        { date: '10 Апр', kahoot: 82, assignment: 78 },
+                        { date: '12 Апр', kahoot: 88, assignment: 80 },
+                        { date: '14 Апр', kahoot: 76, assignment: 88 },
+                        { date: '16 Апр', kahoot: 90, assignment: 86 },
+                        { date: 'Тековно', kahoot: 95, assignment: 92 },
+                      ]}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" opacity={0.2} />
+                      <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickMargin={10} />
+                      <YAxis stroke="#94a3b8" fontSize={12} domain={[0, 100]} tickFormatter={(val) => `${val}%`}/>
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)' }}
+                        labelStyle={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '4px' }}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '13px' }}/>
+                      <Line 
+                        type="monotone" 
+                        name="🚀 Live MathKahoot (Брзина & Конкурентност)" 
+                        dataKey="kahoot" 
+                        stroke="#8b5cf6" 
+                        strokeWidth={4}
+                        activeDot={{ r: 8 }} 
+                      />
+                      <Line 
+                        type="monotone" 
+                        name="📚 Домашни & Тестови (Длабока Анализа)" 
+                        dataKey="assignment" 
+                        stroke="#10b981" 
+                        strokeWidth={4} 
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Bloom Matrix */}
+              <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                  <PieChartIcon className="w-5 h-5 text-purple-500" />
+                  Блумова Когнитивна Матрица
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Дистрибуција на когнитивен капацитет според активните невролошки центри при решавање.</p>
+                
+                <div className="flex-1 min-h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
+                      { bloom: 'Remember', value: 95, fullMark: 100 },
+                      { bloom: 'Understand', value: 80, fullMark: 100 },
+                      { bloom: 'Apply', value: 65, fullMark: 100 },
+                      { bloom: 'Analyze', value: 40, fullMark: 100 },
+                      { bloom: 'Evaluate', value: 25, fullMark: 100 },
+                      { bloom: 'Create', value: 10, fullMark: 100 },
+                    ]}>
+                      <PolarGrid stroke="#e2e8f0" />
+                      <PolarAngleAxis dataKey="bloom" tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }} />
+                      <Radar
+                        name="Усвоеност"
+                        dataKey="value"
+                        stroke="#8b5cf6"
+                        fill="#8b5cf6"
+                        fillOpacity={0.6}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

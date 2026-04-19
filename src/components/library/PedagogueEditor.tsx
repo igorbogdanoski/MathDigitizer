@@ -395,6 +395,37 @@ export const PedagogueEditor: React.FC = () => {
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Bloom's Taxonomy</label>
+                        <select 
+                          value={localTask.bloom_taxonomy || ''}
+                          onChange={(e) => updateField('bloom_taxonomy', e.target.value || undefined)}
+                          className="w-full h-12 bg-slate-900 border border-white/5 rounded-xl text-slate-300 px-4 outline-none focus:border-purple-500"
+                        >
+                          <option value="">Неодредено</option>
+                          <option value="remember">Запомнување (Remember)</option>
+                          <option value="understand">Разбирање (Understand)</option>
+                          <option value="apply">Примена (Apply)</option>
+                          <option value="analyze">Анализирање (Analyze)</option>
+                          <option value="evaluate">Евалуација (Evaluate)</option>
+                          <option value="create">Креирање (Create)</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">DoK Level (1-4)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="4"
+                          value={localTask.dok_level || ''}
+                          onChange={(e) => updateField('dok_level', parseInt(e.target.value) || undefined)}
+                          className="w-full h-12 bg-slate-900 border border-white/5 rounded-xl text-slate-300 px-4 outline-none focus:border-purple-500"
+                          placeholder="Пр. 2"
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Solution Architecture (Steps)</label>

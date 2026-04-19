@@ -37,6 +37,14 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState(false);
+  const [kahootPin, setKahootPin] = useState('');
+
+  const handleJoinKahoot = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (kahootPin.trim()) {
+      navigate(`/play?pin=${kahootPin.trim()}`);
+    }
+  };
 
   useEffect(() => {
     // Simple logic to pick a quote based on the current day
@@ -170,6 +178,22 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
             </Button>
           </div>
           
+          {/* Join Kahoot Game Field */}
+          <div className="mt-8 bg-white/10 p-2 rounded-2xl backdrop-blur-md border border-white/20 w-full max-w-sm">
+            <form onSubmit={handleJoinKahoot} className="flex gap-2">
+              <input 
+                type="text" 
+                value={kahootPin}
+                onChange={(e) => setKahootPin(e.target.value)}
+                placeholder="Внеси ПИН за натпревар..." 
+                className="flex-1 bg-white/20 border-none rounded-xl px-4 text-white placeholder-white/50 focus:ring-2 focus:ring-white/50 focus:bg-white/30 transition-all font-bold tracking-widest text-center"
+              />
+              <Button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl px-6">
+                Придружи се
+              </Button>
+            </form>
+          </div>
+          
           {!user && (
             <p className="mt-6 text-sm text-slate-400">
               Не е потребна кредитна картичка. Пријавете се со Google за неколку секунди.
@@ -223,13 +247,15 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="grid md:grid-cols-3 gap-6">
+      {/* The 4 Pillars of MathDigitizer Pro Grid */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        {/* Pillar 1: Extractor */}
         <motion.div 
-          whileHover={{ scale: 1.03, y: -5 }}
+          whileHover={{ scale: 1.02, y: -5 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate('/extract')}
-          className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-2xl hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer group relative overflow-hidden"
+          className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-2xl hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer group relative overflow-hidden flex flex-col h-full"
         >
           <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
             <Wand2 className="w-32 h-32 text-blue-600" />
@@ -237,72 +263,78 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
           <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30">
             <Wand2 className="w-7 h-7 text-white" />
           </div>
-          <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-3">Видео & URL Екстракција</h3>
-          <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
-            Претворете YouTube туторијали и веб страни во интерактивни задачи преку моќниот Gemini 3.1 Pro модел.
+          <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-3">Multimodal AI Extractor</h3>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-6 flex-1 leading-relaxed">
+            Автоматска екстракција на математика од YouTube, PDF матрици или камера преку Gemini Pro. Перфектен LaTeX.
           </p>
-          <div className="flex items-center text-blue-600 dark:text-blue-400 font-bold text-sm tracking-wide uppercase">
-            Отвори алатка <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
+          <div className="flex items-center text-blue-600 dark:text-blue-400 font-bold text-xs tracking-wide uppercase mt-auto">
+            Скенирај сега <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
           </div>
         </motion.div>
 
+        {/* Pillar 2: Live MathKahoot */}
         <motion.div 
-          whileHover={{ scale: 1.03, y: -5 }}
+          whileHover={{ scale: 1.02, y: -5 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => navigate('/smart-ocr')}
-          className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-2xl hover:border-emerald-400 dark:hover:border-emerald-500 transition-all cursor-pointer group relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-            <FileText className="w-32 h-32 text-emerald-600" />
-          </div>
-          <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30">
-            <FileText className="w-7 h-7 text-white" />
-          </div>
-          <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-3">Smart OCR</h3>
-          <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
-            Скенирајте стари книги или ракописи. Нашиот OCR ги претвора во перфектен LaTeX код во реално време.
-          </p>
-          <div className="flex items-center text-emerald-600 dark:text-emerald-400 font-bold text-sm tracking-wide uppercase">
-            Отвори алатка <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
-          </div>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ scale: 1.03, y: -5 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => navigate('/library')}
-          className="bg-slate-900 p-8 rounded-[2rem] shadow-2xl border border-indigo-500/30 hover:shadow-indigo-500/20 transition-all cursor-pointer group relative overflow-hidden"
+          onClick={() => navigate('/library')} // Can start mathkahoot from library or extract
+          className="bg-indigo-900 p-8 rounded-[2rem] shadow-2xl border border-indigo-500/30 hover:shadow-indigo-500/20 transition-all cursor-pointer group relative overflow-hidden flex flex-col h-full"
         >
            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-            <Cpu className="w-32 h-32 text-indigo-400" />
+            <Play className="w-32 h-32 text-indigo-400" />
           </div>
-          <div className="w-14 h-14 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/40 border border-white/10">
-            <Cpu className="w-7 h-7 text-white animate-pulse" />
+          <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/40 border border-white/10">
+            <Play className="w-7 h-7 text-white animate-pulse" />
           </div>
-          <h3 className="text-2xl font-extrabold text-white mb-3">Pedagogue Command Center</h3>
-          <p className="text-slate-400 mb-6 leading-relaxed">
-            Влезете во „Оперативната соба“ на математиката. Анализирајте го когнитивниот отпечаток и симулирајте Сократови дијалози.
+          <h3 className="text-xl font-extrabold text-white mb-3">Live MathKahoot!</h3>
+          <p className="text-sm text-slate-300 mb-6 flex-1 leading-relaxed">
+            Платформа за реално-времено натпреварување на класот со вградени Socratic AI lifelines за учениците (Hints & Tutors).
           </p>
-          <div className="flex items-center text-indigo-400 font-bold text-sm tracking-wide uppercase">
-            Отвори Центар <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
+          <div className="flex items-center text-indigo-300 font-bold text-xs tracking-wide uppercase mt-auto">
+            Стартувај Арена <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
           </div>
         </motion.div>
 
+        {/* Pillar 3: AI Auto-Grader */}
         <motion.div 
-          whileHover={{ scale: 1.03, y: -5 }}
+          whileHover={{ scale: 1.02, y: -5 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => navigate('/factory')}
-          className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-500 transition-all cursor-pointer group"
+          onClick={() => navigate('/smart-ocr')}
+          className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-2xl hover:border-emerald-400 dark:hover:border-emerald-500 transition-all cursor-pointer group relative overflow-hidden flex flex-col h-full"
         >
-          <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mb-4 group-hover:bg-purple-600 transition-colors">
-            <FileText className="w-6 h-6 text-purple-600 dark:text-purple-400 group-hover:text-white transition-colors" />
+          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+            <ShieldCheck className="w-32 h-32 text-emerald-600" />
           </div>
-          <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-3">Генератор на Тестови</h3>
-          <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
-            Селектирајте задачи од библиотеката и автоматски генерирајте професионални PDF тестови и работни листови подготвени за печатење.
+          <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30">
+            <ShieldCheck className="w-7 h-7 text-white" />
+          </div>
+          <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-3">Bloom's Auto-Grader</h3>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-6 flex-1 leading-relaxed">
+            Сликајте ракопис на ученик. AI моторот ќе го евалуира чекор по чекор, ќе детектира грешки, парцијални поени и ниво според Блум.
           </p>
-          <div className="flex items-center text-purple-600 dark:text-purple-400 font-bold text-sm tracking-wide uppercase">
-            Отвори генератор <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
+          <div className="flex items-center text-emerald-600 dark:text-emerald-400 font-bold text-xs tracking-wide uppercase mt-auto">
+            Отвори Оценувач <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
+          </div>
+        </motion.div>
+
+        {/* Pillar 4: Command Center & PDF */}
+        <motion.div 
+          whileHover={{ scale: 1.02, y: -5 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => navigate('/classrooms')}
+          className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-amber-400 dark:hover:border-amber-500 transition-all cursor-pointer group flex flex-col h-full relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+            <Factory className="w-32 h-32 text-amber-600" />
+          </div>
+          <div className="w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-amber-500/30">
+            <Factory className="w-7 h-7 text-white" />
+          </div>
+          <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-3">DOK Telemetry Matrix</h3>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-6 flex-1 leading-relaxed">
+            Централна „Оперативна соба“ за наставниците. Генерирајте PDF тестови и следете ја когнитивната еволуција на класот преку DOK матрица.
+          </p>
+          <div className="flex items-center text-amber-600 dark:text-amber-500 font-bold text-xs tracking-wide uppercase mt-auto">
+            Води го Класот <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
           </div>
         </motion.div>
       </section>

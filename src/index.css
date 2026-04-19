@@ -43,3 +43,40 @@
 .katex-display:hover {
   @apply border-indigo-200 shadow-md;
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Select the MaterialPreview modal content to be printed */
+  .fixed.inset-0.z-\[100\] .bg-slate-50.rounded-3xl,
+  .fixed.inset-0.z-\[100\] .bg-slate-50.rounded-3xl * {
+    visibility: visible;
+  }
+
+  .fixed.inset-0.z-\[100\] .bg-slate-50.rounded-3xl {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+  
+  /* Hide UI elements within the component we don't want printed */
+  .fixed.inset-0.z-\[100\] .bg-slate-50.rounded-3xl .sticky.top-0,
+  .fixed.inset-0.z-\[100\] .bg-slate-50.rounded-3xl button {
+    display: none !important;
+  }
+
+  .katex-display {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}

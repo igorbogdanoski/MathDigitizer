@@ -4,6 +4,74 @@ import { MathTask } from "./schema";
 // Иницијализација на Gemini клиентот
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+export async function generateKahootFromFiles(files: {base64: string, mimeType: string}[], prompt: string): Promise<any> {
+  const instructions = `Ти си Креатор на Интерактивни Математички Квизови (MathKahoot). 
+Врз основа на приложените фајлови (слики/документи) И промптот: "${prompt}", креирај MathKahoot квиз.
+
+СТРИКТНИ ПРАВИЛА:
+1. Секое прашање мора да има математичка формула користејќи LaTeX (на пр. $x^2 + y^2 = r^2$).
+2. Врати СТРОГО JSON објект кој ја следи структурата.
+3. Додај "hints" (помош) за секое прашање. Ова ќе се користи ако ученикот побара АИ Помош за време на играта.
+4. Опциите мора да се 4 (A, B, C, D формат).
+5. correctIndex е индекс на точниот одговор (0, 1, 2, или 3).
+6. Јазик: Македонски.
+
+ВРАТИ ЈА СЛЕДНАВА СТРУКТУРА:
+{
+  "title": "Наслов на квизот",
+  "questions": [
+    {
+      "question": "Текст на прашањето со LaTeX...",
+      "options": ["Опција 0", "Опција 1", "Опција 2", "Опција 3"],
+      "correctIndex": 1
+    }
+  ],
+  "hints": ["Најди го најмалиот заеднички содржател...", "hint за Q2", "hint за Q3..."]
+}
+`;
+
+  try {
+    const contents: any[] = [instructions];
+    files.forEach(f => {
+      contents.push({ inlineData: { data: f.base64, mimeType: f.mimeType } });
+    });
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-pro-preview",
+      contents: contents,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            questions: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  question: { type: Type.STRING },
+                  options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  correctIndex: { type: Type.NUMBER }
+                },
+                required: ["question", "options", "correctIndex"]
+              }
+            },
+            hints: { type: Type.ARRAY, items: { type: Type.STRING } }
+          },
+          required: ["title", "questions", "hints"]
+        }
+      }
+    });
+
+    if (!response.text) throw new Error("Нема одговор.");
+    return JSON.parse(response.text);
+  } catch (error) {
+    console.error("Грешка при креирање Kahoot квиз:", error);
+    throw error;
+  }
+}
+
 export async function generateSpeech(text: string): Promise<string> {
   // Транслитерација од кирилица во латиница за подобра поддршка од TTS моделот
   const cyrillicToLatinMap: { [key: string]: string } = {
@@ -597,7 +665,7 @@ export async function extractMathTasksFromUrl(url: string, model: string = "gemi
               dok_level: { type: Type.NUMBER },
               grade_level: { type: Type.STRING },
               curriculum_topic: { type: Type.STRING },
-              hints: { type: Type.ARRAY, items: { type: Type.STRING } },
+              hints: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Generate 3 highly specific Socratic hints that can be used later in a Kahoot game lifeline." },
               pedagogical_insights: {
                 type: Type.OBJECT,
                 properties: {
@@ -997,25 +1065,30 @@ export async function analyzeSolutionImage(task: MathTask, base64Image: string, 
   analysis: string;
   errorsFound: string[];
   suggestions: string[];
+  score: number;
+  bloom_level_assessed?: "remember" | "understand" | "apply" | "analyze" | "evaluate" | "create";
 }> {
-  const prompt = `Ти си Експерт за Анализа на Ракописни Математички Решенија. Ученикот прикачи слика од својата работа за следната задача:
+  const prompt = `Ти си Специјализиран AI За Оценување Математика (Math Auto-Grader). Ученикот прикачи слика од својата работа за следната задача:
 
 ЗАДАЧА:
 ${task.original_text}
 
-ТВОЈА ЗАДАЧА:
-1. Анализирај го ракописот на сликата.
-2. Спореди го со точното решение.
-3. Идентификувај каде ученикот згрешил (ако згрешил).
-4. Дај конструктивен фидбек и насоки за подобрување.
-5. Користи LaTeX за формули.
-6. Јазик: Македонски.
+РЕШЕНИЕ ЗА РЕФЕРЕНЦА:
+${task.solution_steps?.join('\n')}
 
-Врати го одговорот во JSON формат.`;
+МЕТОДОЛОГИЈА ЗА ОЦЕНУВАЊЕ (The AI Auto-Grader Protocol):
+1. **Транскрипција & Споредба:** Прочитај го ракописот. Спореди го чекор-по-чекор со референтното решение.
+2. **Локализација на Грешки:** Најди ја ТОЧНАТА локација на грешката (пр. "Ученикот заборавил минус пред тројката во вториот чекор додека решаваше квадратна равенка").
+3. **Парцијални поени (Partial Scoring):** Додели поени од 0 до 100. Ако ученикот имал правилен концепт, но компјутациска грешка, не му давај 0. Вреднувај ги чекорите кои се точни пред грешката.
+4. **Блумово Ниво (Bloom's Assessment):** Одреди до кое когнитивно ниво ученикот покажал разбирање. Ако направил само грешка во собирање (apply), но знаел да ја постави формулата (analyze), евалуирај го соодветно.
+5. **Фидбек:** Напиши пријателски фидбек што го фали за тоа што го направил добро, и му укажува на грешката без да звучи дестимулирачки.
+6. Користи LaTeX за сите формули. Јазик: Македонски.
+
+Врати го одговорот ВО СТРОГО JSON ФОРМАТ.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.1-pro-preview", // Use pro for spatial multimodal
       contents: [
         prompt,
         { inlineData: { data: base64Image, mimeType: mimeType } }
@@ -1027,9 +1100,11 @@ ${task.original_text}
           properties: {
             analysis: { type: Type.STRING },
             errorsFound: { type: Type.ARRAY, items: { type: Type.STRING } },
-            suggestions: { type: Type.ARRAY, items: { type: Type.STRING } }
+            suggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
+            score: { type: Type.NUMBER, description: "Поени од 0 до 100 базирано на парцијално оценување." },
+            bloom_level_assessed: { type: Type.STRING, enum: ["remember", "understand", "apply", "analyze", "evaluate", "create"] }
           },
-          required: ["analysis", "errorsFound", "suggestions"]
+          required: ["analysis", "errorsFound", "suggestions", "score", "bloom_level_assessed"]
         }
       }
     });

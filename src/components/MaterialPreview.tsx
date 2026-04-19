@@ -3,11 +3,15 @@ import { MathRenderer } from './MathRenderer';
 import { Card, CardContent } from './ui/Card';
 import { 
   Download, X, FileText, CheckCircle2, Layout, BookOpen, Layers, 
-  ClipboardList, GraduationCap, Target, Edit3, Save, RotateCcw
+  ClipboardList, GraduationCap, Target, Edit3, Save, RotateCcw, PlayCircle
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { motion, AnimatePresence } from 'motion/react';
 import { MaterialType } from '../lib/gemini';
+import { useNavigate } from 'react-router-dom';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface MaterialPreviewProps {
   type: MaterialType;
@@ -19,6 +23,33 @@ interface MaterialPreviewProps {
 export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, onClose, onDownload }) => {
   const [editedData, setEditedData] = useState<any>(JSON.parse(JSON.stringify(data)));
   const [isEditing, setIsEditing] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  const launchKahoot = async () => {
+    if (!user) {
+      alert("Мора да сте најавени за да стартувате игра.");
+      return;
+    }
+    // Generate 6 digit PIN
+    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    try {
+      await setDoc(doc(db, 'live_sessions', pin), {
+        id: pin,
+        teacher_uid: user.uid,
+        quiz_data: editedData,
+        status: 'lobby',
+        current_question_index: 0,
+        participants: {},
+        created_at: Date.now()
+      });
+      navigate(`/live/${pin}/host`);
+    } catch (e) {
+      console.error(e);
+      alert("Грешка при стартување на сесијата.");
+    }
+  };
 
   useEffect(() => {
     setEditedData(JSON.parse(JSON.stringify(data)));
@@ -178,11 +209,47 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
       );
     }
 
-    // Default rendering for worksheet, test, collection, homework, study_guide
+    // Default rendering for worksheet, test, collection, homework, study_guide, quiz
     return (
-      <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm">
-        <CardContent className="p-10 space-y-8">
-          <div className="text-center border-b border-slate-100 dark:border-slate-700 pb-8">
+      <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm relative print:shadow-none print:border-none print:w-[210mm] print:mx-auto">
+        {/* PRINT ONLY HEADER */}
+        <div className="hidden print:flex flex-col mb-12 border-b-2 border-slate-900 pb-4">
+          <div className="flex justify-between items-end mb-4">
+            <div>
+              <h1 className="text-3xl font-black text-slate-900">{editedData.title}</h1>
+              <p className="text-slate-500 font-bold mt-1 uppercase tracking-widest">{type} • MathDigitizer Pro</p>
+            </div>
+            <div className="text-right text-sm">
+              <p>Освоени поени: ______ / 100</p>
+              <p className="mt-1">Оценка: ____________</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-8 text-sm mt-4 font-medium text-slate-700">
+            <div className="space-y-4">
+              <div className="flex items-end border-b border-slate-300 pb-1">
+                <span className="w-24">Име:</span>
+                <div className="flex-1"></div>
+              </div>
+              <div className="flex items-end border-b border-slate-300 pb-1">
+                <span className="w-24">Презиме:</span>
+                <div className="flex-1"></div>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-end border-b border-slate-300 pb-1">
+                <span className="w-24">Одделение:</span>
+                <div className="flex-1"></div>
+              </div>
+              <div className="flex items-end border-b border-slate-300 pb-1">
+                <span className="w-24">Датум:</span>
+                <div className="flex-1"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <CardContent className="p-10 print:p-0 space-y-8">
+          <div className="text-center border-b border-slate-100 dark:border-slate-700 pb-8 print:hidden">
             {isEditing ? (
               <input
                 value={editedData.title}
@@ -277,7 +344,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
               {isEditing ? (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Зачувај преглед
+                  Зачувај
                 </>
               ) : (
                 <>
@@ -286,10 +353,26 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                 </>
               )}
             </Button>
+
+            {type === 'quiz' && (
+              <Button onClick={launchKahoot} className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20">
+                <PlayCircle className="w-4 h-4 mr-2" />
+                Start Live MathKahoot
+              </Button>
+            )}
+            
+            <Button
+              variant="outline"
+              onClick={() => window.print()}
+              className="text-slate-600 dark:text-slate-300 hidden md:flex"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Печати / PDF
+            </Button>
             
             <Button onClick={() => onDownload(editedData)} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/20">
               <Download className="w-4 h-4 mr-2" />
-              Преземи
+              Преземи JSON
             </Button>
             
             <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">

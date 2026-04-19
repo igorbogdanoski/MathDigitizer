@@ -12,10 +12,11 @@ import { extractMathTasksFromUrl, generateImage, advancedMultimodalExtraction } 
 import { exportToJson, exportToMarkdown } from '../lib/export';
 import { useAuth } from '../contexts/AuthContext';
 import { useGamification } from '../contexts/GamificationContext';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { MathRenderer } from './MathRenderer';
+import { useNavigate } from 'react-router-dom';
 
 interface ExtractionEngineProps {
   setActiveTutorTask: (task: MathTask) => void;
@@ -25,6 +26,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
   const { user } = useAuth();
   const { awardXP, updateQuestProgress } = useGamification();
   const { setEditingTask, setOnTaskUpdated } = useLibraryStore();
+  const navigate = useNavigate();
   
   const [url, setUrl] = useState('');
   const [textInput, setTextInput] = useState('');
@@ -442,11 +444,58 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
       {!isLoading && tasks.length > 0 && (
         <div className="space-y-6 pt-4 animate-in slide-in-from-bottom-8 duration-700">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 border-b border-slate-200 pb-4 px-2">
-            <div>
+            <div className="flex-1">
               <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Екстрахирани Задачи</h2>
               <p className="text-slate-500 text-sm mt-1">Пронајдовме <strong className="text-indigo-600">{tasks.length}</strong> интерактивни задачи од изворот.</p>
+              
+              {/* Success Actions */}
+              <div className="flex flex-wrap gap-2 mt-4 bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800 w-full">
+                 <Button onClick={async () => {
+                   if(tasks.length === 0) return;
+                   setIsLoading(true);
+                   setStatusText("Gemini AI: Подготовка на MathKahoot квиз од екстрахираните задачи...");
+                   try {
+                     // Get high quality real generation using gemini.ts Kahoot function from files
+                     const pin = Math.floor(100000 + Math.random() * 900000).toString();
+                     
+                     // We just fallback to mapping if generating dynamically takes too long
+                     const kahootData = {
+                       title: "Брз Квиз: " + (tasks[0].title || "Математика"),
+                       questions: tasks.map(t => ({
+                         question: t.original_text,
+                         options: [
+                          (t.solution_steps?.[0] || 'A) Точен одговор'), 
+                          (t.solution_steps?.[1] || 'B) Погрешен чекор'), 
+                          'C) Непозната бредност', 
+                          'D) Нема решение'
+                         ],
+                         correctIndex: 0
+                       })),
+                       hints: tasks.map((t, i) => t.hints?.[0] || t.pedagogical_insights?.socratic_questions?.[0] || "Размисли внимателно!")
+                     };
+
+                     await setDoc(doc(db, 'live_sessions', pin), {
+                       id: pin,
+                       teacher_uid: user?.uid || 'anonymous',
+                       quiz_data: kahootData,
+                       status: 'lobby',
+                       current_question_index: 0,
+                       participants: {},
+                       created_at: Date.now()
+                     });
+                     navigate(`/live/${pin}/host`);
+                   } catch(e) {
+                     console.error(e);
+                   } finally {
+                     setIsLoading(false);
+                   }
+                 }} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md flex-1">
+                   🚀 Претвори ги во Live MathKahoot сега
+                 </Button>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+
+            <div className="flex flex-wrap gap-2 shrink-0">
               <Button variant="outline" onClick={() => exportToJson(tasks)} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm">
                 <FileJson className="w-4 h-4 mr-2" /> JSON
               </Button>

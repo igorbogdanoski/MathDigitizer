@@ -16,6 +16,8 @@ export interface CognitiveTelemetryStep {
   timestamp: string;
 }
 
+export type BloomTaxonomyLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
+
 export interface TaskAttempt {
   id?: string;
   user_id: string; // The student UID
@@ -54,6 +56,7 @@ export interface MathTask {
   tags: string[];
   difficulty: 'easy' | 'medium' | 'hard';
   dok_level?: number;
+  bloom_taxonomy?: BloomTaxonomyLevel;
   grade_level?: string;
   curriculum_topic?: string;
   hints?: string[];
@@ -127,4 +130,22 @@ export interface StudentProgress {
   taskId: string;
   status: 'pending' | 'completed';
   completedAt?: string;
+}
+
+export interface KahootParticipant {
+  uid: string;
+  name: string;
+  score: number;
+  has_answered_current: boolean;
+  current_answer_index?: number;
+}
+
+export interface LiveKahootSession {
+  id: string; // The 6 digit PIN
+  teacher_uid: string;
+  quiz_data: any; // The JSON of the quiz
+  status: 'lobby' | 'playing' | 'discussion' | 'finished';
+  current_question_index: number;
+  participants: Record<string, KahootParticipant>;
+  created_at: number;
 }

@@ -15,6 +15,7 @@ import { Dashboard } from './components/Dashboard';
 import { TutorChat } from './components/TutorChat';
 import { Classrooms } from './components/Classrooms';
 import { ClassroomDetail } from './components/ClassroomDetail';
+import { SmartGrader } from './components/SmartGrader';
 import { PedagogueCommandCenter } from './components/PedagogueCommandCenter';
 import { PedagogueEditor } from './components/library/PedagogueEditor';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -22,6 +23,21 @@ import { ReloadPrompt } from './components/ReloadPrompt';
 import { MathTask } from './lib/schema';
 import { signInWithGoogle } from './lib/firebase';
 import { StudentTelemetryView } from './components/StudentTelemetryView';
+import { GameHost } from './components/live/GameHost';
+import { GamePlayer } from './components/live/GamePlayer';
+import { useParams } from 'react-router-dom';
+
+// Wrapper for extracting pin from params
+const GameHostWrapper = () => {
+  const { pin } = useParams();
+  return <GameHost sessionPin={pin || ''} />;
+};
+
+const GamePlayerWrapper = () => {
+  const params = new URLSearchParams(window.location.search);
+  const pin = params.get('pin');
+  return <GamePlayer sessionPin={pin || undefined} />;
+};
 
 const AppRoutes = () => {
   const { user, userProfile } = useAuth();
@@ -44,6 +60,12 @@ const AppRoutes = () => {
           <Route path="smart-ocr" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <SmartOCR />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="smart-grader" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <SmartGrader />
             </ProtectedRoute>
           } />
           
@@ -94,9 +116,17 @@ const AppRoutes = () => {
               <StudentTelemetryView />
             </ProtectedRoute>
           } />
-          
-          <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
+        
+        {/* Fullscreen Game Routes (No Layout) */}
+        <Route path="/live/:pin/host" element={
+          <ProtectedRoute allowedRoles={['teacher']}>
+            <GameHostWrapper />
+          </ProtectedRoute>
+        } />
+        <Route path="/play" element={<GamePlayerWrapper />} />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       
       {activeTutorTask && (
