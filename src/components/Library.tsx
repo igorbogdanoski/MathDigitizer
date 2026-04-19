@@ -38,7 +38,6 @@ export const Library: React.FC = () => {
   const parentRef = useRef<HTMLDivElement>(null);
   
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingTask, setEditingTask] = useState<MathTask | null>(null);
 
   useEffect(() => {
     const handleOpenModal = () => setShowCreateModal(true);
@@ -250,7 +249,7 @@ export const Library: React.FC = () => {
                       onSelect={() => store.setSelectedTaskId(isSelected ? null : taskId)}
                       onToggleSelection={(e) => { e.stopPropagation(); store.toggleTaskSelection(taskId); }}
                       onDelete={(e) => actions.handleDeleteTask(taskId, e)}
-                      onEdit={(e) => { e.stopPropagation(); setEditingTask(task); }}
+                      onEdit={(e) => { e.stopPropagation(); store.setEditingTask(task); }}
                       onDragStart={(e) => handleDragStart(e, taskId)}
                       onDragEnd={handleDragEnd}
                       onDragOver={handleDragOver}
@@ -395,15 +394,6 @@ export const Library: React.FC = () => {
         <CreateTaskModal 
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => setShowCreateModal(false)}
-        />
-      )}
-
-      {/* Edit Task Modal */}
-      {editingTask && (
-        <CreateTaskModal 
-          onClose={() => setEditingTask(null)}
-          onSuccess={() => setEditingTask(null)}
-          editTask={editingTask}
         />
       )}
     </div>

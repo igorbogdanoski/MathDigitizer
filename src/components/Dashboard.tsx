@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Star, Zap, Target, Award, TrendingUp, Users, Loader2, ChevronRight, Medal, Brain, PieChart as PieChartIcon, CheckCircle2, Circle } from 'lucide-react';
+import { Trophy, Star, Zap, Target, Award, TrendingUp, Users, Loader2, ChevronRight, Medal, Brain, PieChart as PieChartIcon, CheckCircle2, Circle, Activity } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { db, auth } from '../lib/firebase';
@@ -66,7 +66,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
     { subject: 'Анализа', A: 55, fullMark: 100 },
   ];
 
-  if (isLoading || !stats) {
+  if (isLoading) {
     return (
       <div className="space-y-8 animate-in fade-in duration-500">
         <Skeleton className="w-full h-32 rounded-3xl" />
@@ -75,14 +75,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
             <Skeleton key={i} className="w-full h-32 rounded-xl" />
           ))}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <Skeleton className="w-full h-80 rounded-xl" />
-          </div>
-          <div className="space-y-6">
-            <Skeleton className="w-full h-96 rounded-xl" />
-          </div>
-        </div>
       </div>
     );
   }
@@ -90,6 +82,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
   // Render Teacher Dashboard if the user is a teacher
   if (userProfile?.role === 'teacher') {
     return <TeacherDashboard userProfile={userProfile} />;
+  }
+
+  if (!stats) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-slate-800 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
+        <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-4">
+          <Activity className="w-8 h-8 text-indigo-600" />
+        </div>
+        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Грешка при вчитување на статистиките</h3>
+        <p className="text-slate-500 dark:text-slate-400 max-w-sm mb-6">
+          Вашите телеметриски податоци не може да се пронајдат. Обидете се да ја освежите страницата или да решите задача за да активирате запис.
+        </p>
+        <Button onClick={() => window.location.reload()}>
+          Освежи Страница
+        </Button>
+      </div>
+    );
   }
 
   return (

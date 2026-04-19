@@ -3,6 +3,8 @@ import { MathTask } from '../../lib/schema';
 import { Card, CardContent } from '../ui/Card';
 import { GripVertical, Check, Trash2, Edit3 } from 'lucide-react';
 
+import { MathRenderer } from '../MathRenderer';
+
 interface TaskCardProps {
   task: MathTask;
   taskId: string;
@@ -123,8 +125,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           {isSelected && renderDetailContent ? (
             renderDetailContent()
           ) : (
-            <div className="text-slate-600 text-sm line-clamp-3">
-              {task.original_text}
+            <div className="text-slate-600 dark:text-slate-400 text-sm line-clamp-3">
+              <MathRenderer content={task.original_text} />
             </div>
           )}
         </CardContent>

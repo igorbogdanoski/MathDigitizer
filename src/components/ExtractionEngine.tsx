@@ -8,7 +8,7 @@ import {
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { MathTask } from '../lib/schema';
-import { extractMathTasksFromUrl, generateImage } from '../lib/gemini';
+import { extractMathTasksFromUrl, generateImage, advancedMultimodalExtraction } from '../lib/gemini';
 import { exportToJson, exportToMarkdown } from '../lib/export';
 import { useAuth } from '../contexts/AuthContext';
 import { useGamification } from '../contexts/GamificationContext';
@@ -27,6 +27,9 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
   const { setEditingTask, setOnTaskUpdated } = useLibraryStore();
   
   const [url, setUrl] = useState('');
+  const [textInput, setTextInput] = useState('');
+  const [sourceType, setSourceType] = useState<'url' | 'file' | 'text'>('url');
+  const [fileData, setFileData] = useState<{base64: string, mimeType: string, name: string} | null>(null);
   const [model, setModel] = useState('gemini-3.1-pro-preview');
   
   // Progress States
@@ -73,7 +76,11 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
     
     setTimeout(() => {
       setProgress(40);
-      setStatusText(isYoutube ? 'Анализа на транскрипт и визуелни кадри од видеото...' : 'Скенирање на веб-содржината...');
+      const msg = 
+        sourceType === 'url' ? (isYoutube ? 'Анализа на транскрипт и визуелни кадри од видеото...' : 'Скенирање на веб-содржината...') :
+        sourceType === 'file' ? 'OCR Анализа и структурна обработка на документот...' :
+        'Јазична обработка на внесениот текст...';
+      setStatusText(msg);
     }, 1500);
 
     setTimeout(() => {
@@ -87,11 +94,32 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
     }, 6000);
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = (event.target?.result as string).split(',')[1];
+      setFileData({
+        base64,
+        mimeType: file.type,
+        name: file.name
+      });
+      setSourceType('file');
+      setError(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleExtract = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url.trim()) return;
+    
+    if (sourceType === 'url' && !url.trim()) return;
+    if (sourceType === 'text' && !textInput.trim()) return;
+    if (sourceType === 'file' && !fileData) return;
 
-    if (!isValidUrl(url)) {
+    if (sourceType === 'url' && !isValidUrl(url)) {
       setError('Внесете валиден URL линк.');
       return;
     }
@@ -105,9 +133,19 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
     simulateProgress();
     
     try {
+      let extractedTasks: MathTask[] = [];
       const timeRange = (startTime || endTime) ? { start: startTime, end: endTime } : undefined;
-      // In advanced implementations, customInstructions could be passed to backend.
-      const extractedTasks = await extractMathTasksFromUrl(url, model, timeRange);
+      
+      if (sourceType === 'url') {
+        extractedTasks = await extractMathTasksFromUrl(url + (timeRange ? ` (Range: ${timeRange.start}-${timeRange.end})` : ''), model, timeRange);
+      } else {
+        const sourcePayload = sourceType === 'file' ? 
+          { type: 'file' as const, data: fileData!.base64, mimeType: fileData!.mimeType } :
+          { type: 'text' as const, data: textInput };
+        
+        extractedTasks = await advancedMultimodalExtraction(sourcePayload, model, customInstructions);
+      }
+
       setProgress(100);
       setStatusText('Екстракцијата е успешна!');
       setTasks(extractedTasks);
@@ -115,7 +153,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
       updateQuestProgress('extract');
     } catch (err) {
       setProgress(0);
-      setError(err instanceof Error ? `Грешка: ${err.message}` : 'Настана грешка при екстракцијата. Ве молиме проверете го URL-то или обидете се повторно.');
+      setError(err instanceof Error ? `Грешка: ${err.message}` : 'Настана грешка при екстракцијата. Проверете го изворот или обидете се повторно.');
       console.error(err);
     } finally {
       setTimeout(() => {
@@ -180,44 +218,121 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
             <div className="inline-flex items-center justify-center p-3 bg-white/5 backdrop-blur-md rounded-2xl mb-2 border border-white/10 shadow-inner">
               <Youtube className="w-8 h-8 text-red-500 mr-2 drop-shadow-md" />
               <div className="h-6 w-px bg-white/20 mx-2"></div>
+              <FileText className="w-7 h-7 text-emerald-400 mx-2 drop-shadow-md" />
+              <div className="h-6 w-px bg-white/20 mx-2"></div>
               <Globe className="w-7 h-7 text-blue-400 ml-2 drop-shadow-md" />
             </div>
             
             <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight">
-              YouTube & Веб Екстрактор
+              Multimodal AI Екстрактор
             </h1>
             <p className="text-lg text-indigo-200 font-medium max-w-2xl mx-auto">
-              Претворете каков било Youtube туторијал или веб страна во структурирани дигитални задачи со помош на Gemini 3.1 Pro.
+              Претворете каков било Youtube туторијал, PDF книга, слика од табла или текст во дигитални задачи.
             </p>
 
-            <form onSubmit={handleExtract} className="mt-10 bg-white/5 backdrop-blur-xl p-4 sm:p-6 rounded-3xl border border-white/10 shadow-2xl text-left transition-all hover:bg-white/10">
+            <div className="mt-8 flex justify-center gap-2">
+              {(['url', 'file', 'text'] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setSourceType(type)}
+                  className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
+                    sourceType === type 
+                    ? 'bg-white text-indigo-900 shadow-lg' 
+                    : 'bg-white/10 text-white hover:bg-white/20'
+                  }`}
+                >
+                  {type === 'url' ? 'URL / YouTube' : type === 'file' ? 'Документ / Слика' : 'Слободен Текст'}
+                </button>
+              ))}
+            </div>
+
+            <form onSubmit={handleExtract} className="mt-6 bg-white/5 backdrop-blur-xl p-4 sm:p-6 rounded-3xl border border-white/10 shadow-2xl text-left transition-all hover:bg-white/10">
               <div className="flex flex-col gap-4">
-                {/* Main Input */}
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                    {isYoutube ? <PlayCircle className="w-6 h-6 text-red-400" /> : <LinkIcon className="w-6 h-6 text-indigo-400" />}
+                {/* Dynamic Inputs Based on Source Type */}
+                {sourceType === 'url' && (
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                      {isYoutube ? <PlayCircle className="w-6 h-6 text-red-400" /> : <LinkIcon className="w-6 h-6 text-indigo-400" />}
+                    </div>
+                    <Input
+                      type="url"
+                      placeholder="Вметнете линк (YouTube, Wikipedia, Блог...)"
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      disabled={isLoading}
+                      className="pl-14 h-16 text-lg bg-white/90 border-white/40 focus:bg-white text-slate-800 placeholder-slate-400 rounded-2xl shadow-inner transition-all"
+                    />
                   </div>
-                  <Input
-                    type="url"
-                    placeholder="Вметнете YouTube линк или било која веб-адреса..."
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    disabled={isLoading}
-                    className="pl-14 h-16 text-lg bg-white/90 border-white/40 focus:bg-white text-slate-800 placeholder-slate-400 rounded-2xl shadow-inner transition-all"
-                  />
-                  <div className="absolute inset-y-2 right-2 flex items-center">
-                     <Button 
+                )}
+
+                {sourceType === 'file' && (
+                  <div className="relative group">
+                    <input
+                      type="file"
+                      id="file-upload"
+                      className="hidden"
+                      onChange={handleFileUpload}
+                      accept="application/pdf,image/*"
+                    />
+                    <label 
+                      htmlFor="file-upload"
+                      className="flex flex-col items-center justify-center h-32 w-full border-2 border-dashed border-white/30 rounded-2xl bg-white/10 hover:bg-white/20 transition-all cursor-pointer group"
+                    >
+                      {fileData ? (
+                        <div className="flex items-center gap-3">
+                          <CheckCircle className="w-8 h-8 text-emerald-400" />
+                          <div className="text-left">
+                            <p className="text-white font-bold">{fileData.name}</p>
+                            <p className="text-indigo-300 text-xs">{(fileData.mimeType)} • Подготвено за скенирање</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-8 h-8 text-indigo-300 mb-2 group-hover:scale-110 transition-transform" />
+                          <p className="text-indigo-200 font-medium tracking-tight">Кликни за аплоуд на PDF или Слика</p>
+                          <p className="text-[10px] text-indigo-400 uppercase mt-1">Поддршка за стари OCR книги и ракопис</p>
+                        </>
+                      )}
+                    </label>
+                  </div>
+                )}
+
+                {sourceType === 'text' && (
+                   <div className="relative group">
+                    <textarea
+                      placeholder="Напишете или залепете суров текст со задачи овде..."
+                      value={textInput}
+                      onChange={(e) => setTextInput(e.target.value)}
+                      disabled={isLoading}
+                      className="w-full h-32 p-4 text-base bg-white/90 border-white/40 focus:bg-white text-slate-800 placeholder-slate-400 rounded-2xl shadow-inner transition-all resize-none font-sans"
+                    />
+                   </div>
+                )}
+
+                <div className="flex justify-between items-center mt-2 px-2">
+                   <div className="flex items-center gap-3">
+                    <select
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                      disabled={isLoading}
+                      className="h-10 px-3 rounded-xl bg-white/10 border border-white/20 text-indigo-50 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 [&>option]:text-slate-800 backdrop-blur-sm cursor-pointer hover:bg-white/20 transition-colors"
+                    >
+                      <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (World-Class)</option>
+                      <option value="gemini-3-flash-preview">Gemini 3 Flash (Fast)</option>
+                    </select>
+                   </div>
+
+                   <Button 
                       type="submit" 
-                      disabled={isLoading || !url.trim()} 
-                      className="h-full px-6 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 rounded-xl transition-all font-bold tracking-wide"
+                      disabled={isLoading || (sourceType === 'url' && !url.trim()) || (sourceType === 'file' && !fileData) || (sourceType === 'text' && !textInput.trim())} 
+                      className="h-12 px-8 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 rounded-xl transition-all font-bold tracking-wide"
                     >
                       {isLoading ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
                       ) : (
-                        <><Sparkles className="w-5 h-5 mr-2" /> Екстрахирај</>
+                        <><Sparkles className="w-5 h-5 mr-2" /> Процесирај</>
                       )}
                     </Button>
-                  </div>
                 </div>
 
                 {/* Advanced Options Toggle */}
@@ -358,6 +473,12 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                     <span className="bg-indigo-100 flex items-center gap-1 text-indigo-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
                       <BookOpen className="w-3 h-3" /> {task.type}
                     </span>
+                    {task.pedagogical_insights?.quality_score && (
+                      <div className="flex items-center gap-1.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm ring-1 ring-emerald-500/10">
+                        <Zap className="w-3 h-3" /> 
+                        Quality: {task.pedagogical_insights.quality_score}%
+                      </div>
+                    )}
                   </div>
                   <div className="pr-2 flex items-center gap-2">
                     <Button

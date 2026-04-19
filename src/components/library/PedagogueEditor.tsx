@@ -4,7 +4,7 @@ import {
   X, Save, Sparkles, Brain, Wand2, ArrowLeft, Eye, 
   Code, Info, AlertTriangle, Quote, Check, Plus, Trash2, 
   Layout, BookOpen, Layers, Compass, Zap, Activity,
-  MessageSquare, Loader2
+  MessageSquare, Loader2, Sigma, Hash, Calculator
 } from 'lucide-react';
 import { MathTask } from '../../lib/schema';
 import { Button } from '../ui/Button';
@@ -306,14 +306,67 @@ export const PedagogueEditor: React.FC = () => {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Mathematical Narrative (LaTeX support)</label>
-                      <textarea 
-                        value={localTask.original_text}
-                        onChange={(e) => updateField('original_text', e.target.value)}
-                        className="w-full bg-slate-900 border border-white/5 rounded-2xl p-6 text-slate-200 font-mono text-sm leading-relaxed focus:border-indigo-500 outline-none h-64 resize-none transition-all"
-                        placeholder="Write your math problem here. Use $$ for display math and $ for inline math..."
-                      />
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Mathematical Narrative (LaTeX support)</label>
+                        <div className="flex gap-2">
+                          {[
+                            { label: 'Fraction', tex: '\\frac{a}{b}' },
+                            { label: 'Sqrt', tex: '\\sqrt{x}' },
+                            { label: 'Power', tex: 'x^{n}' },
+                            { label: 'Sub', tex: 'x_{i}' },
+                            { label: 'Vector', tex: '\\vec{v}' },
+                            { label: 'Matrix', tex: '\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}' },
+                            { label: 'Sum', tex: '\\sum_{i=1}^{n}' },
+                            { label: 'Int', tex: '\\int_{a}^{b} f(x) dx' },
+                            { label: 'Limit', tex: '\\lim_{x \\to \\infty}' },
+                            { label: 'Pi', tex: '\\pi' },
+                            { label: 'Alpha', tex: '\\alpha' },
+                            { label: 'Theta', tex: '\\theta' },
+                            { label: 'Approx', tex: '\\approx' },
+                            { label: 'NotEq', tex: '\\neq' },
+                            { label: 'Leq', tex: '\\leq' },
+                            { label: 'Geq', tex: '\\geq' }
+                          ].map(sym => (
+                            <button
+                              key={sym.label}
+                              onClick={() => {
+                                const textarea = document.getElementById('task-narrative') as HTMLTextAreaElement;
+                                const start = textarea.selectionStart;
+                                const end = textarea.selectionEnd;
+                                const text = localTask.original_text;
+                                const before = text.substring(0, start);
+                                const after = text.substring(end);
+                                const newText = before + sym.tex + after;
+                                updateField('original_text', newText);
+                                setTimeout(() => {
+                                  textarea.focus();
+                                  textarea.setSelectionRange(start + sym.tex.length, start + sym.tex.length);
+                                }, 0);
+                              }}
+                              className="px-2 py-1 bg-slate-900 border border-white/5 rounded-lg text-[10px] text-slate-400 hover:text-white hover:border-indigo-500 transition-all font-mono"
+                            >
+                              {sym.tex}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <textarea 
+                          id="task-narrative"
+                          value={localTask.original_text}
+                          onChange={(e) => updateField('original_text', e.target.value)}
+                          className="w-full bg-slate-900 border border-white/5 rounded-2xl p-6 text-slate-200 font-mono text-sm leading-relaxed focus:border-indigo-500 outline-none h-80 resize-none transition-all"
+                          placeholder="Write your math problem here. Use $$ for display math and $ for inline math..."
+                        />
+                        <div className="w-full bg-slate-900/50 border border-white/5 rounded-2xl p-6 overflow-y-auto h-80">
+                          <label className="text-[10px] font-black text-indigo-500/50 uppercase tracking-widest block mb-4">Live Visual Sync</label>
+                          <div className="prose prose-invert max-w-none">
+                            <MathRenderer content={localTask.original_text || '*Type something to see preview...*'} />
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

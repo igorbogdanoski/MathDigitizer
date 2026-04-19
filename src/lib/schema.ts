@@ -39,6 +39,7 @@ export interface PedagogicalInsight {
   modeling_scenario?: string; // a real-life mathematical modeling scenario
   teaching_strategy?: string; // "Visual area model", "Substitution method", etc.
   prerequisites?: string[]; // ["Properties of powers", "Basic distribution"]
+  quality_score?: number; // Score from 1-100 indicating extraction quality
 }
 
 export interface MathTask {

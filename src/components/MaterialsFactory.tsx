@@ -1,26 +1,59 @@
 import { useState, useEffect } from 'react';
-import { collection, query, getDocs, orderBy } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { collection, query, getDocs, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db, auth } from '../lib/firebase';
 import { MathTask } from '../lib/schema';
-import { BookOpen, FileText, Presentation, Target, FileQuestion, Download, Plus, Search, Filter, CheckSquare, Square, FileJson, FileType, Layers, ClipboardList, GraduationCap, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { 
+  BookOpen, FileText, Presentation, Target, FileQuestion, Download, Plus, Search, 
+  Filter, CheckSquare, Square, FileJson, FileType, Layers, ClipboardList, 
+  GraduationCap, ChevronDown, ChevronUp, X, Sparkles, Wand2, ArrowRight
+} from 'lucide-react';
 import { exportToJson, exportToWord } from '../lib/export';
-import { generateDifferentiatedTest } from '../lib/gemini';
+import { generateDifferentiatedTest, generateEducationalMaterial, MaterialType } from '../lib/gemini';
 import { motion, AnimatePresence } from 'motion/react';
-
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext';
+import { MaterialPreview } from './MaterialPreview';
+import { Button } from './ui/Button';
+import { MathRenderer } from './MathRenderer';
+import { Edit3, Check } from 'lucide-react';
+import { useLibraryStore } from '../store/useLibraryStore';
 
 export default function MaterialsFactory() {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const setEditingTask = useLibraryStore(state => state.setEditingTask);
   const [tasks, setTasks] = useState<MathTask[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedType, setSelectedType] = useState<string>('worksheet');
+  const [selectedType, setSelectedType] = useState<MaterialType>('worksheet');
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsedTopics, setCollapsedTopics] = useState<Record<string, boolean>>({});
+  
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedMaterial, setGeneratedMaterial] = useState<any>(null);
+
   const [isGeneratingDiff, setIsGeneratingDiff] = useState(false);
   const [diffResult, setDiffResult] = useState<{groupA: MathTask[], groupB: MathTask[], groupC: MathTask[]} | null>(null);
+
+  const handleGenerateMaterial = async () => {
+    if (selectedTasks.size === 0) {
+      showToast('Ве молам изберете барем една задача од библиотеката.', 'info');
+      return;
+    }
+    
+    setIsGenerating(true);
+    try {
+      const tasksToProcess = tasks.filter(t => t.id && selectedTasks.has(t.id));
+      const result = await generateEducationalMaterial(tasksToProcess, selectedType);
+      setGeneratedMaterial(result);
+      showToast('Материјалот е успешно генериран!', 'success');
+    } catch (error) {
+      console.error("Грешка:", error);
+      showToast('Настана грешка при генерирањето. Обидете се повторно.', 'error');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleGenerateDifferentiated = async () => {
     if (selectedTasks.size === 0) return;
@@ -108,187 +141,223 @@ export default function MaterialsFactory() {
     fetchTasks();
   }, []);
 
-  const materialTypes = [
-    { id: 'worksheet', name: 'Работен лист', icon: FileText, description: 'Задачи за вежбање на час или домашно', color: 'bg-blue-100 text-blue-700' },
-    { id: 'test', name: 'Тест / Проверка', icon: Target, description: 'Оценување со бодови и решенија за наставникот', color: 'bg-red-100 text-red-700' },
-    { id: 'collection', name: 'Збирка задачи', icon: BookOpen, description: 'Сеопфатна збирка поделена по теми и тежина', color: 'bg-green-100 text-green-700' },
-    { id: 'quiz', name: 'Интерактивен квиз', icon: FileQuestion, description: 'Квиз во живо за учениците (Kahoot стил)', color: 'bg-purple-100 text-purple-700' },
-    { id: 'presentation', name: 'Презентација', icon: Presentation, description: 'Слајдови со теорија и задачи за на час', color: 'bg-orange-100 text-orange-700' },
-    { id: 'flashcards', name: 'Флешкарти', icon: Layers, description: 'Картички за брзо повторување на концепти', color: 'bg-pink-100 text-pink-700' },
-    { id: 'homework', name: 'Домашна работа', icon: ClipboardList, description: 'Задачи за самостојна работа дома', color: 'bg-teal-100 text-teal-700' },
-    { id: 'study_guide', name: 'Водич за учење', icon: GraduationCap, description: 'Детален преглед на теорија и клучни задачи', color: 'bg-yellow-100 text-yellow-700' },
+  const materialTypes: { id: MaterialType; name: string; icon: any; description: string; color: string; iconBg: string }[] = [
+    { id: 'worksheet', name: 'Работен лист', icon: FileText, description: 'Задачи за вежбање на час или домашно', color: 'text-blue-600', iconBg: 'bg-blue-100' },
+    { id: 'test', name: 'Тест / Проверка', icon: Target, description: 'Оценување со бодови и решенија за наставникот', color: 'text-rose-600', iconBg: 'bg-rose-100' },
+    { id: 'collection', name: 'Збирка задачи', icon: BookOpen, description: 'Сеопфатна збирка поделена по теми и тежина', color: 'text-emerald-600', iconBg: 'bg-emerald-100' },
+    { id: 'quiz', name: 'Интерактивен квиз', icon: FileQuestion, description: 'Квиз во живо за учениците (Kahoot стил)', color: 'text-purple-600', iconBg: 'bg-purple-100' },
+    { id: 'presentation', name: 'Презентација', icon: Presentation, description: 'Слајдови со теорија и задачи за на час', color: 'text-orange-600', iconBg: 'bg-orange-100' },
+    { id: 'flashcards', name: 'Флешкарти', icon: Layers, description: 'Картички за брзо повторување на концепти', color: 'text-pink-600', iconBg: 'bg-pink-100' },
+    { id: 'homework', name: 'Домашна работа', icon: ClipboardList, description: 'Задачи за самостојна работа дома', color: 'text-teal-600', iconBg: 'bg-teal-100' },
+    { id: 'study_guide', name: 'Водич за учење', icon: GraduationCap, description: 'Детален преглед на теорија и клучни задачи', color: 'text-amber-600', iconBg: 'bg-amber-100' },
   ];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Работилница за Наставници</h1>
-          <p className="text-gray-600">
-            Генерирајте готови едукативни материјали од вашата библиотека со задачи.
-          </p>
-        </div>
-        <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-2">
-          <span className="text-sm text-gray-500">Достапни задачи:</span>
-          <span className="font-bold text-indigo-600">{tasks.length}</span>
+    <div className="max-w-7xl mx-auto space-y-10 pb-20 animate-in fade-in duration-700">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-900 p-8 md:p-12 text-white shadow-2xl">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 blur-[100px] -mr-48 -mt-48 rounded-full"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 blur-[80px] -ml-32 -mb-32 rounded-full"></div>
+        
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="max-w-2xl text-center md:text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-6 border border-indigo-500/30">
+              <Sparkles className="w-4 h-4" />
+              <span>AI Материјали од Светска Класа</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4 leading-tight">
+              Materials <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Factory</span>
+            </h1>
+            <p className="text-lg text-slate-400 leading-relaxed">
+              Трансформирајте ја вашата библиотека со задачи во професионални работни листови, квизови или презентации за неколку секунди со помош на вештачка интелигенција.
+            </p>
+          </div>
+          
+          <div className="flex-shrink-0 bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 text-center min-w-[200px]">
+            <div className="text-4xl font-black text-white mb-1">{tasks.length}</div>
+            <div className="text-sm text-slate-400 font-medium uppercase tracking-widest">Достапни задачи</div>
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <div className="text-2xl font-bold text-indigo-400">{selectedTasks.size}</div>
+              <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Селектирани</div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Избор на тип на материјал */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {materialTypes.map((type) => {
-          const Icon = type.icon;
-          const isSelected = selectedType === type.id;
-          return (
-            <button
-              key={type.id}
-              onClick={() => setSelectedType(type.id)}
-              className={`p-4 rounded-xl border-2 text-left transition-all duration-200 ${
-                isSelected 
-                  ? 'border-indigo-600 bg-indigo-50/50 shadow-md transform scale-[1.02]' 
-                  : 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm'
-              }`}
-            >
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${type.color}`}>
-                <Icon className="w-5 h-5" />
-              </div>
-              <h3 className={`font-semibold mb-1 ${isSelected ? 'text-indigo-900' : 'text-gray-900'}`}>
-                {type.name}
-              </h3>
-              <p className="text-xs text-gray-500 line-clamp-2">
-                {type.description}
-              </p>
-            </button>
-          );
-        })}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="w-1.5 h-8 bg-indigo-600 rounded-full"></div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">1. Изберете тип на материјал</h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {materialTypes.map((type) => {
+            const Icon = type.icon;
+            const isSelected = selectedType === type.id;
+            return (
+              <motion.button
+                key={type.id}
+                whileHover={{ y: -5, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSelectedType(type.id)}
+                className={`p-6 rounded-[2rem] border-2 text-left transition-all relative overflow-hidden group ${
+                  isSelected 
+                    ? 'border-indigo-600 bg-white dark:bg-slate-800 shadow-xl ring-4 ring-indigo-500/10' 
+                    : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 hover:border-slate-200 dark:hover:border-slate-700 shadow-sm'
+                }`}
+              >
+                {isSelected && (
+                  <div className="absolute top-0 right-0 p-4">
+                    <CheckSquare className="w-5 h-5 text-indigo-600" />
+                  </div>
+                )}
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 ${type.iconBg} ${type.color}`}>
+                  <Icon className="w-7 h-7" />
+                </div>
+                <h3 className={`text-xl font-bold mb-2 transition-colors ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
+                  {type.name}
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                  {type.description}
+                </p>
+              </motion.button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Работна површина */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden min-h-[500px] flex flex-col">
-        {/* Toolbar */}
-        <div className="border-b border-gray-100 p-4 bg-gray-50/50 flex flex-wrap gap-4 items-center justify-between">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input 
-                type="text" 
-                placeholder="Пребарај задачи..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 w-64"
-              />
-            </div>
-            <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
-              <Filter className="w-4 h-4" />
-              Филтри
-            </button>
+            <div className="w-1.5 h-8 bg-indigo-600 rounded-full"></div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">2. Изберете задачи од библиотека</h2>
           </div>
           
           <div className="flex items-center gap-3">
-            <button 
-              onClick={handleSelectAll}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
-            >
-              <CheckSquare className="w-4 h-4" />
-              Избери ги сите
-            </button>
-            <button 
-              onClick={handleClearSelections}
-              disabled={selectedTasks.size === 0}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-            >
-              <X className="w-4 h-4" />
-              Поништи избор
-            </button>
-            <div className="flex items-center gap-2 border-l border-gray-200 pl-3">
-              <button 
-                onClick={handleGenerateDifferentiated}
-                disabled={selectedTasks.size === 0 || isGeneratingDiff}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                title="Генерирај Диференциран Тест (3 Групи)"
+             <Button 
+                onClick={handleGenerateMaterial}
+                disabled={selectedTasks.size === 0 || isGenerating}
+                size="lg"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl h-14 px-8 shadow-lg shadow-indigo-600/20 font-bold text-lg group"
               >
-                {isGeneratingDiff ? (
-                  <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                {isGenerating ? (
+                   <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
                 ) : (
-                  <Layers className="w-4 h-4" />
+                  <Wand2 className="w-6 h-6 mr-3 group-hover:animate-pulse" />
                 )}
-                Диференциран Тест
-              </button>
-              <button 
-                onClick={handleExportJson}
-                disabled={selectedTasks.size === 0}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                title="Експортирај како JSON"
-              >
-                <FileJson className="w-4 h-4" />
-                JSON
-              </button>
-              <button 
-                onClick={handleExportWord}
-                disabled={selectedTasks.size === 0}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                title="Експортирај како Word документ"
-              >
-                <FileType className="w-4 h-4" />
-                Word
-              </button>
-              <button 
-                disabled={selectedTasks.size === 0}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-              >
-                <Download className="w-4 h-4" />
-                PDF ({selectedTasks.size})
-              </button>
-            </div>
+                {isGenerating ? 'Се генерира...' : 'Генерирај Материјал'}
+              </Button>
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 p-0 flex flex-col bg-gray-50">
-          {loading ? (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden min-h-[500px] flex flex-col">
+          {/* Toolbar */}
+          <div className="border-b border-slate-100 dark:border-slate-700 p-6 bg-slate-50/50 dark:bg-slate-800/50 flex flex-wrap gap-6 items-center justify-between">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                <input 
+                  type="text" 
+                  placeholder="Пребарај задачи по наслов или текст..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-6 py-3 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                />
+              </div>
+              <button className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                <Filter className="w-4 h-4" />
+                Филтри
+              </button>
             </div>
-          ) : tasks.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-              <div className="max-w-md">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <BookOpen className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Библиотеката е празна</h3>
-                <p className="text-gray-500 mb-6">
-                  За да креирате едукативни материјали (збирки, тестови, работни листови), прво треба да извлечете и зачувате задачи во вашата библиотека.
-                </p>
+            
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={handleSelectAll}
+                className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl hover:bg-indigo-100 transition-colors"
+              >
+                <CheckSquare className="w-4 h-4" />
+                Избери ги сите
+              </button>
+              <button 
+                onClick={handleClearSelections}
+                disabled={selectedTasks.size === 0}
+                className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl hover:bg-slate-50 transition-colors disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+                Поништи
+              </button>
+              
+              <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
+              
+              <div className="flex items-center gap-2">
                 <button 
-                  onClick={() => navigate('/extract')}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                  onClick={handleGenerateDifferentiated}
+                  disabled={selectedTasks.size === 0 || isGeneratingDiff}
+                  className="w-12 h-12 flex items-center justify-center text-purple-600 bg-purple-50 dark:bg-purple-900/30 rounded-xl hover:bg-purple-100 transition-colors disabled:opacity-50"
+                  title="Диференциран Тест"
                 >
-                  <Plus className="w-4 h-4" />
-                  Оди кон Екстракција
+                  {isGeneratingDiff ? <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div> : <Layers className="w-6 h-6" />}
+                </button>
+                <button 
+                  onClick={handleExportWord}
+                  disabled={selectedTasks.size === 0}
+                  className="w-12 h-12 flex items-center justify-center text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded-xl hover:bg-blue-100 transition-colors disabled:opacity-50"
+                  title="Word Export"
+                >
+                  <FileType className="w-6 h-6" />
                 </button>
               </div>
             </div>
-          ) : (
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-6">
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 p-8 bg-slate-50/50 dark:bg-slate-900/50">
+            {loading ? (
+              <div className="flex-1 flex flex-col items-center justify-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+                <p className="text-slate-500 font-medium">Вчитување на библиотеката...</p>
+              </div>
+            ) : tasks.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center py-20 text-center">
+                <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6">
+                  <BookOpen className="w-12 h-12 text-slate-300" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Библиотеката е празна</h3>
+                <p className="text-slate-500 max-w-sm mb-8">
+                  За да креирате едукативни материјали, прво треба да дигитализирате задачи со помош на AI екстракција.
+                </p>
+                <Button 
+                  onClick={() => navigate('/extract')}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Започни Екстракција
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-8">
                 {Object.entries(groupedTasks).map(([topic, topicTasks]) => {
                   const isCollapsed = collapsedTopics[topic];
                   return (
-                    <div key={topic} className="space-y-3 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <div key={topic} className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
                       <button 
                         onClick={() => toggleTopic(topic)}
-                        className="w-full flex items-center justify-between group"
+                        className="w-full flex items-center justify-between p-6 bg-slate-50 dark:bg-slate-800/50 group"
                       >
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider group-hover:text-indigo-600 transition-colors">{topic}</h3>
-                          <span className="bg-slate-100 text-slate-600 text-xs font-medium px-2 py-0.5 rounded-full">
-                            {topicTasks.length} {topicTasks.length === 1 ? 'задача' : 'задачи'}
-                          </span>
+                        <div className="flex items-center gap-4 text-left">
+                          <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-sm">
+                            <BookOpen className="w-5 h-5 text-indigo-500" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">{topic}</h3>
+                            <p className="text-xs text-slate-500 font-bold">{topicTasks.length} {topicTasks.length === 1 ? 'задача' : 'задачи'}</p>
+                          </div>
                         </div>
                         {isCollapsed ? (
-                          <ChevronDown className="w-5 h-5 text-slate-400 group-hover:text-indigo-500" />
+                          <ChevronDown className="w-6 h-6 text-slate-400 group-hover:text-indigo-500 transition-colors" />
                         ) : (
-                          <ChevronUp className="w-5 h-5 text-slate-400 group-hover:text-indigo-500" />
+                          <ChevronUp className="w-6 h-6 text-slate-400 group-hover:text-indigo-500 transition-colors" />
                         )}
                       </button>
                       
@@ -298,62 +367,59 @@ export default function MaterialsFactory() {
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3, ease: "easeInOut" }}
-                            className="overflow-hidden"
+                            className="bg-white dark:bg-slate-800"
                           >
-                            <div className="grid grid-cols-1 gap-3 pt-2 border-t border-slate-100">
+                            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                               {topicTasks.map((task) => {
                                 const isSelected = task.id ? selectedTasks.has(task.id) : false;
                                 return (
                                   <div 
                                     key={task.id}
                                     onClick={() => task.id && toggleTaskSelection(task.id)}
-                                    className={`flex items-start gap-4 p-4 rounded-xl border transition-all cursor-pointer ${
+                                    className={`relative flex flex-col p-5 rounded-2xl border-2 transition-all cursor-pointer group ${
                                       isSelected 
-                                        ? 'bg-indigo-50/50 border-indigo-300 shadow-sm' 
-                                        : 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-sm'
+                                        ? 'bg-indigo-50/30 border-indigo-500 dark:bg-indigo-900/10' 
+                                        : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
                                     }`}
                                   >
-                                    <div className="pt-1">
+                                    <div className="absolute top-4 right-4 animate-in fade-in zoom-in duration-300 flex items-center gap-2">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setEditingTask(task);
+                                        }}
+                                        className="p-1.5 text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                                        title="Уреди задача"
+                                      >
+                                        <Edit3 className="w-4 h-4" />
+                                      </button>
                                       {isSelected ? (
-                                        <CheckSquare className="w-5 h-5 text-indigo-600" />
+                                        <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-indigo-600/30">
+                                          <CheckSquare className="w-3.5 h-3.5 text-white" />
+                                        </div>
                                       ) : (
-                                        <Square className="w-5 h-5 text-gray-300" />
+                                        <div className="w-6 h-6 rounded-full border-2 border-slate-200 dark:border-slate-700 group-hover:border-indigo-400"></div>
                                       )}
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center justify-between mb-1">
-                                        <h4 className="font-medium text-gray-900 truncate pr-4">{task.title}</h4>
-                                        <div className="flex items-center gap-2 flex-shrink-0">
-                                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                                            task.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
-                                            task.difficulty === 'medium' ? 'bg-amber-100 text-amber-700' :
-                                            'bg-red-100 text-red-700'
-                                          }`}>
-                                            {task.difficulty === 'easy' ? 'Лесна' : task.difficulty === 'medium' ? 'Средна' : 'Тешка'}
-                                          </span>
-                                          {task.grade_level && (
-                                            <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-medium">
-                                              {task.grade_level}
-                                            </span>
-                                          )}
-                                        </div>
-                                      </div>
-                                      <p className="text-sm text-gray-500 line-clamp-2">{task.original_text}</p>
-                                      {task.tags && task.tags.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mt-2">
-                                          {task.tags.slice(0, 3).map(tag => (
-                                            <span key={tag} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px]">
-                                              {tag}
-                                            </span>
-                                          ))}
-                                          {task.tags.length > 3 && (
-                                            <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px]">
-                                              +{task.tags.length - 3}
-                                            </span>
-                                          )}
-                                        </div>
+                                    
+                                    <div className="flex items-center gap-3 mb-3 pr-8 text-xs">
+                                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${
+                                        task.difficulty === 'easy' ? 'bg-emerald-100 text-emerald-700' :
+                                        task.difficulty === 'medium' ? 'bg-amber-100 text-amber-700' :
+                                        'bg-rose-100 text-rose-700'
+                                      }`}>
+                                        {task.difficulty === 'easy' ? 'Лесна' : task.difficulty === 'medium' ? 'Средна' : 'Тешка'}
+                                      </span>
+                                      {task.dok_level && (
+                                        <span className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold">
+                                          DOK {task.dok_level}
+                                        </span>
                                       )}
+                                    </div>
+                                    
+                                    <h4 className="font-bold text-slate-900 dark:text-white mb-2 line-clamp-1 group-hover:text-indigo-600 transition-colors">{task.title}</h4>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                                      <MathRenderer content={task.original_text} />
                                     </div>
                                   </div>
                                 );
@@ -366,85 +432,88 @@ export default function MaterialsFactory() {
                   );
                 })}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
+
       {/* Differentiated Test Results Modal */}
       <AnimatePresence>
         {diffResult && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl my-8 border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]"
+              className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-6xl my-8 border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col max-h-[90vh]"
             >
-              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 sticky top-0 z-10">
+              <div className="p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 items-start">
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                    <Layers className="w-6 h-6 text-purple-600" />
-                    Диференциран Тест (Генериран)
-                  </h2>
-                  <p className="text-sm text-slate-500 mt-1">AI генерираше 3 верзии со различна тежина врз основа на вашите избрани задачи.</p>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 text-purple-600 text-[10px] font-black uppercase tracking-wider mb-4 border border-purple-500/20">
+                     <Layers className="w-3 h-3" />
+                     Диференцирана Настава
+                  </div>
+                  <h2 className="text-3xl font-black text-slate-900 dark:text-white">Диференциран Тест</h2>
+                  <p className="text-slate-500 dark:text-slate-400 mt-1 max-w-xl">AI генерираше 3 верзии на вашиот тест базирани на когнитивната подготвеност на различни групи ученици.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => {
+                  <Button onClick={() => {
                     exportToWord([...diffResult.groupA, ...diffResult.groupB, ...diffResult.groupC], 'differentiated_test.doc');
-                  }} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">
-                    <Download className="w-4 h-4" />
-                    Преземи сè (Word)
-                  </button>
-                  <button onClick={() => setDiffResult(null)} className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">
+                  }} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-14 px-8 rounded-2xl shadow-lg">
+                    <Download className="w-5 h-5 mr-3" />
+                    Експорт (Word)
+                  </Button>
+                  <button onClick={() => setDiffResult(null)} className="p-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-white dark:hover:bg-slate-700 transition-colors shadow-sm">
                     <X className="w-6 h-6" />
                   </button>
                 </div>
               </div>
               
-              <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-8 overflow-y-auto grid grid-cols-1 md:grid-cols-3 gap-8 bg-slate-50 dark:bg-slate-900">
                 {/* Group A */}
-                <div className="bg-emerald-50 rounded-xl border border-emerald-200 p-4">
-                  <h3 className="text-lg font-bold text-emerald-800 mb-4 flex items-center gap-2 border-b border-emerald-200 pb-2">
-                    <span className="bg-emerald-200 text-emerald-800 w-6 h-6 rounded-full flex items-center justify-center text-sm">А</span>
-                    Група А (Основни)
-                  </h3>
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black">А</div>
+                    <h3 className="text-xl font-black text-emerald-800">Основни</h3>
+                  </div>
                   <div className="space-y-4">
                     {diffResult.groupA.map((task, idx) => (
-                      <div key={idx} className="bg-white p-3 rounded-lg shadow-sm text-sm border border-emerald-100">
-                        <div className="font-bold mb-1 text-emerald-900">{idx + 1}. {task.title}</div>
-                        <div className="text-slate-700">{task.original_text}</div>
+                      <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-emerald-100 dark:border-emerald-900/40 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-12 h-12 bg-emerald-50 content-[''] clip-path-polygon-[100%_0,0_0,100%_100%]"></div>
+                        <div className="font-black mb-3 text-emerald-900 dark:text-emerald-100">{idx + 1}. {task.title}</div>
+                        <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">{task.original_text}</div>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* Group B */}
-                <div className="bg-blue-50 rounded-xl border border-blue-200 p-4">
-                  <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center gap-2 border-b border-blue-200 pb-2">
-                    <span className="bg-blue-200 text-blue-800 w-6 h-6 rounded-full flex items-center justify-center text-sm">Б</span>
-                    Група Б (Стандардни)
-                  </h3>
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black">Б</div>
+                    <h3 className="text-xl font-black text-blue-800">Стандардни</h3>
+                  </div>
                   <div className="space-y-4">
                     {diffResult.groupB.map((task, idx) => (
-                      <div key={idx} className="bg-white p-3 rounded-lg shadow-sm text-sm border border-blue-100">
-                        <div className="font-bold mb-1 text-blue-900">{idx + 1}. {task.title}</div>
-                        <div className="text-slate-700">{task.original_text}</div>
+                      <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-blue-100 dark:border-blue-900/40 relative">
+                        <div className="font-black mb-3 text-blue-900 dark:text-blue-100">{idx + 1}. {task.title}</div>
+                        <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">{task.original_text}</div>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* Group C */}
-                <div className="bg-purple-50 rounded-xl border border-purple-200 p-4">
-                  <h3 className="text-lg font-bold text-purple-800 mb-4 flex items-center gap-2 border-b border-purple-200 pb-2">
-                    <span className="bg-purple-200 text-purple-800 w-6 h-6 rounded-full flex items-center justify-center text-sm">В</span>
-                    Група В (Напредни)
-                  </h3>
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black">В</div>
+                    <h3 className="text-xl font-black text-purple-800">Напредни</h3>
+                  </div>
                   <div className="space-y-4">
                     {diffResult.groupC.map((task, idx) => (
-                      <div key={idx} className="bg-white p-3 rounded-lg shadow-sm text-sm border border-purple-100">
-                        <div className="font-bold mb-1 text-purple-900">{idx + 1}. {task.title}</div>
-                        <div className="text-slate-700">{task.original_text}</div>
+                      <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-purple-100 dark:border-purple-900/40 relative">
+                        <div className="font-black mb-3 text-purple-900 dark:text-purple-100">{idx + 1}. {task.title}</div>
+                        <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">{task.original_text}</div>
                       </div>
                     ))}
                   </div>
@@ -454,6 +523,26 @@ export default function MaterialsFactory() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Material Preview Modal */}
+      {generatedMaterial && (
+        <MaterialPreview 
+          type={selectedType}
+          data={generatedMaterial}
+          onClose={() => setGeneratedMaterial(null)}
+          onDownload={(finalData) => {
+            if (selectedType === 'quiz' || selectedType === 'flashcards' || selectedType === 'presentation') {
+              exportToJson(finalData, `material_${selectedType}.json`);
+            } else {
+              // For documents, we convert the finalData structure to a virtual task array for the existing exporter
+              // or handle it as a direct HTML-to-doc conversion if we add that later.
+              // For now, export the JSON including edits.
+              exportToJson(finalData, `material_${selectedType}.json`);
+            }
+            showToast('Материјалот е подготвен за преземање.', 'success');
+          }}
+        />
+      )}
     </div>
   );
 }

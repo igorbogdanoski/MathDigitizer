@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Users, BookOpen, TrendingUp, AlertTriangle, Award, BarChart3, ChevronRight, BrainCircuit, Target, CheckCircle2, Activity, Zap, Cpu, Sparkles } from 'lucide-react';
+import { Users, BookOpen, TrendingUp, AlertTriangle, Award, BarChart3, ChevronRight, BrainCircuit, Target, CheckCircle2, Activity, Zap, Cpu, Sparkles, ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { db, auth } from '../lib/firebase';
@@ -11,6 +11,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext';
 import { Skeleton } from './ui/Skeleton';
 import { useLibraryStore } from '../store/useLibraryStore';
+import { SystemIntegrityCheck } from './SystemIntegrityCheck';
 
 interface TeacherDashboardProps {
   userProfile: UserProfile;
@@ -20,6 +21,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [attempts, setAttempts] = useState<TaskAttempt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'analytics' | 'diagnostics'>('analytics');
   const { showToast } = useToast();
   const navigate = useNavigate();
 
@@ -187,18 +189,41 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
           </p>
         </div>
         
-        <div className="relative z-10 flex gap-3 w-full md:w-auto">
+        <div className="relative z-10 flex flex-wrap gap-3 w-full md:w-auto">
+          <Button 
+            variant="outline" 
+            className={`border-white/10 text-white hover:bg-white/10 rounded-xl transition-all h-12 font-bold ${activeTab === 'analytics' ? 'bg-white/20 ring-1 ring-white/40' : ''}`}
+            onClick={() => setActiveTab('analytics')}
+          >
+            <BarChart3 className="w-5 h-5 mr-2" /> Аналитика
+          </Button>
+          <Button 
+            variant="outline" 
+            className={`border-indigo-500/30 text-indigo-200 hover:bg-indigo-500/20 rounded-xl transition-all h-12 font-bold ${activeTab === 'diagnostics' ? 'bg-indigo-500/30 ring-1 ring-indigo-500/50' : ''}`}
+            onClick={() => setActiveTab('diagnostics')}
+          >
+            <ShieldCheck className="w-5 h-5 mr-2" /> Системски Пулс
+          </Button>
           <Link to="/factory" className="w-full md:w-auto">
             <Button className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 border-0 h-12 px-6 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all hover:scale-105">
               <Zap className="w-5 h-5 mr-2" />
-              Фабрика за Материјали
+              Фабрика
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* Dynamic Telemetry KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <AnimatePresence mode="wait">
+        {activeTab === 'analytics' ? (
+          <motion.div
+            key="analytics"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-8"
+          >
+            {/* Dynamic Telemetry KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="border-0 shadow-xl shadow-slate-200/40 dark:shadow-none dark:bg-slate-800/80 backdrop-blur-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
             <Users className="w-24 h-24" />
@@ -424,6 +449,13 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
           </Card>
         </div>
       </div>
-    </div>
+      </motion.div>
+    ) : (
+      <div className="animate-in fade-in duration-700">
+        <SystemIntegrityCheck />
+      </div>
+    )}
+  </AnimatePresence>
+</div>
   );
 }

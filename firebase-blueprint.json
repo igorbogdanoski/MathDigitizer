@@ -58,6 +58,16 @@
         "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
       },
       "required": ["text", "completed", "userId", "createdAt"]
+    },
+    "SystemIntegrityTest": {
+      "title": "SystemIntegrityTest",
+      "description": "Transient document for testing system connectivity.",
+      "type": "object",
+      "properties": {
+        "timestamp": { "type": "string", "format": "date-time" },
+        "test": { "type": "boolean" }
+      },
+      "required": ["timestamp", "test"]
     }
   },
   "firestore": {
@@ -72,6 +82,10 @@
     "/todos/{todoId}": {
       "schema": { "$ref": "#/entities/Todo" },
       "description": "Collection of user to-do tasks."
+    },
+    "/_system_integrity_test/{testId}": {
+      "schema": { "$ref": "#/entities/SystemIntegrityTest" },
+      "description": "Collection for transient system health checks."
     }
   }
 }
