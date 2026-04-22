@@ -49,10 +49,35 @@
     visibility: hidden;
   }
   
-  /* Select the MaterialPreview modal content to be printed */
+  /* Make both the ExtractionEngine tasks container and the MaterialFactory modal printable */
+  .printable-tasks-container,
+  .printable-tasks-container *,
   .fixed.inset-0.z-\[100\] .bg-slate-50.rounded-3xl,
   .fixed.inset-0.z-\[100\] .bg-slate-50.rounded-3xl * {
     visibility: visible;
+  }
+
+  .printable-tasks-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Style tasks specifically for print */
+  .printable-task-card {
+    border: none !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+    margin-bottom: 2rem !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  .printable-task-card .bg-slate-50 {
+     background-color: transparent !important;
   }
 
   .fixed.inset-0.z-\[100\] .bg-slate-50.rounded-3xl {
@@ -67,7 +92,11 @@
     background: white !important;
   }
   
-  /* Hide UI elements within the component we don't want printed */
+  /* Hide non-print UI elements */
+  .no-print,
+  button,
+  header,
+  nav,
   .fixed.inset-0.z-\[100\] .bg-slate-50.rounded-3xl .sticky.top-0,
   .fixed.inset-0.z-\[100\] .bg-slate-50.rounded-3xl button {
     display: none !important;

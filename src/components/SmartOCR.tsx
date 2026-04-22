@@ -5,7 +5,7 @@ import {
   Activity
 } from 'lucide-react';
 import { Button } from './ui/Button';
-import { extractTaskFromImage } from '../lib/gemini';
+import { extractMathTasksFromImage, enrichTaskPedagogy } from '../lib/gemini';
 import { MathTask } from '../lib/schema';
 import { MathRenderer } from './MathRenderer';
 import { useToast } from '../contexts/ToastContext';
@@ -26,6 +26,7 @@ export const SmartOCR: React.FC = () => {
   
   // Global State
   const [isScanning, setIsScanning] = useState(false);
+  const [isEnriching, setIsEnriching] = useState(false);
   const [extractedTask, setExtractedTask] = useState<Partial<MathTask> | null>(null);
   const [latexCode, setLatexCode] = useState<string>('');
   const [isCopied, setIsCopied] = useState(false);
@@ -159,13 +160,19 @@ export const SmartOCR: React.FC = () => {
     
     try {
       const base64Image = base64Data.split(',')[1];
-      const result = await extractTaskFromImage(base64Image, mime);
-      setExtractedTask(result);
+      const result = await extractMathTasksFromImage(base64Image, mime);
+      
+      if (!result || result.length === 0) {
+        throw new Error("Не се пронајдени задачи на оваа слика.");
+      }
+      
+      const task = result[0];
+      setExtractedTask(task);
       
       // Format the result into a clean LaTeX/Markdown string
-      let formattedText = result.original_text || '';
-      if (result.solution_steps && result.solution_steps.length > 0) {
-        formattedText += '\n\n**Решение:**\n' + result.solution_steps.join('\n');
+      let formattedText = task.original_text || '';
+      if (task.solution_steps && task.solution_steps.length > 0) {
+        formattedText += '\n\n**Решение:**\n' + task.solution_steps.join('\n');
       }
       setLatexCode(formattedText);
       showToast('Сликата е успешно дигитализирана!', 'success');
@@ -245,6 +252,21 @@ export const SmartOCR: React.FC = () => {
       showToast('Настана грешка при зачувувањето.', 'error');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleEnrich = async () => {
+    if (!extractedTask) return;
+    setIsEnriching(true);
+    try {
+      const insights = await enrichTaskPedagogy(extractedTask as MathTask);
+      setExtractedTask({ ...extractedTask, pedagogical_insights: insights });
+      showToast('Педагошките елементи се успешно генерирани!', 'success');
+    } catch (error) {
+      console.error("Грешка при збогатување:", error);
+      showToast('Настана грешка при генерирање на педагогијата.', 'error');
+    } finally {
+      setIsEnriching(false);
     }
   };
 
@@ -497,16 +519,35 @@ export const SmartOCR: React.FC = () => {
                   />
                 ) : (
                   <div className="prose prose-slate dark:prose-invert max-w-none">
+                    {extractedTask?.evidence_quote && (
+                      <div className="mb-6 flex items-start gap-2 bg-amber-50/50 dark:bg-amber-900/10 p-3 rounded-lg border-l-2 border-amber-300 text-amber-700 dark:text-amber-400 text-sm italic">
+                        <Quote className="w-4 h-4 mt-0.5 shrink-0 opacity-50" />
+                        <p>Пронајден доказ: "{extractedTask.evidence_quote}"</p>
+                      </div>
+                    )}
                     <MathRenderer content={latexCode} />
                     
                     {extractedTask && extractedTask.difficulty && (
                       <div className="mt-8 space-y-4">
                         <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
-                          <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">AI Метаподатоци</h4>
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-300">AI Метаподатоци</h4>
+                            {!extractedTask.pedagogical_insights && (
+                              <Button 
+                                size="sm" 
+                                onClick={handleEnrich} 
+                                disabled={isEnriching}
+                                className="h-7 text-[10px] bg-indigo-600 hover:bg-indigo-700"
+                              >
+                                {isEnriching ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Zap className="w-3 h-3 mr-1" />}
+                                Педагошко збогатување
+                              </Button>
+                            )}
+                          </div>
                           <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div><span className="text-slate-500">Тежина:</span> <span className="font-medium text-slate-900 dark:text-white">{extractedTask.difficulty}</span></div>
+                            {extractedTask.type !== 'theory' && <div><span className="text-slate-500">Тежина:</span> <span className="font-medium text-slate-900 dark:text-white">{extractedTask.difficulty}</span></div>}
                             <div><span className="text-slate-500">Тема:</span> <span className="font-medium text-slate-900 dark:text-white">{extractedTask.curriculum_topic}</span></div>
-                            <div><span className="text-slate-500">Одделение:</span> <span className="font-medium text-slate-900 dark:text-white">{extractedTask.grade_level}</span></div>
+                            <div><span className="text-slate-500">Тип:</span> <span className={`font-medium px-2 py-0.5 rounded text-[10px] uppercase font-bold ${extractedTask.type === 'theory' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'}`}>{extractedTask.type}</span></div>
                           </div>
                         </div>
 

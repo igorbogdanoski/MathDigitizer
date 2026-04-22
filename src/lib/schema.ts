@@ -46,6 +46,7 @@ export interface PedagogicalInsight {
 
 export interface MathTask {
   id?: string;
+  evidence_quote?: string; // ANTI-HALLUCINATION: Exact quote from the source video/doc mapping to this task
   type?: 'theory' | 'task';
   title: string;
   original_text: string;
@@ -53,6 +54,7 @@ export interface MathTask {
   latex_formulas: string[];
   nanobanana_prompt: string;
   source_url: string;
+  source_timestamp?: string; // Add source_timestamp to map directly to YouTube or video segments e.g. [01:35]
   tags: string[];
   difficulty: 'easy' | 'medium' | 'hard';
   dok_level?: number;
@@ -62,6 +64,8 @@ export interface MathTask {
   hints?: string[];
   pedagogical_insights?: PedagogicalInsight;
   author_uid?: string;
+  folder_id?: string;
+  folder_name?: string;
   created_at?: string;
   related_task_ids?: string[]; // IDs for Knowledge Graph links
   prerequisite_task_ids?: string[]; // Specifically for "Task A is prerequisite forTask B"

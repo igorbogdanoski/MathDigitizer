@@ -97,7 +97,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                       />
                     ) : (
-                      <p className="font-bold text-lg dark:text-white"><MathRenderer content={q.question} /></p>
+                      <div className="font-bold text-lg dark:text-white"><MathRenderer content={q.question} /></div>
                     )}
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

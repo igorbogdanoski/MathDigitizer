@@ -9,6 +9,7 @@ export function useTaskFilters() {
     sourceFilter,
     tagFilter,
     gradeFilter,
+    folderFilter,
     dokFilter,
     sortDifficulty,
     searchQuery,
@@ -17,10 +18,12 @@ export function useTaskFilters() {
 
   const allTags = useMemo(() => Array.from(new Set(tasks.flatMap(task => task.tags || []))).sort(), [tasks]);
   const allGrades = useMemo(() => Array.from(new Set(tasks.map(task => task.grade_level).filter(Boolean))).sort(), [tasks]);
+  const allFolders = useMemo(() => Array.from(new Set(tasks.map(task => task.folder_name).filter(Boolean))).sort(), [tasks]);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
       const matchesDifficulty = difficultyFilter === 'all' || task.difficulty === difficultyFilter;
+      const matchesFolder = folderFilter === 'all' || task.folder_name === folderFilter;
       const matchesTag = tagFilter.length === 0 || (task.tags && task.tags.some(tag => tagFilter.includes(tag)));
       const matchesGrade = gradeFilter.length === 0 || (task.grade_level && gradeFilter.includes(task.grade_level));
       const matchesDok = dokFilter.length === 0 || (task.dok_level && dokFilter.includes(task.dok_level));
@@ -34,11 +37,12 @@ export function useTaskFilters() {
         searchQuery === '' || 
         task.title.toLowerCase().includes(searchLower) ||
         task.tags?.some(tag => tag.toLowerCase().includes(searchLower)) ||
+        (task.folder_name && task.folder_name.toLowerCase().includes(searchLower)) ||
         task.original_text.toLowerCase().includes(searchLower);
 
-      return matchesDifficulty && matchesTag && matchesGrade && matchesDok && matchesSource && matchesSearch;
+      return matchesDifficulty && matchesFolder && matchesTag && matchesGrade && matchesDok && matchesSource && matchesSearch;
     });
-  }, [tasks, difficultyFilter, tagFilter, gradeFilter, dokFilter, sourceFilter, searchQuery]);
+  }, [tasks, difficultyFilter, folderFilter, tagFilter, gradeFilter, dokFilter, sourceFilter, searchQuery]);
 
   const sortedAndFilteredTasks = useMemo(() => {
     return [...filteredTasks].sort((a, b) => {
@@ -65,6 +69,7 @@ export function useTaskFilters() {
     ...store,
     allTags,
     allGrades,
+    allFolders,
     filteredTasks,
     sortedAndFilteredTasks,
   };

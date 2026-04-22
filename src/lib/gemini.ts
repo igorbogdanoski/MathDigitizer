@@ -2,7 +2,59 @@ import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { MathTask } from "./schema";
 
 // Иницијализација на Gemini клиентот
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let _aiInstance: any = null;
+let cachedApiKey: string | undefined = undefined;
+
+try {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  cachedApiKey = process.env.GEMINI_API_KEY;
+} catch (e) {}
+
+const initAiPromise = (async () => {
+  if (!cachedApiKey || cachedApiKey === "undefined") {
+    try {
+      const res = await fetch(`/api/config?_cb=${Date.now()}`);
+      if (res.ok) {
+        const text = await res.text();
+        if (!text.startsWith('<')) {
+          const data = JSON.parse(text);
+          cachedApiKey = data.apiKey;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to fetch API key from server", e);
+    }
+  }
+  _aiInstance = new GoogleGenAI({ apiKey: cachedApiKey || "missing_key" });
+})();
+
+const ai: any = new Proxy({}, {
+  get(target, prop) {
+    if (prop === 'models') {
+      return new Proxy({}, {
+        get(mTarget, mProp) {
+          return async (...args: any[]) => {
+            await initAiPromise;
+            return _aiInstance.models[mProp](...args);
+          };
+        }
+      });
+    }
+    return async (...args: any[]) => {
+      await initAiPromise;
+      return _aiInstance[prop](...args);
+    };
+  }
+});
+
+function handleGeminiError(error: any): never {
+  const msg = error instanceof Error ? error.message : JSON.stringify(error);
+  if (msg.includes("429") || msg.includes("quota") || msg.includes("RESOURCE_EXHAUSTED")) {
+    throw new Error("Надминат е лимитот кон серверите на Gemini AI (Quota/Rate Limit Exceeded). Обидете се повторно за неколку минути или изберете го побрзиот модел 'Gemini 3 Flash' од напредните опции.");
+  }
+  throw new Error(msg);
+}
 
 export async function generateKahootFromFiles(files: {base64: string, mimeType: string}[], prompt: string): Promise<any> {
   const instructions = `Ти си Креатор на Интерактивни Математички Квизови (MathKahoot). 
@@ -108,7 +160,7 @@ export async function generateSpeech(text: string): Promise<string> {
     throw new Error("Не е генерирано аудио.");
   } catch (error) {
     console.error("Грешка при генерирање аудио:", error);
-    throw error;
+    handleGeminiError(error);
   }
 }
 
@@ -243,27 +295,70 @@ ${originalTask.original_text}
   }
 }
 
+export async function enrichTaskPedagogy(task: MathTask): Promise<any> {
+  const prompt = `Ти си "Pedagogical Content Architect" од светска класа. Твоја задача е да земеш извлечена математичка задача и да ја збогатиш со врвни педагошки сознанија кои се срцето на нашата апликација.
+
+МАТЕМАТИЧКА ЗАДАЧА:
+Текст: ${task.original_text}
+Решение: ${task.solution_steps.join('\n')}
+Тема: ${task.curriculum_topic}
+Тежина: ${task.difficulty}
+
+ТВОЈА МИСИЈА:
+1. **Misconception Guard**: Идентификувај најмалку 3 вообичаени мисконцепции или места каде учениците грешат (common_pitfalls).
+2. **Socratic Scaffolding**: Генерирај 3 моќни Сократови прашања кои наставникот може да ги постави за да го води ученикот (socratic_questions).
+3. **Teaching Strategy**: Опиши ја најдобрата наставна стратегија за оваа задача (пр. визуелизација, користење на модел на плоштина, метод на замена).
+4. **Prerequisites**: Наведи ги точно потребните предзнаења за оваа задача.
+5. **Real-world Modeling**: Опиши детален сценарио од реалниот живот каде оваа математика се применува (modeling_scenario).
+6. **Modern Context**: Предложи како задачата би се напишала во модерен Gen-Z контекст (modern_context_suggestion).
+
+Врати СТРОГО JSON објект (PedagogicalInsight).`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-pro-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            common_pitfalls: { type: Type.ARRAY, items: { type: Type.STRING } },
+            socratic_questions: { type: Type.ARRAY, items: { type: Type.STRING } },
+            teaching_strategy: { type: Type.STRING },
+            prerequisites: { type: Type.ARRAY, items: { type: Type.STRING } },
+            modeling_scenario: { type: Type.STRING },
+            modern_context_suggestion: { type: Type.STRING },
+            quality_score: { type: Type.NUMBER }
+          },
+          required: ["common_pitfalls", "socratic_questions", "teaching_strategy", "prerequisites", "modeling_scenario", "quality_score"]
+        }
+      }
+    });
+
+    if (!response.text) throw new Error("Нема одговор.");
+    return JSON.parse(response.text);
+  } catch (error) {
+    console.error("Грешка при педагошко збогатување:", error);
+    handleGeminiError(error);
+  }
+}
+
 export async function extractMathTasksFromPdf(base64Pdf: string, modelName: string = 'gemini-3.1-pro-preview'): Promise<MathTask[]> {
   const prompt = `Ти си експерт за дигитализација на математички текстови (OCR) и професор по математика.
-Анализирај го приложениот PDF документ кој содржи математички задачи (може да е тест, збирка или скрипта).
+Анализирај го приложениот PDF документ.
 
-Твојата цел е да ги извлечеш сите математички задачи и теоретски концепти од документот.
-За секоја задача, врати ги следните информации:
+Твојата цел е ПЕРФЕКТНО да ги извлечеш сите математички задачи.
+За секоја задача, врати:
 - type: "task" (задача) или "theory" (теорија)
 - title: Краток наслов
-- original_text: Целосниот текст. ЗАДОЛЖИТЕЛНО користи LaTeX форматирање за сите математички изрази (користи $...$ за inline и $$...$$ за блок формули).
-- solution_steps: Низа од чекори за решавање (со LaTeX).
-- latex_formulas: Низа од најважните LaTeX формули користени во задачата.
-- nanobanana_prompt: Детален промпт на АНГЛИСКИ јазик за генерирање на дијаграм/график поврзан со задачата.
-- tags: Низа од тагови (пр. "геометрија", "тригонометрија").
-- difficulty: "easy", "medium" или "hard".
-- dok_level: Depth of Knowledge ниво (1-4).
-- grade_level: За кое одделение/година е наменето.
-- curriculum_topic: Главна тема (пр. "Линеарни равенки").
-- pedagogical_insights: Педагошки сознанија (common_pitfalls, socratic_questions, modern_context_suggestion, modeling_scenario).
-  - modeling_scenario: Опиши како оваа задача може да се претвори во проект за математичко моделирање заснован на реална животна ситуација.
+- original_text: Целосниот текст со LaTeX ($...$ и $$...$$).
+- solution_steps: Решение чекор-по-чекор (LaTeX).
+- latex_formulas: Клучни формули.
+- nanobanana_prompt: Промпт за дијаграм на англиски.
+- tags, difficulty, dok_level, grade_level, curriculum_topic.
 
-Осигурај се дека LaTeX кодот је валиден и користи литературен македонски јазик.`;
+Осигурај се дека LaTeX кодот е валиден и користи литературен македонски јазик.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -279,29 +374,19 @@ export async function extractMathTasksFromPdf(base64Pdf: string, modelName: stri
           items: {
             type: Type.OBJECT,
             properties: {
-              type: { type: Type.STRING },
+              type: { type: Type.STRING, enum: ["task", "theory"] },
               title: { type: Type.STRING },
               original_text: { type: Type.STRING },
               solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
               latex_formulas: { type: Type.ARRAY, items: { type: Type.STRING } },
-              nanobanana_prompt: { type: Type.STRING },
+              nanobanana_prompt: { type: Type.STRING, description: "Detailed English prompt for generating an illustration or diagram if present." },
               tags: { type: Type.ARRAY, items: { type: Type.STRING } },
-              difficulty: { type: Type.STRING },
+              difficulty: { type: Type.STRING, enum: ["easy", "medium", "hard"] },
               dok_level: { type: Type.NUMBER },
               grade_level: { type: Type.STRING },
-              curriculum_topic: { type: Type.STRING },
-              pedagogical_insights: {
-                type: Type.OBJECT,
-                properties: {
-                  common_pitfalls: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  socratic_questions: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  modern_context_suggestion: { type: Type.STRING },
-                  modeling_scenario: { type: Type.STRING }
-                },
-                required: ["common_pitfalls", "socratic_questions", "modeling_scenario"]
-              }
+              curriculum_topic: { type: Type.STRING }
             },
-            required: ["type", "title", "original_text", "solution_steps", "latex_formulas", "nanobanana_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic", "pedagogical_insights"]
+            required: ["type", "title", "original_text", "solution_steps", "latex_formulas", "nanobanana_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic"]
           }
         }
       }
@@ -312,82 +397,10 @@ export async function extractMathTasksFromPdf(base64Pdf: string, modelName: stri
     return parsedTasks.map((task: any) => ({ ...task, source_url: "PDF Документ" }));
   } catch (error) {
     console.error("Грешка при екстракција од PDF:", error);
-    throw error;
+    handleGeminiError(error);
   }
 }
 
-export async function extractTaskFromImage(base64Image: string, mimeType: string): Promise<Partial<MathTask>> {
-  const prompt = `Ти си експерт за дигитализација на математички текстови (OCR) и професор по математика.
-Анализирај ја сликата која содржи математичка задача (може да е од стар учебник, ракопис или фотографија од табла).
-
-Врати JSON објект со следната структура:
-{
-  "title": "Краток и јасен наслов на задачата",
-  "original_text": "Целосниот текст на задачата. ЗАДОЛЖИТЕЛНО користи LaTeX форматирање за сите математички изрази, броеви и променливи (користи $...$ за inline и $$...$$ за блок формули).",
-  "difficulty": "easy", "medium" или "hard",
-  "grade_level": "пр. 8-мо одделение, 1-ва година средно...",
-  "curriculum_topic": "пр. Алгебра, Геометрија, Дропки, Функции...",
-  "dok_level": 1, 2, 3 или 4 (Depth of Knowledge),
-  "solution_steps": ["Чекор 1...", "Чекор 2..."],
-  "pedagogical_insights": {
-    "common_pitfalls": ["Внимавајте на...", "Честа грешка во чекор X е..."],
-    "socratic_questions": ["Како би можеле да го претставиме ова...?", "Што се случува ако...?"],
-    "modeling_scenario": "Опис на реална животна ситуација за математичко моделирање..."
-  }
-}
-
-Осигурај се дека LaTeX кодот е валиден и користи литературен македонски јазик.`;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
-      contents: [
-        { text: prompt },
-        { inlineData: { data: base64Image, mimeType } }
-      ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            title: { type: Type.STRING },
-            original_text: { type: Type.STRING },
-            difficulty: { type: Type.STRING },
-            grade_level: { type: Type.STRING },
-            curriculum_topic: { type: Type.STRING },
-            dok_level: { type: Type.NUMBER },
-            solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
-            pedagogical_insights: {
-              type: Type.OBJECT,
-              properties: {
-                common_pitfalls: { type: Type.ARRAY, items: { type: Type.STRING } },
-                socratic_questions: { type: Type.ARRAY, items: { type: Type.STRING } },
-                modern_context_suggestion: { type: Type.STRING },
-                modeling_scenario: { type: Type.STRING }
-              },
-              required: ["common_pitfalls", "socratic_questions", "modeling_scenario"]
-            }
-          },
-          required: ["title", "original_text", "difficulty", "grade_level", "curriculum_topic", "dok_level", "solution_steps", "pedagogical_insights"]
-        }
-      }
-    });
-
-    if (!response.text) throw new Error("Нема одговор од моделот.");
-    const result = JSON.parse(response.text);
-    
-    return {
-      ...result,
-      type: "задача",
-      latex_formulas: [],
-      nanobanana_prompt: "",
-      tags: [result.curriculum_topic]
-    };
-  } catch (error) {
-    console.error("Грешка при OCR екстракција:", error);
-    throw error;
-  }
-}
 export async function generateDifferentiatedTasks(originalTask: MathTask, style: 'traditional' | 'real-world' | 'modern' = 'traditional'): Promise<{ easy: MathTask, hard: MathTask }> {
   const stylePrompt = 
     style === 'modern' ? 'Користи модерен Gen-Z контекст.' :
@@ -495,6 +508,56 @@ ${originalTask.original_text}
 
 export type MaterialType = 'worksheet' | 'test' | 'collection' | 'quiz' | 'presentation' | 'flashcards' | 'homework' | 'study_guide';
 
+export async function generateLessonPlan(tasks: MathTask[], gradeLevel: string, topicName: string) {
+  const prompt = `Ти си Експерт Методичар за математика според стандардите на БРО (Биро за развој на образованието) во Македонија.
+Корисникот сака да генерира формална "Дневна подготовка за час" базирана на овие избрани задачи:
+
+ЗАДАЧИ ЗА ЧАСОТ:
+${JSON.stringify(tasks.map(t => ({ title: t.title, text: t.original_text, tags: t.tags })), null, 2)}
+
+ОДДЕЛЕНИЕ: ${gradeLevel}
+ТЕМА: ${topicName}
+
+Генерирај детална дневна подготовка која содржи:
+1. Запознавање (Цели на часот, Очекувани исходи)
+2. Тек на часот:
+   - Воведен дел (5-10 мин) - како да се мотивираат учениците и да се поврзе со претходното знаење.
+   - Главен дел (25-30 мин) - каде се решаваат дадените задачи, како се најавуваат, интеракција со ученици.
+   - Завршен дел (5-10 мин) - сумирање, домашна работа.
+3. Формативно оценување: Инструменти и прашања за проверка на разбирањето.
+
+Врати го одговорот ВО СТРОГО JSON ФОРМАТ. 
+Користи македонски јазик, стручна терминологија и беспрекорен LaTeX за формулите.
+
+СТРУКТУРА НА ОДГОВОРОТ (JSON):
+{
+  "topic": "${topicName}",
+  "grade": "${gradeLevel}",
+  "objectives": ["Цел 1...", "Цел 2..."],
+  "outcomes": ["Исход 1...", "Исход 2..."],
+  "intro": "Текст за воведен дел...",
+  "main": "Текст за главен дел...",
+  "outro": "Текст за завршен дел...",
+  "assessment": "Текст за формативно оценување..."
+}`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-pro-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+      }
+    });
+
+    if (!response.text) throw new Error("Нема одговор.");
+    return JSON.parse(response.text);
+  } catch (error) {
+    console.error("Error generating lesson plan:", error);
+    throw error;
+  }
+}
+
 export async function generateEducationalMaterial(tasks: MathTask[], type: MaterialType): Promise<any> {
   const typePrompts: Record<MaterialType, string> = {
     'worksheet': 'Креирај структуриран работен лист со простор за работа. Вклучи кратки насоки.',
@@ -538,7 +601,7 @@ export async function generateEducationalMaterial(tasks: MathTask[], type: Mater
     return JSON.parse(response.text);
   } catch (error) {
     console.error(`Error generating ${type}:`, error);
-    throw error;
+    handleGeminiError(error);
   }
 }
 
@@ -547,28 +610,66 @@ export async function advancedMultimodalExtraction(
   model: string = "gemini-3.1-pro-preview",
   customInstructions: string = ""
 ): Promise<MathTask[]> {
-  const prompt = `Ти си "Pedagogical Content Architect" од светска класа. Твојата мисија е "Deep Extraction" - извлекување на највисоко квалитетни образовни материјали од дадениот извор.
+  const prompt = `Ти си "Extraction Architect" од светска класа. Твојата мисија е ПЕРФЕКТНО извлекување на математички содржини (задачи и теорија) од дадениот извор.
+  
+СТРАТЕГИЈА ЗА МАКСИМАЛНА ПРЕЦИЗНОСТ (Chain-of-Thought):
+1. **Транслаторски Мотор (КРИТИЧНО)**: Изворот често ќе биде на англиски јазик. Твоја задача е да функционираш како експерт-преведувач. СИТЕ ТЕКСТОВИ, ЗАДАЧИ, ТЕОРИИ И ОБЈАСНУВАЊА мора перфектно да се преведат на образовен македонски јазик во крајниот формат.
+2. **Теорија вс. Задачи**: Прво направи идентификација дали изворот содржи теоретски вовед, дефиниции или формули. ИЗВЛЕЧИ ЈА ТЕОРИЈАТА како посебен објект со \`type: "theory"\`. Задачите извлечи ги како \`type: "task"\`. За теорија, \`solution_steps\` нека содржи клучни поенти или изведувања.
+3. **МАКЕДОНСКИ СТАНДАРДИ**: Секогаш користи ДЕЦИМАЛНА ЗАПИРКА (на пр. 3,14). Користи го терминот "коефициент на правец" (наместо наклон). Терминологијата мора да биде локализирана за македонскиот образовен систем.
+4. **LaTeX**: Секој симбол, бројка и формула МОРА да биде во перфектен LaTeX ($...$).
+5. **Визуелна Реконструкција**: Ако изворот е слика или PDF, анализирај ги и ГРАФИЦИТЕ - напиши ТЕХНИЧКИ ОПИС во "nanobanana_prompt" на англиски.
+6. **Custom Instructions**: ${customInstructions || 'Нема специфични насоки.'}
 
-Ова е ВРВНА ЕКСТРАКЦИЈА (Level 5):
-1. **Дигитална Прецизност**: Секоја променлива, број и формула мора да биде во перфектен LaTeX ($...$ или $$...$$).
-2. **Педагошка Длабочина**: Не само што ја извлекуваш задачата, туку дефинираш:
-   - "Cognitive Load": Колку е ментално напорна задачата.
-   - "Visual Anchor": Каков дијаграм или график би помогнал (nanobanana_prompt).
-   - "Misconception Guard": Каде ученикот најчесто ќе згреши.
-   - "Curriculum Alignment": Каде ова паѓа во македонскиот образовен систем.
-3. **Визуелна Реконструкција**: Ако изворот е слика или PDF, анализирај ги и ГРАФИЦИТЕ/СЛИКИТЕ - претвори ги во текстуален опис за AI моделот.
-4. **Custom Instructions**: ${customInstructions || 'Нема специфични насоки.'}
-
-Врати низа од JSON објекти (MathTask).`;
+Врати JSON објект кој го анализира процесот и ги структурира податоците.`;
 
   try {
-    const contents: any[] = [{ text: prompt }];
+    let finalPayloadContext = prompt;
     
+    // Ако е URL, користиме двостепен пристап како кај extractMathTasksFromUrl
     if (source.type === 'url') {
-      contents.push({ text: `URL ЗА АНАЛИЗА: ${source.data}` });
-    } else if (source.type === 'file' && source.mimeType) {
+      const searchPrompt = `Ти си истражувач. Најди го деталниот транскрипт или главната содржина за следното YouTube видео / веб страна: ${source.data}. 
+Извлечи ги сите математички задачи и објаснувања во нивниот ОРИГИНАЛЕН јазик. Не преведувај. Користи Google Search. Врати детален извештај.`;
+      
+      let urlContext = "";
+
+      if (source.data.includes('youtube.com') || source.data.includes('youtu.be')) {
+         try {
+           const res = await fetch(`/api/youtube/transcript?url=${encodeURIComponent(source.data)}`);
+           if (res.ok) {
+             const text = await res.text();
+             if (!text.startsWith('<')) {
+               const data = JSON.parse(text);
+               if (data.transcript) {
+                 urlContext = data.transcript;
+               }
+             }
+           }
+         } catch (e) {
+           console.warn("Локалниот Youtube Scraper не успеа во слободен режим.");
+         }
+      }
+
+      if (!urlContext) {
+        try {
+          const searchResponse = await ai.models.generateContent({
+            model: model, // Use the user-selected model (e.g. Flash) instead of hardcoding PRO
+            contents: searchPrompt,
+            config: { tools: [{ googleSearch: {} }] }
+          });
+          urlContext = searchResponse.text || "Нема податоци.";
+        } catch (err) {
+          console.warn("Google Search failed for advanced mode:", err);
+          urlContext = "Нема податоци (серверска грешка).";
+        }
+      }
+      finalPayloadContext = `${prompt}\n\n================\nКОНТЕКСТ ОД ИЗВОРОТ (URL: ${source.data}):\n${urlContext}\n================`;
+    }
+
+    const contents: any[] = [{ text: finalPayloadContext }];
+    
+    if (source.type === 'file' && source.mimeType) {
       contents.push({ inlineData: { data: source.data, mimeType: source.mimeType } });
-    } else {
+    } else if (source.type === 'text') {
       contents.push({ text: `ТЕКСТУАЛНА СОДРЖИНА: ${source.data}` });
     }
 
@@ -576,49 +677,46 @@ export async function advancedMultimodalExtraction(
       model: model,
       contents: contents,
       config: {
-        tools: source.type === 'url' ? [{ googleSearch: {} }] : [],
         responseMimeType: "application/json",
         responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              type: { type: Type.STRING, enum: ["задача", "теорија"] },
-              title: { type: Type.STRING },
-              original_text: { type: Type.STRING },
-              solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
-              latex_formulas: { type: Type.ARRAY, items: { type: Type.STRING } },
-              nanobanana_prompt: { type: Type.STRING },
-              tags: { type: Type.ARRAY, items: { type: Type.STRING } },
-              difficulty: { type: Type.STRING, enum: ["лесно", "средно", "тешко"] },
-              dok_level: { type: Type.NUMBER },
-              grade_level: { type: Type.STRING },
-              curriculum_topic: { type: Type.STRING },
-              pedagogical_insights: {
+          type: Type.OBJECT,
+          properties: {
+            notebook_briefing: { type: Type.STRING, description: "Generate a NotebookLM-style comprehensive summary of the ENTIRE source first before extracting specific tasks. Map out the mental model, key concepts, and logical flow." },
+            extraction_confidence: { type: Type.NUMBER, description: "1-100 indicating how clear the math problems are in the source text." },
+            extracted_tasks: {
+              type: Type.ARRAY,
+              items: {
                 type: Type.OBJECT,
                 properties: {
-                  common_pitfalls: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  socratic_questions: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  modeling_scenario: { type: Type.STRING },
-                  teaching_strategy: { type: Type.STRING },
-                  prerequisites: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  quality_score: { type: Type.NUMBER, description: "A score from 1-100 indicating the structural and pedagogical completeness of the extraction." }
+                  evidence_quote: { type: Type.STRING, description: "ANTI-HALLUCINATION: Quote the exact sentence or math expression from the source where this task was found. If you cannot extract it, do not generate the task." },
+                  type: { type: Type.STRING, enum: ["task", "theory"] },
+                  title: { type: Type.STRING },
+                  original_text: { type: Type.STRING },
+                  solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  latex_formulas: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  nanobanana_prompt: { type: Type.STRING, description: "Detailed English prompt for generating an illustration or diagram if present." },
+                  tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  difficulty: { type: Type.STRING, enum: ["easy", "medium", "hard"] },
+                  dok_level: { type: Type.NUMBER },
+                  grade_level: { type: Type.STRING },
+                  curriculum_topic: { type: Type.STRING }
                 },
-                required: ["common_pitfalls", "socratic_questions", "modeling_scenario", "teaching_strategy", "prerequisites", "quality_score"]
+                required: ["evidence_quote", "type", "title", "original_text", "solution_steps", "latex_formulas", "nanobanana_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic"]
               }
-            },
-            required: ["type", "title", "original_text", "solution_steps", "latex_formulas", "nanobanana_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic", "pedagogical_insights"]
-          }
+            }
+          },
+          required: ["notebook_briefing", "extraction_confidence", "extracted_tasks"]
         }
       }
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    const results = JSON.parse(response.text);
+    const parsedObj = JSON.parse(response.text);
+    const results = parsedObj.extracted_tasks || [];
     return results.map((t: any) => ({ ...t, source_url: source.type === 'url' ? source.data : 'Прикачена датотека' }));
   } catch (error) {
     console.error("Грешка при напредна екстракција:", error);
-    throw error;
+    handleGeminiError(error);
   }
 }
 
@@ -628,69 +726,126 @@ export async function extractMathTasksFromUrl(url: string, model: string = "gemi
     timeContext = `\nВНИМАНИЕ: Фокусирај се ИСКЛУЧИВО на делот од видеото/содржината од ${timeRange.start || 'почеток'} до ${timeRange.end || 'крај'}. Игнорирај го останатиот дел.`;
   }
 
-  const prompt = `Ти си Врвен Светски Експерт за Дигитализација на Математичка Едукација и Методолошки Архитект. Твојата мисија е да ја анализираш содржината од дадениот URL и да ги извлечеш сите математички задачи, теоретски концепти и МЕТОДОЛОГИЈАТА на поучување.${timeContext}
+  // ЧЕКОР 1: Прибирање фактографски контекст (Транскрипт)
+  let videoContext = "";
+  
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+     try {
+       console.log("Обид за извлекување преку интерниот бесплатен Youtube Proxy API...");
+       // 1. Прво пробај преку нашиот нов бесплатен Express API (youtube-transcript)
+       const res = await fetch(`/api/youtube/transcript?url=${encodeURIComponent(url)}`);
+       if (res.ok) {
+         const text = await res.text();
+         if (!text.startsWith('<')) {
+           const data = JSON.parse(text);
+           if (data.transcript) {
+             videoContext = data.transcript;
+           }
+         }
+       }
+     } catch (e) {
+       console.warn("Локалниот Youtube Scraper не успеа, паѓаме на Gemini пребарување.");
+     }
+  }
 
-ИСТРАЖУВАЊЕ НА МЕТОДОЛОГИЈА (Methodological Cloning):
-1. **Наставна Стратегија (Teaching Strategy)**: Утврди го специфичниот пристап на професорот/авторот. Дали користи визуелен модел (пр. модел на плоштина)? Дали користи специфичен метод како "спотивни коефициенти" наместо "замена"? Опиши ја оваа стратегија прецизно.
-2. **Празнини во Знаењето (Prerequisite Mapper)**: Идентификувај кои точно предзнаења се неопходни за ученикот да го разбере ова видео/материјал (пр. "Множење полиноми", "Работа со загради").
+  // Доколку немаме добиено videoContext преку бесплатното API, продолжуваме преку Gemini Search
+  if (!videoContext) {
+    const searchPrompt = `Ти си строг дигитален истражувач. Твојата ЕДИНСТВЕНА мисија е да го најдеш ТОЧНИОТ транскрипт за ОВА конкретно YouTube видео / веб страна: ${url}. 
+${timeContext}
+ПРАВИЛА ПРОТИВ ХАЛУЦИНИРАЊЕ:
+1. Задолжително користи Google Search за да го пребараш овој линк: ${url}.
+2. АКО НЕ МОЖЕШ ДА ГО НАЈДЕШ ВИСТИНСКИОТ И ТОЧЕН ТРАНСКРИПТ ЗА ОВА ВИДЕО, СТРОГО Е ЗАБРАНЕТО да измислуваш содржина врз основа на линкот или да користиш генеричко математичко знаење.
+3. Доколку го најдеш точниот транскрипт, врати го прецизно, во неговиот ОРИГИНАЛЕН јазик (пример: англиски). Не го преведувај тука. Само дај ми го изворниот текст.
+4. Доколку транскриптот не е достапен, само врати го текстот: "NO_TRANSCRIPT_FOUND" и ништо друго.`;
 
-ОПШТИ ИНСТРУКЦИИ:
-1. **Прецизност**: Секоја формула мора да биде во совршен LaTeX формат.
-2. **Контекст**: Извлечи ги сите чекори на решението што се прикажани во содржината.
-3. **Педагогија (Insights)**: Генерирај 3 скалилести помоши (hints), идентификувај најчести мисконцепции, Сократови прашања и задолжително МАТЕМАТИЧКО МОДЕЛИРАЊЕ поврзано со реалниот живот.
-4. **Јазик**: Македонски.
+    try {
+      const searchResponse = await ai.models.generateContent({
+        model: model, 
+        contents: searchPrompt,
+        config: {
+          tools: [{ googleSearch: {} }] 
+        }
+      });
+      videoContext = searchResponse.text || "NO_TRANSCRIPT_FOUND";
+      
+      if (videoContext.includes("NO_TRANSCRIPT_FOUND")) {
+        throw new Error("Не може да се пристапи до точниот транскрипт. Ве молиме обезбедете PDF/Слика или копирајте го транскриптот рачно за да избегнеме халуцинации.");
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("NO_TRANSCRIPT")) throw err;
+      console.warn("Грешка при пребарување на транскрипт преку Google Search:", err);
+      throw new Error("Не може да се пристапи до точниот транскрипт. Системот за пребарување е блокиран.");
+    }
+  }
 
-Врати ги податоците СТРОГО во JSON формат (низа од објекти).`;
+  // ЧЕКОР 2: Строга JSON екстракција БЕЗ алатки
+  const extractionPrompt = `Ти си Врвен Светски Експерт за Дигитализација на Математичка Едукација и специјалист за OCR и анализа на транскрипти.
+Твојата мисија е ПЕРФЕКТНО да ги дигитализираш СИТЕ математички содржини (И ТЕОРИЈА И ЗАДАЧИ) кои се појавуваат во овој транскрипт:
+
+==================
+ИЗВЛЕЧЕН ТРАНСКРИПТ/СОДРЖИНА ОД ИЗВОРОТ (${url}):
+${videoContext}
+==================
+
+СТРАТЕГИЈА ЗА МАКСИМАЛНА ПРЕЦИЗНОСТ (Chain-of-Thought):
+1. **Транслаторски Мотор (КРИТИЧНО)**: Транскриптот скоро секогаш ќе биде на англиски јазик (или друг странски). Твоја задача е да функционираш како експерт-преведувач. СИТЕ ТЕКСТОВИ, ЗАДАЧИ, ТЕОРИИ И ОБЈАСНУВАЊА мора перфектно да се преведат на образовен македонски јазик во крајниот формат. Во \`original_text\` зачувај го македонскиот превод, НЕ англискиот оригинал.
+2. **Теорија вс. Задачи (КРИТИЧНО)**: Видеата често почнуваат со теоретски вовед (дефиниции, формули, правила). ИЗВЛЕЧИ ЈА ТЕОРИЈАТА како посебен објект со \`type: "theory"\`. Задачите извлечи ги како \`type: "task"\`. Ова е многу важно за градење на лекции. За теорија, во "solution_steps" напиши ги клучните поенти или изведувања (на македонски).
+3. **МАКЕДОНСКИ СТАНДАРДИ**: Користи ДЕЦИМАЛНА ЗАПИРКА (на пр. 3,14), а не точка. Користи "коефициент на правец" (наместо наклон). 
+4. **LaTeX Енкодинг**: Секој математички симбол, бројка или равенка МОРА да биде во LaTeX ($...$).
+5. **Илустрации**: Ако е спомнат цртеж, во "nanobanana_prompt" направи ТЕХНИЧКИ ОПИС на англиски.
+
+ПРАВИЛА ЗА ЈАЗИК:
+- "original_text", "title" и "solution_steps" МОРА да се исклучиво на литературен македонски јазик. Не оставај англиски зборови освен ако не се интернационални ознаки.
+
+Врати JSON објект со следната структура која симулира NotebookLM (прво длабинска анализа, па потоа теорија и задачи).`;
 
   try {
     const response = await ai.models.generateContent({
       model: model,
-      contents: `${prompt}\n\nURL ЗА АНАЛИЗА: ${url}`,
+      contents: extractionPrompt,
       config: {
-        tools: [{ googleSearch: {} }],
         responseMimeType: "application/json",
         responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              type: { type: Type.STRING, enum: ["задача", "теорија"] },
-              title: { type: Type.STRING },
-              original_text: { type: Type.STRING },
-              solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
-              latex_formulas: { type: Type.ARRAY, items: { type: Type.STRING } },
-              nanobanana_prompt: { type: Type.STRING },
-              tags: { type: Type.ARRAY, items: { type: Type.STRING } },
-              difficulty: { type: Type.STRING, enum: ["лесно", "средно", "тешко"] },
-              dok_level: { type: Type.NUMBER },
-              grade_level: { type: Type.STRING },
-              curriculum_topic: { type: Type.STRING },
-              hints: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Generate 3 highly specific Socratic hints that can be used later in a Kahoot game lifeline." },
-              pedagogical_insights: {
+          type: Type.OBJECT,
+          properties: {
+            notebook_briefing: { type: Type.STRING, description: "Generate a NotebookLM-style comprehensive summary of the ENTIRE transcript first before extracting specific tasks. Map out the mental model of the video, key concepts, and timelines." },
+            extraction_confidence: { type: Type.NUMBER, description: "1-100 indicating how clear the math problems are in the source text." },
+            extracted_tasks: {
+              type: Type.ARRAY,
+              items: {
                 type: Type.OBJECT,
                 properties: {
-                  common_pitfalls: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  socratic_questions: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  modern_context_suggestion: { type: Type.STRING },
-                  modeling_scenario: { type: Type.STRING },
-                  teaching_strategy: { type: Type.STRING, description: "Detailed description of the teaching method used in the video." },
-                  prerequisites: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Topics/skills needed before watching this." }
+                  evidence_quote: { type: Type.STRING, description: "ANTI-HALLUCINATION: Quote the exact sentence from the transcript where this task begins." },
+                  type: { type: Type.STRING, enum: ["task", "theory"] },
+                  title: { type: Type.STRING },
+                  original_text: { type: Type.STRING },
+                  solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  latex_formulas: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  nanobanana_prompt: { type: Type.STRING, description: "Detailed English prompt for diagram generation." },
+                  source_timestamp: { type: Type.STRING, description: "Estimate video timestamp, e.g., [12:30]" },
+                  tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  difficulty: { type: Type.STRING, enum: ["easy", "medium", "hard"] },
+                  dok_level: { type: Type.NUMBER },
+                  grade_level: { type: Type.STRING },
+                  curriculum_topic: { type: Type.STRING },
+                  hints: { type: Type.ARRAY, items: { type: Type.STRING } }
                 },
-                required: ["common_pitfalls", "socratic_questions", "modeling_scenario", "teaching_strategy", "prerequisites"]
+                required: ["evidence_quote", "type", "title", "original_text", "solution_steps", "latex_formulas", "nanobanana_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic", "hints"]
               }
-            },
-            required: ["type", "title", "original_text", "solution_steps", "latex_formulas", "nanobanana_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic", "hints", "pedagogical_insights"]
-          }
+            }
+          },
+          required: ["notebook_briefing", "extraction_confidence", "extracted_tasks"]
         }
       }
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    const tasks: MathTask[] = JSON.parse(response.text);
+    const parsedObj = JSON.parse(response.text);
+    const tasks: MathTask[] = parsedObj.extracted_tasks || [];
     return tasks.map(t => ({ ...t, source_url: url }));
   } catch (error) {
     console.error("Грешка при екстракција од URL:", error);
-    throw error;
+    handleGeminiError(error);
   }
 }
 
@@ -720,51 +875,27 @@ export async function generateImage(prompt: string): Promise<string> {
     throw new Error("Не е генерирана слика.");
   } catch (error) {
     console.error("Грешка при генерирање слика:", error);
-    throw error;
+    handleGeminiError(error);
   }
 }
 
 export async function extractMathTasksFromImage(base64Image: string, mimeType: string, model: string = "gemini-3.1-pro-preview"): Promise<MathTask[]> {
-  const prompt = `Ти си Врвен Светски Експерт за Дигитализација на Математика и Напреден OCR (Optical Character Recognition). Твојата задача е да ја анализираш сликата и да извлечеш едукативни материјали со 100% точност. 
-Ова е "Module B: Advanced Vision OCR" од проектот MathDigitizer Pro.
+  const prompt = `Ти си Врвен Светски Експерт за Дигитализација на Математика и Напреден OCR. Твојата задача е ПЕРФЕКТНО да ја анализираш сликата и да ги извлечеш задачите со 100% точност.
 
-СПЕЦИФИЧНИ ИНСТРУКЦИИ ЗА ВРВНА ЕКСТРАКЦИЈА:
-1. **Ракопис и Стари Книги**: Ако текстот е ракописен или од стара кирилична книга (избледен, оштетен), користи го целиот свој капацитет за препознавање на нејасни карактери. Користи логичка математичка реконструкција за да ги пополниш празнините ако нешто е нечитливо.
-2. **Zero-Error LaTeX Standard**: 
-   - Сите математички изрази, броеви и променливи во текстот МОРА да бидат во $inline$ LaTeX формат (пр. Нека $x = 5$).
-   - Сите издвоени формули и равенки МОРА да бидат во $$display$$ LaTeX формат во посебен ред.
-   - Користи исклучиво KaTeX-компатибилна синтакса.
-3. **Chain-of-Thought (CoT) Logic**: За секоја задача, генерирај детално, скалилесто решение (solution_steps) каде секој чекор е логично објаснет.
-4. **Структура**: Препознај дали се работи за теорија или задача. Ако е задача, извлечи го текстот, генерирај решение, тагови, тежина и DoK ниво.
-5. **Јазик**: Професионален македонски јазик.
+СПЕЦИФИЧНИ ИНСТРУКЦИИ:
+1. **Zero-Error LaTeX Standard**: 
+   - Сите математички изрази, броеви и променливи МОРА да бидат во $inline$ LaTeX формат.
+   - Сите издвоени формули и равенки МОРА да бидат во $$display$$ LaTeX формат.
+2. **Chain-of-Thought Logic**: За секоја задача, генерирај детално, скалилесто решение.
+3. **Јазик**: Професионален македонски јазик.
 
-Врати ги податоците СТРОГО во JSON формат (низа од објекти) кој ја следи оваа структура:
-[
-  {
-    "type": "task" или "theory",
-    "title": "Краток наслов",
-    "original_text": "Целосниот текст со $inline$ LaTeX",
-    "solution_steps": ["Чекор 1...", "Чекор 2..."],
-    "latex_formulas": ["Формула 1", "Формула 2"],
-    "nanobanana_prompt": "Англиски промпт за генерирање дијаграм (ако е потребно, инаку празен стринг)",
-    "tags": ["Таг1", "Таг2"],
-    "difficulty": "лесно", "средно" или "тешко",
-    "dok_level": 1, 2, 3 или 4,
-    "grade_level": "пр. 8мо одделение",
-    "curriculum_topic": "пр. Алгебра",
-    "pedagogical_insights": {
-      "common_pitfalls": ["Внимавајте на...", "Честа грешка во чекор X е..."],
-      "socratic_questions": ["Како би можеле да го претставиме ова...?", "Што се случува ако...?"],
-      "modeling_scenario": "Ситуација од реалниот живот за моделирање..."
-    }
-  }
-]`;
+Врати ги податоците СТРОГО во JSON формат (низа од објекти).`;
 
   try {
     const response = await ai.models.generateContent({
       model: model,
       contents: [
-        prompt,
+        { text: prompt },
         { inlineData: { data: base64Image, mimeType: mimeType } }
       ],
       config: {
@@ -774,29 +905,19 @@ export async function extractMathTasksFromImage(base64Image: string, mimeType: s
           items: {
             type: Type.OBJECT,
             properties: {
-              type: { type: Type.STRING },
+              type: { type: Type.STRING, enum: ["task", "theory"] },
               title: { type: Type.STRING },
               original_text: { type: Type.STRING },
               solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
               latex_formulas: { type: Type.ARRAY, items: { type: Type.STRING } },
-              nanobanana_prompt: { type: Type.STRING },
+              nanobanana_prompt: { type: Type.STRING, description: "Detailed English prompt for generating an illustration or diagram if present." },
               tags: { type: Type.ARRAY, items: { type: Type.STRING } },
-              difficulty: { type: Type.STRING },
+              difficulty: { type: Type.STRING, enum: ["easy", "medium", "hard"] },
               dok_level: { type: Type.NUMBER },
               grade_level: { type: Type.STRING },
-              curriculum_topic: { type: Type.STRING },
-              pedagogical_insights: {
-                type: Type.OBJECT,
-                properties: {
-                  common_pitfalls: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  socratic_questions: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  modern_context_suggestion: { type: Type.STRING },
-                  modeling_scenario: { type: Type.STRING }
-                },
-                required: ["common_pitfalls", "socratic_questions", "modeling_scenario"]
-              }
+              curriculum_topic: { type: Type.STRING }
             },
-            required: ["type", "title", "original_text", "solution_steps", "latex_formulas", "nanobanana_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic", "pedagogical_insights"]
+            required: ["type", "title", "original_text", "solution_steps", "latex_formulas", "nanobanana_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic"]
           }
         }
       }
@@ -807,7 +928,7 @@ export async function extractMathTasksFromImage(base64Image: string, mimeType: s
     return tasks.map(t => ({ ...t, source_url: "Слика (Напреден OCR)" }));
   } catch (error) {
     console.error("Грешка при екстракција од слика:", error);
-    throw error;
+    handleGeminiError(error);
   }
 }
 
@@ -1090,7 +1211,7 @@ ${task.solution_steps?.join('\n')}
     const response = await ai.models.generateContent({
       model: "gemini-3.1-pro-preview", // Use pro for spatial multimodal
       contents: [
-        prompt,
+        { text: prompt },
         { inlineData: { data: base64Image, mimeType: mimeType } }
       ],
       config: {

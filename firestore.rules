@@ -75,11 +75,11 @@ service cloud.firestore {
 
     // Domain Validators
     function isValidTask(data) {
-      let allowedFields = ['title', 'original_text', 'solution_steps', 'latex_formulas', 'nanobanana_prompt', 'source_url', 'tags', 'difficulty', 'author_uid', 'created_at', 'type', 'dok_level', 'grade_level', 'curriculum_topic'];
+      let allowedFields = ['title', 'original_text', 'solution_steps', 'latex_formulas', 'nanobanana_prompt', 'source_url', 'tags', 'difficulty', 'author_uid', 'created_at', 'type', 'dok_level', 'grade_level', 'curriculum_topic', 'evidence_quote', 'source_timestamp', 'hints', 'pedagogical_insights', 'folder_id', 'folder_name'];
       
       return hasOnlyAllowedFields(allowedFields) &&
              validStringLength('title', 1, 200) &&
-             validStringLength('original_text', 1, 5000) &&
+             validStringLength('original_text', 1, 50000) &&
              validStringLength('nanobanana_prompt', 1, 2000) &&
              validStringLength('source_url', 1, 1000) &&
              isValidList(data.solution_steps, 50) &&
@@ -89,6 +89,12 @@ service cloud.firestore {
              data.author_uid is string && data.author_uid.size() > 0 && data.author_uid.size() < 50 &&
              isValidDateString(data.created_at) &&
              (!('type' in data) || data.type in ['theory', 'task']) &&
+             (!('evidence_quote' in data) || (data.evidence_quote is string && data.evidence_quote.size() <= 2000)) &&
+             (!('source_timestamp' in data) || (data.source_timestamp is string && data.source_timestamp.size() <= 100)) &&
+             (!('hints' in data) || isValidList(data.hints, 20)) &&
+             (!('pedagogical_insights' in data) || data.pedagogical_insights is map) &&
+             (!('folder_id' in data) || (data.folder_id is string && data.folder_id.size() <= 100)) &&
+             (!('folder_name' in data) || (data.folder_name is string && data.folder_name.size() <= 100)) &&
              (!('dok_level' in data) || (data.dok_level is number && data.dok_level >= 1 && data.dok_level <= 4)) &&
              (!('grade_level' in data) || (data.grade_level is string && data.grade_level.size() <= 100)) &&
              (!('curriculum_topic' in data) || (data.curriculum_topic is string && data.curriculum_topic.size() <= 100));

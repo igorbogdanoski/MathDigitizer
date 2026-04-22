@@ -19,6 +19,8 @@ interface LibraryState {
   setTagFilter: (tags: string[]) => void;
   gradeFilter: string[];
   setGradeFilter: (grades: string[]) => void;
+  folderFilter: string;
+  setFolderFilter: (folder: string) => void;
   dokFilter: number[];
   setDokFilter: (doks: number[]) => void;
   sortDifficulty: 'none' | 'asc' | 'desc';
@@ -126,6 +128,8 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   setTagFilter: (tagFilter) => set({ tagFilter }),
   gradeFilter: [],
   setGradeFilter: (gradeFilter) => set({ gradeFilter }),
+  folderFilter: 'all',
+  setFolderFilter: (folderFilter) => set({ folderFilter }),
   dokFilter: [],
   setDokFilter: (dokFilter) => set({ dokFilter }),
   sortDifficulty: 'none',
@@ -144,6 +148,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     searchQuery: '',
     difficultyFilter: 'all',
     sourceFilter: 'all',
+    folderFilter: 'all',
     tagFilter: [],
     gradeFilter: [],
     dokFilter: [],

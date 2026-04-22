@@ -8,14 +8,15 @@ import { Card, CardContent } from './ui/Card';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { MathRenderer } from './MathRenderer';
-import { History, Search, Filter, BookOpen, Loader2, Image as ImageIcon, ChevronDown, ChevronUp, Copy, Check, ArrowUpDown, X, History as HistoryIcon, Info, Plus, Play, Pause, RotateCcw, Download, Trash2, MessageCircleQuestion, FileText, CheckSquare, Square, Activity, Brain, Sparkles, FileSpreadsheet, GripVertical } from 'lucide-react';
+import { History, Search, Filter, BookOpen, Loader2, Image as ImageIcon, ChevronDown, ChevronUp, Copy, Check, ArrowUpDown, X, History as HistoryIcon, Info, Plus, Play, Pause, RotateCcw, Download, Trash2, MessageCircleQuestion, FileText, CheckSquare, Square, Activity, Brain, Sparkles, FileSpreadsheet, GripVertical, Layers, LayoutDashboard } from 'lucide-react';
 import { generateImage, generateSimilarTask, generateDifferentiatedTasks } from '../lib/gemini';
 import { exportToMarkdown } from '../lib/export';
-import { deleteDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { deleteDoc, doc, addDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { TutorChat } from './TutorChat';
 import { TestGenerator } from './TestGenerator';
 import { InteractiveSolver } from './InteractiveSolver';
 import { CreateTaskModal } from './library/CreateTaskModal';
+import { LessonPlanGenerator } from './LessonPlanGenerator';
 import { auth } from '../lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -38,12 +39,80 @@ export const Library: React.FC = () => {
   const parentRef = useRef<HTMLDivElement>(null);
   
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showLessonPlanModal, setShowLessonPlanModal] = useState(false);
+  const [showManipulativesModal, setShowManipulativesModal] = useState(false);
+  const [manipulativeType, setManipulativeType] = useState<'algebra-tiles' | 'geogebra-3d'>('algebra-tiles');
 
   useEffect(() => {
     const handleOpenModal = () => setShowCreateModal(true);
+    const handleOpenLessonPlan = () => setShowLessonPlanModal(true);
+    const handleOpenManipulatives = (e: Event) => {
+        const customEvent = e as CustomEvent;
+        if (customEvent.detail?.type) {
+           setManipulativeType(customEvent.detail.type);
+        }
+        setShowManipulativesModal(true);
+    };
+    
+    // Create Kahoot handler
+    const handleLiveSession = async () => {
+      const selected = getSelectedTasks();
+      if (selected.length === 0) return;
+      
+      const pin = Math.floor(100000 + Math.random() * 900000).toString();
+      const quiz_data = {
+         title: "Интерактивен Квиз / Жива Училница",
+         questions: selected.map(task => ({
+           question: task.original_text,
+           // We will quickly generate 3 dummy options, and 1 real. 
+           // Ordinarily we would use Gemini to spawn the distractors.
+           options: [
+             `Недоволно податоци`,
+             `Не е можно да се пресмета`,
+             task.solution_steps[task.solution_steps.length - 1]?.replace(/^[0-9]+\.\s*/, '') || "Точно",
+             `Сите од горенаведените`
+           ].sort(() => Math.random() - 0.5),
+           correctIndex: 0 // We will map the correct one after sorting
+         })),
+         hints: selected.map(task => task.solution_steps[0] || "")
+      };
+      
+      // Map correct indices
+      quiz_data.questions.forEach((q, i) => {
+         const correctAns = selected[i].solution_steps[selected[i].solution_steps.length - 1]?.replace(/^[0-9]+\.\s*/, '') || "Точно";
+         q.correctIndex = q.options.indexOf(correctAns);
+      });
+
+      try {
+        await setDoc(doc(db, 'live_sessions', pin), {
+          id: pin,
+          host_uid: auth.currentUser?.uid || 'anonymous',
+          status: 'lobby',
+          quiz_data: quiz_data,
+          participants: {},
+          current_question_index: 0,
+          created_at: new Date().toISOString()
+        });
+        // Open inside a new tab to avoid breaking library state
+        window.open(`/live/${pin}/host`, '_blank');
+      } catch (err) {
+        console.error("Error creating live session:", err);
+        alert("Грешка при креирање на жива училница.");
+      }
+    };
+    
     document.addEventListener('open-create-task-modal', handleOpenModal);
-    return () => document.removeEventListener('open-create-task-modal', handleOpenModal);
-  }, []);
+    document.addEventListener('open-lesson-plan-modal', handleOpenLessonPlan);
+    document.addEventListener('generate-live-session', handleLiveSession);
+    document.addEventListener('open-manipulatives', handleOpenManipulatives);
+    
+    return () => {
+      document.removeEventListener('open-create-task-modal', handleOpenModal);
+      document.removeEventListener('open-lesson-plan-modal', handleOpenLessonPlan);
+      document.removeEventListener('generate-live-session', handleLiveSession);
+      document.removeEventListener('open-manipulatives', handleOpenManipulatives);
+    };
+  }, [store.selectedForTest]);
 
   // Use the new real-time hook
   useRealtimeTasks();
@@ -389,11 +458,70 @@ export const Library: React.FC = () => {
         )}
       </AnimatePresence>
 
+      {/* Mathigon / GeoGebra Manipulatives Modal */}
+      <AnimatePresence>
+        {showManipulativesModal && (
+           <div className="fixed inset-0 z-[100] flex flex-col p-4 bg-slate-900/80 backdrop-blur-sm" onClick={() => setShowManipulativesModal(false)}>
+             <motion.div 
+               initial={{ opacity: 0, scale: 0.95, y: 20 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               exit={{ opacity: 0, scale: 0.95, y: 20 }}
+               className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full h-full flex flex-col border border-slate-200 dark:border-slate-700 overflow-hidden"
+               onClick={(e) => e.stopPropagation()}
+             >
+               <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                 <div className="flex items-center gap-3">
+                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${manipulativeType === 'geogebra-3d' ? 'bg-rose-100 text-rose-600' : 'bg-pink-100 text-pink-600'}`}>
+                     {manipulativeType === 'geogebra-3d' ? <Layers className="w-5 h-5" /> : <LayoutDashboard className="w-5 h-5" />}
+                   </div>
+                   <div>
+                     <h3 className="font-bold text-slate-900 dark:text-white">
+                        {manipulativeType === 'geogebra-3d' ? 'GeoGebra 3D Калкулатор' : 'Алгебарски Плочки (MathStudio)'}
+                     </h3>
+                     <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-lg">
+                        {manipulativeType === 'geogebra-3d' 
+                           ? 'Отворен е GeoGebra 3D Калкулатор. Идеален за просторна геометрија, стереометрија и вектори.'
+                           : 'Отворен е Polypad. Користете плочки за геометрија, дропки и алгебра.'}
+                     </p>
+                   </div>
+                 </div>
+                 <button onClick={() => setShowManipulativesModal(false)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                   <X className="w-5 h-5" />
+                 </button>
+               </div>
+               <div className="flex-1 bg-white relative">
+                 {manipulativeType === 'geogebra-3d' ? (
+                   <iframe 
+                     src="https://www.geogebra.org/3d?embed" 
+                     className="w-full h-full border-none absolute inset-0"
+                     title="GeoGebra 3D"
+                   />
+                 ) : (
+                   <iframe 
+                     src="https://mathigon.org/polypad/embed" 
+                     className="w-full h-full border-none absolute inset-0"
+                     title="Mathigon Polypad Virtual Manipulatives"
+                   />
+                 )}
+               </div>
+             </motion.div>
+           </div>
+        )}
+      </AnimatePresence>
+
       {/* Manual Task Modal */}
       {showCreateModal && (
         <CreateTaskModal 
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => setShowCreateModal(false)}
+        />
+      )}
+
+      {/* Lesson Plan Generator Modal */}
+      {showLessonPlanModal && (
+        <LessonPlanGenerator 
+          selectedTasks={getSelectedTasks()}
+          onClose={() => setShowLessonPlanModal(false)}
         />
       )}
     </div>

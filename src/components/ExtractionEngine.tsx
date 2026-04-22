@@ -3,12 +3,12 @@ import {
   Globe, Wand2, ChevronUp, ChevronDown, Loader2, Sparkles, BookOpen, Download, 
   FileJson, CheckCircle, Save, Check, Youtube, Link as LinkIcon, FileText, 
   PlayCircle, Image as ImageIcon, AlertTriangle, Quote, Microscope, BookOpen as BookOpenIcon, Zap, Layers,
-  Activity
+  Activity, Clock, Printer
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { MathTask } from '../lib/schema';
-import { extractMathTasksFromUrl, generateImage, advancedMultimodalExtraction } from '../lib/gemini';
+import { extractMathTasksFromUrl, generateImage, advancedMultimodalExtraction, enrichTaskPedagogy } from '../lib/gemini';
 import { exportToJson, exportToMarkdown } from '../lib/export';
 import { useAuth } from '../contexts/AuthContext';
 import { useGamification } from '../contexts/GamificationContext';
@@ -38,8 +38,10 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
   const [statusText, setStatusText] = useState<string>('');
   const [progress, setProgress] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [interpretativeLevel, setInterpretativeLevel] = useState<number>(1);
   
   const [tasks, setTasks] = useState<MathTask[]>([]);
+  const [isEnriching, setIsEnriching] = useState<Record<number, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [savedTasks, setSavedTasks] = useState<Set<number>>(new Set());
   
@@ -60,6 +62,8 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
   const [generatedImages, setGeneratedImages] = useState<Record<number, string>>({});
   const [isGeneratingImage, setIsGeneratingImage] = useState<Record<number, boolean>>({});
   const [expandedPrompts, setExpandedPrompts] = useState<Record<number, boolean>>({});
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [targetFolder, setTargetFolder] = useState('');
 
   const isValidUrl = (url: string) => {
     try {
@@ -71,6 +75,21 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
   };
 
   const isYoutube = url.toLowerCase().includes('youtube.com') || url.toLowerCase().includes('youtu.be');
+
+  const handleEnrich = async (index: number) => {
+    const task = tasks[index];
+    if (!task) return;
+
+    setIsEnriching(prev => ({ ...prev, [index]: true }));
+    try {
+      const insights = await enrichTaskPedagogy(task);
+      setTasks(prev => prev.map((t, i) => i === index ? { ...t, pedagogical_insights: insights } : t));
+    } catch (error) {
+      console.error("Грешка при збогатување:", error);
+    } finally {
+      setIsEnriching(prev => ({ ...prev, [index]: false }));
+    }
+  };
 
   const simulateProgress = () => {
     setProgress(10);
@@ -99,7 +118,10 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    processFile(file);
+  };
 
+  const processFile = (file: File) => {
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64 = (event.target?.result as string).split(',')[1];
@@ -112,6 +134,27 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
       setError(null);
     };
     reader.readAsDataURL(file);
+  };
+
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && (file.type.includes('pdf') || file.type.includes('image'))) {
+      processFile(file);
+    } else {
+      setError('Ве молиме прикачете валиден PDF или слика.');
+    }
   };
 
   const handleExtract = async (e: React.FormEvent) => {
@@ -139,23 +182,69 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
       const timeRange = (startTime || endTime) ? { start: startTime, end: endTime } : undefined;
       
       if (sourceType === 'url') {
-        extractedTasks = await extractMathTasksFromUrl(url + (timeRange ? ` (Range: ${timeRange.start}-${timeRange.end})` : ''), model, timeRange);
+        let textInstructions = customInstructions;
+        switch(interpretativeLevel) {
+          case 0: textInstructions += " Извлечи го материјалот 100% буквално и верно на оригиналот(Faithful)."; break;
+          case 1: textInstructions += " Исчисти го материјалот од пелтечења и неважни зборови(Clean)."; break;
+          case 2: textInstructions += " Реформулирај го овој материјал како професионална лекција или задачи од учебник(Reformulate)."; break;
+          case 3: textInstructions += " Извлечи го материјалот и нужно додади свои слични примери за да се разјасни концептот(Examples)."; break;
+          case 4: textInstructions += " Направи само кратко резиме и најважни клучни точки/задачи(Summary)."; break;
+        }
+
+        extractedTasks = await extractMathTasksFromUrl(url + (timeRange ? ` (Range: ${timeRange.start}-${timeRange.end})` : '') + ' Instructions: ' + textInstructions, model, timeRange);
       } else {
         const sourcePayload = sourceType === 'file' ? 
           { type: 'file' as const, data: fileData!.base64, mimeType: fileData!.mimeType } :
           { type: 'text' as const, data: textInput };
         
-        extractedTasks = await advancedMultimodalExtraction(sourcePayload, model, customInstructions);
+        let textInstructions = customInstructions;
+        switch(interpretativeLevel) {
+          case 0: textInstructions += " Извлечи го материјалот 100% буквално и верно на оригиналот(Faithful)."; break;
+          case 1: textInstructions += " Исчисти го материјалот од пелтечења и неважни зборови(Clean)."; break;
+          case 2: textInstructions += " Реформулирај го овој материјал како професионална лекција или задачи од учебник(Reformulate)."; break;
+          case 3: textInstructions += " Извлечи го материјалот и нужно додади свои слични примери за да се разјасни концептот(Examples)."; break;
+          case 4: textInstructions += " Направи само кратко резиме и најважни клучни точки/задачи(Summary)."; break;
+        }
+
+        extractedTasks = await advancedMultimodalExtraction(sourcePayload, model, textInstructions);
       }
 
       setProgress(100);
-      setStatusText('Екстракцијата е успешна!');
+      setStatusText('Екстракцијата е успешна! Зачувување во Библиотека...');
       setTasks(extractedTasks);
+      
+      // Auto-save logic
+      if (user && extractedTasks.length > 0) {
+        setStatusText('Се зачувува во Вашата Библиотека...');
+        const newSavedSet = new Set<number>();
+        
+        // Save simultaneously but manage errors
+        await Promise.all(extractedTasks.map(async (task, idx) => {
+          try {
+            const taskToSave: MathTask = {
+              ...task,
+              author_uid: user.uid,
+              created_at: new Date().toISOString()
+            };
+            if (targetFolder.trim()) {
+              taskToSave.folder_name = targetFolder.trim();
+              taskToSave.folder_id = targetFolder.trim().toLowerCase().replace(/\s+/g, '-');
+            }
+            await addDoc(collection(db, 'tasks'), taskToSave);
+            newSavedSet.add(idx);
+          } catch (err) {
+            console.error(`Error saving task ${idx}:`, err);
+          }
+        }));
+        setSavedTasks(newSavedSet);
+      }
+
       awardXP(100);
       updateQuestProgress('extract');
     } catch (err) {
       setProgress(0);
-      setError(err instanceof Error ? `Грешка: ${err.message}` : 'Настана грешка при екстракцијата. Проверете го изворот или обидете се повторно.');
+      const errorMessage = err instanceof Error ? err.message : 'Настана грешка при екстракцијата. Проверете го изворот или обидете се повторно.';
+      setError(errorMessage.includes('Надминат е лимитот') ? errorMessage : `Грешка: ${errorMessage}`);
       console.error(err);
     } finally {
       setTimeout(() => {
@@ -252,18 +341,45 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
               <div className="flex flex-col gap-4">
                 {/* Dynamic Inputs Based on Source Type */}
                 {sourceType === 'url' && (
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                      {isYoutube ? <PlayCircle className="w-6 h-6 text-red-400" /> : <LinkIcon className="w-6 h-6 text-indigo-400" />}
+                  <div className="flex flex-col gap-3">
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                        {isYoutube ? <PlayCircle className="w-6 h-6 text-red-400" /> : <LinkIcon className="w-6 h-6 text-indigo-400" />}
+                      </div>
+                      <Input
+                        type="url"
+                        placeholder="Вметнете линк (YouTube, Wikipedia, Блог...)"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        disabled={isLoading}
+                        className="pl-14 h-16 text-lg bg-white/90 border-white/40 focus:bg-white text-slate-800 placeholder-slate-400 rounded-2xl shadow-inner transition-all w-full"
+                      />
                     </div>
-                    <Input
-                      type="url"
-                      placeholder="Вметнете линк (YouTube, Wikipedia, Блог...)"
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      disabled={isLoading}
-                      className="pl-14 h-16 text-lg bg-white/90 border-white/40 focus:bg-white text-slate-800 placeholder-slate-400 rounded-2xl shadow-inner transition-all"
-                    />
+                    <div className="bg-emerald-900/30 border border-emerald-400/30 rounded-2xl p-4 mt-2">
+                       <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-3">
+                          <Youtube className="w-5 h-5 text-emerald-400" />
+                          Вграден YouTube Scraper (Бесплатно / Не е потребна ScraperAPI екстензија)
+                       </h4>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-emerald-100/80">
+                          <div className="space-y-2">
+                             <p className="font-semibold text-emerald-100">Како функционира?</p>
+                             <ul className="list-disc pl-4 space-y-1">
+                               <li>Нема потреба од надворешни Edge/Chrome алатки ниту претплати од $50 за ScraperAPI.</li>
+                               <li>Вметнете обичен YouTube линк во полето погоре.</li>
+                               <li>Нашиот нов интерен Express.js мотор директно го извлекува скриениот транскрипт (CC) бесплатно.</li>
+                               <li>Отворете ги <strong>Напредните параметри</strong> подолу за прецизно подесување (по угледот на оригиналната екстензија).</li>
+                             </ul>
+                          </div>
+                          <div className="space-y-2">
+                             <p className="font-semibold text-emerald-100">Начин на обработка:</p>
+                             <ul className="list-disc pl-4 space-y-1">
+                               <li>Изберете го посакуваното нијансирање од новото <strong>Интерпретативно ниво</strong> (Faithful, Clean, Reformulate, Examples, Summary).</li>
+                               <li>Системот автоматски ќе ги процесира сите математички изрази во LaTeX формат.</li>
+                               <li>Извлечените резултати потоа може да се експортираат во Markdown, LaTeX, TXT или Word/PDF форми.</li>
+                             </ul>
+                          </div>
+                       </div>
+                    </div>
                   </div>
                 )}
 
@@ -278,7 +394,14 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                     />
                     <label 
                       htmlFor="file-upload"
-                      className="flex flex-col items-center justify-center h-32 w-full border-2 border-dashed border-white/30 rounded-2xl bg-white/10 hover:bg-white/20 transition-all cursor-pointer group"
+                      onDragOver={onDragOver}
+                      onDragLeave={onDragLeave}
+                      onDrop={onDrop}
+                      className={`flex flex-col items-center justify-center h-32 w-full border-2 border-dashed rounded-2xl transition-all cursor-pointer group ${
+                        isDragOver 
+                          ? 'border-emerald-400 bg-emerald-500/20 scale-105 shadow-xl shadow-emerald-900/20' 
+                          : 'border-white/30 bg-white/10 hover:bg-white/20'
+                      }`}
                     >
                       {fileData ? (
                         <div className="flex items-center gap-3">
@@ -290,8 +413,10 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                         </div>
                       ) : (
                         <>
-                          <ImageIcon className="w-8 h-8 text-indigo-300 mb-2 group-hover:scale-110 transition-transform" />
-                          <p className="text-indigo-200 font-medium tracking-tight">Кликни за аплоуд на PDF или Слика</p>
+                          <ImageIcon className={`w-8 h-8 mb-2 transition-transform ${isDragOver ? 'text-emerald-400 scale-125' : 'text-indigo-300 group-hover:scale-110'}`} />
+                          <p className={`font-medium tracking-tight ${isDragOver ? 'text-emerald-200' : 'text-indigo-200'}`}>
+                            {isDragOver ? 'Спуштете го документот овде' : 'Кликни или довлечи (Drag & Drop) PDF/Слика'}
+                          </p>
                           <p className="text-[10px] text-indigo-400 uppercase mt-1">Поддршка за стари OCR книги и ракопис</p>
                         </>
                       )}
@@ -300,14 +425,20 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                 )}
 
                 {sourceType === 'text' && (
-                   <div className="relative group">
+                   <div className="relative group flex flex-col gap-2">
                     <textarea
-                      placeholder="Напишете или залепете суров текст со задачи овде..."
+                      placeholder="Напишете или залепете суров транскрипт (на пр. од WayinVideo или YouTube Summary) овде..."
                       value={textInput}
                       onChange={(e) => setTextInput(e.target.value)}
                       disabled={isLoading}
-                      className="w-full h-32 p-4 text-base bg-white/90 border-white/40 focus:bg-white text-slate-800 placeholder-slate-400 rounded-2xl shadow-inner transition-all resize-none font-sans"
+                      className="w-full h-40 p-5 text-base bg-white/90 border-white/40 focus:bg-white text-slate-800 placeholder-slate-400 rounded-2xl shadow-inner transition-all resize-none font-sans"
                     />
+                    <div className="bg-indigo-900/30 border border-indigo-400/30 rounded-xl p-3 flex items-start gap-3">
+                       <Zap className="w-5 h-5 text-amber-300 shrink-0 mt-0.5" />
+                       <p className="text-xs text-indigo-100 leading-relaxed">
+                         <strong>Про Совет:</strong> Доколку YouTube пребарувачот не работи или видеото нема превод, искористете Chrome екстензии како <span className="text-white font-bold">WayinVideo</span> или <span className="text-white font-bold">YouTube Summary with AI</span>. Копирајте го транскриптот оттаму на англиски јазик и залепете го овде. Системот автоматски ќе го преведе и форматира на македонски јазик!
+                       </p>
+                    </div>
                    </div>
                 )}
 
@@ -338,17 +469,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                 </div>
 
                 {/* Advanced Options Toggle */}
-                <div className="flex items-center justify-between px-2 mt-2">
-                  <select
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                    disabled={isLoading}
-                    className="h-9 px-3 rounded-lg bg-white/10 border border-white/20 text-indigo-50 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 [&>option]:text-slate-800 backdrop-blur-sm cursor-pointer hover:bg-white/20 transition-colors"
-                  >
-                    <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (World-Class)</option>
-                    <option value="gemini-3-flash-preview">Gemini 3 Flash (Fast)</option>
-                  </select>
-                  
+                <div className="flex items-center justify-end px-2 mt-2">
                   <button 
                     type="button"
                     onClick={() => setShowAdvanced(!showAdvanced)}
@@ -362,32 +483,77 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                 {/* Advanced Options Panel */}
                 {showAdvanced && (
                   <div className="pt-5 pb-2 mt-2 border-t border-white/10 grid shadow-inner md:grid-cols-2 gap-6 animate-in slide-in-from-top-4 duration-300">
-                    <div className="space-y-3">
-                      <label className="block text-[11px] font-bold text-indigo-300 uppercase tracking-wider ml-1">Временски Опсег (Опционално)</label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="text"
-                          placeholder="Почеток (пр. 02:15)"
-                          value={startTime}
-                          onChange={(e) => setStartTime(e.target.value)}
-                          className="bg-white/10 border-white/10 text-white placeholder-indigo-300/50 h-11 rounded-xl focus:bg-white/20"
-                        />
-                        <Input
-                          type="text"
-                          placeholder="Крај (пр. 45:00)"
-                          value={endTime}
-                          onChange={(e) => setEndTime(e.target.value)}
-                          className="bg-white/10 border-white/10 text-white placeholder-indigo-300/50 h-11 rounded-xl focus:bg-white/20"
-                        />
-                      </div>
+                    <div className="md:col-span-2 bg-indigo-900/40 border border-indigo-400/20 p-4 rounded-2xl">
+                       <label className="block text-xs font-bold text-indigo-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                           Интерпретативно ниво (Interpretative Level)
+                           <div className="w-4 h-4 rounded-full border border-indigo-300 flex items-center justify-center text-[10px] font-bold text-indigo-300" title="Одредува колку AI моделот ќе ја промени оригиналната содржина.">?</div>
+                       </label>
+                       
+                       <div className="flex items-center gap-4 relative isolate">
+                          {/* Slider Track */}
+                          <div className="absolute top-1/2 left-0 right-0 h-1 bg-slate-700/50 -translate-y-1/2 rounded-full -z-10"></div>
+                          <input 
+                            type="range" 
+                            min="0" max="4" step="1" 
+                            value={interpretativeLevel} 
+                            onChange={(e) => setInterpretativeLevel(parseInt(e.target.value))}
+                            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-red-500 hover:accent-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/50" 
+                          />
+                       </div>
+                       
+                       <div className="flex justify-between mt-3 text-[10px] sm:text-xs font-medium text-slate-400">
+                         <span className={`text-center ${interpretativeLevel === 0 ? 'text-red-400 font-bold' : ''}`}>Faithful</span>
+                         <span className={`text-center ${interpretativeLevel === 1 ? 'text-red-400 font-bold' : ''}`}>Clean</span>
+                         <span className={`text-center ${interpretativeLevel === 2 ? 'text-red-400 font-bold' : ''}`}>Reformulate</span>
+                         <span className={`text-center ${interpretativeLevel === 3 ? 'text-red-400 font-bold' : ''}`}>Examples</span>
+                         <span className={`text-center hidden sm:block ${interpretativeLevel === 4 ? 'text-red-400 font-bold' : ''}`}>Summary</span>
+                       </div>
                     </div>
+                  
                     <div className="space-y-3">
+                      <label className="block text-[11px] font-bold text-indigo-300 uppercase tracking-wider ml-1">Зачувај директно во папка (опционално)</label>
+                      <Input
+                        type="text"
+                        placeholder="Пр. Писмена за 8мо, Матура..."
+                        value={targetFolder}
+                        onChange={(e) => setTargetFolder(e.target.value)}
+                        disabled={isLoading}
+                        className="h-11 bg-white/5 border-white/10 text-white placeholder-indigo-300/30 rounded-xl focus:bg-white/10 transition-all font-medium"
+                      />
+                    </div>
+                    
+                    {sourceType === 'url' && (
+                      <div className="space-y-3">
+                        <label className="block text-[11px] font-bold text-indigo-300 uppercase tracking-wider ml-1">Временски Опсег (Опционално)</label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="text"
+                            placeholder="Почеток (пр. 02:15)"
+                            value={startTime}
+                            onChange={(e) => setStartTime(e.target.value)}
+                            disabled={isLoading}
+                            className="bg-white/10 border-white/10 text-white placeholder-indigo-300/50 h-11 rounded-xl focus:bg-white/20"
+                          />
+                          <Input
+                            type="text"
+                            placeholder="Крај (пр. 45:00)"
+                            value={endTime}
+                            onChange={(e) => setEndTime(e.target.value)}
+                            disabled={isLoading}
+                            className="bg-white/10 border-white/10 text-white placeholder-indigo-300/50 h-11 rounded-xl focus:bg-white/20"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-3 md:col-span-2">
                        <label className="block text-[11px] font-bold text-indigo-300 uppercase tracking-wider ml-1">Специфични Инструкции</label>
                        <Input
                           type="text"
                           placeholder="пр. Фокусирај се само на алгебра, игнорирај геометрија..."
                           value={customInstructions}
                           onChange={(e) => setCustomInstructions(e.target.value)}
+                          disabled={isLoading}
                           className="bg-white/10 border-white/10 text-white placeholder-indigo-300/50 h-11 rounded-xl focus:bg-white/20 w-full"
                         />
                     </div>
@@ -398,8 +564,14 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
 
             {/* Error Message */}
             {error && (
-              <div className="mt-4 p-4 bg-red-500/20 border border-red-500/50 rounded-2xl text-red-200 text-sm font-medium backdrop-blur-md animate-in slide-in-from-bottom-2">
-                {error}
+              <div className="mt-4 p-5 bg-red-500/10 border-l-4 border-red-500 rounded-r-2xl text-red-200 text-sm font-medium backdrop-blur-md animate-in slide-in-from-bottom-2 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-3 opacity-10">
+                  <AlertTriangle className="w-16 h-16 text-red-500" />
+                </div>
+                <div className="flex items-center gap-2 relative z-10">
+                   <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+                   <p className="leading-relaxed">{error}</p>
+                </div>
               </div>
             )}
             
@@ -443,6 +615,23 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
       {/* Results Section */}
       {!isLoading && tasks.length > 0 && (
         <div className="space-y-6 pt-4 animate-in slide-in-from-bottom-8 duration-700">
+          
+          {/* Auto-Save Notification */}
+          <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-4 rounded-2xl flex items-center gap-4 justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-100 p-2 rounded-full">
+                <CheckCircle className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-emerald-800 dark:text-emerald-400 leading-none mb-1">Сè е зачувано во вашата Библиотека!</h3>
+                <p className="text-sm text-emerald-600 dark:text-emerald-500">Сите {tasks.length} извлечени ресурси се веќе синхронизирани. Можете да продолжите да ги уредувате овде или преку Библиотека.</p>
+              </div>
+            </div>
+            <Button onClick={() => navigate('/library')} className="bg-emerald-600 hover:bg-emerald-700 text-white shrink-0 shadow-sm rounded-xl font-bold">
+              <BookOpen className="w-4 h-4 mr-2" /> Оди во Библиотека
+            </Button>
+          </div>
+
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 border-b border-slate-200 pb-4 px-2">
             <div className="flex-1">
               <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Екстрахирани Задачи</h2>
@@ -495,38 +684,73 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 shrink-0">
-              <Button variant="outline" onClick={() => exportToJson(tasks)} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm">
-                <FileJson className="w-4 h-4 mr-2" /> JSON
+            <div className="flex flex-wrap gap-2 shrink-0 max-w-sm justify-end">
+              <span className="w-full text-right text-xs font-bold text-slate-400 mb-1">Експорт Опции:</span>
+              <Button variant="outline" onClick={() => exportToMarkdown(tasks)} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm text-xs h-8 px-3">
+                Markdown
               </Button>
-              <Button variant="outline" onClick={() => exportToMarkdown(tasks)} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm">
-                <FileText className="w-4 h-4 mr-2" /> Markdown
+              <Button variant="outline" onClick={() => {
+                import('../lib/export').then(m => m.exportToLatex(tasks));
+              }} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm text-xs h-8 px-3">
+                LaTeX
+              </Button>
+              <Button variant="outline" onClick={() => window.print()} className="bg-slate-900 border-slate-800 hover:bg-slate-800 text-white shadow-sm text-xs h-8 px-3">
+                A4 PDF
+              </Button>
+              <Button variant="outline" onClick={() => {
+                import('../lib/export').then(m => m.exportToTxt(tasks));
+              }} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm text-xs h-8 px-3">
+                TXT
+              </Button>
+              <Button variant="outline" onClick={() => exportToJson(tasks)} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm text-xs h-8 px-3">
+                JSON
               </Button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-8">
+          <div className="grid grid-cols-1 gap-8 printable-tasks-container">
             {tasks.map((task, index) => (
-              <div key={index} className="bg-white rounded-[2rem] shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden transition-all duration-500 flex flex-col group relative">
-                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-400 to-indigo-600"></div>
+              <div key={index} className="bg-white rounded-[2rem] shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden transition-all duration-500 flex flex-col group relative printable-task-card">
+                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-400 to-indigo-600 no-print"></div>
                 <div className="p-3 bg-slate-50/80 border-b border-slate-100 flex justify-between items-center ml-1">
                   <div className="flex px-3 gap-3 items-center">
-                    <span className="font-bold text-slate-400 text-xs uppercase tracking-widest">Задача {index + 1}</span>
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
-                      task.difficulty === 'easy' ? 'bg-emerald-100 text-emerald-700' :
-                      task.difficulty === 'medium' ? 'bg-amber-100 text-amber-700' :
-                      'bg-rose-100 text-rose-700'
-                    }`}>
-                      {task.difficulty}
+                    <span className="font-bold text-slate-400 text-xs uppercase tracking-widest">
+                      {task.type === 'theory' ? `Теорија ${index + 1}` : `Задача ${index + 1}`}
                     </span>
-                    <span className="bg-indigo-100 flex items-center gap-1 text-indigo-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
+                    {task.type === 'task' && (
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                        task.difficulty === 'easy' ? 'bg-emerald-100 text-emerald-700' :
+                        task.difficulty === 'medium' ? 'bg-amber-100 text-amber-700' :
+                        'bg-rose-100 text-rose-700'
+                      }`}>
+                        {task.difficulty}
+                      </span>
+                    )}
+                    <span className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${task.type === 'theory' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'}`}>
                       <BookOpen className="w-3 h-3" /> {task.type}
                     </span>
+                    {task.source_timestamp && (
+                      <span className="bg-amber-100 flex items-center gap-1 text-amber-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full cursor-help" title="Проценето време во видеото">
+                        <Clock className="w-3 h-3" /> {task.source_timestamp}
+                      </span>
+                    )}
                     {task.pedagogical_insights?.quality_score && (
                       <div className="flex items-center gap-1.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm ring-1 ring-emerald-500/10">
                         <Zap className="w-3 h-3" /> 
                         Quality: {task.pedagogical_insights.quality_score}%
                       </div>
+                    )}
+                    {!task.pedagogical_insights && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEnrich(index)}
+                        disabled={isEnriching[index]}
+                        className="h-7 px-3 text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-bold uppercase tracking-wider"
+                      >
+                        {isEnriching[index] ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Zap className="w-3 h-3 mr-1" />}
+                        AI Педагошко Збогатување
+                      </Button>
                     )}
                   </div>
                   <div className="pr-2 flex items-center gap-2">
@@ -552,6 +776,12 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                 
                 <div className="flex flex-col lg:flex-row ml-1">
                   <div className="p-8 flex-1">
+                    {task.evidence_quote && (
+                      <div className="mb-4 flex items-start gap-2 bg-slate-100/50 p-3 rounded-lg border-l-4 border-slate-300 text-slate-500 text-sm italic">
+                        <Quote className="w-4 h-4 mt-0.5 shrink-0 opacity-50" />
+                        <p>"{task.evidence_quote}"</p>
+                      </div>
+                    )}
                     <h3 className="text-2xl font-extrabold text-slate-900 mb-6 drop-shadow-sm">{task.title}</h3>
                     
                     <div className="prose prose-slate prose-lg max-w-none text-slate-700 mb-8 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">

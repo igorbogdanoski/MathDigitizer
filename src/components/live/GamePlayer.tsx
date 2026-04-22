@@ -105,7 +105,7 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white relative">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
         <div className="bg-white p-8 rounded-3xl max-w-sm w-full mx-auto relative z-10 shadow-2xl">
-          <h1 className="text-3xl font-black text-slate-900 text-center mb-8 tracking-tight">MathKahoot<span className="text-indigo-600">!</span></h1>
+          <h1 className="text-3xl font-black text-slate-900 text-center mb-8 tracking-tight">Жива Училница<span className="text-indigo-600">.</span></h1>
           
           <form onSubmit={joinGame} className="space-y-4">
             <div>
@@ -113,7 +113,7 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
                  type="text" 
                  value={pin}
                  onChange={(e) => setPin(e.target.value)}
-                 placeholder="Game PIN"
+                 placeholder="ПИН на играта"
                  disabled={!!sessionPin && sessionPin !== ''}
                  className="w-full h-16 text-center text-2xl font-bold rounded-xl bg-slate-100 border-2 border-slate-200 text-slate-900 focus:border-indigo-500 focus:outline-none placeholder:font-medium placeholder:text-slate-400"
                  required
@@ -124,7 +124,7 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
                  type="text" 
                  value={name}
                  onChange={(e) => setName(e.target.value)}
-                 placeholder="Nickname"
+                 placeholder="Твоето Име"
                  className="w-full h-16 text-center text-xl font-bold rounded-xl bg-slate-100 border-2 border-slate-200 text-slate-900 focus:border-indigo-500 focus:outline-none placeholder:font-medium placeholder:text-slate-400"
                  required
                />
@@ -133,7 +133,7 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
             {error && <p className="text-red-500 text-center font-bold text-sm">{error}</p>}
             
             <Button type="submit" disabled={isJoining} className="w-full h-16 text-xl font-black bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-xl shadow-slate-900/20">
-              {isJoining ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'Enter'}
+              {isJoining ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'Влези'}
             </Button>
           </form>
         </div>
@@ -164,7 +164,7 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
         <h2 className="text-5xl font-black mb-4">Играта Заврши!</h2>
         <p className="text-2xl font-bold opacity-80 mb-12">Погледнете ја таблата кај наставникот.</p>
         <div className="bg-white/20 px-8 py-4 rounded-3xl text-3xl font-black text-center min-w-[200px]">
-          <span className="block text-sm opacity-70 uppercase tracking-widest mb-1">Your Score</span>
+          <span className="block text-sm opacity-70 uppercase tracking-widest mb-1">Твој резултат</span>
           {me?.score}
         </div>
       </div>
@@ -201,7 +201,7 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
             </>
           )}
           <div className="bg-black/20 px-8 py-4 rounded-full text-2xl font-black mt-8">
-            Score: {me?.score}
+            Бодови: {me?.score}
           </div>
         </div>
       );
@@ -249,7 +249,7 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
                AI Помош
              </Button>
            )}
-           <span className="font-black text-indigo-600 px-3 py-1 bg-indigo-50 rounded-lg">{me?.score} pts</span>
+           <span className="font-black text-indigo-600 px-3 py-1 bg-indigo-50 rounded-lg">{me?.score} бодови</span>
         </div>
       </div>
       

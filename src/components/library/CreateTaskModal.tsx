@@ -19,6 +19,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
   const [originalText, setOriginalText] = useState(editTask?.original_text || '');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>(editTask?.difficulty || 'medium');
   const [gradeLevel, setGradeLevel] = useState(editTask?.grade_level || '');
+  const [folderName, setFolderName] = useState(editTask?.folder_name || '');
   const [tags, setTags] = useState<string[]>(editTask?.tags || []);
   const [currentTag, setCurrentTag] = useState('');
   const [steps, setSteps] = useState<string[]>(editTask?.solution_steps && editTask.solution_steps.length > 0 ? editTask.solution_steps : ['']);
@@ -81,7 +82,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
       if (editTask && editTask.id) {
         // Update existing task
         const taskRef = doc(db, 'tasks', editTask.id);
-        await updateDoc(taskRef, {
+        const updateData: any = {
           title,
           original_text: originalText,
           solution_steps: steps.filter(s => s.trim() !== ''),
@@ -89,7 +90,15 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
           grade_level: gradeLevel,
           tags,
           hints
-        });
+        };
+        if (folderName.trim()) {
+           updateData.folder_name = folderName.trim();
+           updateData.folder_id = folderName.trim().toLowerCase().replace(/\s+/g, '-');
+        } else {
+           updateData.folder_name = null;
+           updateData.folder_id = null;
+        }
+        await updateDoc(taskRef, updateData);
       } else {
         // Create new task
         const newTask: Omit<MathTask, 'id'> = {
@@ -100,6 +109,10 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
           nanobanana_prompt: '',
           difficulty,
           grade_level: gradeLevel,
+          ...((folderName.trim()) ? {
+            folder_name: folderName.trim(),
+            folder_id: folderName.trim().toLowerCase().replace(/\s+/g, '-')
+          } : {}),
           tags,
           hints,
           source_url: 'Рачно внесена',
@@ -161,7 +174,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Тежина</label>
                   <select 
@@ -175,11 +188,19 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Одделение/Година</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Одделение</label>
                   <Input 
                     value={gradeLevel} 
                     onChange={e => setGradeLevel(e.target.value)} 
                     placeholder="пр. 8 Одделение" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Папка</label>
+                  <Input 
+                    value={folderName} 
+                    onChange={e => setFolderName(e.target.value)} 
+                    placeholder="Сите Папки" 
                   />
                 </div>
               </div>

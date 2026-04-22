@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Filter, ChevronDown, ArrowUpDown, X, History as HistoryIcon, CheckSquare, Square, FileText, Download, FileSpreadsheet, Plus } from 'lucide-react';
+import { Search, Filter, ChevronDown, ArrowUpDown, X, History as HistoryIcon, CheckSquare, Square, FileText, Download, FileSpreadsheet, Plus, BookOpen, Zap } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
 import { MathTask } from '../../lib/schema';
-import { exportToMarkdown } from '../../lib/export';
+import { exportToMarkdown, exportToWord } from '../../lib/export';
 import { useTaskFilters } from '../../hooks/useTaskFilters';
 import { GenerationStyleToggle } from '../GenerationStyleToggle';
 
@@ -151,14 +151,37 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               )}
 
               {isSelectionMode && selectedForTest.size > 0 && (
-                <Button
-                  variant="default"
-                  onClick={() => setShowTestGenerator(true)}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Генерирај Тест ({selectedForTest.size})
-                </Button>
+                <div className="flex gap-2 items-center">
+                  <Button
+                    variant="default"
+                    onClick={() => setShowTestGenerator(true)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Генерирај Тест ({selectedForTest.size})
+                  </Button>
+                  
+                  <Button
+                    variant="default"
+                    onClick={() => document.dispatchEvent(new CustomEvent('open-lesson-plan-modal'))}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Дневна Подготовка ({selectedForTest.size})
+                  </Button>
+
+                  <Button
+                    variant="default"
+                    onClick={async () => {
+                       const evt = new CustomEvent('generate-live-session');
+                       document.dispatchEvent(evt);
+                    }}
+                    className="bg-purple-600 hover:bg-purple-700 ml-2"
+                  >
+                    <Zap className="w-4 h-4 mr-2" />
+                    Жива Училница (Квиз)
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -221,6 +244,20 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
 
             <div className="flex flex-col sm:flex-row items-center gap-2 min-w-[300px]">
               <Filter className="w-4 h-4 text-slate-400 hidden sm:block" />
+              
+              <div className="relative w-full sm:w-40">
+                <select
+                  value={filters.folderFilter}
+                  onChange={(e) => filters.setFolderFilter(e.target.value)}
+                  className="w-full h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-no-repeat bg-[right_8px_center] bg-[length:16px_16px]"
+                  style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")' }}
+                >
+                  <option value="all">Сите Папки</option>
+                  {filters.allFolders.map(folder => (
+                    <option key={folder} value={folder}>{folder}</option>
+                  ))}
+                </select>
+              </div>
               
               <div className="relative w-full sm:flex-1" ref={gradeDropdownRef}>
                 <button 
@@ -339,12 +376,16 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
             )}
 
             <div className="flex gap-2 ml-auto">
+              <Button variant="outline" size="sm" onClick={() => exportToWord(sortedAndFilteredTasks, 'math-tasks.docx')} title="Експортирај во Word (Docx)">
+                <FileText className="w-4 h-4 mr-2 text-blue-600" />
+                Word
+              </Button>
               <Button variant="outline" size="sm" onClick={() => exportToMarkdown(sortedAndFilteredTasks)} title="Експортирај во Markdown">
                 <Download className="w-4 h-4 mr-2" />
                 MD
               </Button>
               <Button variant="outline" size="sm" onClick={handleExportCSV} title="Експортирај во CSV">
-                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                <FileSpreadsheet className="w-4 h-4 mr-2 text-green-600" />
                 CSV
               </Button>
             </div>

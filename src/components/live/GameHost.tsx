@@ -112,16 +112,16 @@ export const GameHost = ({ sessionPin }: { sessionPin: string }) => {
            </h1>
 
            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-10 mt-8">
-             <p className="text-slate-400 font-bold uppercase tracking-widest mb-4">Game PIN (Join at mathdigitizer.pro/play)</p>
+             <p className="text-slate-400 font-bold uppercase tracking-widest mb-4">Game PIN (Се приклучуваат на {window.location.host}/play)</p>
              <div className="text-8xl font-black tracking-widest text-indigo-400 [text-shadow:_0_0_30px_rgb(99_102_241_/_40%)]">
                {session.id}
              </div>
            </div>
 
-           <div className="flex items-center justify-between mt-12 bg-slate-900/50 p-6 rounded-2xl border border-white/5">
+           <div className="flex flex-col md:flex-row items-center justify-between mt-12 bg-slate-900/50 p-6 rounded-2xl border border-white/5 gap-4">
              <div className="flex items-center gap-3">
                <Users className="w-8 h-8 text-slate-400" />
-               <span className="text-2xl font-bold">{participants.length} Players connected</span>
+               <span className="text-2xl font-bold">{participants.length} Приклучени</span>
              </div>
              <Button 
                onClick={startGame} 
@@ -129,7 +129,7 @@ export const GameHost = ({ sessionPin }: { sessionPin: string }) => {
                size="lg" 
                className="bg-emerald-500 hover:bg-emerald-600 text-white text-lg px-8 rounded-xl"
              >
-               Start Game <Play className="w-5 h-5 ml-2" />
+               Започни <Play className="w-5 h-5 ml-2" />
              </Button>
            </div>
            
@@ -227,11 +227,11 @@ export const GameHost = ({ sessionPin }: { sessionPin: string }) => {
           <div className="mt-auto flex justify-center py-6">
             {session.status === 'playing' ? (
               <Button size="lg" onClick={enterDiscussion} className="bg-indigo-600 hover:bg-indigo-700 text-white px-12 h-16 rounded-2xl text-xl shadow-xl">
-                <BarChart className="w-6 h-6 mr-3" /> Lock Answers & Discuss
+                <BarChart className="w-6 h-6 mr-3" /> Заклучи одговори & Дискутирај
               </Button>
             ) : (
               <Button size="lg" onClick={nextQuestion} className="bg-emerald-600 hover:bg-emerald-700 text-white px-12 h-16 rounded-2xl text-xl shadow-xl">
-                {session.current_question_index >= questionCount - 1 ? 'Show Final Podium' : 'Next Question'} <SkipForward className="w-6 h-6 ml-3" />
+                {session.current_question_index >= questionCount - 1 ? 'Прикажи Подиум' : 'Следно прашање'} <SkipForward className="w-6 h-6 ml-3" />
               </Button>
             )}
           </div>
@@ -247,34 +247,34 @@ export const GameHost = ({ sessionPin }: { sessionPin: string }) => {
       <div className="absolute inset-0 bg-[#ffd700]/10"></div>
       <div className="z-10 text-center space-y-12 max-w-4xl w-full">
          <Trophy className="w-32 h-32 mx-auto text-yellow-400 mb-8 [filter:drop-shadow(0_0_30px_rgba(250,204,21,0.5))]" />
-         <h1 className="text-6xl font-black mb-12">Final Podium</h1>
+         <h1 className="text-6xl font-black mb-12">Финален Подиум</h1>
          
          <div className="flex justify-center items-end gap-6 h-96">
            {sortedParticipants[1] && (
              <motion.div initial={{ y: 200 }} animate={{ y: 0 }} className="w-1/3 bg-slate-300 rounded-t-3xl h-64 flex flex-col items-center p-6 relative">
                <div className="absolute -top-16 text-3xl font-bold bg-slate-800 px-6 py-2 rounded-full">{sortedParticipants[1].name}</div>
                <span className="text-5xl font-black text-slate-600 mt-auto">2</span>
-               <span className="text-lg font-bold text-slate-500">{sortedParticipants[1].score} pts</span>
+               <span className="text-lg font-bold text-slate-500">{sortedParticipants[1].score} бодови</span>
              </motion.div>
            )}
            {sortedParticipants[0] && (
              <motion.div initial={{ y: 300 }} animate={{ y: 0 }} className="w-1/3 bg-yellow-400 rounded-t-3xl h-80 flex flex-col items-center p-6 relative">
                <div className="absolute -top-16 text-3xl font-bold bg-slate-800 px-6 py-2 rounded-full">{sortedParticipants[0].name}</div>
                <span className="text-6xl font-black text-yellow-700 mt-auto">1</span>
-               <span className="text-xl font-bold text-yellow-800">{sortedParticipants[0].score} pts</span>
+               <span className="text-xl font-bold text-yellow-800">{sortedParticipants[0].score} бодови</span>
              </motion.div>
            )}
            {sortedParticipants[2] && (
              <motion.div initial={{ y: 150 }} animate={{ y: 0 }} className="w-1/3 bg-amber-700 rounded-t-3xl h-48 flex flex-col items-center p-6 relative">
                <div className="absolute -top-16 text-3xl font-bold bg-slate-800 px-6 py-2 rounded-full">{sortedParticipants[2].name}</div>
                <span className="text-4xl font-black text-amber-900 mt-auto">3</span>
-               <span className="text-lg font-bold text-amber-900">{sortedParticipants[2].score} pts</span>
+               <span className="text-lg font-bold text-amber-900">{sortedParticipants[2].score} бодови</span>
              </motion.div>
            )}
          </div>
          
-         <Button onClick={() => navigate('/factory')} className="mt-12 bg-white text-slate-900">
-           Exit Game
+         <Button onClick={() => navigate('/library')} className="mt-12 bg-white text-slate-900">
+           Напушти Ја Играта
          </Button>
       </div>
     </div>

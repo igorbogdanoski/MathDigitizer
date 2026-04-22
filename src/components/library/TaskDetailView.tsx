@@ -8,7 +8,7 @@ import {
   MessageCircleQuestion, RotateCcw, ArrowUpDown, Sparkles, Brain, Activity, 
   Check, Copy, Loader2, ChevronDown, ChevronUp, Image as ImageIcon, 
   Play, Pause, Plus, Info, AlertTriangle, Quote, Zap, Microscope, BookOpen, Compass,
-  Share2, Network, Link2, PlayCircle, Youtube, Cpu, ShieldCheck, Layers
+  Share2, Network, Link2, PlayCircle, Youtube, Cpu, ShieldCheck, Layers, LayoutDashboard
 } from 'lucide-react';
 import { db } from '../../lib/firebase';
 import { useQueryClient } from '@tanstack/react-query';
@@ -206,6 +206,30 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
               >
                 <Activity className="w-3 h-3 mr-1" />
                 График
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => { 
+                   e.stopPropagation(); 
+                   document.dispatchEvent(new CustomEvent('open-manipulatives', { detail: { type: 'geogebra-3d', task }})); 
+                }}
+                className="h-6 px-2 text-xs bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+              >
+                <Layers className="w-3 h-3 mr-1" />
+                3D Геометрија
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => { 
+                   e.stopPropagation(); 
+                   document.dispatchEvent(new CustomEvent('open-manipulatives', { detail: { type: 'algebra-tiles', task }})); 
+                }}
+                className="h-6 px-2 text-xs bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100"
+              >
+                <LayoutDashboard className="w-3 h-3 mr-1" />
+                Алгебарски Плочки
               </Button>
               <Button
                 variant="outline"
@@ -790,9 +814,9 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
               <Info className="w-4 h-4 text-blue-600" />
               Како се користи LaTeX?
             </h4>
-            <p className="text-xs text-slate-600 mb-2 leading-relaxed">
+            <div className="text-xs text-slate-600 mb-2 leading-relaxed">
               LaTeX е стандарден јазик за запишување на математички формули. Во нашата апликација, формулите се прикажуваат користејќи <code>$</code> за inline формули (пр. <code className="bg-white px-1 border border-slate-200 rounded text-blue-600">$x^2$</code> се прикажува како <MathRenderer content="$x^2$" inline />) и <code>$$</code> за блок формули во посебен ред. Ова овозможува беспрекорен и професионален приказ на комплексни математички изрази.
-            </p>
+            </div>
           </div>
         </div>
 
