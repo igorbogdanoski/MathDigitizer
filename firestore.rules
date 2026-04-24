@@ -75,7 +75,7 @@ service cloud.firestore {
 
     // Domain Validators
     function isValidTask(data) {
-      let allowedFields = ['title', 'original_text', 'solution_steps', 'latex_formulas', 'nanobanana_prompt', 'source_url', 'tags', 'difficulty', 'author_uid', 'created_at', 'type', 'dok_level', 'grade_level', 'curriculum_topic', 'evidence_quote', 'source_timestamp', 'hints', 'pedagogical_insights', 'folder_id', 'folder_name'];
+      let allowedFields = ['title', 'original_text', 'solution_steps', 'latex_formulas', 'nanobanana_prompt', 'source_url', 'tags', 'difficulty', 'author_uid', 'created_at', 'type', 'dok_level', 'grade_level', 'curriculum_topic', 'evidence_quote', 'source_timestamp', 'hints', 'pedagogical_insights', 'folder_id', 'folder_name', 'detected_language', 'teacher_notes', 'bloom_taxonomy'];
       
       return hasOnlyAllowedFields(allowedFields) &&
              validStringLength('title', 1, 200) &&
@@ -97,7 +97,10 @@ service cloud.firestore {
              (!('folder_name' in data) || (data.folder_name is string && data.folder_name.size() <= 100)) &&
              (!('dok_level' in data) || (data.dok_level is number && data.dok_level >= 1 && data.dok_level <= 4)) &&
              (!('grade_level' in data) || (data.grade_level is string && data.grade_level.size() <= 100)) &&
-             (!('curriculum_topic' in data) || (data.curriculum_topic is string && data.curriculum_topic.size() <= 100));
+             (!('curriculum_topic' in data) || (data.curriculum_topic is string && data.curriculum_topic.size() <= 100)) &&
+             (!('detected_language' in data) || (data.detected_language is string && data.detected_language.size() <= 20)) &&
+             (!('bloom_taxonomy' in data) || (data.bloom_taxonomy is string && data.bloom_taxonomy.size() <= 50)) &&
+             (!('teacher_notes' in data) || (data.teacher_notes is string && data.teacher_notes.size() <= 10000));
     }
 
     function isValidTodo(data) {

@@ -2,20 +2,25 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Upload, CheckCircle2, AlertTriangle, FileWarning, Search, 
-  Brain, BrainCircuit, ScanLine, Calculator, ChevronRight, Image as ImageIcon, Camera
+  Brain, BrainCircuit, ScanLine, Calculator, ChevronRight, Image as ImageIcon, Camera, User
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card, CardContent } from './ui/Card';
-import { MathTask } from '../lib/schema';
+import { MathTask, GradedSubmission } from '../lib/schema';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { MathRenderer } from './MathRenderer';
 import { analyzeSolutionImage } from '../lib/gemini';
+import { useAuth } from '../contexts/AuthContext';
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 export const SmartGrader: React.FC = () => {
   const { tasks } = useLibraryStore();
+  const { user } = useAuth();
   const [selectedTask, setSelectedTask] = useState<MathTask | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageMimeType, setImageMimeType] = useState<string>('');
+  const [studentIdentifier, setStudentIdentifier] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,12 +52,39 @@ export const SmartGrader: React.FC = () => {
 
   const runAnalysis = async () => {
     if (!selectedTask || !selectedImage) return;
+    
+    if (!studentIdentifier.trim()) {
+       alert("Внесете име или идентификатор на ученикот за да се зачува аналитиката.");
+       return;
+    }
 
     setIsAnalyzing(true);
     try {
       const base64Data = selectedImage.split(',')[1];
       const analysisResult = await analyzeSolutionImage(selectedTask, base64Data, imageMimeType);
       setResult(analysisResult);
+      
+      // Save longitudinal analytics
+      if (user) {
+         try {
+           const submission: Omit<GradedSubmission, 'id'> = {
+              student_identifier: studentIdentifier.trim(),
+              teacher_uid: user.uid,
+              task_id: selectedTask.id || '',
+              score: analysisResult.score,
+              pedagogical_evaluation: analysisResult.pedagogical_evaluation,
+              bloom_level_assessed: analysisResult.pedagogical_evaluation?.framework === 'bloom' ? analysisResult.pedagogical_evaluation.level : undefined, // Legacy fallback
+              identified_weaknesses: analysisResult.identified_weaknesses || [],
+              rubric_breakdown: analysisResult.rubric_breakdown,
+              feedback_summary: analysisResult.analysis,
+              created_at: new Date().toISOString()
+           };
+           await addDoc(collection(db, 'graded_submissions'), submission);
+         } catch (dbErr) {
+           console.error("Failed to save student analytic profiling:", dbErr);
+         }
+      }
+      
     } catch (error) {
       console.error("Grader Analysis Error:", error);
       alert("Настана грешка при анализата. Обидете се повторно.");
@@ -168,12 +200,26 @@ export const SmartGrader: React.FC = () => {
             />
             
             {selectedImage ? (
-              <div className="relative w-full h-full flex flex-col group">
-                <img src={selectedImage} alt="Student Work" className="w-full h-full object-contain rounded-xl" />
-                <div className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
-                  <Button onClick={() => fileInputRef.current?.click()} className="bg-white text-slate-900 hover:bg-slate-100">
-                    <Camera className="w-4 h-4 mr-2" /> Промени Слика
-                  </Button>
+              <div className="relative w-full h-full flex flex-col group gap-4">
+                <div className="relative w-full h-[85%]">
+                  <img src={selectedImage} alt="Student Work" className="w-full h-full object-contain rounded-xl" />
+                  <div className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                    <Button onClick={() => fileInputRef.current?.click()} className="bg-white text-slate-900 hover:bg-slate-100">
+                      <Camera className="w-4 h-4 mr-2" /> Промени Слика
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Identifier Input */}
+                <div className="h-[15%] w-full flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                   <User className="text-indigo-400 w-5 h-5 shrink-0" />
+                   <input
+                     type="text"
+                     placeholder="Внеси име на ученик (пр. Марко М.)"
+                     value={studentIdentifier}
+                     onChange={e => setStudentIdentifier(e.target.value)}
+                     className="w-full bg-transparent border-none outline-none text-sm font-semibold text-slate-700 dark:text-slate-200"
+                   />
                 </div>
               </div>
             ) : (
@@ -243,7 +289,19 @@ export const SmartGrader: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Статус на решавање</h3>
-                    {selectedTask?.bloom_taxonomy && renderBloomBadge(selectedTask.bloom_taxonomy)}
+                    {result.pedagogical_evaluation ? (
+                      <div className="flex flex-col gap-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          <BrainCircuit className="w-3.5 h-3.5" />
+                          {result.pedagogical_evaluation.framework.toUpperCase()}: {result.pedagogical_evaluation.level}
+                        </div>
+                        <p className="text-xs text-slate-500 max-w-sm leading-relaxed">
+                          <strong className="text-slate-700">Избрана метрика:</strong> {result.pedagogical_evaluation.reason}
+                        </p>
+                      </div>
+                    ) : (
+                      selectedTask?.bloom_taxonomy && renderBloomBadge(selectedTask.bloom_taxonomy)
+                    )}
                   </div>
                 </div>
 
@@ -268,10 +326,56 @@ export const SmartGrader: React.FC = () => {
                   </div>
                 )}
 
+                {/* Formative Rubric Breakdown */}
+                {result.rubric_breakdown && (
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 text-sm uppercase tracking-wider">
+                      <BrainCircuit className="w-4 h-4 text-indigo-500" /> Формативна Рубрика
+                    </h4>
+                    <div className="grid grid-cols-1 gap-4">
+                      {/* Concept */}
+                      <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div className="flex-shrink-0 text-center sm:text-left min-w-[80px]">
+                           <div className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{result.rubric_breakdown.concept.score}</div>
+                           <div className="text-[10px] uppercase font-bold text-slate-500">Концепт</div>
+                        </div>
+                        <div className="w-full sm:w-auto h-px sm:h-auto sm:w-px bg-slate-200 dark:bg-slate-700 self-stretch"></div>
+                        <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                          <MathRenderer content={result.rubric_breakdown.concept.comment} inline />
+                        </div>
+                      </div>
+
+                      {/* Execution */}
+                      <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div className="flex-shrink-0 text-center sm:text-left min-w-[80px]">
+                           <div className="text-2xl font-black text-amber-600 dark:text-amber-400">{result.rubric_breakdown.execution.score}</div>
+                           <div className="text-[10px] uppercase font-bold text-slate-500">Егзекуција</div>
+                        </div>
+                        <div className="w-full sm:w-auto h-px sm:h-auto sm:w-px bg-slate-200 dark:bg-slate-700 self-stretch"></div>
+                        <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                          <MathRenderer content={result.rubric_breakdown.execution.comment} inline />
+                        </div>
+                      </div>
+
+                      {/* Presentation */}
+                      <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div className="flex-shrink-0 text-center sm:text-left min-w-[80px]">
+                           <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{result.rubric_breakdown.presentation.score}</div>
+                           <div className="text-[10px] uppercase font-bold text-slate-500">Комуникација</div>
+                        </div>
+                        <div className="w-full sm:w-auto h-px sm:h-auto sm:w-px bg-slate-200 dark:bg-slate-700 self-stretch"></div>
+                        <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                          <MathRenderer content={result.rubric_breakdown.presentation.comment} inline />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Socratic Feedback */}
                 <div className="space-y-3">
                   <h4 className="font-bold text-indigo-600 flex items-center gap-2 text-sm uppercase tracking-wider">
-                    <Brain className="w-4 h-4" /> Фидбек за ученикот
+                    <Brain className="w-4 h-4" /> Генерален Фидбек
                   </h4>
                   <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl text-sm text-slate-700 dark:text-slate-300 leading-relaxed border border-slate-100 dark:border-slate-700">
                      <MathRenderer content={result.analysis} inline/>

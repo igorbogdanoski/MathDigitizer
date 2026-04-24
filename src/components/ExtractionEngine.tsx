@@ -3,12 +3,12 @@ import {
   Globe, Wand2, ChevronUp, ChevronDown, Loader2, Sparkles, BookOpen, Download, 
   FileJson, CheckCircle, Save, Check, Youtube, Link as LinkIcon, FileText, 
   PlayCircle, Image as ImageIcon, AlertTriangle, Quote, Microscope, BookOpen as BookOpenIcon, Zap, Layers,
-  Activity, Clock, Printer
+  Activity, Clock, Printer, FileType2
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { MathTask } from '../lib/schema';
-import { extractMathTasksFromUrl, generateImage, advancedMultimodalExtraction, enrichTaskPedagogy } from '../lib/gemini';
+import { extractMathTasksFromUrl, generateImage, advancedMultimodalExtraction, enrichTaskPedagogy, generateTaskEmbedding } from '../lib/gemini';
 import { exportToJson, exportToMarkdown } from '../lib/export';
 import { useAuth } from '../contexts/AuthContext';
 import { useGamification } from '../contexts/GamificationContext';
@@ -17,6 +17,8 @@ import { db } from '../lib/firebase';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { MathRenderer } from './MathRenderer';
 import { useNavigate } from 'react-router-dom';
+import { KahootMaker } from './KahootMaker';
+import { MakedoTestGenerator } from './MakedoTestGenerator';
 
 interface ExtractionEngineProps {
   setActiveTutorTask: (task: MathTask) => void;
@@ -27,6 +29,8 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
   const { awardXP, updateQuestProgress } = useGamification();
   const { setEditingTask, setOnTaskUpdated } = useLibraryStore();
   const navigate = useNavigate();
+  
+  const [engineMode, setEngineMode] = useState<'extract' | 'kahoot' | 'makedotest'>('extract');
   
   const [url, setUrl] = useState('');
   const [textInput, setTextInput] = useState('');
@@ -121,7 +125,28 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
     processFile(file);
   };
 
-  const processFile = (file: File) => {
+  const processFile = async (file: File) => {
+    setError(null);
+    if (file.size > 20 * 1024 * 1024) {
+      setError('Датотеката е преголема. Ве молиме прикачете датотека до 20MB.');
+      return;
+    }
+
+    if (file.type.includes('wordprocessingml.document') || file.name.endsWith('.docx')) {
+      try {
+        const _mammoth = await import('mammoth');
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await _mammoth.extractRawText({ arrayBuffer });
+        setTextInput(result.value);
+        setSourceType('text');
+        setFileData({ base64: '', mimeType: 'text/plain', name: file.name });
+      } catch (err) {
+        console.error("Грешка при читање", err);
+        setError("Грешка со читање на Word документ. Користете PDF.");
+      }
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64 = (event.target?.result as string).split(',')[1];
@@ -150,10 +175,10 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
     e.preventDefault();
     setIsDragOver(false);
     const file = e.dataTransfer.files?.[0];
-    if (file && (file.type.includes('pdf') || file.type.includes('image'))) {
+    if (file && (file.type.includes('pdf') || file.type.includes('image') || file.type.includes('video') || file.name.endsWith('.docx'))) {
       processFile(file);
     } else {
-      setError('Ве молиме прикачете валиден PDF или слика.');
+      setError('Ве молиме прикачете валиден PDF, Слика, Видео или Word документ.');
     }
   };
 
@@ -226,6 +251,14 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
               author_uid: user.uid,
               created_at: new Date().toISOString()
             };
+
+            try {
+              const textToEmbed = `${task.title} ${task.original_text} ${(task.solution_steps || []).join(' ')} ${(task.tags || []).join(' ')} ${task.curriculum_topic || ''}`;
+              taskToSave.embedding = await generateTaskEmbedding(textToEmbed);
+            } catch (embedError) {
+              console.warn("Failed to generate embedding for newly extracted task", embedError);
+            }
+
             if (targetFolder.trim()) {
               taskToSave.folder_name = targetFolder.trim();
               taskToSave.folder_id = targetFolder.trim().toLowerCase().replace(/\s+/g, '-');
@@ -266,6 +299,13 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
         created_at: new Date().toISOString()
       };
       
+      try {
+        const textToEmbed = `${task.title} ${task.original_text} ${(task.solution_steps || []).join(' ')} ${(task.tags || []).join(' ')} ${task.curriculum_topic || ''}`;
+        taskToSave.embedding = await generateTaskEmbedding(textToEmbed);
+      } catch (embedError) {
+        console.warn("Failed to generate embedding for newly extracted task", embedError);
+      }
+      
       await addDoc(collection(db, 'tasks'), taskToSave);
       
       setSavedTasks(prev => {
@@ -298,8 +338,40 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-16">
       
-      {/* Premium Hero Section for URL Extractor */}
-      <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-indigo-900 rounded-[2rem] overflow-hidden shadow-2xl border border-indigo-500/20">
+      {/* Top Level Mode Selector */}
+      <div className="flex justify-center mb-8">
+        <div className="inline-flex bg-slate-100 p-1 rounded-2xl shadow-inner border border-slate-200">
+          <button
+            onClick={() => setEngineMode('extract')}
+            className={`px-8 py-3 rounded-xl text-sm font-black tracking-wide transition-all ${
+              engineMode === 'extract'
+                ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/50'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+            }`}
+          >
+            Извлекување на Задачи
+          </button>
+          <button
+            onClick={() => setEngineMode('kahoot')}
+            className={`px-8 py-3 rounded-xl text-sm font-black tracking-wide transition-all ${
+              engineMode === 'kahoot'
+                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+            }`}
+          >
+            MathKahoot Креатор
+          </button>
+        </div>
+      </div>
+
+      {engineMode === 'kahoot' ? (
+        <KahootMaker />
+      ) : engineMode === 'makedotest' ? (
+        <MakedoTestGenerator tasks={tasks} />
+      ) : (
+        <>
+          {/* Premium Hero Section for URL Extractor */}
+          <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-indigo-900 rounded-[2rem] overflow-hidden shadow-2xl border border-indigo-500/20">
         <div className="px-6 py-12 md:py-16 relative">
           {/* Decorative Background Elements */}
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -332,7 +404,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                     : 'bg-white/10 text-white hover:bg-white/20'
                   }`}
                 >
-                  {type === 'url' ? 'URL / YouTube' : type === 'file' ? 'Документ / Слика' : 'Слободен Текст'}
+                  {type === 'url' ? 'URL / YouTube' : type === 'file' ? 'PDF / Word / Видео / Слика' : 'Текст / Рачен Транскрипт'}
                 </button>
               ))}
             </div>
@@ -390,7 +462,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                       id="file-upload"
                       className="hidden"
                       onChange={handleFileUpload}
-                      accept="application/pdf,image/*"
+                      accept="application/pdf,image/*,video/mp4,video/mpeg,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     />
                     <label 
                       htmlFor="file-upload"
@@ -678,8 +750,12 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                    } finally {
                      setIsLoading(false);
                    }
-                 }} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md flex-1">
-                   🚀 Претвори ги во Live MathKahoot сега
+                 }} className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white shadow-md flex-1">
+                   🚀 MathKahoot
+                 </Button>
+
+                 <Button onClick={() => setEngineMode('makedotest')} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-md flex-1 px-2">
+                   <FileType2 className="w-4 h-4 mr-2" /> МакедоТест Pro
                  </Button>
               </div>
             </div>
@@ -724,6 +800,16 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                         'bg-rose-100 text-rose-700'
                       }`}>
                         {task.difficulty}
+                      </span>
+                    )}
+                    {task.dok_level && (
+                      <span className="bg-blue-100 flex items-center gap-1 text-blue-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
+                        DoK {task.dok_level}
+                      </span>
+                    )}
+                    {task.bloom_taxonomy && (
+                      <span className="bg-pink-100 flex items-center gap-1 text-pink-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
+                        {task.bloom_taxonomy}
                       </span>
                     )}
                     <span className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${task.type === 'theory' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'}`}>
@@ -787,6 +873,18 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                     <div className="prose prose-slate prose-lg max-w-none text-slate-700 mb-8 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
                        <MathRenderer content={task.original_text} />
                     </div>
+
+                    {task.nanobanana_prompt && (
+                      <div className="mb-6 bg-slate-800 rounded-2xl p-4 shadow-inner border border-slate-700 flex flex-col gap-2">
+                        <h4 className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          <ImageIcon className="w-3.5 h-3.5 text-blue-400" />
+                          Visual AI / NanoBanana Промпт
+                        </h4>
+                        <p className="text-xs text-blue-300 font-mono leading-relaxed bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
+                          {task.nanobanana_prompt}
+                        </p>
+                      </div>
+                    )}
 
                     {/* Pedagogical Insights - Premium Glower */}
                     {task.pedagogical_insights && (
@@ -922,6 +1020,24 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                         </span>
                       )}
                     </div>
+
+                    {/* Teacher Notes / Manual Intervention */}
+                    <div className="mt-8 p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                      <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2 mb-3">
+                        <CheckCircle className="w-4 h-4 text-emerald-500" /> 
+                        Опсервација на Наставникот (Твој став)
+                      </label>
+                      <textarea
+                        value={task.teacher_notes || ''}
+                        onChange={(e) => {
+                          const newTasks = [...tasks];
+                          newTasks[index] = { ...task, teacher_notes: e.target.value };
+                          setTasks(newTasks);
+                        }}
+                        placeholder="Внесете свое мислење, забелешка или интервенција пред зачувување..."
+                        className="w-full h-24 p-4 text-sm bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none font-medium placeholder:text-slate-400"
+                      />
+                    </div>
                   </div>
                   
                   {/* NanoBanana Visualizer AI Box inside the card */}
@@ -993,6 +1109,8 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
             ))}
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );

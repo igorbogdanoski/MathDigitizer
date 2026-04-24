@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MathRenderer } from './MathRenderer';
 import { Card, CardContent } from './ui/Card';
 import { 
   Download, X, FileText, CheckCircle2, Layout, BookOpen, Layers, 
-  ClipboardList, GraduationCap, Target, Edit3, Save, RotateCcw, PlayCircle
+  ClipboardList, GraduationCap, Target, Edit3, Save, RotateCcw, PlayCircle, Loader2
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { motion, AnimatePresence } from 'motion/react';
@@ -12,6 +12,8 @@ import { useNavigate } from 'react-router-dom';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 interface MaterialPreviewProps {
   type: MaterialType;
@@ -23,17 +25,17 @@ interface MaterialPreviewProps {
 export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, onClose, onDownload }) => {
   const [editedData, setEditedData] = useState<any>(JSON.parse(JSON.stringify(data)));
   const [isEditing, setIsEditing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const printRef = useRef<HTMLDivElement>(null);
   
   const launchKahoot = async () => {
     if (!user) {
       alert("Мора да сте најавени за да стартувате игра.");
       return;
     }
-    // Generate 6 digit PIN
     const pin = Math.floor(100000 + Math.random() * 900000).toString();
-    
     try {
       await setDoc(doc(db, 'live_sessions', pin), {
         id: pin,
@@ -48,6 +50,91 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
     } catch (e) {
       console.error(e);
       alert("Грешка при стартување на сесијата.");
+    }
+  };
+
+  const exportHighFidelityPDF = async () => {
+    if (!printRef.current) return;
+    setIsExporting(true);
+    
+    try {
+      // Create a temporary container for precision rendering without scrollbars
+      const tempContainer = document.createElement('div');
+      // Apply rigorous print styling
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '0';
+      tempContainer.style.width = '210mm'; // A4 width strictly enforced
+      tempContainer.style.backgroundColor = 'white';
+      tempContainer.style.color = 'black'; // Force black text for contrast
+      
+      const clone = printRef.current.cloneNode(true) as HTMLElement;
+      
+      // Pre-process cloned node to ensure no unwanted elements (like inputs) remain in view state
+      const textareas = clone.querySelectorAll('textarea');
+      textareas.forEach(ta => {
+         const div = document.createElement('div');
+         div.innerHTML = ta.value;
+         ta.parentNode?.replaceChild(div, ta);
+      });
+      
+      const inputs = clone.querySelectorAll('input');
+      inputs.forEach(input => {
+         if(input.type === 'text') {
+           const span = document.createElement('span');
+           span.innerHTML = input.value;
+           input.parentNode?.replaceChild(span, input);
+         }
+      });
+
+      tempContainer.appendChild(clone);
+      document.body.appendChild(tempContainer);
+
+      // We wait for KaTeX to finish any asynchronous renders
+      await new Promise(r => setTimeout(r, 600));
+
+      const canvas = await html2canvas(tempContainer, {
+        scale: 3, // Very high resolution for math formulas (Retina quality)
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 794 // Approx pixels for 210mm
+      });
+
+      document.body.removeChild(tempContainer);
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      let heightLeft = pdfHeight;
+      let position = 0;
+      let pageHeight = pdf.internal.pageSize.getHeight();
+
+      // Add first page
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+      heightLeft -= pageHeight;
+
+      // Handle multi-page math documents correctly by cutting the canvas
+      while (heightLeft > 0) {
+        position = heightLeft - pdfHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`MathDigitizer_${editedData.title || type}.pdf`);
+    } catch (error) {
+      console.error("Грешка при генерирање PDF:", error);
+      alert("Не успеав да го генерирам PDF документот. Ве молиме обидете се преку системскиот 'Print -> Save as PDF'.");
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -81,7 +168,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
   const renderContent = () => {
     if (type === 'quiz') {
       return (
-        <div className="space-y-6">
+        <div className="space-y-6" ref={printRef}>
           {editedData.questions.map((q: any, idx: number) => (
             <Card key={idx} className="border-slate-200 dark:border-slate-700 dark:bg-slate-800">
               <CardContent className="p-6">
@@ -135,7 +222,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
 
     if (type === 'flashcards') {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" ref={printRef}>
           {editedData.cards.map((card: any, idx: number) => (
             <div key={idx} className="group h-80 [perspective:1000px]">
               <div className="relative h-full w-full transition-all duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)]">
@@ -182,7 +269,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
 
     if (type === 'presentation') {
       return (
-        <div className="space-y-12">
+        <div className="space-y-12" ref={printRef}>
           {data.slides.map((slide: any, idx: number) => (
             <Card key={idx} className="overflow-hidden border-slate-200 shadow-xl max-w-3xl mx-auto aspect-video flex flex-col bg-white">
               <div className={`h-2 ${
@@ -211,178 +298,185 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
 
     // Default rendering for worksheet, test, collection, homework, study_guide, quiz
     return (
-      <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm relative print:shadow-none print:border-none print:w-[210mm] print:mx-auto">
-        {/* PRINT ONLY HEADER */}
-        <div className="hidden print:flex flex-col mb-12 border-b-2 border-slate-900 pb-4">
-          <div className="flex justify-between items-end mb-4">
-            <div>
-              <h1 className="text-3xl font-black text-slate-900">{editedData.title}</h1>
+      <div ref={printRef} className="bg-white text-slate-900 p-10 rounded-2xl print:p-0">
+        {/* HEADER SECTION FOR PRINT/PDF */}
+        <div className="flex flex-col mb-12 border-b-2 border-slate-900 pb-4">
+          <div className="flex justify-between items-end mb-4 gap-4">
+            <div className="flex-1">
+              {isEditing ? (
+                <input
+                  value={editedData.title}
+                  onChange={(e) => updateNestedField('title', e.target.value)}
+                  className="text-3xl font-black text-slate-900 mb-2 border-b border-indigo-200 focus:border-indigo-500 outline-none w-full bg-indigo-50/50"
+                  placeholder="Внесете наслов..."
+                />
+              ) : (
+                <h1 className="text-3xl font-black text-slate-900">{editedData.title}</h1>
+              )}
               <p className="text-slate-500 font-bold mt-1 uppercase tracking-widest">{type} • MathDigitizer Pro</p>
             </div>
-            <div className="text-right text-sm">
-              <p>Освоени поени: ______ / 100</p>
-              <p className="mt-1">Оценка: ____________</p>
+            <div className="text-right text-sm border-l-2 border-slate-200 pl-4">
+              <p className="whitespace-nowrap">Освоени поени: _________ / 100</p>
+              <p className="mt-2 whitespace-nowrap">Доделена оценка: _____________</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-8 text-sm mt-4 font-medium text-slate-700">
-            <div className="space-y-4">
-              <div className="flex items-end border-b border-slate-300 pb-1">
-                <span className="w-24">Име:</span>
-                <div className="flex-1"></div>
-              </div>
-              <div className="flex items-end border-b border-slate-300 pb-1">
-                <span className="w-24">Презиме:</span>
-                <div className="flex-1"></div>
-              </div>
+          <div className="grid grid-cols-2 gap-x-12 gap-y-4 text-sm mt-4 font-medium text-slate-700">
+            <div className="flex items-end border-b border-slate-300 pb-1">
+              <span className="w-24">Име:</span>
+              <div className="flex-1"></div>
             </div>
-            <div className="space-y-4">
-              <div className="flex items-end border-b border-slate-300 pb-1">
-                <span className="w-24">Одделение:</span>
-                <div className="flex-1"></div>
-              </div>
-              <div className="flex items-end border-b border-slate-300 pb-1">
-                <span className="w-24">Датум:</span>
-                <div className="flex-1"></div>
-              </div>
+            <div className="flex items-end border-b border-slate-300 pb-1">
+              <span className="w-24">Одделение:</span>
+              <div className="flex-1"></div>
+            </div>
+            <div className="flex items-end border-b border-slate-300 pb-1">
+              <span className="w-24">Презиме:</span>
+              <div className="flex-1"></div>
+            </div>
+            <div className="flex items-end border-b border-slate-300 pb-1">
+              <span className="w-24">Датум:</span>
+              <div className="flex-1"></div>
             </div>
           </div>
         </div>
         
-        <CardContent className="p-10 print:p-0 space-y-8">
-          <div className="text-center border-b border-slate-100 dark:border-slate-700 pb-8 print:hidden">
-            {isEditing ? (
-              <input
-                value={editedData.title}
-                onChange={(e) => updateNestedField('title', e.target.value)}
-                className="text-3xl font-extrabold text-slate-900 dark:text-white mb-2 text-center bg-transparent border-none focus:ring-0 w-full"
-              />
-            ) : (
-              <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">{editedData.title}</h2>
-            )}
-            <p className="text-slate-500 dark:text-slate-400">Алгоритмички генериран {type} • MathDigitizer Pro</p>
-          </div>
-
-          <div className="space-y-8">
-            {editedData.sections.map((section: any, idx: number) => (
-              <div key={idx} className="space-y-4">
-                <h3 className="text-xl font-bold text-indigo-600 flex items-center gap-2">
-                   <div className="w-1.5 h-6 bg-indigo-500 rounded-full"></div>
-                   {isEditing ? (
-                     <input
-                       value={section.heading}
-                       onChange={(e) => updateNestedField(`sections.${idx}.heading`, e.target.value)}
-                       className="bg-transparent border-none focus:ring-0 font-bold"
-                     />
-                   ) : (
-                     section.heading
-                   )}
-                </h3>
-                <div className="prose prose-slate dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed">
-                  {isEditing ? (
-                    <textarea
-                      value={section.content}
-                      onChange={(e) => updateNestedField(`sections.${idx}.content`, e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none h-40"
-                    />
-                  ) : (
-                    <MathRenderer content={section.content} />
-                  )}
+        {/* MAIN CONTENT */}
+        <div className="space-y-10">
+          {editedData.sections.map((section: any, idx: number) => (
+            <div key={idx} className="space-y-4 relative">
+              
+              <div className="flex items-start gap-4">
+                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-sm">
+                    {idx + 1}
+                 </div>
+                 <div className="flex-1 pt-1">
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">
+                       {isEditing ? (
+                         <input
+                           value={section.heading}
+                           onChange={(e) => updateNestedField(`sections.${idx}.heading`, e.target.value)}
+                           className="bg-indigo-50/50 border-b border-indigo-200 focus:border-indigo-500 outline-none font-bold w-full"
+                         />
+                       ) : (
+                         section.heading
+                       )}
+                    </h3>
+                    <div className="prose prose-slate max-w-none text-slate-800 leading-relaxed text-lg">
+                      {isEditing ? (
+                        <textarea
+                          value={section.content}
+                          onChange={(e) => updateNestedField(`sections.${idx}.content`, e.target.value)}
+                          className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-4 text-sm focus:ring-2 focus:ring-amber-500 outline-none h-40"
+                        />
+                      ) : (
+                        <MathRenderer content={section.content} />
+                      )}
+                    </div>
+                 </div>
+              </div>
+              
+              {/* Added explicit spacing for worksheets */}
+              {(type === 'worksheet' || type === 'test') && !isEditing && (
+                <div className="mt-4 pb-24 border-b border-dashed border-slate-200">
+                   {/* This creates physical space for the student to write */}
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {editedData.answerKey && (
-            <div className="mt-12 pt-8 border-t border-dashed border-slate-200 dark:border-slate-700">
-              <h3 className="text-lg font-bold text-slate-400 mb-4 uppercase tracking-widest">Клуч со решенија (За наставникот)</h3>
-              <div className="bg-slate-50 dark:bg-slate-900 p-6 rounded-xl text-sm italic text-slate-600 dark:text-slate-400">
-                {isEditing ? (
-                  <textarea
-                    value={editedData.answerKey}
-                    onChange={(e) => updateNestedField('answerKey', e.target.value)}
-                    className="w-full bg-transparent border-none focus:ring-0 outline-none h-32 italic"
-                  />
-                ) : (
-                  <MathRenderer content={editedData.answerKey} />
-                )}
-              </div>
+              )}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          ))}
+        </div>
+
+        {editedData.answerKey && (
+          <div className="mt-16 pt-8 border-t-[3px] border-slate-900 page-break-before-always">
+            <h3 className="text-xl font-black text-slate-900 mb-6 uppercase tracking-widest flex items-center gap-2">
+               <Target className="w-5 h-5 text-rose-600" />
+               Клуч со решенија (Само за Наставникот)
+            </h3>
+            <div className="bg-slate-50 border border-slate-200 p-8 rounded-2xl text-slate-800">
+              {isEditing ? (
+                <textarea
+                  value={editedData.answerKey}
+                  onChange={(e) => updateNestedField('answerKey', e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-indigo-500 outline-none h-64"
+                />
+              ) : (
+                <div className="prose prose-slate max-w-none prose-lg">
+                  <MathRenderer content={editedData.answerKey} />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     );
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md overflow-y-auto">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
-        className="bg-slate-50 dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-5xl my-8 border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-slate-100 dark:bg-slate-900 rounded-3xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] w-full max-w-5xl my-8 border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col max-h-[90vh]"
       >
-        <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-white dark:bg-slate-800 sticky top-0 z-10">
+        {/* Toolbar */}
+        <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white dark:bg-slate-800 sticky top-0 z-10 gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${
+                type === 'worksheet' ? 'bg-blue-50 text-blue-600' :
+                type === 'test' ? 'bg-rose-50 text-rose-600' :
+                type === 'quiz' ? 'bg-purple-50 text-purple-600' :
+                'bg-slate-100 text-slate-600'
+            }`}>
               {getIcon()}
             </div>
             <div>
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                {isEditing ? 'Уредување на материјалот' : 'Преглед на материјалот'}
+                {isEditing ? 'Механика за уредување' : 'Документ - Матичен Преглед'}
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                {isEditing ? 'Направете ги крајните корекции' : 'Проверете го изгледот пред преземање'}
+                {isEditing ? 'Модифицирајте ги полињата пред финалниот експорт.' : 'Прегледајте го генерираниот резултат.'}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <Button
               variant="outline"
               onClick={() => setIsEditing(!isEditing)}
-              className={`${isEditing ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800' : 'text-slate-600 dark:text-slate-300'}`}
+              className={`${isEditing ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-inner' : 'bg-white text-slate-700 hover:bg-slate-50 hover:text-indigo-600'} rounded-xl h-11`}
             >
-              {isEditing ? (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Зачувај
-                </>
-              ) : (
-                <>
-                  <Edit3 className="w-4 h-4 mr-2" />
-                  Уреди
-                </>
-              )}
+              {isEditing ? <><Save className="w-4 h-4 mr-2" />Зачувај</> : <><Edit3 className="w-4 h-4 mr-2" />Уреди Текст</>}
             </Button>
 
             {type === 'quiz' && (
-              <Button onClick={launchKahoot} className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20">
+              <Button onClick={launchKahoot} className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/20 rounded-xl h-11">
                 <PlayCircle className="w-4 h-4 mr-2" />
-                Start Live MathKahoot
+                Live Quiz
               </Button>
             )}
             
             <Button
-              variant="outline"
-              onClick={() => window.print()}
-              className="text-slate-600 dark:text-slate-300 hidden md:flex"
+              onClick={exportHighFidelityPDF}
+              disabled={isExporting}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 rounded-xl h-11"
             >
-              <FileText className="w-4 h-4 mr-2" />
-              Печати / PDF
+              {isExporting ? (
+                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4 mr-2" />
+              )}
+              {isExporting ? 'Конвертирање...' : 'Зачувај како PDF'}
             </Button>
             
-            <Button onClick={() => onDownload(editedData)} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/20">
-              <Download className="w-4 h-4 mr-2" />
-              Преземи JSON
-            </Button>
-            
-            <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-              <X className="w-6 h-6" />
+            <button onClick={onClose} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-200 rounded-xl transition-all ml-2 bg-white">
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
         
-        <div className="p-8 overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50">
-          <div className="max-w-4xl mx-auto">
+        {/* Content Area */}
+        <div className="p-4 sm:p-8 overflow-y-auto bg-[linear-gradient(to_bottom,transparent_0%,rgba(0,0,0,0.02)_100%)] dark:bg-[linear-gradient(to_bottom,transparent_0%,rgba(255,255,255,0.01)_100%)]">
+          <div className="max-w-4xl mx-auto shadow-2xl rounded-2xl overflow-hidden ring-1 ring-slate-900/5">
             {renderContent()}
           </div>
         </div>

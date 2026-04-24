@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
 import { MathTask } from '../../lib/schema';
+import { generateTaskEmbedding } from '../../lib/gemini';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
@@ -98,6 +99,14 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
            updateData.folder_name = null;
            updateData.folder_id = null;
         }
+
+        try {
+          const textToEmbed = `${updateData.title} ${updateData.original_text} ${(updateData.solution_steps || []).join(' ')} ${(updateData.tags || []).join(' ')}`;
+          updateData.embedding = await generateTaskEmbedding(textToEmbed);
+        } catch (err) {
+          console.warn("Failed to update embedding", err);
+        }
+
         await updateDoc(taskRef, updateData);
       } else {
         // Create new task
@@ -119,6 +128,13 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
           author_uid: auth.currentUser?.uid,
           created_at: new Date().toISOString()
         };
+
+        try {
+          const textToEmbed = `${newTask.title} ${newTask.original_text} ${(newTask.solution_steps || []).join(' ')} ${(newTask.tags || []).join(' ')}`;
+          newTask.embedding = await generateTaskEmbedding(textToEmbed);
+        } catch (err) {
+          console.warn("Failed to generate embedding", err);
+        }
 
         await addDoc(collection(db, 'tasks'), newTask);
       }

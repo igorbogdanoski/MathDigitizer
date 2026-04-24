@@ -5,6 +5,7 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { Copy, Check, Info, Loader2, X } from 'lucide-react';
 import { explainFormula } from '../lib/gemini';
+import { VisualMathCanvas } from './VisualMathCanvas';
 
 interface MathRendererProps {
   content: string;
@@ -31,29 +32,29 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className, 
         const formula = annotation?.textContent || '';
         
         if (formula) {
-          const isDisplay = katexElement.classList.contains('katex-display');
-          const fullFormula = isDisplay ? `$$${formula}$$` : `$${formula}$`;
-          
-          navigator.clipboard.writeText(fullFormula);
-          setCopiedFormula(fullFormula);
-          
-          // Visual feedback on the element
-          const originalBg = (katexElement as HTMLElement).style.backgroundColor;
-          (katexElement as HTMLElement).style.backgroundColor = 'rgba(34, 197, 94, 0.2)';
-          setTimeout(() => {
-            (katexElement as HTMLElement).style.backgroundColor = originalBg;
-          }, 500);
-          
-          setTimeout(() => setCopiedFormula(null), 2000);
+           const isDisplay = katexElement.classList.contains('katex-display');
+           const fullFormula = isDisplay ? `$$${formula}$$` : `$${formula}$`;
+           
+           navigator.clipboard.writeText(fullFormula);
+           setCopiedFormula(fullFormula);
+           
+           // Visual feedback on the element
+           const originalBg = (katexElement as HTMLElement).style.backgroundColor;
+           (katexElement as HTMLElement).style.backgroundColor = 'rgba(34, 197, 94, 0.2)';
+           setTimeout(() => {
+             (katexElement as HTMLElement).style.backgroundColor = originalBg;
+           }, 500);
+           
+           setTimeout(() => setCopiedFormula(null), 2000);
 
-          // Fetch explanation
-          setExplanation({ formula: fullFormula, text: '', isLoading: true });
-          try {
-            const expText = await explainFormula(formula);
-            setExplanation({ formula: fullFormula, text: expText, isLoading: false });
-          } catch (err) {
-            setExplanation({ formula: fullFormula, text: 'Грешка при вчитување на објаснувањето.', isLoading: false });
-          }
+           // Fetch explanation
+           setExplanation({ formula: fullFormula, text: '', isLoading: true });
+           try {
+             const expText = await explainFormula(formula);
+             setExplanation({ formula: fullFormula, text: expText, isLoading: false });
+           } catch (err) {
+             setExplanation({ formula: fullFormula, text: 'Грешка при вчитување на објаснувањето.', isLoading: false });
+           }
         }
       }
     };
@@ -73,6 +74,20 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className, 
     };
   }, [content]);
 
+  const components = {
+    code({ node, inline, className, children, ...props }: any) {
+      const match = /language-(\w+)/.exec(className || "");
+      if (!inline && match && match[1] === "math-plot") {
+        return <VisualMathCanvas jsonConfig={String(children).replace(/\n$/, "")} />;
+      }
+      return (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    }
+  };
+
   return (
     <div 
       ref={containerRef}
@@ -81,6 +96,7 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className, 
       <ReactMarkdown
         remarkPlugins={[remarkMath]}
         rehypePlugins={[rehypeKatex]}
+        components={components}
       >
         {content}
       </ReactMarkdown>

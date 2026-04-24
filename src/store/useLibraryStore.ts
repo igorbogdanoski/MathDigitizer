@@ -11,6 +11,12 @@ interface LibraryState {
   // Filters
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  searchMode: 'keyword' | 'semantic';
+  setSearchMode: (mode: 'keyword' | 'semantic') => void;
+  semanticQueryEmbedding: number[] | null;
+  setSemanticQueryEmbedding: (embedding: number[] | null) => void;
+  isSemanticSearching: boolean;
+  setIsSemanticSearching: (isSearching: boolean) => void;
   difficultyFilter: string;
   setDifficultyFilter: (filter: string) => void;
   sourceFilter: string;
@@ -120,6 +126,12 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   // Filters
   searchQuery: '',
   setSearchQuery: (searchQuery) => set({ searchQuery }),
+  searchMode: 'keyword',
+  setSearchMode: (searchMode) => set({ searchMode }),
+  semanticQueryEmbedding: null,
+  setSemanticQueryEmbedding: (semanticQueryEmbedding) => set({ semanticQueryEmbedding }),
+  isSemanticSearching: false,
+  setIsSemanticSearching: (isSemanticSearching) => set({ isSemanticSearching }),
   difficultyFilter: 'all',
   setDifficultyFilter: (difficultyFilter) => set({ difficultyFilter }),
   sourceFilter: 'all',

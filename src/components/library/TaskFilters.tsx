@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Filter, ChevronDown, ArrowUpDown, X, History as HistoryIcon, CheckSquare, Square, FileText, Download, FileSpreadsheet, Plus, BookOpen, Zap } from 'lucide-react';
+import { Search, Filter, ChevronDown, ArrowUpDown, X, History as HistoryIcon, CheckSquare, Square, FileText, Download, FileSpreadsheet, Plus, BookOpen, Zap, Brain, Loader2 } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
@@ -7,6 +7,9 @@ import { MathTask } from '../../lib/schema';
 import { exportToMarkdown, exportToWord } from '../../lib/export';
 import { useTaskFilters } from '../../hooks/useTaskFilters';
 import { GenerationStyleToggle } from '../GenerationStyleToggle';
+import { generateTaskEmbedding } from '../../lib/gemini';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 interface TaskFiltersProps {
   filters: ReturnType<typeof useTaskFilters>;
@@ -31,6 +34,9 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
 }) => {
   const {
     searchQuery, setSearchQuery,
+    searchMode, setSearchMode,
+    isSemanticSearching, setIsSemanticSearching,
+    setSemanticQueryEmbedding,
     difficultyFilter, setDifficultyFilter,
     sourceFilter, setSourceFilter,
     tagFilter, setTagFilter,
@@ -46,10 +52,41 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
   const [isDokDropdownOpen, setIsDokDropdownOpen] = useState(false);
   const [isGradeDropdownOpen, setIsGradeDropdownOpen] = useState(false);
+  const [isGeneratingEmbeddings, setIsGeneratingEmbeddings] = useState(false);
   
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const dokDropdownRef = useRef<HTMLDivElement>(null);
   const gradeDropdownRef = useRef<HTMLDivElement>(null);
+
+  const missingEmbeddingsCount = tasks.filter(t => !t.embedding).length;
+
+  const handleGenerateMissingEmbeddings = async () => {
+    if (!confirm(`Дали сте сигурни дека сакате да генерирате embeddings за ${missingEmbeddingsCount} задачи? Ова може да потрае и ќе користи квота од АИ.`)) {
+      return;
+    }
+    
+    setIsGeneratingEmbeddings(true);
+    let successCount = 0;
+    
+    // We do it sequentially or tiny batches to not hit rate limits easily
+    const tasksToProcess = tasks.filter(t => !t.embedding && t.id);
+    for (const task of tasksToProcess) {
+      try {
+        const textToEmbed = `${task.title} ${task.original_text} ${(task.solution_steps || []).join(' ')} ${(task.tags || []).join(' ')} ${task.curriculum_topic || ''}`;
+        const embedding = await generateTaskEmbedding(textToEmbed);
+        await updateDoc(doc(db, 'tasks', task.id!), { embedding });
+        successCount++;
+        // Small arbitrary delay
+        await new Promise(r => setTimeout(r, 600));
+      } catch (err) {
+        console.error("Embedding generate failed for task " + task.id, err);
+      }
+    }
+    
+    alert(`Успешно генерирани ${successCount} од ${missingEmbeddingsCount} задачи.`);
+    setIsGeneratingEmbeddings(false);
+  };
+
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -57,10 +94,10 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
         setIsTagDropdownOpen(false);
       }
       if (dokDropdownRef.current && !dokDropdownRef.current.contains(event.target as Node)) {
-        setIsDokDropdownOpen(false);
+         setIsDokDropdownOpen(false);
       }
       if (gradeDropdownRef.current && !gradeDropdownRef.current.contains(event.target as Node)) {
-        setIsGradeDropdownOpen(false);
+         setIsGradeDropdownOpen(false);
       }
     };
 
@@ -68,9 +105,26 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
+  const handleSearchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!searchQuery.trim()) {
+       setSemanticQueryEmbedding(null);
+       return;
+    }
     saveSearchToHistory(searchQuery);
+
+    if (searchMode === 'semantic') {
+       setIsSemanticSearching(true);
+       try {
+          const emb = await generateTaskEmbedding(searchQuery);
+          setSemanticQueryEmbedding(emb);
+       } catch (error) {
+          console.error("Failed to fetch embedding", error);
+          alert("Неуспешно генерирање на семантички слика. Пробајте повторно.");
+       } finally {
+          setIsSemanticSearching(false);
+       }
+    }
   };
 
   return (
@@ -79,25 +133,65 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
         <div className="flex flex-col gap-6">
           {/* Top Row: Search and Selection Mode */}
           <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-            <form onSubmit={handleSearchSubmit} className="relative flex-1 w-full max-w-2xl">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search className="w-5 h-5 text-indigo-400" />
+            <form onSubmit={handleSearchSubmit} className="relative flex-1 w-full max-w-2xl flex flex-col gap-2">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  {isSemanticSearching ? (
+                     <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
+                  ) : searchMode === 'semantic' ? (
+                     <Brain className="w-5 h-5 text-purple-500" />
+                  ) : (
+                     <Search className="w-5 h-5 text-indigo-400" />
+                  )}
+                </div>
+                <Input
+                  type="text"
+                  placeholder={searchMode === 'semantic' ? "Семантичко пребарување (пр. задачи со триаголници и Питагорова теорема)..." : "Текстуално пребарување..."}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-12 pr-12 h-14 text-lg bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-800 transition-colors rounded-2xl shadow-inner text-slate-700 dark:text-slate-200 font-medium placeholder:text-slate-400"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => { setSearchQuery(''); setSemanticQueryEmbedding(null); }}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
               </div>
-              <Input
-                type="text"
-                placeholder="Пребарај задачи по текст, наслов или таг..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-14 text-lg bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-800 transition-colors rounded-2xl shadow-inner text-slate-700 dark:text-slate-200 font-medium placeholder:text-slate-400"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+              
+              <div className="flex items-center ml-2 border bg-slate-100 rounded-lg max-w-max p-1">
+                 <button
+                    type="button"
+                    onClick={() => { setSearchMode('keyword'); setSemanticQueryEmbedding(null); }}
+                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${searchMode === 'keyword' ? 'bg-white text-indigo-700 shadow flex items-center gap-1' : 'text-slate-500 flex items-center gap-1'}`}
+                 >
+                    <Search className="w-3 h-3" /> Текстуално
+                 </button>
+                 <button
+                    type="button"
+                    onClick={() => setSearchMode('semantic')}
+                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${searchMode === 'semantic' ? 'bg-white text-purple-700 shadow flex items-center gap-1' : 'text-slate-500 flex items-center gap-1'}`}
+                    title="Користи Вештачка Интелигенција за пребарување по значење"
+                 >
+                    <Brain className="w-3 h-3" /> Семантичко
+                 </button>
+              </div>
+              
+              {searchMode === 'semantic' && missingEmbeddingsCount > 0 && (
+                <div className="flex justify-start ml-2">
+                   <button 
+                     type="button"
+                     onClick={handleGenerateMissingEmbeddings}
+                     disabled={isGeneratingEmbeddings}
+                     className="text-[10px] text-orange-500 hover:text-orange-700 underline flex items-center gap-1"
+                   >
+                     {isGeneratingEmbeddings ? <Loader2 className="w-3 h-3 animate-spin" /> : <Brain className="w-3 h-3" />}
+                     {isGeneratingEmbeddings ? 'Генерирање: почекајте...' : `Ажурирај ${missingEmbeddingsCount} неиндексирани задачи`}
+                   </button>
+                </div>
               )}
               
               {/* Search History Dropdown */}

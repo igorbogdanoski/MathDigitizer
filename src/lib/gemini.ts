@@ -56,9 +56,53 @@ function handleGeminiError(error: any): never {
   throw new Error(msg);
 }
 
+export async function generateTaskEmbedding(text: string): Promise<number[]> {
+  try {
+    const response = await ai.models.embedContent({
+      model: "text-embedding-004",
+      contents: text
+    });
+    
+    if (response.embeddings && response.embeddings.length > 0 && response.embeddings[0].values) {
+      return response.embeddings[0].values;
+    }
+    
+    // In @google/genai, embedding output format depends on the wrapper version. Try alternate path:
+    if (response.embedding && response.embedding.values) {
+       return response.embedding.values;
+    }
+
+    throw new Error("Неуспешно генерирање на embedding.");
+  } catch (error) {
+    console.error("Embedding Error:", error);
+    throw error;
+  }
+}
+
+const MATH_PLOT_INSTRUCTION = `
+Ако има потреба визуелно да се прикаже математички концепт (график, геометриска фигура, точки, вектори, кружници, агли), можеш да вметнеш JSON блок за исцртување преку ознаката \`math-plot\`. Вметни го ова како дел од текстуалното објаснување или задачата.
+ПРИМЕР:
+\`\`\`math-plot
+{
+  "viewport": {"xMin": -5, "xMax": 5, "yMin": -5, "yMax": 5},
+  "grid": {"stepX": 1, "stepY": 1, "showAxes": true},
+  "elements": [
+    {"type": "point", "x": 2, "y": 3, "label": "A", "color": "#ef4444"},
+    {"type": "segment", "x1": 0, "y1": 0, "x2": 2, "y2": 3, "color": "#10b981"},
+    {"type": "polygon", "points": [{"x":0,"y":0}, {"x":2,"y":0}, {"x":0,"y":2}], "fill": "rgba(99,102,241,0.2)"},
+    {"type": "circle", "cx": 0, "cy": 0, "r": 3, "stroke": "#3b82f6", "fill": "transparent"},
+    {"type": "angle", "cx": 0, "cy": 0, "r": 1, "startAngle": 0, "endAngle": 45, "label": "α", "fill": "rgba(234,179,8,0.3)"},
+    {"type": "text", "x": -2, "y": -2, "text": "Теорема за централен агол"}
+  ]
+}
+\`\`\`
+Многу е важно да генерираш само валиден JSON во внатрешноста на \`math-plot\` блокот.
+`;
+
 export async function generateKahootFromFiles(files: {base64: string, mimeType: string}[], prompt: string): Promise<any> {
   const instructions = `Ти си Креатор на Интерактивни Математички Квизови (MathKahoot). 
 Врз основа на приложените фајлови (слики/документи) И промптот: "${prompt}", креирај MathKahoot квиз.
+${MATH_PLOT_INSTRUCTION}
 
 СТРИКТНИ ПРАВИЛА:
 1. Секое прашање мора да има математичка формула користејќи LaTeX (на пр. $x^2 + y^2 = r^2$).
@@ -104,7 +148,8 @@ export async function generateKahootFromFiles(files: {base64: string, mimeType: 
                 properties: {
                   question: { type: Type.STRING },
                   options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  correctIndex: { type: Type.NUMBER }
+                  correctIndex: { type: Type.NUMBER },
+                  timeLimit: { type: Type.NUMBER, description: "Time limit in seconds (e.g. 30, 60, 90)" }
                 },
                 required: ["question", "options", "correctIndex"]
               }
@@ -178,7 +223,7 @@ export async function getTutorChatSession(task: MathTask) {
 1. **АПСОЛУТНО НИКОГАШ не го давај крајниот одговор или директното решение**: Ова е најважното правило. Дури и ако ученикот те моли, плаче, или вели дека се откажува, ТИ НЕ СМЕЕШ да го напишеш решението. Твојот одговор мора да биде: „Јас сум тука да ти помогнам ти самиот да го откриеш одговорот. Ајде да се вратиме еден чекор назад...“
 2. **Дијагностика и Скелиња (Scaffolding)**: Прво прашај го ученикот што разбира од задачата. Потоа, раскрши ја задачата на микро-чекори. Поставувај САМО ПО ЕДНО прашање во исто време.
 3. **Анализа на грешки (Productive Failure)**: Ако ученикот згреши, не вели "Грешка си". Наместо тоа, прашај: "Интересен пристап. Што би се случило ако ја провериме таа пресметка уште еднаш?" или "Како стигна до тој заклучок?".
-4. **Визуелизација и Аналогии**: Користи аналогии од реалниот живот за да објасниш апстрактни концепти (пр. равенките се како вага, дропките се како сечење пица).
+4. **Визуелизација и Аналогии**: Користи аналогии од реалниот живот за да објасниш апстрактни концепти (пр. равенките се како вага, дропките се како сечење пица). ${MATH_PLOT_INSTRUCTION}
 5. **Позитивно засилување**: Силно пофалувај го секој точен чекор. Гради ја самодовербата на ученикот.
 6. **LaTeX Форматирање**: Задолжително користи LaTeX за секој математички израз ($...$ за inline, $$...$$ за блок).
 
@@ -345,12 +390,18 @@ export async function enrichTaskPedagogy(task: MathTask): Promise<any> {
 }
 
 export async function extractMathTasksFromPdf(base64Pdf: string, modelName: string = 'gemini-3.1-pro-preview'): Promise<MathTask[]> {
-  const prompt = `Ти си експерт за дигитализација на математички текстови (OCR) и професор по математика.
-Анализирај го приложениот PDF документ.
+  const prompt = `Ти си експерт за дигитализација на математички текстови (Мултијазичен OCR) и професор по математика.
+Анализирај го приложениот документ.
+
+СТРАТЕГИЈА ЗА OCR И ЈАЗИЦИ:
+1. Автоматски детектирај го јазикот на документот. Моторот е специјално оптимизиран за Македонски (MK), Англиски (EN), Турски (TR) и Руски (RU) јазик.
+2. Впиши ја точната ознака за детектираниот јазик во полето \`detected_language\` (пр. 'mk', 'en', 'tr', 'ru', 'al').
+3. Задржи го оригиналниот јазик при екстракција во \`original_text\` и \`solution_steps\` за максимална автентичност, или генерирај превод доколку е потребно, но секогаш осигурај се дека математичкиот контекст е точен.
 
 Твојата цел е ПЕРФЕКТНО да ги извлечеш сите математички задачи.
 За секоја задача, врати:
 - type: "task" (задача) или "theory" (теорија)
+- detected_language: Кратенка од детектираниот јазик (mk, en, tr...)
 - title: Краток наслов
 - original_text: Целосниот текст со LaTeX ($...$ и $$...$$).
 - solution_steps: Решение чекор-по-чекор (LaTeX).
@@ -358,7 +409,7 @@ export async function extractMathTasksFromPdf(base64Pdf: string, modelName: stri
 - nanobanana_prompt: Промпт за дијаграм на англиски.
 - tags, difficulty, dok_level, grade_level, curriculum_topic.
 
-Осигурај се дека LaTeX кодот е валиден и користи литературен македонски јазик.`;
+Осигурај се дека LaTeX кодот е валиден.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -375,6 +426,7 @@ export async function extractMathTasksFromPdf(base64Pdf: string, modelName: stri
             type: Type.OBJECT,
             properties: {
               type: { type: Type.STRING, enum: ["task", "theory"] },
+              detected_language: { type: Type.STRING, description: "Auto-detected language code: mk, en, tr, al, etc." },
               title: { type: Type.STRING },
               original_text: { type: Type.STRING },
               solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -382,11 +434,12 @@ export async function extractMathTasksFromPdf(base64Pdf: string, modelName: stri
               nanobanana_prompt: { type: Type.STRING, description: "Detailed English prompt for generating an illustration or diagram if present." },
               tags: { type: Type.ARRAY, items: { type: Type.STRING } },
               difficulty: { type: Type.STRING, enum: ["easy", "medium", "hard"] },
-              dok_level: { type: Type.NUMBER },
+              dok_level: { type: Type.NUMBER, description: "Depth of Knowledge (1-4)" },
+              bloom_taxonomy: { type: Type.STRING, enum: ["Помнење", "Разбирање", "Примена", "Анализа", "Евалуација", "Креирање"], description: "Bloom's Taxonomy classification (Macedonian terms)" },
               grade_level: { type: Type.STRING },
               curriculum_topic: { type: Type.STRING }
             },
-            required: ["type", "title", "original_text", "solution_steps", "latex_formulas", "nanobanana_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic"]
+            required: ["type", "detected_language", "title", "original_text", "solution_steps", "latex_formulas", "nanobanana_prompt", "tags", "difficulty", "dok_level", "bloom_taxonomy", "grade_level", "curriculum_topic"]
           }
         }
       }
@@ -605,20 +658,58 @@ export async function generateEducationalMaterial(tasks: MathTask[], type: Mater
   }
 }
 
+export async function autoGradeSubmission(
+  question: any,
+  studentAnswer: any
+): Promise<{ score: number, feedback: string }> {
+  try {
+    const prompt = `Ти си Стручен Оценувач (Smart Grader) по математика. 
+За дадена задача, нејзините можни опции (и точен одговор/својства) и одговорот на ученикот, треба да пресметаш:
+1. Колку поени добива ученикот (од максималните).
+2. Образложение (фидбек) за зошто добива толку поени. Пишувај на македонски, охрабрувачки.
+
+ПОДАТОЦИ:
+ЗАДАЧА: ${JSON.stringify(question, null, 2)}
+УЧЕНИК ОДГОВАРА: ${JSON.stringify(studentAnswer)}
+МАКСИМАЛНИ ПОЕНИ: ${question.points || 0}
+
+ПРАВИЛА:
+- Ако е 'multiple' или 'true-false', одговорот е точен или неточен (се-или-ништо).
+- Ако е есеј или текст, процени колку е точен и додели парцијални поени.
+- Врати строго JSON формат: { "score": <number>, "feedback": "<string>" }`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-pro-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+    
+    if (!response.text) throw new Error("Нема одговор.");
+    return JSON.parse(response.text);
+  } catch (error) {
+    console.error("Auto grading error:", error);
+    return { score: 0, feedback: "Грешка при автоматското оценување. Потребен е рачен преглед." };
+  }
+}
+
 export async function advancedMultimodalExtraction(
   source: { type: 'url' | 'file' | 'text'; data: string; mimeType?: string },
   model: string = "gemini-3.1-pro-preview",
   customInstructions: string = ""
 ): Promise<MathTask[]> {
-  const prompt = `Ти си "Extraction Architect" од светска класа. Твојата мисија е ПЕРФЕКТНО извлекување на математички содржини (задачи и теорија) од дадениот извор.
+  const prompt = `Ти си "Extraction Architect" од светска класа и експерт за Мултијазичен OCR. Твојата мисија е ПЕРФЕКТНО извлекување на математички содржини (задачи и теорија) од дадениот извор.
   
-СТРАТЕГИЈА ЗА МАКСИМАЛНА ПРЕЦИЗНОСТ (Chain-of-Thought):
-1. **Транслаторски Мотор (КРИТИЧНО)**: Изворот често ќе биде на англиски јазик. Твоја задача е да функционираш како експерт-преведувач. СИТЕ ТЕКСТОВИ, ЗАДАЧИ, ТЕОРИИ И ОБЈАСНУВАЊА мора перфектно да се преведат на образовен македонски јазик во крајниот формат.
-2. **Теорија вс. Задачи**: Прво направи идентификација дали изворот содржи теоретски вовед, дефиниции или формули. ИЗВЛЕЧИ ЈА ТЕОРИЈАТА како посебен објект со \`type: "theory"\`. Задачите извлечи ги како \`type: "task"\`. За теорија, \`solution_steps\` нека содржи клучни поенти или изведувања.
-3. **МАКЕДОНСКИ СТАНДАРДИ**: Секогаш користи ДЕЦИМАЛНА ЗАПИРКА (на пр. 3,14). Користи го терминот "коефициент на правец" (наместо наклон). Терминологијата мора да биде локализирана за македонскиот образовен систем.
-4. **LaTeX**: Секој симбол, бројка и формула МОРА да биде во перфектен LaTeX ($...$).
-5. **Визуелна Реконструкција**: Ако изворот е слика или PDF, анализирај ги и ГРАФИЦИТЕ - напиши ТЕХНИЧКИ ОПИС во "nanobanana_prompt" на англиски.
-6. **Custom Instructions**: ${customInstructions || 'Нема специфични насоки.'}
+СТРАТЕГИЈА ЗА МАКСИМАЛНА ПРЕЦИЗНОСТ И МУЛТИЈАЗИЧНОСТ (Chain-of-Thought):
+1. **Автоматска Детекција на Јазик**: Изворот може да биде на повеќе јазици. Прво ДЕТЕКТИРАЈ го јазикот на изворот (на пр. оптимизирано за Македонски - mk, Англиски - en, Турски - tr, Руски - ru, Албански - al). Запиши го кодот на јазикот во \`detected_language\`.
+2. **Транслаторски Мотор наспроти Оригинал**: ЗАДРЖИ ГО ОРИГИНАЛНИОТ ЈАЗИК во \`original_text\` и \`solution_steps\` за максимална автентичност, или генерирај превод доколку специфично е побарано преку customInstructions. Важно е математичкиот контекст да остане апсолутно точен на тој јазик.
+3. **Теорија вс. Задачи**: Прво направи идентификација дали изворот содржи теоретски вовед, дефиниции или формули. ИЗВЛЕЧИ ЈА ТЕОРИЈАТА како посебен објект со \`type: "theory"\`. Задачите извлечи ги како \`type: "task"\`. За теорија, \`solution_steps\` нека содржи клучни поенти или изведувања.
+4. **Стандарди**: Доколку извлекуваш или преведуваш на македонски, користи ДЕЦИМАЛНА ЗАПИРКА (на пр. 3,14) и соодветна терминологија. За останатите јазици користи ги нивните локални образовни стандарди.
+5. **LaTeX**: Секој симбол, бројка и формула МОРА да биде во перфектен LaTeX ($...$).
+6. **Визуелна Реконструкција**: Ако изворот е слика, PDF, или ВИДЕО, анализирај ги и ГРАФИЦИТЕ. Секогаш запрашај се: "Дали на оваа задача ѝ недостасува геометриски дијаграм за да биде целосно јасна?" Ако одговорот е ДА, или ако графикот постои на сликата, задолжително напиши ТЕХНИЧКИ ОПИС во "nanobanana_prompt" на англиски. Ако не е потребен дијаграм, остави празно "".
+7. **Време на видео (Timestamps)**: Доколку изворот е видео или транскрипт од видео според кој можеш да лоцираш време, или доколку се работи за повеќе-страничен документ и знаеш на која страница е, запиши го во \`source_timestamp\` (пр. "04:15" или "Page 3").
+8. **Custom Instructions**: ${customInstructions || 'Нема специфични насоки.'}
 
 Врати JSON објект кој го анализира процесот и ги структурира податоците.`;
 
@@ -689,7 +780,9 @@ export async function advancedMultimodalExtraction(
                 type: Type.OBJECT,
                 properties: {
                   evidence_quote: { type: Type.STRING, description: "ANTI-HALLUCINATION: Quote the exact sentence or math expression from the source where this task was found. If you cannot extract it, do not generate the task." },
+                  source_timestamp: { type: Type.STRING, description: "Timestamp (e.g. 04:15) or Page number where this task occurs in the source media." },
                   type: { type: Type.STRING, enum: ["task", "theory"] },
+                  detected_language: { type: Type.STRING, description: "Auto-detected language code: mk, en, tr, al, etc." },
                   title: { type: Type.STRING },
                   original_text: { type: Type.STRING },
                   solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -697,11 +790,12 @@ export async function advancedMultimodalExtraction(
                   nanobanana_prompt: { type: Type.STRING, description: "Detailed English prompt for generating an illustration or diagram if present." },
                   tags: { type: Type.ARRAY, items: { type: Type.STRING } },
                   difficulty: { type: Type.STRING, enum: ["easy", "medium", "hard"] },
-                  dok_level: { type: Type.NUMBER },
+                  dok_level: { type: Type.NUMBER, description: "Depth of Knowledge (1-4)" },
+                  bloom_taxonomy: { type: Type.STRING, enum: ["Помнење", "Разбирање", "Примена", "Анализа", "Евалуација", "Креирање"], description: "Bloom's Taxonomy classification (Macedonian terms)" },
                   grade_level: { type: Type.STRING },
                   curriculum_topic: { type: Type.STRING }
                 },
-                required: ["evidence_quote", "type", "title", "original_text", "solution_steps", "latex_formulas", "nanobanana_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic"]
+                required: ["evidence_quote", "type", "detected_language", "title", "original_text", "solution_steps", "latex_formulas", "nanobanana_prompt", "tags", "difficulty", "dok_level", "bloom_taxonomy", "grade_level", "curriculum_topic"]
               }
             }
           },
@@ -787,15 +881,16 @@ ${timeContext}
 ${videoContext}
 ==================
 
-СТРАТЕГИЈА ЗА МАКСИМАЛНА ПРЕЦИЗНОСТ (Chain-of-Thought):
-1. **Транслаторски Мотор (КРИТИЧНО)**: Транскриптот скоро секогаш ќе биде на англиски јазик (или друг странски). Твоја задача е да функционираш како експерт-преведувач. СИТЕ ТЕКСТОВИ, ЗАДАЧИ, ТЕОРИИ И ОБЈАСНУВАЊА мора перфектно да се преведат на образовен македонски јазик во крајниот формат. Во \`original_text\` зачувај го македонскиот превод, НЕ англискиот оригинал.
-2. **Теорија вс. Задачи (КРИТИЧНО)**: Видеата често почнуваат со теоретски вовед (дефиниции, формули, правила). ИЗВЛЕЧИ ЈА ТЕОРИЈАТА како посебен објект со \`type: "theory"\`. Задачите извлечи ги како \`type: "task"\`. Ова е многу важно за градење на лекции. За теорија, во "solution_steps" напиши ги клучните поенти или изведувања (на македонски).
-3. **МАКЕДОНСКИ СТАНДАРДИ**: Користи ДЕЦИМАЛНА ЗАПИРКА (на пр. 3,14), а не точка. Користи "коефициент на правец" (наместо наклон). 
-4. **LaTeX Енкодинг**: Секој математички симбол, бројка или равенка МОРА да биде во LaTeX ($...$).
-5. **Илустрации**: Ако е спомнат цртеж, во "nanobanana_prompt" направи ТЕХНИЧКИ ОПИС на англиски.
+СТРАТЕГИЈА ЗА МАКСИМАЛНА ПРЕЦИЗНОСТ И МУЛТИЈАЗИЧНОСТ (Chain-of-Thought):
+1. **Автоматска Детекција на Јазик**: Транскриптот може да биде на повеќе јазици (на пр. Англиски, Македонски, Турски, Руски). Твоја прва задача е да го ДЕТЕКТИРАШ оригиналниот јазик. Запиши ја ознаката за јазикот (mk, en, tr, ru, итн.) во \`detected_language\`.
+2. **Оригинал наспроти Превод**: ЗАДРЖИ ГО оригиналниот јазик во \`original_text\` и \`solution_steps\` за да остане содржината автентична со видеото, ОСВЕН ако транскриптот не е квалитетен, тогаш полирај го текстот на истиот тој јазик.
+3. **Теорија вс. Задачи (КРИТИЧНО)**: Видеата често почнуваат со теоретски вовед (дефиниции, формули, правила). ИЗВЛЕЧИ ЈА ТЕОРИЈАТА како посебен објект со \`type: "theory"\`. Задачите извлечи ги како \`type: "task"\`. Ова е многу важно за градење на лекции. За теорија, во "solution_steps" напиши ги клучните поенти или изведувања.
+4. **Стандарди за Форматирање**: Користи релевантни математички стандарди (пр. децимална запирка за Македонски).
+5. **LaTeX Енкодинг**: Секој математички симбол, бројка или равенка МОРА да биде во перфектен LaTeX ($...$).
+6. **Илустрации**: Ако е спомнат цртеж, во "nanobanana_prompt" направи ТЕХНИЧКИ ОПИС на англиски.
 
 ПРАВИЛА ЗА ЈАЗИК:
-- "original_text", "title" и "solution_steps" МОРА да се исклучиво на литературен македонски јазик. Не оставај англиски зборови освен ако не се интернационални ознаки.
+- "original_text", "title" и "solution_steps" треба да бидат на детектираниот јазик, граматички обработени за да изгледаат како професионален учебник.
 
 Врати JSON објект со следната структура која симулира NotebookLM (прво длабинска анализа, па потоа теорија и задачи).`;
 
@@ -817,6 +912,7 @@ ${videoContext}
                 properties: {
                   evidence_quote: { type: Type.STRING, description: "ANTI-HALLUCINATION: Quote the exact sentence from the transcript where this task begins." },
                   type: { type: Type.STRING, enum: ["task", "theory"] },
+                  detected_language: { type: Type.STRING, description: "Auto-detected language code: mk, en, tr, al, etc." },
                   title: { type: Type.STRING },
                   original_text: { type: Type.STRING },
                   solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -825,12 +921,13 @@ ${videoContext}
                   source_timestamp: { type: Type.STRING, description: "Estimate video timestamp, e.g., [12:30]" },
                   tags: { type: Type.ARRAY, items: { type: Type.STRING } },
                   difficulty: { type: Type.STRING, enum: ["easy", "medium", "hard"] },
-                  dok_level: { type: Type.NUMBER },
+                  dok_level: { type: Type.NUMBER, description: "Depth of Knowledge (1-4)" },
+                  bloom_taxonomy: { type: Type.STRING, enum: ["Помнење", "Разбирање", "Примена", "Анализа", "Евалуација", "Креирање"], description: "Bloom's Taxonomy classification (Macedonian terms)" },
                   grade_level: { type: Type.STRING },
                   curriculum_topic: { type: Type.STRING },
                   hints: { type: Type.ARRAY, items: { type: Type.STRING } }
                 },
-                required: ["evidence_quote", "type", "title", "original_text", "solution_steps", "latex_formulas", "nanobanana_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic", "hints"]
+                required: ["evidence_quote", "type", "detected_language", "title", "original_text", "solution_steps", "latex_formulas", "nanobanana_prompt", "tags", "difficulty", "dok_level", "bloom_taxonomy", "grade_level", "curriculum_topic", "hints"]
               }
             }
           },
@@ -1188,6 +1285,17 @@ export async function analyzeSolutionImage(task: MathTask, base64Image: string, 
   suggestions: string[];
   score: number;
   bloom_level_assessed?: "remember" | "understand" | "apply" | "analyze" | "evaluate" | "create";
+  pedagogical_evaluation?: {
+    framework: 'bloom' | 'dok' | 'solo';
+    level: string;
+    reason: string;
+  };
+  identified_weaknesses?: string[]; // Specific mathematical concepts the student struggled with
+  rubric_breakdown: {
+    concept: { score: number, comment: string };
+    execution: { score: number, comment: string };
+    presentation: { score: number, comment: string };
+  };
 }> {
   const prompt = `Ти си Специјализиран AI За Оценување Математика (Math Auto-Grader). Ученикот прикачи слика од својата работа за следната задача:
 
@@ -1197,13 +1305,20 @@ ${task.original_text}
 РЕШЕНИЕ ЗА РЕФЕРЕНЦА:
 ${task.solution_steps?.join('\n')}
 
-МЕТОДОЛОГИЈА ЗА ОЦЕНУВАЊЕ (The AI Auto-Grader Protocol):
+МЕТОДОЛОГИЈА ЗА ОЦЕНУВАЊЕ (The Formative Auto-Grader Protocol):
 1. **Транскрипција & Споредба:** Прочитај го ракописот. Спореди го чекор-по-чекор со референтното решение.
-2. **Локализација на Грешки:** Најди ја ТОЧНАТА локација на грешката (пр. "Ученикот заборавил минус пред тројката во вториот чекор додека решаваше квадратна равенка").
-3. **Парцијални поени (Partial Scoring):** Додели поени од 0 до 100. Ако ученикот имал правилен концепт, но компјутациска грешка, не му давај 0. Вреднувај ги чекорите кои се точни пред грешката.
-4. **Блумово Ниво (Bloom's Assessment):** Одреди до кое когнитивно ниво ученикот покажал разбирање. Ако направил само грешка во собирање (apply), но знаел да ја постави формулата (analyze), евалуирај го соодветно.
-5. **Фидбек:** Напиши пријателски фидбек што го фали за тоа што го направил добро, и му укажува на грешката без да звучи дестимулирачки.
-6. Користи LaTeX за сите формули. Јазик: Македонски.
+2. **Локализација на Грешки:** Најди ја ТОЧНАТА локација на грешката (пр. "Ученикот заборавил минус пред тројката во вториот чекор").
+3. **Парцијални поени (Partial Scoring):** Додели поени од 0 до 100. Ако ученикот имал правилен концепт, но компјутациска грешка, не му давај 0.
+4. **Формативна Рубрика (Rubric Breakdown):** Раздели го извештајот во 3 димензии (секоја од 0 до 100 поени):
+   - Concept: Дали ученикот го разбрал методот и формулата? (Концептуално знаење)
+   - Execution: Дали алгебарската и аритметичката пресметка е точна? (Процедурално знаење)
+   - Presentation: Дали чекорите се запишани логично, читливо и по ред? (Комуникациски вештини)
+5. **Динамична Педагошка Метрика (Cognitive Framework):** Анализирај ја природата на задачата (дали е едноставна пресметка, комплексен проблем, или доказ). Самостојно одбери го НАЈПОГОДНИОТ педагошки фајмворк за да го оцениш знаењето што го покажал ученикот:
+   - 'bloom' (Блумова таксономија) - најдобра за општо когнитивно ниво (вредности: "remember", "understand", "apply", "analyze", "evaluate", "create").
+   - 'dok' (Webb's Depth of Knowledge) - најдобра за мерење комплексност (вредности: "level_1", "level_2", "level_3", "level_4").
+   - 'solo' (SOLO Taxonomy) - најдобра за евалуација на структура и квалитет на аргументацијата (вредности: "prestructural", "unistructural", "multistructural", "relational", "extended_abstract").
+6. **Детекција на Празнини во Знаење (Knowledge Gaps):** Во полето 'identified_weaknesses' наведи 1-3 конкретни математички концепти во кои ученикот греши (на пр. "Дропки", "Редици", "Негативни броеви", "Питагорова теорема"). Ако нема грешки, врати празна листа [].
+7. **Фидбек:** Напиши конструктивен формат каде ја објаснуваш грешката но и фалиш што е направено добро. Користи LaTeX.
 
 Врати го одговорот ВО СТРОГО JSON ФОРМАТ.`;
 
@@ -1222,10 +1337,28 @@ ${task.solution_steps?.join('\n')}
             analysis: { type: Type.STRING },
             errorsFound: { type: Type.ARRAY, items: { type: Type.STRING } },
             suggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
-            score: { type: Type.NUMBER, description: "Поени од 0 до 100 базирано на парцијално оценување." },
-            bloom_level_assessed: { type: Type.STRING, enum: ["remember", "understand", "apply", "analyze", "evaluate", "create"] }
+            score: { type: Type.NUMBER, description: "Генерални поени (0-100)." },
+            pedagogical_evaluation: {
+              type: Type.OBJECT,
+              properties: {
+                framework: { type: Type.STRING, enum: ["bloom", "dok", "solo"] },
+                level: { type: Type.STRING, description: "На пр. 'apply' за bloom, 'level_3' за dok, 'relational' за solo." },
+                reason: { type: Type.STRING, description: "Кратко објаснување зошто е избрана токму оваа метрика за оваа задача." }
+              },
+              required: ["framework", "level", "reason"]
+            },
+            identified_weaknesses: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Specific mathematical concepts missed, e.g. ['Fractions', 'Negative Numbers'] or in Macedonian ['Дропки', 'Негативни броеви']" },
+            rubric_breakdown: {
+              type: Type.OBJECT,
+              properties: {
+                concept: { type: Type.OBJECT, properties: { score: { type: Type.NUMBER }, comment: { type: Type.STRING } }, required: ["score", "comment"] },
+                execution: { type: Type.OBJECT, properties: { score: { type: Type.NUMBER }, comment: { type: Type.STRING } }, required: ["score", "comment"] },
+                presentation: { type: Type.OBJECT, properties: { score: { type: Type.NUMBER }, comment: { type: Type.STRING } }, required: ["score", "comment"] }
+              },
+              required: ["concept", "execution", "presentation"]
+            }
           },
-          required: ["analysis", "errorsFound", "suggestions", "score", "bloom_level_assessed"]
+          required: ["analysis", "errorsFound", "suggestions", "score", "pedagogical_evaluation", "rubric_breakdown"]
         }
       }
     });
@@ -1234,6 +1367,67 @@ ${task.solution_steps?.join('\n')}
     return JSON.parse(response.text);
   } catch (error) {
     console.error("Error analyzing solution image:", error);
+    throw error;
+  }
+}
+
+export async function generateMakedoTestFromTasks(tasks: MathTask[], testInstructions: string): Promise<any> {
+  const prompt = `Ти си Експерт по Дизајн на Образование и СТЕМ методики. Твоја задача е да креираш висококвалитетен тест - "МакедоТест Про v6.0" базирано на следните извлечени математички задачи и инструкции.
+
+ИНСТРУКЦИИ ОД НАСТАВНИКОТ:
+${testInstructions}
+
+ИЗВОРНИ ЗАДАЧИ ЗА ТЕСТОТ:
+${tasks.map((t, idx) => `[Задача ${idx+1}]\nНаслов: ${t.title}\nТекст: ${t.original_text}\nРешение: ${t.solution_steps?.join(' ')}`).join('\n\n')}
+
+**МЕТОДОЛОГИЈА (CoT & ToT):**
+Најпрво одреди кои формати најдобро одговараат за овие задачи (на пр. некои нека бидат multiple choice, некои short-answer, некои fill-blanks). Избери ги најсоодветните типови на прашања според Блумовата таксономија.
+
+**ТЕХНИЧКИ ПРАВИЛА ЗА МАКЕДОТЕСТ ПРО v6.0:**
+1. **Јазик:** Чист македонски литературен јазик.
+2. **LaTeX Форматирање:** За математички формули ЗАДОЛЖИТЕЛНО користи LaTeX во \`$\`. Бидејќи излезот е JSON, сите бекслеш карактери во LaTeX командите МОРА да бидат ескејпирани со ДВОЕН бекслеш (пр. \`$\\\\frac{1}{2}$\`, \`$\\\\sqrt{x^2}$\`).
+3. Структура на излезот: Финалниот JSON МОРА да биде валиден JSON објект со title, grade_level, subject, и questions (array).
+
+**ДОЗВОЛЕНИ ТИПОВИ (JSON СТРУКТУРИ за questions):**
+Можеш да комбинираш од следниве 16 формати, избирајќи го најсоодветниот за секоја задача:
+1. \`multiple\`: { "type": "multiple", "text": "...", "options": ["A", "B", "C"], "correct": 0 }
+2. \`true-false\`: { "type": "true-false", "text": "...", "correct": 0 } (0=Точно, 1=Неточно)
+3. \`fill-blanks\`: { "type": "fill-blanks", "text": "Текст со [празнина]." }
+4. \`matching\`: { "type": "matching", "text": "...", "pairs": [{"left": "А", "right": "1"}] }
+5. \`list\`: { "type": "list", "text": "Наброј...", "items": ["", "", ""] }
+6. \`short-answer\`: { "type": "short-answer", "text": "..." }
+7. \`checklist\`: { "type": "checklist", "text": "...", "options": ["A", "B"], "corrects": [0, 1] }
+8. \`table\`: { "type": "table", "text": "...", "tableData": {"rows": 3, "cols": 2, "data": {"0-0": {"val": "X", "isAns": true}}} }
+9. \`multi-part\`: { "type": "multi-part", "text": "...", "parts": ["а) ...", "б) ..."] }
+10. \`ordering\`: { "type": "ordering", "text": "Подреди...", "items": ["Прво", "Второ"] }
+11. \`essay\`: { "type": "essay", "text": "..." }
+12. \`diagram\`: { "type": "diagram", "text": "Означи...", "imageUrl": "..." }
+13. \`statements\`: { "type": "statements", "text": "...", "items": [{"s": "Изјава", "correct": 0}] }
+14. \`selection\`: { "type": "selection", "text": "Реченица со {точен|грешен} избор." }
+15. \`multi-match\`: { "type": "multi-match", "text": "...", "matches": [{"s": "Изјава", "a": "Одговор"}] }
+16. \`section\`: { "type": "section", "text": "НАСЛОВ НА ДЕЛ" }
+
+Врати го резултатот како JSON објект со следните својства:
+{
+  "title": "Наслов на тестот",
+  "grade_level": "Одделение (пр. 6то одд.)",
+  "subject": "Предмет",
+  "questions": [ ... array од question објекти ... ]
+}`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-pro-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    if (!response.text) throw new Error("Нема одговор.");
+    return JSON.parse(response.text);
+  } catch (error) {
+    console.error("Error generating MakedoTest:", error);
     throw error;
   }
 }

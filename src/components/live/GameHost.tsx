@@ -33,7 +33,8 @@ export const GameHost = ({ sessionPin }: { sessionPin: string }) => {
   const startGame = async () => {
     await updateDoc(doc(db, 'live_sessions', sessionPin), {
       status: 'playing',
-      current_question_index: 0
+      current_question_index: 0,
+      current_question_start_time: Date.now()
     });
   };
 
@@ -44,7 +45,8 @@ export const GameHost = ({ sessionPin }: { sessionPin: string }) => {
       // Reset participant answers
       const updates: any = {
         status: 'playing',
-        current_question_index: session.current_question_index + 1
+        current_question_index: session.current_question_index + 1,
+        current_question_start_time: Date.now()
       };
       
       const newParticipants = { ...session.participants };
@@ -161,8 +163,17 @@ export const GameHost = ({ sessionPin }: { sessionPin: string }) => {
 
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col p-6 transition-colors">
-        <header className="flex justify-between items-center mb-8 bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-4">
+        <header className="flex justify-between items-center mb-8 bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+          {session.status === 'playing' && session.current_question_start_time && currentQuestion?.timeLimit && (
+             <div className="absolute bottom-0 left-0 h-1 bg-indigo-500 transition-all ease-linear" style={{
+               width: '100%',
+               animation: `shrink ${currentQuestion.timeLimit}s linear forwards`
+             }}>
+             </div>
+          )}
+          <style>{`@keyframes shrink { from { width: 100%; } to { width: 0%; } }`}</style>
+
+          <div className="flex items-center gap-4 relative z-10">
             <div className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-400 font-bold px-4 py-2 rounded-lg">
               PIN: {session.id}
             </div>
@@ -170,7 +181,7 @@ export const GameHost = ({ sessionPin }: { sessionPin: string }) => {
               Q: {session.current_question_index + 1} / {questionCount}
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 relative z-10">
             <span className="font-bold text-slate-700 dark:text-slate-300">
               {answeredCount} / {participants.length} Answers
             </span>
@@ -178,7 +189,7 @@ export const GameHost = ({ sessionPin }: { sessionPin: string }) => {
           </div>
         </header>
 
-        <main className="flex-1 max-w-5xl w-full mx-auto flex flex-col gap-8">
+        <main className="flex-1 max-w-5xl w-full mx-auto flex flex-col gap-8 relative z-10">
           <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 text-center">
             <h2 className="text-3xl md:text-5xl font-bold leading-tight text-slate-900 dark:text-white">
               <MathRenderer content={currentQuestion?.question || ''} />

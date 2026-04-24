@@ -1,0 +1,343 @@
+import React, { useState } from 'react';
+import { MakedoTestDocument, MakedoQuestion, SummativeExam } from '../lib/schema';
+import { MathRenderer } from './MathRenderer';
+import { Printer, Edit3, ArrowUp, ArrowDown, Eye, Copy, Check } from 'lucide-react';
+import { Button } from './ui/Button';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+
+interface MakedoTestViewerProps {
+  test: MakedoTestDocument;
+}
+
+export const MakedoTestViewer: React.FC<MakedoTestViewerProps> = ({ test: initialTest }) => {
+  const { user } = useAuth();
+  const [test, setTest] = useState<MakedoTestDocument>(initialTest);
+  const [isEditing, setIsEditing] = useState(false);
+  
+  // Dugga-like Link States
+  const [examLink, setExamLink] = useState<string | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+
+  const moveUp = (index: number) => {
+    if (index === 0) return;
+    const newQuestions = [...test.questions];
+    const temp = newQuestions[index];
+    newQuestions[index] = newQuestions[index - 1];
+    newQuestions[index - 1] = temp;
+    setTest({ ...test, questions: newQuestions });
+  };
+
+  const moveDown = (index: number) => {
+    if (index === test.questions.length - 1) return;
+    const newQuestions = [...test.questions];
+    const temp = newQuestions[index];
+    newQuestions[index] = newQuestions[index + 1];
+    newQuestions[index + 1] = temp;
+    setTest({ ...test, questions: newQuestions });
+  };
+
+  const updateQuestion = (index: number, updates: Partial<MakedoQuestion>) => {
+    const newQuestions = [...test.questions];
+    newQuestions[index] = { ...newQuestions[index], ...updates };
+    setTest({ ...test, questions: newQuestions });
+  };
+
+  const totalPoints = test.questions.reduce((sum, q) => sum + (q.points || 0), 0);
+
+  const createDuggaLink = async () => {
+    if (!user) {
+       alert("Мора да сте најавени како наставник за да креирате онлајн испит.");
+       return;
+    }
+    
+    setIsGeneratingLink(true);
+    try {
+      const examId = 'exam_' + Math.floor(Math.random() * 10000000).toString();
+      const examData: SummativeExam = {
+        id: examId,
+        teacher_uid: user.uid,
+        test_data: test,
+        created_at: Date.now(),
+        status: 'open'
+      };
+      
+      await setDoc(doc(db, 'summative_exams', examId), examData);
+      setExamLink(`${window.location.origin}/exam/${examId}`);
+    } catch(err) {
+      console.error(err);
+      alert("Грешка при креирање на линкот.");
+    } finally {
+      setIsGeneratingLink(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (examLink) {
+      navigator.clipboard.writeText(examLink);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="bg-white max-w-5xl mx-auto rounded-xl shadow-md overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700 font-sans relative">
+      {/* Exam Link Modal / Banner */}
+      {examLink && (
+        <div className="bg-emerald-50 border-b border-emerald-200 p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex-1">
+             <h3 className="text-emerald-800 font-black text-lg">Испитот е подготвен за онлајн решавање!</h3>
+             <p className="text-emerald-600 font-medium text-sm">Споделете го овој линк со учениците. Тие ќе можат веднаш да почнат со решавање.</p>
+          </div>
+          <div className="flex items-center gap-2 bg-white border border-emerald-200 rounded-lg p-1 w-full md:w-auto">
+            <input type="text" readOnly value={examLink} className="bg-transparent border-none focus:ring-0 text-sm font-mono text-slate-600 px-3 w-full md:w-64" />
+            <Button size="sm" onClick={copyToClipboard} className="bg-emerald-500 hover:bg-emerald-600 text-white whitespace-nowrap">
+               {isCopied ? <><Check className="w-4 h-4 mr-1" /> Копирано</> : <><Copy className="w-4 h-4 mr-1" /> Копирај Линк</>}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-slate-900 px-8 py-6 flex flex-col md:flex-row justify-between items-start md:items-center text-white gap-4">
+        <div className="flex-1 w-full">
+          {isEditing ? (
+            <input 
+              type="text" 
+              value={test.title} 
+              onChange={e => setTest({...test, title: e.target.value})}
+              className="text-2xl font-black bg-white/10 border border-white/20 rounded px-2 py-1 mb-1 w-full text-white" 
+            />
+          ) : (
+            <h2 className="text-2xl font-black">{test.title}</h2>
+          )}
+          <p className="text-slate-300 text-sm mt-1">{test.subject} • {test.grade_level}</p>
+        </div>
+        <div className="flex gap-2 shrink-0 flex-wrap">
+           {isEditing && (
+             <div className="flex items-center gap-2 mr-4 bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
+               <span className="text-sm font-bold text-slate-300 uppercase tracking-widest">Вкупно Поени:</span>
+               <span className="text-lg font-black text-emerald-400">{totalPoints}</span>
+             </div>
+           )}
+           <Button variant="outline" className={`border-white/20 font-bold ${isEditing ? 'bg-indigo-600 text-white border-indigo-500 hover:bg-indigo-700' : 'text-slate-800 hover:bg-white bg-white/90'}`} onClick={() => setIsEditing(!isEditing)}>
+             {isEditing ? <><Eye className="w-4 h-4 mr-2" /> Заврши со уредување</> : <><Edit3 className="w-4 h-4 mr-2" /> Прашања & Параметри</>}
+           </Button>
+           <Button variant="outline" disabled={isGeneratingLink} className="border-white/20 text-slate-800 hover:bg-white bg-emerald-500 hover:bg-emerald-400 text-white border-emerald-400 font-bold" onClick={createDuggaLink}>
+             {isGeneratingLink ? "Се креира..." : "Онлајн Решавање (Dugga)"}
+           </Button>
+           <Button variant="outline" className="border-white/20 text-slate-800 hover:bg-white bg-white/90 font-bold" onClick={() => window.print()}>
+             <Printer className="w-4 h-4 mr-2" /> Печати
+           </Button>
+        </div>
+      </div>
+
+      <div className="p-8 space-y-8 flex flex-col items-stretch print:p-8 print:space-y-4">
+        {test.questions.map((q, idx) => (
+          <div key={idx} className={`pb-8 border-b ${isEditing ? 'border-blue-100 bg-slate-50/50 p-6 rounded-2xl' : 'border-slate-100'} last:border-0 print:break-inside-avoid print:pb-4 print:p-0`}>
+            
+            {/* Extended Editor Tools Top Bar */}
+            {isEditing && (
+              <div className="flex flex-wrap gap-4 items-center justify-between mb-4 border-b border-slate-200 pb-4">
+                 <div className="flex items-center gap-1">
+                    <Button variant="outline" size="sm" onClick={() => moveUp(idx)} disabled={idx === 0} className="w-8 h-8 p-0 shrink-0 bg-white"><ArrowUp className="w-4 h-4" /></Button>
+                    <Button variant="outline" size="sm" onClick={() => moveDown(idx)} disabled={idx === test.questions.length - 1} className="w-8 h-8 p-0 shrink-0 bg-white"><ArrowDown className="w-4 h-4" /></Button>
+                    <div className="bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-md text-xs ml-2 tracking-widest uppercase">{q.type}</div>
+                 </div>
+                 <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2">
+                       <label className="text-xs font-bold text-slate-500">ПОЕНИ:</label>
+                       <input 
+                         type="number" 
+                         value={q.points || 0} 
+                         onChange={e => updateQuestion(idx, { points: Number(e.target.value) })}
+                         className="w-16 h-8 border border-slate-300 rounded-md px-2 font-bold text-slate-800 bg-white"
+                       />
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <label className="text-xs font-bold text-slate-500">БЛУМ:</label>
+                       <select 
+                         value={q.bloom_taxonomy || ''} 
+                         onChange={e => updateQuestion(idx, { bloom_taxonomy: e.target.value })}
+                         className="h-8 border border-slate-300 rounded-md px-2 text-xs font-bold text-slate-700 max-w-28 bg-white"
+                       >
+                         <option value="">Неодредено</option>
+                         <option value="Помнење">Помнење</option>
+                         <option value="Разбирање">Разбирање</option>
+                         <option value="Примена">Примена</option>
+                         <option value="Анализа">Анализа</option>
+                         <option value="Евалуација">Евалуација</option>
+                         <option value="Создавање">Создавање</option>
+                       </select>
+                    </div>
+                 </div>
+              </div>
+            )}
+
+            <div className="flex items-start gap-4 flex-1">
+              <span className="font-bold text-slate-400 mt-1">{idx + 1}.</span>
+              <div className="flex-1 w-full relative">
+                
+                {/* Print Header Meta (for Points) */}
+                {!isEditing && q.points && q.points > 0 && (
+                  <div className="absolute -top-1 right-0 text-xs font-bold text-slate-400 border border-slate-200 px-2 py-1 rounded-lg">
+                    {q.points} поен(и)
+                  </div>
+                )}
+
+                {q.type === 'section' ? (
+                  isEditing ? (
+                    <input 
+                      type="text" 
+                      value={q.text} 
+                      onChange={e => updateQuestion(idx, { text: e.target.value })}
+                      className="text-xl font-black text-slate-800 uppercase tracking-widest bg-white border border-blue-200 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500" 
+                    />
+                  ) : (
+                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-widest bg-slate-50 p-3 rounded-lg border-l-4 border-indigo-500">
+                      <MathRenderer content={q.text} />
+                    </h3>
+                  )
+                ) : (
+                  <div className="text-slate-800 font-medium text-[1.05rem] leading-relaxed mb-4 w-full pr-16 print:pr-12">
+                    {isEditing ? (
+                      <textarea 
+                        value={q.text}
+                        onChange={e => updateQuestion(idx, { text: e.target.value })}
+                        className="w-full text-slate-800 bg-white border border-blue-200 rounded-lg p-3 min-h-24 resize-y focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                      />
+                    ) : (
+                      <MathRenderer content={q.text} />
+                    )}
+                  </div>
+                )}
+
+                {/* Specific Types (View & Edit handling) */}
+                {q.type === 'multiple' && q.options && (
+                  <div className="space-y-2 mt-4 ml-6">
+                    {q.options.map((opt, i) => (
+                      <div key={i} className="flex items-center gap-3 w-full">
+                        <label className={`flex flex-1 items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors border ${isEditing && q.correct === i ? 'bg-emerald-50 border-emerald-200 ring-1 ring-emerald-400' : 'bg-slate-50 hover:bg-slate-100 border-slate-200'}`}>
+                          <input type="radio" name={`q-${idx}`} checked={isEditing && q.correct === i} onChange={() => isEditing && updateQuestion(idx, { correct: i })} className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300" />
+                          {isEditing ? (
+                             <input 
+                               type="text" 
+                               value={opt} 
+                               onChange={e => {
+                                 const newOpts = [...q.options!];
+                                 newOpts[i] = e.target.value;
+                                 updateQuestion(idx, { options: newOpts });
+                               }}
+                               className="bg-transparent border-b border-indigo-200 focus:border-indigo-500 focus:ring-0 flex-1 outline-none text-sm font-medium"
+                             />
+                          ) : (
+                             <span className="text-sm font-medium text-slate-700"><MathRenderer content={opt} /></span>
+                          )}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {q.type === 'true-false' && (
+                  <div className="flex gap-4 mt-4 ml-6">
+                    {['Точно', 'Неточно'].map((opt, i) => (
+                      <label key={i} className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-slate-100 min-w-32 ${isEditing && q.correct === i ? 'bg-emerald-50 border-emerald-300 ring-1 ring-emerald-400' : 'bg-slate-50 border-slate-200'}`}>
+                        <input type="radio" name={`tf-${idx}`} checked={isEditing && q.correct === i} onChange={() => isEditing && updateQuestion(idx, { correct: i })} className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300" />
+                        <span className="text-sm font-bold text-slate-700">{opt}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {q.type === 'fill-blanks' && (
+                  <div className="mt-4 ml-6 w-full max-w-lg">
+                    <input type="text" className="w-full bg-slate-50 border-b-2 border-slate-300 focus:border-indigo-500 focus:ring-0 p-2 text-slate-800" placeholder="Внесете одговор овде..." disabled={!isEditing} />
+                  </div>
+                )}
+
+                {q.type === 'short-answer' && (
+                  <div className="mt-4 ml-6">
+                    <textarea className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 h-24 resize-none" placeholder="Простор за одговор/постапка..." disabled={!isEditing}></textarea>
+                  </div>
+                )}
+
+                {q.type === 'essay' && (
+                  <div className="mt-4 ml-6">
+                    <textarea className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 h-48 resize-none" placeholder="Простор за есеј/обемно решавање..." disabled={!isEditing}></textarea>
+                  </div>
+                )}
+                
+                {q.type === 'list' && q.items && (
+                  <div className="mt-4 ml-6 space-y-2">
+                    {q.items.map((it, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-slate-300"></div>
+                        <input type="text" className="flex-1 bg-slate-50 border-b border-slate-200 p-1 focus:border-indigo-500 focus:ring-0" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {q.type === 'checklist' && q.options && (
+                  <div className="space-y-2 mt-4 ml-6">
+                    {q.options.map((opt, i) => (
+                      <label key={i} className={`flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors border ${isEditing && q.corrects?.includes(i) ? 'bg-emerald-50 border-emerald-200' : 'border-slate-200'}`}>
+                        <input 
+                          type="checkbox" 
+                          checked={isEditing && q.corrects?.includes(i)}
+                          onChange={() => {
+                            if (!isEditing) return;
+                            const newCorrects = q.corrects ? [...q.corrects] : [];
+                            if (newCorrects.includes(i)) newCorrects.splice(newCorrects.indexOf(i), 1);
+                            else newCorrects.push(i);
+                            updateQuestion(idx, { corrects: newCorrects });
+                          }}
+                          className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 border-slate-300" 
+                        />
+                        {isEditing ? (
+                             <input 
+                               type="text" 
+                               value={opt} 
+                               onChange={e => {
+                                 const newOpts = [...q.options!];
+                                 newOpts[i] = e.target.value;
+                                 updateQuestion(idx, { options: newOpts });
+                               }}
+                               className="bg-transparent border-b border-indigo-200 focus:border-indigo-500 focus:ring-0 flex-1 outline-none text-sm font-medium"
+                             />
+                        ) : (
+                          <span className="text-sm font-medium text-slate-700"><MathRenderer content={opt} /></span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {q.type === 'matching' && q.pairs && (
+                  <div className="mt-4 ml-6 grid grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                      {q.pairs.map((p, i) => (
+                        <div key={i} className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700"><MathRenderer content={p.left} /></div>
+                      ))}
+                    </div>
+                    <div className="space-y-3">
+                      {q.pairs.map((p, i) => (
+                        <div key={i} className="flex gap-2 items-center">
+                          <input type="text" className="w-12 h-10 text-center border border-slate-300 rounded-lg" placeholder="..." />
+                          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm flex-1 text-slate-700"><MathRenderer content={p.right} /></div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};

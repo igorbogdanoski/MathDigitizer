@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User, X, Loader2, Lightbulb, ImageIcon, Camera, PenTool, Volume2, VolumeX } from 'lucide-react';
+import { Send, Bot, User, X, Loader2, Lightbulb, Camera, PenTool, Volume2, VolumeX, Brain, Target, Compass } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { MathTask } from '../lib/schema';
@@ -19,6 +19,7 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
   const [chatSession, setChatSession] = useState<any>(null);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [activePedagogyStep, setActivePedagogyStep] = useState(1);
   
   // TTS State
   const [playingAudioIndex, setPlayingAudioIndex] = useState<number | null>(null);
@@ -34,12 +35,11 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
       setChatSession(session);
       setMessages([{
         role: 'model',
-        text: `Здраво! Јас сум твојот AI тутор. Ајде заедно да ја решиме оваа задача:\n\n**${task.title}**\n${task.original_text}\n\nШто мислиш, од каде треба да започнеме?`
+        text: `Здраво! Јас сум твојот AI тутор. Ајде заедно да ја решиме оваа задача:\n\n**Да се потсетиме на правилата:** Не го давам крајниот резултат веднаш, туку ќе те водам чекор по чекор. \n\nШто мислиш, кој е првиот чекор за нејзино решавање?`
       }]);
     };
     initChat();
     
-    // Cleanup audio on unmount
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -64,9 +64,11 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
     try {
       const response = await chatSession.sendMessage({ message: userMsg });
       setMessages(prev => [...prev, { role: 'model', text: response.text }]);
+      // Synthetically advance pedagogy steps
+      if (activePedagogyStep < 3) setActivePedagogyStep(prev => prev + 1);
     } catch (error) {
       console.error("Chat error:", error);
-      setMessages(prev => [...prev, { role: 'model', text: "Извини, настана грешка. Можеш ли да повториш?" }]);
+      setMessages(prev => [...prev, { role: 'model', text: "Извини, настана комуникациска грешка. Можеш ли да повториш?" }]);
     } finally {
       setIsLoading(false);
     }
@@ -80,16 +82,17 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
     try {
       const result = await analyzeSolutionImage(task, base64Image, mimeType);
       
-      let analysisText = `**Анализа на твоето решение:**\n\n${result.analysis}\n\n`;
+      let analysisText = `**Анализа (SmartVision):**\n\n${result.analysis}\n\n`;
       if (result.errorsFound.length > 0) {
         analysisText += `**Пронајдени грешки:**\n${result.errorsFound.map(e => `- ${e}`).join('\n')}\n\n`;
       }
-      analysisText += `**Препораки:**\n${result.suggestions.map(s => `- ${s}`).join('\n')}`;
+      analysisText += `**Препораки за следни чекори:**\n${result.suggestions.map(s => `- ${s}`).join('\n')}`;
       
       setMessages(prev => [...prev, { role: 'model', text: analysisText }]);
+      if (activePedagogyStep < 3) setActivePedagogyStep(prev => prev + 1);
     } catch (err) {
       console.error("Image analysis error:", err);
-      setMessages(prev => [...prev, { role: 'model', text: "Извини, не успеав да ја анализирам сликата. Обиди се пак со појасна слика или цртеж." }]);
+      setMessages(prev => [...prev, { role: 'model', text: "Извини, не успеав да ја дешифрирам сликата. Обиди се со појасен агол." }]);
     } finally {
       setIsAnalyzingImage(false);
     }
@@ -103,7 +106,7 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
       const reader = new FileReader();
       reader.onload = async (event) => {
         const base64Image = (event.target?.result as string).split(',')[1];
-        await processImageSubmission(base64Image, file.type, "Прикачив слика од моето решение. Можеш ли да го провериш?");
+        await processImageSubmission(base64Image, file.type, "Прикачив слика/цртеж. Дали сум на добар пат?");
       };
       reader.readAsDataURL(file);
     } catch (err) {
@@ -112,21 +115,20 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
   };
 
   const handleCanvasSend = async (base64Image: string) => {
-    await processImageSubmission(base64Image, 'image/jpeg', "Нацртав решение на таблата. Можеш ли да го провериш?");
+    await processImageSubmission(base64Image, 'image/jpeg', "Користам дигитална табла за пресметка. Мислење?");
   };
 
   const handleGetHint = async () => {
     if (!chatSession || isLoading) return;
     
     setIsLoading(true);
-    setMessages(prev => [...prev, { role: 'user', text: "Ми треба мала помош или насока (hint)." }]);
+    setMessages(prev => [...prev, { role: 'user', text: "Ми треба психолошка/техничка помош (Scaffolding Hint)." }]);
     
     try {
-      const response = await chatSession.sendMessage({ message: "Ученикот заглави и му треба мала насока (hint). Не му го давај одговорот, само насочи го кон следниот чекор." });
+      const response = await chatSession.sendMessage({ message: "Ученикот бара помош според теоријата на Скелиња (Scaffolding). Дај му мала, многу индиректна насока кон следниот чекор." });
       setMessages(prev => [...prev, { role: 'model', text: response.text }]);
     } catch (error) {
-      console.error("Hint error:", error);
-      setMessages(prev => [...prev, { role: 'model', text: "Извини, не успеав да смислам насока во моментов. Обиди се пак!" }]);
+      setMessages(prev => [...prev, { role: 'model', text: "Грешка при коннекција за сугестии." }]);
     } finally {
       setIsLoading(false);
     }
@@ -134,7 +136,6 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
 
   const handlePlayAudio = async (text: string, index: number) => {
     if (playingAudioIndex === index) {
-      // Stop playing
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -145,173 +146,175 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
 
     try {
       setIsGeneratingAudio(index);
-      
-      // Clean up text for TTS (remove markdown, latex)
       const cleanText = text
-        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-        .replace(/\*(.*?)\*/g, '$1') // Remove italic
-        .replace(/\$\$(.*?)\$\$/g, ' математичка формула ') // Replace block latex
-        .replace(/\$(.*?)\$/g, ' формула ') // Replace inline latex
-        .replace(/#/g, ''); // Remove headers
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/\*(.*?)\*/g, '$1')
+        .replace(/\$\$(.*?)\$\$/g, ' математичка формула ')
+        .replace(/\$(.*?)\$/g, ' формула ')
+        .replace(/#/g, '');
 
       const audioDataUrl = await generateSpeech(cleanText);
-      
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
+      if (audioRef.current) audioRef.current.pause();
       
       const audio = new Audio(audioDataUrl);
       audioRef.current = audio;
-      
       audio.onended = () => setPlayingAudioIndex(null);
-      audio.onerror = () => {
-        console.error("Audio playback error");
-        setPlayingAudioIndex(null);
-      };
+      audio.onerror = () => setPlayingAudioIndex(null);
       
       await audio.play();
       setPlayingAudioIndex(index);
     } catch (error) {
       console.error("TTS Error:", error);
-      alert("Грешка при генерирање на аудио.");
     } finally {
       setIsGeneratingAudio(null);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl h-[85vh] flex flex-col border border-slate-200 dark:border-slate-700 overflow-hidden">
-        {/* Header */}
-        <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-blue-50 dark:bg-slate-800/80 flex justify-between items-center shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-              <Bot className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 dark:text-white">AI Тутор</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px] sm:max-w-xs">{task.title}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGetHint}
-              disabled={isLoading || !chatSession}
-              className="h-8 text-xs bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-            >
-              <Lightbulb className="w-3 h-3 mr-1" />
-              Помош (Hint)
-            </Button>
-            <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-md">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] w-full max-w-6xl h-[95vh] md:h-[85vh] flex flex-col md:flex-row overflow-hidden border border-slate-200 dark:border-slate-700 animate-in zoom-in-95 duration-300">
+        
+        {/* Left Side: Context & Vygotsky ZPD Map (Hidden on very small screens) */}
+        <div className="hidden md:flex w-1/3 bg-slate-50 dark:bg-slate-800/50 p-8 border-r border-slate-200 dark:border-slate-700 flex-col overflow-y-auto">
+           <div className="flex justify-between items-center mb-8">
+              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-widest text-xs bg-indigo-100 dark:bg-indigo-900/30 px-3 py-1.5 rounded-full">
+                 <Brain className="w-4 h-4"/> Socratic Workspace
+              </div>
+           </div>
+
+           <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 mb-4">{task.title}</h2>
+           
+           <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-600 shadow-sm mb-8">
+             <div className="text-slate-800 dark:text-slate-200 text-lg leading-relaxed">
+                <MathRenderer content={task.original_text} />
+             </div>
+           </div>
+
+           {/* Pedagogical Scaffolding UI (ZPD Map) */}
+           <div className="mt-auto space-y-4">
+              <h3 className="font-bold text-slate-600 dark:text-slate-400 text-sm flex items-center gap-2 uppercase tracking-wider mb-4">
+                 <Compass className="w-4 h-4" /> Фази на Когниција
+              </h3>
+              
+              <div className="space-y-3 relative">
+                 <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-slate-200 dark:bg-slate-700"></div>
+                 
+                 <div className={`relative pl-10 transition-opacity ${activePedagogyStep >= 1 ? 'opacity-100' : 'opacity-40'}`}>
+                    <div className={`absolute left-2.5 top-0 w-3.5 h-3.5 rounded-full bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 ring-2 ${activePedagogyStep >= 1 ? 'ring-indigo-500 bg-indigo-500' : 'ring-slate-300'}`}></div>
+                    <div className="font-bold text-slate-800 dark:text-slate-200">1. Идентификација</div>
+                    <div className="text-sm text-slate-500">Разбирање на барањето</div>
+                 </div>
+                 
+                 <div className={`relative pl-10 transition-opacity ${activePedagogyStep >= 2 ? 'opacity-100' : 'opacity-40'}`}>
+                    <div className={`absolute left-2.5 top-0 w-3.5 h-3.5 rounded-full bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 ring-2 ${activePedagogyStep >= 2 ? 'ring-amber-500 bg-amber-500' : 'ring-slate-300'}`}></div>
+                    <div className="font-bold text-slate-800 dark:text-slate-200">2. Стратегија</div>
+                    <div className="text-sm text-slate-500">Поставување метод</div>
+                 </div>
+
+                 <div className={`relative pl-10 transition-opacity ${activePedagogyStep >= 3 ? 'opacity-100' : 'opacity-40'}`}>
+                    <div className={`absolute left-2.5 top-0 w-3.5 h-3.5 rounded-full bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 ring-2 ${activePedagogyStep >= 3 ? 'ring-emerald-500 bg-emerald-500' : 'ring-slate-300'}`}></div>
+                    <div className="font-bold text-slate-800 dark:text-slate-200">3. Апстракција</div>
+                    <div className="text-sm text-slate-500">Егзекуција и анализа</div>
+                 </div>
+              </div>
+           </div>
         </div>
 
-        {/* Messages */}
-        <div className={`flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-900 ${isDrawingMode ? 'hidden md:block md:h-1/2' : ''}`}>
-          {messages.map((msg, idx) => (
-            <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400'}`}>
-                {msg.role === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+        {/* Right Side: Chat System */}
+        <div className="flex-1 flex flex-col bg-white dark:bg-slate-900 border-l border-white/10 relative">
+          {/* Mobile Header Overrides */}
+          <div className="md:hidden p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-between items-center shrink-0">
+             <div className="font-bold truncate pr-4 text-slate-800 dark:text-white"><Brain className="w-4 h-4 inline mr-2 text-indigo-500"/>{task.title}</div>
+             <button onClick={onClose} className="p-2 text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-full"><X className="w-5 h-5"/></button>
+          </div>
+
+          <div className="absolute top-4 right-4 hidden md:flex items-center gap-2 z-10">
+             <Button variant="outline" size="sm" onClick={handleGetHint} disabled={isLoading || !chatSession} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-sm text-amber-600 hover:text-amber-700">
+               <Lightbulb className="w-4 h-4 mr-2" /> Scaffolding Hint
+             </Button>
+             <button onClick={onClose} className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-slate-400 hover:text-red-500 border border-slate-200 dark:border-slate-700 shadow-sm rounded-full transition-colors">
+               <X className="w-5 h-5" />
+             </button>
+          </div>
+
+          {/* Messages */}
+          <div className={`flex-1 overflow-y-auto p-4 md:p-8 space-y-6 bg-[linear-gradient(to_bottom,transparent_0%,rgba(0,0,0,0.02)_100%)] dark:bg-[linear-gradient(to_bottom,transparent_0%,rgba(255,255,255,0.01)_100%)] ${isDrawingMode ? 'hidden md:block md:h-1/2' : ''}`}>
+            {messages.map((msg, idx) => (
+              <div key={idx} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''} animate-in fade-in slide-in-from-bottom-2`}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm border-2 ${msg.role === 'user' ? 'bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-900/50 dark:border-indigo-700 dark:text-indigo-400' : 'bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-900/50 dark:border-emerald-700 dark:text-emerald-400'}`}>
+                  {msg.role === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+                </div>
+                <div className={`max-w-[85%] rounded-3xl p-5 relative group ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-md shadow-md shadow-indigo-600/20' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-tl-md shadow-sm'}`}>
+                  <div className="text-[1.05rem] leading-relaxed">
+                    <MathRenderer content={msg.text} />
+                  </div>
+                  
+                  {/* TTS Button */}
+                  {msg.role === 'model' && (
+                    <button
+                      onClick={() => handlePlayAudio(msg.text, idx)}
+                      disabled={isGeneratingAudio !== null && isGeneratingAudio !== idx}
+                      className={`absolute -right-12 top-2 p-2 rounded-full transition-all bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm ${
+                        playingAudioIndex === idx ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100'
+                      }`}
+                    >
+                      {isGeneratingAudio === idx ? <Loader2 className="w-4 h-4 animate-spin" /> : playingAudioIndex === idx ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className={`max-w-[80%] rounded-2xl p-4 relative group ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-tl-none shadow-sm'}`}>
-                <MathRenderer content={msg.text} />
-                
-                {/* TTS Button for model messages */}
-                {msg.role === 'model' && (
-                  <button
-                    onClick={() => handlePlayAudio(msg.text, idx)}
-                    disabled={isGeneratingAudio !== null && isGeneratingAudio !== idx}
-                    className={`absolute -right-10 top-2 p-2 rounded-full transition-all ${
-                      playingAudioIndex === idx 
-                        ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' 
-                        : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 opacity-0 group-hover:opacity-100'
-                    }`}
-                    title={playingAudioIndex === idx ? "Стопирај" : "Слушни"}
-                  >
-                    {isGeneratingAudio === idx ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : playingAudioIndex === idx ? (
-                      <VolumeX className="w-4 h-4" />
-                    ) : (
-                      <Volume2 className="w-4 h-4" />
-                    )}
-                  </button>
-                )}
+            ))}
+            {(isLoading || isAnalyzingImage) && (
+              <div className="flex gap-4 animate-in fade-in">
+                <div className="w-10 h-10 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center flex-shrink-0">
+                  <Bot className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl rounded-tl-md p-5 shadow-sm flex items-center gap-3">
+                  <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />
+                  <span className="text-emerald-700 dark:text-emerald-400 font-medium tracking-wide">
+                    {isAnalyzingImage ? 'Обработка на слика/дијаграм...' : 'Туторот синтетизира одговор...'}
+                  </span>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Area */}
+          {isDrawingMode ? (
+            <div className="h-72 md:h-1/2 border-t border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-900 shrink-0">
+              <div className="h-full rounded-2xl overflow-hidden border-2 border-indigo-200 shadow-inner">
+                <InteractiveCanvas 
+                  onSend={handleCanvasSend} 
+                  onCancel={() => setIsDrawingMode(false)} 
+                  isSubmitting={isAnalyzingImage}
+                />
               </div>
             </div>
-          ))}
-          {(isLoading || isAnalyzingImage) && (
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
-                <Bot className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-none p-4 shadow-sm flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                <span className="text-sm text-slate-500">
-                  {isAnalyzingImage ? 'Ја анализирам твојата слика...' : 'Туторот пишува...'}
-                </span>
-              </div>
+          ) : (
+            <div className="p-4 md:p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0">
+              <form onSubmit={handleSend} className="flex gap-2 relative">
+                <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
+                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isLoading || isAnalyzingImage} className="h-14 w-14 rounded-2xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 shrink-0" title="Прикачи слика">
+                  <Camera className="w-5 h-5 text-slate-500" />
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setIsDrawingMode(true)} disabled={isLoading || isAnalyzingImage} className="h-14 w-14 rounded-2xl border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 shrink-0" title="Математичка Табла">
+                  <PenTool className="w-5 h-5" />
+                </Button>
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Внеси твое размислување или формула овде..."
+                  className="flex-1 h-14 rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-500 bg-slate-50 dark:bg-slate-800 text-lg px-6"
+                  disabled={isLoading || isAnalyzingImage || !chatSession}
+                />
+                <Button type="submit" disabled={isLoading || isAnalyzingImage || !input.trim() || !chatSession} className="h-14 w-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shrink-0 shadow-lg shadow-indigo-500/30">
+                  <Send className="w-5 h-5 ml-1" />
+                </Button>
+              </form>
             </div>
           )}
-          <div ref={messagesEndRef} />
         </div>
-
-        {/* Input Area */}
-        {isDrawingMode ? (
-          <div className="h-64 md:h-1/2 border-t border-slate-200 dark:border-slate-700 p-2 bg-slate-100 dark:bg-slate-900 shrink-0">
-            <InteractiveCanvas 
-              onSend={handleCanvasSend} 
-              onCancel={() => setIsDrawingMode(false)} 
-              isSubmitting={isAnalyzingImage}
-            />
-          </div>
-        ) : (
-          <div className="p-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 shrink-0">
-            <form onSubmit={handleSend} className="flex gap-2">
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleImageUpload} 
-                accept="image/*" 
-                className="hidden" 
-              />
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading || isAnalyzingImage}
-                className="px-3 border-slate-200 dark:border-slate-700"
-                title="Прикачи слика од решението"
-              >
-                <Camera className="w-4 h-4 text-slate-500" />
-              </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setIsDrawingMode(true)}
-                disabled={isLoading || isAnalyzingImage}
-                className="px-3 border-slate-200 dark:border-slate-700 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400"
-                title="Нацртај решение на табла"
-              >
-                <PenTool className="w-4 h-4" />
-              </Button>
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Напиши го твојот одговор или прашање..."
-                className="flex-1"
-                disabled={isLoading || isAnalyzingImage || !chatSession}
-              />
-              <Button type="submit" disabled={isLoading || isAnalyzingImage || !input.trim() || !chatSession} className="bg-blue-600 hover:bg-blue-700 text-white">
-                <Send className="w-4 h-4" />
-              </Button>
-            </form>
-          </div>
-        )}
       </div>
     </div>
   );

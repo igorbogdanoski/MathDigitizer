@@ -25,6 +25,9 @@ import { signInWithGoogle } from './lib/firebase';
 import { StudentTelemetryView } from './components/StudentTelemetryView';
 import { GameHost } from './components/live/GameHost';
 import { GamePlayer } from './components/live/GamePlayer';
+import { SummativeExam } from './components/live/SummativeExam';
+import { TeacherExamsDashboard } from './components/TeacherExamsDashboard';
+import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { useParams } from 'react-router-dom';
 
 // Wrapper for extracting pin from params
@@ -37,6 +40,11 @@ const GamePlayerWrapper = () => {
   const params = new URLSearchParams(window.location.search);
   const pin = params.get('pin');
   return <GamePlayer sessionPin={pin || undefined} />;
+};
+
+const SummativeExamWrapper = () => {
+  const { examId } = useParams();
+  return <SummativeExam examId={examId || ''} />;
 };
 
 const AppRoutes = () => {
@@ -57,6 +65,12 @@ const AppRoutes = () => {
             </ProtectedRoute>
           } />
 
+          <Route path="exams-grading" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <TeacherExamsDashboard />
+            </ProtectedRoute>
+          } />
+
           <Route path="smart-ocr" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <SmartOCR />
@@ -66,6 +80,12 @@ const AppRoutes = () => {
           <Route path="smart-grader" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <SmartGrader />
+            </ProtectedRoute>
+          } />
+
+          <Route path="analytics" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <AnalyticsDashboard />
             </ProtectedRoute>
           } />
           
@@ -125,6 +145,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
         <Route path="/play" element={<GamePlayerWrapper />} />
+        <Route path="/exam/:examId" element={<SummativeExamWrapper />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

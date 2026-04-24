@@ -179,15 +179,47 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
     setActiveHint(null);
   }, [session.current_question_index]);
 
+  // Client-side timer logic
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (session.status === 'playing' && session.current_question_start_time && currentQ.timeLimit && !hasAnswered) {
+      const updateTimer = () => {
+        const elapsedSec = (Date.now() - session.current_question_start_time!) / 1000;
+        const remaining = Math.max(0, currentQ.timeLimit - elapsedSec);
+        setTimeLeft(Math.ceil(remaining));
+
+        if (remaining <= 0 && !hasAnswered) {
+          // Force answer to 0 points (simulate timeout by picking an invalid index or just marking as answered)
+          submitAnswer(-1); // -1 indicates timeout
+        }
+      };
+      
+      updateTimer();
+      const interval = setInterval(updateTimer, 500);
+      return () => clearInterval(interval);
+    } else {
+      setTimeLeft(null);
+    }
+  }, [session.status, session.current_question_start_time, currentQ.timeLimit, hasAnswered]);
+
   // State 4: Playing - Waiting for next round or discussing
   if (hasAnswered || session.status === 'discussion') {
     const isDiscussion = session.status === 'discussion';
+    const isTimeout = me?.current_answer_index === -1;
     const iWasCorrect = me?.current_answer_index === currentQ.correctIndex;
     
     if (isDiscussion) {
       return (
         <div className={`min-h-screen flex flex-col items-center justify-center p-6 text-white text-center ${iWasCorrect ? 'bg-emerald-500' : 'bg-red-500'}`}>
-          {iWasCorrect ? (
+          {isTimeout ? (
+            <>
+              <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-6">
+                <span className="text-5xl font-black">⏳</span>
+              </div>
+              <h2 className="text-4xl font-black mb-4">Времето истече!</h2>
+            </>
+          ) : iWasCorrect ? (
             <>
               <CheckCircle2 className="w-24 h-24 mb-6" />
               <h2 className="text-4xl font-black mb-4">Точно!</h2>
@@ -210,8 +242,8 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
     return (
       <div className="min-h-screen bg-slate-200 flex flex-col items-center justify-center p-6 text-slate-800 text-center">
         <div className="w-16 h-16 border-4 border-slate-400 border-t-slate-800 rounded-full animate-spin mb-8"></div>
-        <h2 className="text-3xl font-black mb-4">Чекаме другите играчи...</h2>
-        <p className="text-xl font-bold opacity-60">Одговорот е забележан.</p>
+        <h2 className="text-3xl font-black mb-4">{isTimeout ? 'Времето истече' : 'Чекаме другите играчи...'}</h2>
+        <p className="text-xl font-bold opacity-60">{isTimeout ? 'За жал не стигнавте да одговорите.' : 'Одговорот е забележан.'}</p>
       </div>
     );
   }
@@ -236,15 +268,33 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
     }, 1000);
   };
 
+  const timeProgress = timeLeft !== null && currentQ.timeLimit 
+    ? (timeLeft / currentQ.timeLimit) * 100 
+    : 100;
+  
+  const timerColor = timeLeft !== null && timeLeft <= 10 ? 'bg-red-500' : 'bg-indigo-500';
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col p-4">
-      <div className="flex justify-between items-center mb-4 p-4 bg-white rounded-2xl shadow-sm border border-slate-100">
+    <div className="min-h-screen bg-slate-50 flex flex-col p-4 relative">
+      {/* Student Timer Bar */}
+      {timeLeft !== null && (
+        <div className="absolute top-0 left-0 w-full h-2 bg-slate-200">
+           <div className={`h-full transition-all duration-500 ease-linear ${timerColor}`} style={{ width: `${timeProgress}%` }}></div>
+        </div>
+      )}
+
+      <div className="flex justify-between items-center mb-4 p-4 mt-2 bg-white rounded-2xl shadow-sm border border-slate-100">
         <span className="font-bold text-slate-700 flex items-center gap-2">
           {me?.name}
         </span>
         <div className="flex items-center gap-3">
+           {timeLeft !== null && (
+              <div className={`font-black text-xl w-10 text-center ${timeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-slate-700'}`}>
+                {timeLeft}
+              </div>
+           )}
            {!activeHint && (
-             <Button size="sm" variant="outline" onClick={requestHint} disabled={isHintLoading} className="text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100 font-bold">
+             <Button size="sm" variant="outline" onClick={requestHint} disabled={isHintLoading} className="text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100 font-bold hidden sm:flex">
                {isHintLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lightbulb className="w-4 h-4 mr-1" />}
                AI Помош
              </Button>

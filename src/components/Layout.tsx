@@ -37,10 +37,12 @@ export const Layout: React.FC = () => {
   const navItems = [
     { path: '/', icon: HomeIcon, label: 'Почетна', show: true },
     { path: '/smart-ocr', icon: ScanLine, label: 'Smart OCR', show: !userProfile || userProfile.role === 'teacher' },
-    { path: '/extract', icon: Wand2, label: 'Видео Екстракција', show: !userProfile || userProfile.role === 'teacher' },
+    { path: '/extract', icon: Wand2, label: 'Екстракција', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/smart-grader', icon: CheckCircle, label: 'AI Оценувач', show: !userProfile || userProfile.role === 'teacher' },
-    { path: '/factory', icon: Factory, label: 'Генерирај Материјали', show: !userProfile || userProfile.role === 'teacher' },
+    { path: '/analytics', icon: BrainCircuit, label: 'Аналитика', show: !userProfile || userProfile.role === 'teacher' },
+    { path: '/factory', icon: Factory, label: 'Фабрика', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/classrooms', icon: Users, label: 'Училници', show: !!userProfile },
+    { path: '/exams-grading', icon: Trophy, label: 'Dugga', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/library', icon: LibraryIcon, label: 'Библиотека', show: true },
     { path: '/dashboard', icon: Trophy, label: 'Профил', show: true },
   ].filter(item => item.show);
