@@ -10,6 +10,7 @@ import { ExtractionEngine } from './components/ExtractionEngine';
 import { SmartOCR } from './components/SmartOCR';
 import { Library } from './components/Library';
 import MaterialsFactory from './components/MaterialsFactory';
+import { CurriculumFactory } from './components/CurriculumFactory';
 import { TodoList } from './components/TodoList';
 import { Flashcards } from './components/Flashcards';
 import { AdaptiveTest } from './components/AdaptiveTest';
@@ -100,6 +101,12 @@ const AppRoutes = () => {
           <Route path="factory" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <MaterialsFactory />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="mass-factory" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <CurriculumFactory />
             </ProtectedRoute>
           } />
           

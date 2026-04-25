@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { collection, query, getDocs, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { MathTask } from '../lib/schema';
@@ -15,7 +16,7 @@ import { useToast } from '../contexts/ToastContext';
 import { MaterialPreview } from './MaterialPreview';
 import { Button } from './ui/Button';
 import { MathRenderer } from './MathRenderer';
-import { Edit3, Check } from 'lucide-react';
+import { Edit3, Check, Printer } from 'lucide-react';
 import { useLibraryStore } from '../store/useLibraryStore';
 
 export default function MaterialsFactory() {
@@ -503,63 +504,99 @@ export default function MaterialsFactory() {
                   <p className="text-slate-500 dark:text-slate-400 mt-1 max-w-xl">AI генерираше 3 верзии на вашиот тест базирани на когнитивната подготвеност на различни групи ученици.</p>
                 </div>
                 <div className="flex items-center gap-3">
+                  <Button onClick={() => window.print()} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold h-14 px-6 rounded-2xl shadow-lg print:hidden">
+                    <Printer className="w-5 h-5 mr-2" />
+                    Принтај (PDF)
+                  </Button>
                   <Button onClick={() => {
                     exportToWord([...diffResult.groupA, ...diffResult.groupB, ...diffResult.groupC], 'differentiated_test.doc');
-                  }} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-14 px-8 rounded-2xl shadow-lg">
+                  }} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-14 px-8 rounded-2xl shadow-lg print:hidden">
                     <Download className="w-5 h-5 mr-3" />
                     Експорт (Word)
                   </Button>
-                  <button onClick={() => setDiffResult(null)} className="p-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-white dark:hover:bg-slate-700 transition-colors shadow-sm">
+                  <button onClick={() => setDiffResult(null)} className="p-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-white dark:hover:bg-slate-700 transition-colors shadow-sm print:hidden">
                     <X className="w-6 h-6" />
                   </button>
                 </div>
               </div>
               
-              <div className="p-8 overflow-y-auto grid grid-cols-1 md:grid-cols-3 gap-8 bg-slate-50 dark:bg-slate-900">
+              <div className="p-8 overflow-y-auto grid grid-cols-1 md:grid-cols-3 gap-8 bg-slate-50 dark:bg-slate-900 print:block print:w-full print:bg-white">
                 {/* Group A */}
-                <div className="space-y-6">
+                <div className="space-y-6 print:mb-10 print:break-inside-avoid">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black">А</div>
-                    <h3 className="text-xl font-black text-emerald-800">Основни</h3>
+                    <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-xl border-2 border-emerald-200">1</div>
+                    <div>
+                      <h3 className="text-xl font-black text-emerald-800">Знаење и Разбирање</h3>
+                      <p className="text-xs text-slate-500 uppercase tracking-widest">Блумова Таксономија - Ниво 1</p>
+                    </div>
                   </div>
                   <div className="space-y-4">
                     {diffResult.groupA.map((task, idx) => (
-                      <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-emerald-100 dark:border-emerald-900/40 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-12 h-12 bg-emerald-50 content-[''] clip-path-polygon-[100%_0,0_0,100%_100%]"></div>
-                        <div className="font-black mb-3 text-emerald-900 dark:text-emerald-100">{idx + 1}. {task.title}</div>
-                        <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">{task.original_text}</div>
+                      <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-emerald-100 dark:border-emerald-900/40 relative overflow-hidden group print:border-slate-300">
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-1">
+                            <div className="font-black mb-3 text-emerald-900 dark:text-emerald-100">{idx + 1}. {task.title}</div>
+                            <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">{task.original_text}</div>
+                          </div>
+                          <div className="shrink-0 flex flex-col items-center gap-1 opacity-20 group-hover:opacity-100 transition-opacity print:opacity-100">
+                            <QRCodeSVG value={`https://youtu.be/search?q=${encodeURIComponent(task.title || '')}`} size={48} className="rounded-sm" />
+                            <span className="text-[9px] uppercase font-bold text-slate-400">Решение</span>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* Group B */}
-                <div className="space-y-6">
+                <div className="space-y-6 print:mb-10 print:break-inside-avoid">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black">Б</div>
-                    <h3 className="text-xl font-black text-blue-800">Стандардни</h3>
+                    <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black text-xl border-2 border-blue-200">2</div>
+                    <div>
+                      <h3 className="text-xl font-black text-blue-800">Примена</h3>
+                      <p className="text-xs text-slate-500 uppercase tracking-widest">Блумова Таксономија - Ниво 2</p>
+                    </div>
                   </div>
                   <div className="space-y-4">
                     {diffResult.groupB.map((task, idx) => (
-                      <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-blue-100 dark:border-blue-900/40 relative">
-                        <div className="font-black mb-3 text-blue-900 dark:text-blue-100">{idx + 1}. {task.title}</div>
-                        <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">{task.original_text}</div>
+                      <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-blue-100 dark:border-blue-900/40 relative print:border-slate-300">
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-1">
+                            <div className="font-black mb-3 text-blue-900 dark:text-blue-100">{idx + 1}. {task.title}</div>
+                            <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">{task.original_text}</div>
+                          </div>
+                          <div className="shrink-0 flex flex-col items-center gap-1 opacity-20 group-hover:opacity-100 transition-opacity print:opacity-100">
+                            <QRCodeSVG value={`https://youtu.be/search?q=${encodeURIComponent(task.title || '')}`} size={48} className="rounded-sm" />
+                            <span className="text-[9px] uppercase font-bold text-slate-400">Решение</span>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* Group C */}
-                <div className="space-y-6">
+                <div className="space-y-6 print:mb-10 print:break-inside-avoid">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black">В</div>
-                    <h3 className="text-xl font-black text-purple-800">Напредни</h3>
+                    <div className="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black text-xl border-2 border-purple-200">3</div>
+                    <div>
+                      <h3 className="text-xl font-black text-purple-800">Анализа и Синтеза</h3>
+                      <p className="text-xs text-slate-500 uppercase tracking-widest">Блумова Таксономија - Ниво 3</p>
+                    </div>
                   </div>
                   <div className="space-y-4">
                     {diffResult.groupC.map((task, idx) => (
-                      <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-purple-100 dark:border-purple-900/40 relative">
-                        <div className="font-black mb-3 text-purple-900 dark:text-purple-100">{idx + 1}. {task.title}</div>
-                        <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">{task.original_text}</div>
+                      <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-purple-100 dark:border-purple-900/40 relative print:border-slate-300">
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-1">
+                            <div className="font-black mb-3 text-purple-900 dark:text-purple-100">{idx + 1}. {task.title}</div>
+                            <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">{task.original_text}</div>
+                          </div>
+                          <div className="shrink-0 flex flex-col items-center gap-1 opacity-20 group-hover:opacity-100 transition-opacity print:opacity-100">
+                            <QRCodeSVG value={`https://youtu.be/search?q=${encodeURIComponent(task.title || '')}`} size={48} className="rounded-sm" />
+                            <span className="text-[9px] uppercase font-bold text-slate-400">Решение</span>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>

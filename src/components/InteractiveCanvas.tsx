@@ -3,6 +3,9 @@ import { Stage, Layer, Line, Rect, Circle, Arrow } from 'react-konva';
 import { Eraser, RotateCcw, Send, PenTool, Square, Circle as CircleIcon, MoveRight, MousePointer2, Trash2 } from 'lucide-react';
 import { Button } from './ui/Button';
 
+import { collection, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+
 type ToolType = 'pen' | 'eraser' | 'rect' | 'circle' | 'arrow' | 'select';
 
 interface ShapeData {
@@ -23,9 +26,19 @@ interface InteractiveCanvasProps {
   onSend: (base64Image: string) => void;
   onCancel: () => void;
   isSubmitting?: boolean;
+  liveSyncId?: string;
+  readOnly?: boolean;
+  initialShapes?: ShapeData[];
 }
 
-export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({ onSend, onCancel, isSubmitting }) => {
+export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({ 
+  onSend, 
+  onCancel, 
+  isSubmitting, 
+  liveSyncId,
+  readOnly = false,
+  initialShapes = []
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
   
@@ -34,10 +47,29 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({ onSend, on
   const [color, setColor] = useState('#2563eb'); // Blue-600
   const [strokeWidth, setStrokeWidth] = useState(3);
   
-  const [shapes, setShapes] = useState<ShapeData[]>([]);
+  const [shapes, setShapes] = useState<ShapeData[]>(initialShapes);
   const [currentShape, setCurrentShape] = useState<ShapeData | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Sync to Firestore
+  useEffect(() => {
+    if (liveSyncId && !readOnly) {
+      setDoc(doc(db, 'live_canvases', liveSyncId), { shapes });
+    }
+  }, [shapes, liveSyncId, readOnly]);
+
+  // Read from Firestore (Spectator Mode)
+  useEffect(() => {
+    if (liveSyncId && readOnly) {
+      const unsubscribe = onSnapshot(doc(db, 'live_canvases', liveSyncId), (docSnap) => {
+        if (docSnap.exists() && docSnap.data().shapes) {
+          setShapes(docSnap.data().shapes);
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [liveSyncId, readOnly]);
 
   // Handle resize
   useEffect(() => {
@@ -56,6 +88,7 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({ onSend, on
   }, []);
 
   const handleMouseDown = (e: any) => {
+    if (readOnly) return;
     if (tool === 'select') {
       const clickedOnEmpty = e.target === e.target.getStage();
       if (clickedOnEmpty) {
@@ -192,6 +225,7 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({ onSend, on
   return (
     <div className="flex flex-col w-full h-full bg-slate-50 dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
       {/* Toolbar */}
+      {!readOnly && (
       <div className="flex flex-wrap items-center justify-between p-2 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 gap-2">
         
         {/* Tools */}
@@ -265,6 +299,7 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({ onSend, on
           </Button>
         </div>
       </div>
+      )}
       
       {/* Canvas Area */}
       <div 

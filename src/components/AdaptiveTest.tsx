@@ -4,7 +4,7 @@ import { db, auth } from '../lib/firebase';
 import { MathTask, UserStats } from '../lib/schema';
 import { MathRenderer } from './MathRenderer';
 import { Button } from './ui/Button';
-import { Brain, Trophy, Loader2, ArrowRight, Zap, RefreshCw } from 'lucide-react';
+import { Brain, Trophy, Loader2, ArrowRight, Zap, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useGamification } from '../contexts/GamificationContext';
 import { autoGradeSubmission } from '../lib/gemini';
 import { calculateSM2 } from '../lib/srsAlgorithm';
@@ -17,7 +17,7 @@ export const AdaptiveTest: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isGrading, setIsGrading] = useState(false);
   const [studentAnswer, setStudentAnswer] = useState('');
-  const [feedback, setFeedback] = useState<{ score: number, feedback: string } | null>(null);
+  const [feedback, setFeedback] = useState<{ score: number, feedback: string, socratic_hint?: string, error_detected?: string } | null>(null);
   const [sessionScore, setSessionScore] = useState(0);
   const [sessionCount, setSessionCount] = useState(0);
   const { awardXP, updateQuestProgress } = useGamification();
@@ -30,16 +30,58 @@ export const AdaptiveTest: React.FC = () => {
   const fetchTasks = async () => {
     setIsLoading(true);
     try {
-      const q = query(collection(db, 'tasks'));
-      const snapshot = await getDocs(q);
-      const allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MathTask));
+      let tasksToLoad: MathTask[] = [];
+      const user = auth.currentUser;
       
-      // Basic filtering: pick tasks from different difficulties
-      // In a real adaptive algo, we would sort by student's mastery in 'user_mastery' collection
-      // For now, randomly shuffle them
-      const shuffled = allTasks.sort(() => Math.random() - 0.5).slice(0, 5); // 5 questions per session
+      const tasksQuery = query(collection(db, 'tasks'));
+      const tasksSnapshot = await getDocs(tasksQuery);
+      const allTasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MathTask));
+
+      if (user) {
+        // Fetch mastery for current user
+        const masteryQuery = query(collection(db, 'user_mastery'));
+        const masterySnapshot = await getDocs(masteryQuery);
+        const userMastery = masterySnapshot.docs
+          .map(doc => doc.data())
+          .filter(d => d.uid === user.uid);
+
+        const now = new Date().toISOString();
+        // Topics due for review
+        const dueTopics = userMastery
+          .filter(m => m.next_review && m.next_review <= now)
+          .map(m => m.topic);
+
+        // Separate tasks by topic
+        const tasksByTopic = allTasks.reduce((acc, task) => {
+          const topic = task.curriculum_topic || 'Општо';
+          if (!acc[topic]) acc[topic] = [];
+          acc[topic].push(task);
+          return acc;
+        }, {} as Record<string, MathTask[]>);
+
+        if (dueTopics.length > 0) {
+          // Grab tasks from due topics
+          for (const topic of dueTopics) {
+            if (tasksByTopic[topic]) {
+              // Shuffle and take a few from this topic
+              const shuffledTopicTasks = tasksByTopic[topic].sort(() => Math.random() - 0.5);
+              tasksToLoad.push(...shuffledTopicTasks.slice(0, 2));
+            }
+          }
+        }
+
+        // Fill up to 5 tasks total with random other tasks or new tasks
+        if (tasksToLoad.length < 5) {
+          const remainingTasks = allTasks.filter(t => !tasksToLoad.find(loaded => loaded.id === t.id));
+          const fillTasks = remainingTasks.sort(() => Math.random() - 0.5).slice(0, 5 - tasksToLoad.length);
+          tasksToLoad.push(...fillTasks);
+        }
+      } else {
+        // Fallback for unauthenticated
+        tasksToLoad = allTasks.sort(() => Math.random() - 0.5).slice(0, 5);
+      }
       
-      setTasks(shuffled);
+      setTasks(tasksToLoad.slice(0, 5).sort(() => Math.random() - 0.5)); // Randomize display order
       setCurrentTaskIndex(0);
       setSessionScore(0);
       setSessionCount(0);
@@ -85,6 +127,17 @@ export const AdaptiveTest: React.FC = () => {
         await updateMastery(auth.currentUser.uid, task.curriculum_topic, quality);
       }
       
+      // Computerized Adaptive Testing (CAT) Logic: Inject tasks based on performance
+      if (task.curriculum_topic) {
+        if (result.score < 50 && ['medium', 'hard'].includes(task.difficulty || 'medium')) {
+           // Target easier task
+           injectAdaptiveTask('easy', task.curriculum_topic);
+        } else if (result.score >= 80 && ['easy', 'medium'].includes(task.difficulty || 'medium')) {
+           // Target harder task
+           injectAdaptiveTask('hard', task.curriculum_topic);
+        }
+      }
+      
       updateQuestProgress('solve');
       setSessionCount(prev => prev + 1);
     } catch (err) {
@@ -118,6 +171,30 @@ export const AdaptiveTest: React.FC = () => {
       last_quality: quality,
       updated_at: new Date().toISOString()
     }, { merge: true });
+  };
+
+  const injectAdaptiveTask = async (targetDifficulty: 'easy'|'medium'|'hard', topic: string) => {
+     try {
+        const tasksQuery = query(collection(db, 'tasks'));
+        const tasksSnapshot = await getDocs(tasksQuery);
+        // Find one matching task not already in list
+        const pool = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MathTask));
+        const candidate = pool.find(t => 
+           t.curriculum_topic === topic && 
+           t.difficulty === targetDifficulty &&
+           !tasks.some(existing => existing.id === t.id)
+        );
+        if (candidate) {
+           setTasks(prev => {
+              const newArr = [...prev];
+              newArr.splice(currentTaskIndex + 1, 0, candidate);
+              return newArr;
+           });
+           showToast(`Адаптивен Агент: Додадена е ${targetDifficulty === 'easy' ? 'полесна' : 'потешка'} задача.`, 'info');
+        }
+     } catch(e) {
+        console.error("Adaptive fetch error", e);
+     }
   };
 
   const nextTask = () => {
@@ -252,10 +329,40 @@ export const AdaptiveTest: React.FC = () => {
                   <div className="text-slate-700 dark:text-slate-300 prose prose-sm dark:prose-invert">
                     <MathRenderer content={feedback.feedback} />
                   </div>
+                  
+                  {feedback.error_detected && (
+                    <div className="mt-4 p-4 bg-rose-100/50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 rounded-xl">
+                      <strong className="text-rose-800 dark:text-rose-300 block mb-1 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" /> Детектирана грешка
+                      </strong>
+                      <p className="text-rose-700 dark:text-rose-400 text-sm">
+                        <MathRenderer content={feedback.error_detected} />
+                      </p>
+                    </div>
+                  )}
+
+                  {feedback.socratic_hint && (
+                    <div className="mt-4 p-4 bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-800 rounded-xl shadow-inner">
+                      <strong className="text-indigo-800 dark:text-indigo-300 block mb-2 flex items-center gap-2">
+                        <Brain className="w-4 h-4" /> Ваш ред (Сократски хинт)
+                      </strong>
+                      <p className="text-indigo-700 dark:text-indigo-200 font-medium">
+                        <MathRenderer content={feedback.socratic_hint} />
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
               
-              <div className="mt-6 flex justify-end">
+              <div className="mt-6 flex justify-end gap-3">
+                {feedback.score < 100 && (
+                  <Button 
+                    onClick={() => setFeedback(null)} // Reset feedback to let them try again
+                    className="bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:hover:bg-amber-900/70 dark:text-amber-300 rounded-full px-6"
+                  >
+                    Тестирај ја поправката <RefreshCw className="w-4 h-4 ml-2" />
+                  </Button>
+                )}
                 <Button 
                   onClick={nextTask}
                   className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 text-white rounded-full px-6"

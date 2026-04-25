@@ -115,6 +115,22 @@ const ALGEBRA_TILES_INSTRUCTION = `
 Ова ќе изгенерира интерактивен визуелен приказ за ученикот. Многу е важно JSON да биде перфектен. Поддржани плочки: "x^2", "y^2", "xy", "x", "y", "1".
 `;
 
+function parseGeminiResponse(text: string) {
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (match && match[1]) {
+      return JSON.parse(match[1]);
+    }
+    const cleanText = text.trim();
+    if (cleanText.startsWith('{') || cleanText.startsWith('[')) {
+      return JSON.parse(cleanText);
+    }
+    throw error;
+  }
+}
+
 export async function generateKahootFromFiles(files: {base64: string, mimeType: string}[], prompt: string): Promise<any> {
   const instructions = `Ти си Креатор на Интерактивни Математички Квизови (MathKahoot). 
 Врз основа на приложените фајлови (слики/документи) И промптот: "${prompt}", креирај MathKahoot квиз.
@@ -225,27 +241,69 @@ export async function generateSpeech(text: string): Promise<string> {
   }
 }
 
+export async function generateInterventionTasks(topic: string, struggleDetails: string): Promise<MathTask[]> {
+  const prompt = `Ти си Експерт Креатор на Педагошки Материјали. Еден ученик има проблем со темата: "${topic}".
+Детали: ${struggleDetails}.
+Твојата цел е да креираш "Интервентен сет" од точно 3 лесни задачи (scaffolding tasks) кои ќе го вратат ученикот чекор назад до основите на оваа тема.
+
+За секоја задача, конструирај JSON објект со следниве полиња (задолжителни):
+- title: Наслов на задачата
+- original_text: Текстот на задачата
+- type: 'task'
+- difficulty: 'easy'
+- dok_level: 1 или 2
+- curriculum_topic: '${topic} - Основни Концепти'
+- tags: низа од стрингови (пр. ["интервенција", "основи", "чекор-по-чекор"])
+- solution_steps: низа од стрингови (чекорите)
+- latex_formulas: низа од стрингови
+- hints: низа од стрингови (најмалку 2 хинта кои Сократски водат до решението)
+- source_url: 'intervention_generator'
+
+Врати мапа каде клуч е 'tasks', а вредноста е низа од овие 3 објекти. Врати исклучиво валиден JSON без маркдаун блокови.`;
+
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-3.1-pro-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+      }
+    });
+
+    const responseText = result.text();
+    if (!responseText) throw new Error("No response from AI");
+    
+    // Clean potential markdown blocks
+    const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    const data = JSON.parse(cleanText);
+    return data.tasks || [];
+  } catch (error) {
+    console.error("Грешка при генерирање интервенција:", error);
+    throw error;
+  }
+}
+
 export async function getTutorChatSession(task: MathTask) {
-  const systemInstruction = `Ти си Врвен Светски AI Тутор по математика (MathDigitizer Pro Tutor), дизајниран да биде совршен заменик-наставник. Твојата мисија е да го водиш ученикот до длабоко разбирање на концептот користејќи го исклучиво Сократовиот метод на поучување.
-
-КОНТЕКСТ НА ЗАДАЧАТА:
-Наслов: ${task.title}
-Тема: ${task.curriculum_topic}
-Ниво (DoK): ${task.dok_level}
-Текст: ${task.original_text}
-Решение (за твоја референца, НИКОГАШ не го покажувај директно): ${task.solution_steps.join('\n')}
-
-ТВОЈАТА СТРАТЕГИЈА (АПСОЛУТНИ СТРОГИ ПРАВИЛА):
-1. **АПСОЛУТНО НИКОГАШ не го давај крајниот одговор или директното решение**: Ова е најважното правило. Дури и ако ученикот те моли, плаче, или вели дека се откажува, ТИ НЕ СМЕЕШ да го напишеш решението. Твојот одговор мора да биде: „Јас сум тука да ти помогнам ти самиот да го откриеш одговорот. Ајде да се вратиме еден чекор назад...“
-2. **Дијагностика и Скелиња (Scaffolding)**: Прво прашај го ученикот што разбира од задачата. Потоа, раскрши ја задачата на микро-чекори. Поставувај САМО ПО ЕДНО прашање во исто време.
-3. **Анализа на грешки (Productive Failure)**: Ако ученикот згреши, не вели "Грешка си". Наместо тоа, прашај: "Интересен пристап. Што би се случило ако ја провериме таа пресметка уште еднаш?" или "Како стигна до тој заклучок?".
-4. **Визуелизација и Аналогии**: Користи аналогии од реалниот живот за да објасниш апстрактни концепти (пр. равенките се како вага, дропките се како сечење пица). ${MATH_PLOT_INSTRUCTION} ${ALGEBRA_TILES_INSTRUCTION}
-5. **Позитивно засилување**: Силно пофалувај го секој точен чекор. Гради ја самодовербата на ученикот.
-6. **LaTeX Форматирање**: Задолжително користи LaTeX за секој математички израз ($...$ за inline, $$...$$ за блок).
-
-ЗАПАМЕТИ: Твојата единствена цел е ученикот да доживее "Аха!" момент и сам да го изговори решението. Ти си водич, а не калкулатор.
-
-ЈАЗИК: Професионален, но топол и охрабрувачки македонски јазик.`;
+    const systemInstruction = `Ти си Врвен Светски AI Тутор по математика (MathDigitizer Pro Tutor), специјалист за ZPD (Зона на проксимален развој) и Сократов дијалог. Твојата мисија е да го водиш ученикот до длабоко разбирање на концептот без никогаш да му го дадеш решението на готово.
+    
+    КОНТЕКСТ НА ЗАДАЧАТА:
+    Наслов: ${task.title}
+    Тема: ${task.curriculum_topic}
+    Ниво (DoK): ${task.dok_level}
+    Текст: ${task.original_text}
+    Решение (за твоја референца, НИКОГАШ не го покажувај директно): ${task.solution_steps.join('\n')}
+    
+    ТВОЈАТА СТРАТЕГИЈА (АПСОЛУТНИ СТРОГИ ПРАВИЛА):
+    1. **АПСОЛУТНО НИКОГАШ не го давај крајниот одговор или директното решение**: Ова е најважното правило. Дури и ако ученикот те моли, плаче, или вели дека се откажува, ТИ НЕ СМЕЕШ да го напишеш решението. Твојот одговор мора да биде: „Јас сум тука да ти помогнам ти самиот да го откриеш одговорот. Ајде да се вратиме еден чекор назад...“
+    2. **Дијагностика и Скелиња (Scaffolding)**: Прво прашај го ученикот што разбира од задачата. Потоа, раскрши ја задачата на микро-чекори. Поставувај САМО ПО ЕДНО прашање во исто време. Пронајди ја границата помеѓу она што ученикот го знае и она што не го знае (његовата Зона на проксимален развој - ZPD).
+    3. **Анализа на грешки преку Сократов Дијалог (Productive Failure)**: Ако ученикот згреши, СТРОГО Е ЗАБРАНЕТО да кажеш "Грешка" или "Ова е неточно" и да го дадеш точниот чекор. Наместо тоа, искористи ја грешката како можност. На пр. ако добие негативен корен: "Гледам дека доби негативен корен. Што знаеме за квадратот на кој било реален број?". Натерај го самиот да ја увиди контрадикцијата!
+    4. **Визуелизација и Аналогии**: Користи аналогии од реалниот живот за да објасниш апстрактни концепти (пр. равенките се како вага, дропките се како сечење пица). ${MATH_PLOT_INSTRUCTION} ${ALGEBRA_TILES_INSTRUCTION}
+    5. **Позитивно засилување**: Силно пофалувај го секој точен чекор и самостоен заклучок. Гради ја самодовербата на ученикот.
+    6. **LaTeX Форматирање**: Задолжително користи LaTeX за секој математички израз ($...$ за inline, $$...$$ за блок).
+    
+    ЗАПАМЕТИ: Твојата единствена цел е ученикот да доживее "Аха!" момент и сам да го изговори решението. Ти си водич, а не калкулатор.
+    
+    ЈАЗИК: Професионален, но топол и охрабрувачки македонски јазик.`;
 
   const chat = ai.chats.create({
     model: "gemini-3.1-pro-preview",
@@ -349,7 +407,7 @@ ${originalTask.original_text}
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    return { ...JSON.parse(response.text), source_url: "Генерирана варијација" };
+    return { ...parseGeminiResponse(response.text), source_url: "Генерирана варијација" };
   } catch (error) {
     console.error("Грешка при генерирање слична задача:", error);
     throw error;
@@ -466,7 +524,7 @@ ${enableLogicalReconstruction
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    const parsedTasks = JSON.parse(response.text);
+    const parsedTasks = parseGeminiResponse(response.text);
     return parsedTasks.map((task: any) => ({ ...task, source_url: "PDF Документ" }));
   } catch (error) {
     console.error("Грешка при екстракција од PDF:", error);
@@ -568,7 +626,7 @@ ${originalTask.original_text}
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    const result = JSON.parse(response.text);
+    const result = parseGeminiResponse(response.text);
     return {
       easy: { ...result.easy, source_url: "Генерирана варијација (Лесна)" },
       hard: { ...result.hard, source_url: "Генерирана варијација (Тешка)" }
@@ -685,22 +743,30 @@ export async function generateEducationalMaterial(tasks: MathTask[], type: Mater
 export async function autoGradeSubmission(
   question: any,
   studentAnswer: any
-): Promise<{ score: number, feedback: string }> {
+): Promise<{ score: number, feedback: string, socratic_hint?: string, error_detected?: string }> {
   try {
-    const prompt = `Ти си Стручен Оценувач (Smart Grader) по математика. 
-За дадена задача, нејзините можни опции (и точен одговор/својства) и одговорот на ученикот, треба да пресметаш:
-1. Колку поени добива ученикот (од максималните).
-2. Образложение (фидбек) за зошто добива толку поени. Пишувај на македонски, охрабрувачки.
+    const prompt = `Ти си Стручен Оценувач и Интерактивен Сократски Ментор по математика. 
+За дадената задача и одговорот на ученикот, треба да пресметаш поени и да дадеш фидбек.
+Ако одговорот не е целосно точен, ТИ НЕ СМЕЕШ ДА ГО ДАДЕШ ГОТОВИОТ ОДГОВОР. 
+Наместо тоа, детектирај каде точно ученикот згрешил во чекорите (error_detected) и дај му Сократски хинт (socratic_hint) за да се поправи сам. 
 
 ПОДАТОЦИ:
 ЗАДАЧА: ${JSON.stringify(question, null, 2)}
 УЧЕНИК ОДГОВАРА: ${JSON.stringify(studentAnswer)}
-МАКСИМАЛНИ ПОЕНИ: ${question.points || 0}
+МАКСИМАЛНИ ПОЕНИ: ${question.points || 100}
 
 ПРАВИЛА:
-- Ако е 'multiple' или 'true-false', одговорот е точен или неточен (се-или-ништо).
-- Ако е есеј или текст, процени колку е точен и додели парцијални поени.
-- Врати строго JSON формат: { "score": <number>, "feedback": "<string>" }`;
+1. ДОДЕЛУВАЈ ПАРЦИЈАЛНИ ПОЕНИ: Ако има точни делови од постапката, дај му соодветен број поени (пр. 50/100).
+2. ДЕТЕКТИРАЈ ГРЕШКА: Ако згрешил, објасни прецизно каде е грешката (пр. "Заборави да го промениш знакот при префрлање од другата страна").
+3. СОКРАТСКИ ХИНТ: Постави прашање што ќе го наведе сам да ја најде грешката.
+4. Ако одговорот е целосно точен (100 поени), пофали го и не мораш да даваш socratic_hint.
+5. Врати СТРОГО JSON формат: 
+{ 
+  "score": <број>, 
+  "feedback": "<охрабрувачки осврт на трудот, македонски>", 
+  "error_detected": "<опционално, специфичната грешка>", 
+  "socratic_hint": "<опционално, прашање за насочување>" 
+}`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3.1-pro-preview",
@@ -829,7 +895,7 @@ export async function advancedMultimodalExtraction(
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    const parsedObj = JSON.parse(response.text);
+    const parsedObj = parseGeminiResponse(response.text);
     const results = parsedObj.extracted_tasks || [];
     return results.map((t: any) => ({ ...t, source_url: source.type === 'url' ? source.data : 'Прикачена датотека' }));
   } catch (error) {
@@ -961,7 +1027,7 @@ ${videoContext}
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    const parsedObj = JSON.parse(response.text);
+    const parsedObj = parseGeminiResponse(response.text);
     const tasks: MathTask[] = parsedObj.extracted_tasks || [];
     return tasks.map(t => ({ ...t, source_url: url }));
   } catch (error) {
@@ -1083,7 +1149,9 @@ ${enableLogicalReconstruction
               original_text: { type: Type.STRING },
               solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
               latex_formulas: { type: Type.ARRAY, items: { type: Type.STRING } },
-              illustration_prompt: { type: Type.STRING, description: 'Prompt for NanoBanana real-world illustrations ONLY.' }, math_graphic_config: { type: Type.OBJECT, description: 'JSON for geometric or mathematical plots.' },
+              illustration_prompt: { type: Type.STRING, description: 'Prompt for NanoBanana real-world illustrations ONLY.' }, 
+              geogebra_commands: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'GeoGebra exact string commands to plot shapes or graphs (e.g. "f(x)=x^2", "A=(1,2)"). Leave empty if no graph needed.' },
+              math_graphic_config: { type: Type.OBJECT, description: 'JSON for geometric or mathematical plots.' },
               tags: { type: Type.ARRAY, items: { type: Type.STRING } },
               difficulty: { type: Type.STRING, enum: ["easy", "medium", "hard"] },
               dok_level: { type: Type.NUMBER },
@@ -1097,7 +1165,7 @@ ${enableLogicalReconstruction
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    const tasks: MathTask[] = JSON.parse(response.text);
+    const tasks: MathTask[] = parseGeminiResponse(response.text);
     return tasks.map(t => ({ ...t, source_url: "Слика (Напреден OCR)" }));
   } catch (error) {
     console.error("Грешка при екстракција од слика:", error);
@@ -1112,13 +1180,13 @@ export async function verifyUserStep(task: MathTask, previousSteps: string[], us
   nextStepSuggestion?: string;
   isFinished?: boolean;
 }> {
-  const prompt = `Ти си Стручен Socratic Tutor за Математика. Твојата задача е да го провериш последниот чекор на ученикот во решавањето на задачата.
-Ако ученикот побара насока со фразата (Те молам дај ми Сократска насока), твојата примарна цел е ДА НЕ ГО ДАДЕШ РЕШЕНИЕТО, туку да поставиш провокативно Сократско прашање базирано на неговиот досегашен пробив.
+  const prompt = `Ти си Стручен Математички Едукатор-Архитект специјалист за ZPD (Zone of Proximal Development) и Сократов дијалог. Твојата задача е да го провериш последниот чекор на ученикот.
+Ако ученикот побара помош или погреши, твојата примарна цел е СТРОГО ДА НЕ ГО ДАДЕШ РЕШЕНИЕТО ИЛИ ТОЧНАТА ФОРМУЛА, туку да поставиш провокативно Сократско прашање кое ќе му помогне самиот да го доживее својот "Аха!" момент.
 
 КОНТЕКСТ НА ЗАДАЧАТА:
 ${task.original_text}
 
-РЕШЕНИЕ (за референца):
+РЕШЕНИЕ (за твоја референца - АПСОЛУТНО ЗАБРАНЕТО ЗА ДИРЕКТНО СПОДЕЛУВАЊЕ):
 ${task.solution_steps.join('\n')}
 
 ПРЕТХОДНИ ЧЕКОРИ НА УЧЕНИКОТ:
@@ -1128,11 +1196,17 @@ ${previousSteps.join('\n')}
 ${userStep}
 
 ИНСТРУКЦИИ:
-1. Провери дали последниот чекор е математички точен и логичен во однос на претходните.
-2. Ако е точен, дај позитивно засилување. Ако ученикот го завршил решавањето до крај (го нашол финалниот резултат), задолжително сетирај "isFinished": true и кажи "Браво, успешно заврши!".
-3. Ако е погрешен или бара насока, објасни зошто е погрешен БЕЗ да го кажеш точниот одговор. Дај суптилен hint преку Сократово прашање.
-4. Користи LaTeX за сите изрази. ${MATH_PLOT_INSTRUCTION} ${ALGEBRA_TILES_INSTRUCTION}
-5. Јазик: Македонски.
+1. Провери дали последниот чекор е математички точен и логичен.
+2. Ако е точен, дај позитивно засилување. Ако ученикот решил сé до крај, врати "isFinished": true и дај честитки.
+3. Ако е погрешен или ученикот вели "Не знам":
+   - **НИКОГАШ** не го откривај следниот точен чекор директно!
+   - Анализирај што ученикот знае и што му недостига (ZPD).
+   - "feedback" полето мора да содржи **топло Сократско прашање**. На пр., ако добил негативен број под квадратен корен во реално множење, прашај го: "Гледам дека доби негативна вредност. Што знаеме за знаците на броевите кога се множат самите со себе?".
+   - Натерај го да размисли кон каде води неговата грешка или кое клучно својство го заборавил.
+4. **ИНТЕРАКТИВНОСТ (GeoGebra):** Ако има "GeoGebra Hidden Context", прочитај ги живите координати. Охрабри го ученикот: "Обиди се да го поместиш темето / точката... Што забележуваш за дијагоналите/аглите?". Доколку веќе поместил точка, осврни се на неа: "Гледам дека ја помести точката, што можеш да заклучиш сега?".
+5. Во "hint" полето врати СУПТИЛНА аналогија или помош (пр. "Сјети се на правилото за...") која НЕ ГО СОДРЖИ решението.
+6. Користи LaTeX за сите изрази. ${MATH_PLOT_INSTRUCTION} ${ALGEBRA_TILES_INSTRUCTION}
+7. Јазик: Македонски.
 
 Врати го одговорот во JSON формат.`;
 
@@ -1227,7 +1301,7 @@ export async function modernizeTaskContext(task: MathTask): Promise<MathTask> {
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    const updates = JSON.parse(response.text);
+    const updates = parseGeminiResponse(response.text);
     return { ...task, ...updates, title: updates.title, original_text: updates.original_text };
   } catch (error) {
     console.error("Грешка при модернизација на контекст:", error);

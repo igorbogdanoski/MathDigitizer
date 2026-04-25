@@ -6,8 +6,11 @@ import { MathTask, CognitiveTelemetryStep, TaskAttempt, UserProfile } from '../l
 import { verifyUserStep, analyzeSolutionImage } from '../lib/gemini';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, addDoc, getDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+
+import { InteractiveCanvas } from './InteractiveCanvas';
+import { GeoGebraViewer } from './GeoGebraViewer';
 
 interface InteractiveSolverProps {
   task: MathTask;
@@ -19,6 +22,8 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
   const { user } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   
+  const [liveSyncId, setLiveSyncId] = useState<string | null>(null);
+
   useEffect(() => {
      if (user) {
         getDoc(doc(db, 'users', user.uid)).then(docSnap => {
@@ -26,8 +31,23 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
                setUserProfile(docSnap.data() as UserProfile);
            }
         });
+        
+        // Generate a deterministic session ID for teacher to spectate
+        const newSyncId = `${user.uid}_${task.id}`;
+        setLiveSyncId(newSyncId);
+        
+        // Also register this active session for teachers to see
+        // Assuming task might pass classroomIds or we just save it globally.
+        setDoc(doc(db, 'active_user_sessions', newSyncId), {
+           userId: user.uid,
+           userName: userProfile?.displayName || user.email || 'Непознат',
+           taskId: task.id,
+           taskTitle: task.title || task.curriculum_topic,
+           startedAt: new Date().toISOString(),
+           lastActive: new Date().toISOString()
+        });
      }
-  }, [user]);
+  }, [user, task.id]);
 
   const [userSteps, setUserSteps] = useState<string[]>([]);
   const [currentInput, setCurrentInput] = useState('');
@@ -44,100 +64,28 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
   const [telemetrySteps, setTelemetrySteps] = useState<CognitiveTelemetryStep[]>([]);
   const [hintsRequested, setHintsRequested] = useState(0);
 
-  // Canvas state
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [ctx, setCtx] = useState<CanvasRenderingContext2D | null>(null);
+  const [ggbState, setGgbState] = useState<Record<string, {x:number, y:number}>>({});
 
   useEffect(() => {
-    if (isDrawingMode && canvasRef.current) {
-      const canvas = canvasRef.current;
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-      const context = canvas.getContext('2d');
-      if (context) {
-        context.lineCap = 'round';
-        context.strokeStyle = document.documentElement.classList.contains('dark') ? 'white' : 'black';
-        context.lineWidth = 3;
-        setCtx(context);
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'geogebra_update') {
+         const { objName, x, y } = event.data;
+         setGgbState(prev => ({ ...prev, [objName]: { x: Math.round(x*100)/100, y: Math.round(y*100)/100 } }));
       }
-    }
-  }, [isDrawingMode]);
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!ctx) return;
-    setIsDrawing(true);
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    
-    let clientX, clientY;
-    if ('touches' in e) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = (e as React.MouseEvent).clientX;
-      clientY = (e as React.MouseEvent).clientY;
-    }
-    
-    ctx.beginPath();
-    ctx.moveTo(clientX - rect.left, clientY - rect.top);
-  };
-
-  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !ctx) return;
-    e.preventDefault(); // Prevent scrolling on touch
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    
-    let clientX, clientY;
-    if ('touches' in e) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = (e as React.MouseEvent).clientX;
-      clientY = (e as React.MouseEvent).clientY;
-    }
-    
-    ctx.lineTo(clientX - rect.left, clientY - rect.top);
-    ctx.stroke();
-  };
-
-  const stopDrawing = () => {
-    if (!ctx) return;
-    ctx.closePath();
-    setIsDrawing(false);
-  };
-
-  const clearCanvas = () => {
-    if (!ctx || !canvasRef.current) return;
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-  };
-
-  const submitCanvas = async () => {
-    if (!canvasRef.current) return;
-    
-    // Create a temporary canvas to draw a white background before exporting
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = canvasRef.current.width;
-    tempCanvas.height = canvasRef.current.height;
-    const tempCtx = tempCanvas.getContext('2d');
-    if (tempCtx) {
-      tempCtx.fillStyle = 'white';
-      tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-      tempCtx.drawImage(canvasRef.current, 0, 0);
-    }
-
-    const base64Data = tempCanvas.toDataURL('image/png');
-    const base64Image = base64Data.split(',')[1];
-    
+  const submitCanvasBase64 = async (base64Image: string) => {
     setIsAnalyzingImage(true);
     setImageFeedback(null);
     setFeedback(null);
     setIsDrawingMode(false);
 
     try {
-      const result = await analyzeSolutionImage(task, base64Image, 'image/png');
+      const result = await analyzeSolutionImage(task, base64Image, 'image/jpeg');
       setImageFeedback(result);
     } catch (err) {
       console.error("Error analyzing image:", err);
@@ -150,8 +98,10 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
     }
   };
 
-  const handleVerifyStep = async () => {
-    if (!currentInput.trim() || isVerifying) return;
+  const handleVerifyStep = async (overrideInput?: string) => {
+    let rawInput = overrideInput !== undefined ? overrideInput : currentInput;
+    if (!rawInput.trim() && !overrideInput) return;
+    if (isVerifying) return;
 
     setIsVerifying(true);
     setFeedback(null);
@@ -159,12 +109,20 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
     const stepEndTime = new Date();
     const timeSpent = Math.max(0, Math.floor((stepEndTime.getTime() - stepStartTime.getTime()) / 1000));
     
+    // Inject GeoGebra state silently for the AI context
+    let inputToVerify = rawInput;
+    const ggbKeys = Object.keys(ggbState);
+    if (ggbKeys.length > 0 && !inputToVerify.includes("[GeoGebra")) {
+       const ggbContext = ggbKeys.map(k => `${k}(${ggbState[k].x}, ${ggbState[k].y})`).join(", ");
+       inputToVerify += `\n[GeoGebra Hidden Context: Student is currently viewing points at: ${ggbContext}]`;
+    }
+
     try {
-      const result = await verifyUserStep(task, userSteps, currentInput);
+      const result = await verifyUserStep(task, userSteps, inputToVerify);
       
       // Build internal telemetry payload
       const stepData: CognitiveTelemetryStep = {
-        step_text: currentInput,
+        step_text: rawInput,
         is_correct: result.isCorrect,
         time_spent_seconds: timeSpent,
         hints_requested: hintsRequested,
@@ -177,8 +135,8 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
       setStepStartTime(new Date());
       setHintsRequested(0);
       
-      if (result.isCorrect) {
-        setUserSteps(prev => [...prev, currentInput]);
+      if (result.isCorrect && !rawInput.includes("Сократска насока")) {
+        setUserSteps(prev => [...prev, rawInput]);
         setCurrentInput('');
         setFeedback({ isCorrect: true, message: result.feedback });
         
@@ -262,6 +220,9 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
 
   const handleFinish = async () => {
     await saveTelemetryToFirebase('completed');
+    if (liveSyncId) {
+      await deleteDoc(doc(db, 'active_user_sessions', liveSyncId));
+    }
     onComplete(200); // Award 200 XP for interactive solving
     onClose();
   };
@@ -269,6 +230,9 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
   const handleManualClose = async () => {
     if (telemetrySteps.length > 0 && !isFinished) {
        await saveTelemetryToFirebase('abandoned');
+    }
+    if (liveSyncId) {
+      await deleteDoc(doc(db, 'active_user_sessions', liveSyncId));
     }
     onClose();
   };
@@ -304,6 +268,22 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
             <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm mb-6">
               <MathRenderer content={task.original_text} className="text-slate-800 dark:text-slate-200 leading-relaxed" />
             </div>
+            
+            {task.geogebra_commands && task.geogebra_commands.length > 0 && (
+               <div className="mb-6 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-2">
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex justify-between items-center mb-2 pl-2">
+                     <span>Интерактивен График</span>
+                     {Object.keys(ggbState).length > 0 && (
+                        <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-[9px] normal-case animate-pulse flex items-center gap-1">
+                           <Activity className="w-3 h-3" /> Живо читање на координати
+                        </span>
+                     )}
+                  </h4>
+                  <div className="w-full aspect-square border border-slate-100 rounded-xl overflow-hidden relative">
+                     <GeoGebraViewer commands={task.geogebra_commands} inline={true} />
+                  </div>
+               </div>
+            )}
             
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
@@ -415,36 +395,13 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
             {/* Input Area */}
             <div className="p-6 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
               {isDrawingMode ? (
-                <div className="flex flex-col gap-3">
-                  <div className="relative w-full h-48 bg-white dark:bg-slate-900 border-2 border-indigo-200 dark:border-indigo-800 rounded-2xl overflow-hidden shadow-inner">
-                    <canvas
-                      ref={canvasRef}
-                      onMouseDown={startDrawing}
-                      onMouseMove={draw}
-                      onMouseUp={stopDrawing}
-                      onMouseOut={stopDrawing}
-                      onTouchStart={startDrawing}
-                      onTouchMove={draw}
-                      onTouchEnd={stopDrawing}
-                      className="w-full h-full cursor-crosshair touch-none"
-                    />
-                    <div className="absolute top-2 right-2 flex gap-2">
-                      <Button variant="outline" size="sm" onClick={clearCanvas} className="h-8 w-8 p-0 bg-white/80 backdrop-blur" title="Избриши">
-                        <Eraser className="w-4 h-4 text-slate-600" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => setIsDrawingMode(false)} className="h-8 w-8 p-0 bg-white/80 backdrop-blur" title="Затвори">
-                        <X className="w-4 h-4 text-slate-600" />
-                      </Button>
-                    </div>
-                  </div>
-                  <Button 
-                    onClick={submitCanvas}
-                    disabled={isAnalyzingImage}
-                    className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md"
-                  >
-                    {isAnalyzingImage ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
-                    Испрати цртеж за проверка
-                  </Button>
+                <div className="h-[400px] w-full mb-4">
+                  <InteractiveCanvas 
+                    onSend={submitCanvasBase64} 
+                    onCancel={() => setIsDrawingMode(false)}
+                    isSubmitting={isAnalyzingImage}
+                    liveSyncId={liveSyncId || undefined}
+                  />
                 </div>
               ) : (
                 <div className="flex gap-3">
@@ -477,7 +434,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
                     </div>
                   </div>
                   <Button 
-                    onClick={handleVerifyStep}
+                    onClick={() => handleVerifyStep()}
                     disabled={!currentInput.trim() || isVerifying || isAnalyzingImage}
                     className="h-20 w-20 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white flex flex-col items-center justify-center gap-1 shadow-lg shadow-indigo-200 dark:shadow-none"
                   >
@@ -497,9 +454,11 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
                       size="sm" 
                       onClick={() => {
                         setHintsRequested(prev => prev + 1);
-                        setCurrentInput(prev => prev + " (Те молам дај ми Сократска насока)");
+                        const hintText = currentInput.trim() ? `${currentInput} (Те молам дај ми Сократска насока за ова)` : "(Те молам дај ми Сократска насока што да правам следно)";
+                        handleVerifyStep(hintText);
                       }} 
                       className="text-xs text-amber-600 dark:text-amber-400"
+                      disabled={isVerifying || isAnalyzingImage}
                     >
                       <Lightbulb className="w-3 h-3 mr-1" /> Побарај Насока
                     </Button>

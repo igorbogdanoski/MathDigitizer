@@ -8,6 +8,7 @@ import { BookOpen, Users, ArrowLeft, Loader2, Plus, Calendar, CheckCircle2, Circ
 import { Button } from './ui/Button';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { LiveCanvas } from './LiveCanvas';
+import { LiveClassroomMonitor } from './LiveClassroomMonitor';
 
 const classMasteryData = [
   { subject: 'Алгебра', A: 75, fullMark: 100 },
@@ -26,7 +27,7 @@ export const ClassroomDetail: React.FC = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [students, setStudents] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'assignments' | 'canvas' | 'telemetry'>('telemetry'); // Default to telemetry for the wow factor
+  const [activeTab, setActiveTab] = useState<'assignments' | 'canvas' | 'telemetry' | 'live'>('telemetry'); // Default to telemetry for the wow factor
 
   // Modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -188,14 +189,29 @@ export const ClassroomDetail: React.FC = () => {
           }`}
         >
           <Circle className="w-2 h-2 fill-emerald-500 text-emerald-500 animate-pulse" />
-          Интерактивна Табла (Live)
+          Интерактивна Табла (Мултиплеер)
         </button>
+        {userProfile?.role === 'teacher' && (
+          <button
+            onClick={() => setActiveTab('live')}
+            className={`px-6 py-3 font-medium text-sm border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${
+              activeTab === 'live' 
+                ? 'border-red-600 text-red-600' 
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+            }`}
+          >
+            <Activity className="w-4 h-4 animate-pulse text-red-500" />
+            Монитор во Живо
+          </button>
+        )}
       </div>
 
       {activeTab === 'canvas' ? (
         <div className="h-[600px] w-full">
           <LiveCanvas classroomId={id!} />
         </div>
+      ) : activeTab === 'live' ? (
+        <LiveClassroomMonitor />
       ) : activeTab === 'telemetry' ? (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
            <div className="bg-indigo-600 rounded-3xl p-8 text-white shadow-xl flex items-center justify-between">

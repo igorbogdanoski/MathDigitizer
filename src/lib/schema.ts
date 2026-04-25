@@ -88,6 +88,7 @@ export interface MathTask {
   evidence_quote?: string; // ANTI-HALLUCINATION: Exact quote from the source video/doc mapping to this task
   source_timestamp?: string; // The time (e.g. 04:15) or Page (e.g. Page 3) where the task is found
   illustration_prompt?: string; // English prompt ONLY for real-world scenarios (cars, apples, physics situations) via Image AI
+  geogebra_commands?: string[]; // Array of GeoGebra commands for geometry and plotting
   math_graphic_config?: any; // JSON config representing geometric or mathematical graphs (triangles, functions)
   type?: 'theory' | 'task';
   title: string;
@@ -98,6 +99,7 @@ export interface MathTask {
   source_url: string;
   detected_language?: 'mk' | 'en' | 'tr' | 'al' | string; // Automatic language detection
   tags: string[];
+  misconceptions?: { mistake: string; teacher_reaction: string }[];
   difficulty: 'easy' | 'medium' | 'hard';
   dok_level?: number;
   bloom_taxonomy?: BloomTaxonomyLevel;

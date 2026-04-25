@@ -2,18 +2,21 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, orderBy, onSnapshot } from 'firebase/firestore';
-import { TaskAttempt, UserProfile } from '../lib/schema';
+import { TaskAttempt, UserProfile, MathTask } from '../lib/schema';
 import { ChevronLeft, BrainCircuit, Activity, Clock, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { Skeleton } from './ui/Skeleton';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { KnowledgeGraphVisualizer } from './KnowledgeGraphVisualizer';
 
 export const StudentTelemetryView: React.FC = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const [attempts, setAttempts] = useState<TaskAttempt[]>([]);
   const [studentProfile, setStudentProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [interventionTasks, setInterventionTasks] = useState<MathTask[]>([]);
 
   useEffect(() => {
     if (!studentId) return;
@@ -282,6 +285,10 @@ export const StudentTelemetryView: React.FC = () => {
                     </div>
                  </div>
                  
+                 <div className="h-64 my-6">
+                    <KnowledgeGraphVisualizer struggleTopic={stats?.struggleTopic?.name} />
+                 </div>
+                 
                  <div className="pt-2">
                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 uppercase tracking-wide">Историја на Интервенции</h4>
                    <div className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-3 pl-4 space-y-4">
@@ -299,11 +306,58 @@ export const StudentTelemetryView: React.FC = () => {
                  </div>
                </div>
                
-               <Button className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-500/20">
-                 Генерирај Нова Интервенција
+               <Button 
+                 onClick={async () => {
+                   if (!stats?.struggleTopic) return;
+                   setIsGenerating(true);
+                   try {
+                     const { generateInterventionTasks } = await import('../lib/gemini');
+                     const tasks = await generateInterventionTasks(
+                       stats.struggleTopic.name, 
+                       `Ученикот има просек од ${stats.struggleTopic.avg} грешки по задача и бара премногу помош. Потребни се полесни задачи за враќање кон основите.`
+                     );
+                     
+                     // Optionally redirect to intervention or show in UI
+                     console.log("Интервенција:", tasks);
+                     setInterventionTasks(tasks);
+                   } catch (e) {
+                     console.error(e);
+                   } finally {
+                     setIsGenerating(false);
+                   }
+                 }}
+                 disabled={isGenerating || !stats?.struggleTopic}
+                 className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-500/20"
+               >
+                 {isGenerating ? 'Генерирање...' : 'Генерирај Нова Интервенција'}
                </Button>
             </div>
           </div>
+          
+          {interventionTasks.length > 0 && (
+             <div className="mt-8 border-t border-slate-200 dark:border-slate-800 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+               <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Специјализиран Интервентен Сет</h3>
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 {interventionTasks.map((task, idx) => (
+                   <Card key={idx} className="border-0 shadow-xl bg-white dark:bg-slate-800">
+                     <CardHeader>
+                       <CardTitle className="text-sm text-indigo-600 dark:text-indigo-400">Задача {idx + 1}: {task.title}</CardTitle>
+                     </CardHeader>
+                     <CardContent>
+                       <p className="text-xs text-slate-600 dark:text-slate-300 italic mb-4">{task.original_text}</p>
+                       <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                         <p className="text-[10px] font-bold text-slate-500 uppercase">Олеснување (Scaffolding)</p>
+                         <p className="text-xs text-slate-700 dark:text-slate-400 mt-1">{task.hints?.[0]}</p>
+                       </div>
+                       <Button size="sm" variant="outline" className="w-full mt-4 text-xs font-bold">
+                         Додели на Ученик
+                       </Button>
+                     </CardContent>
+                   </Card>
+                 ))}
+               </div>
+             </div>
+          )}
         </>
       )}
     </div>

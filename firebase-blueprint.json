@@ -23,6 +23,7 @@
         "solution_steps": { "type": "array", "items": { "type": "string" }, "description": "Solution steps in LaTeX" },
         "latex_formulas": { "type": "array", "items": { "type": "string" }, "description": "Extracted LaTeX formulas" },
         "nanobanana_prompt": { "type": "string", "description": "English prompt for NanoBanana" },
+        "geogebra_commands": { "type": "array", "items": { "type": "string" }, "description": "GeoGebra commands" },
         "source_url": { "type": "string", "description": "Source URL or image ID" },
         "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags for the task" },
         "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"], "description": "Difficulty level" },

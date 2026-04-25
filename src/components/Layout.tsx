@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { BrainCircuit, HomeIcon, Wand2, Factory, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap } from 'lucide-react';
+import { BrainCircuit, HomeIcon, Wand2, Factory, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { signInWithGoogle, logOut } from '../lib/firebase';
@@ -43,6 +43,7 @@ export const Layout: React.FC = () => {
     { path: '/flashcards', icon: Brain, label: 'Флешкарти', show: userProfile?.role === 'student' },
     { path: '/adaptive-test', icon: Zap, label: 'Адаптивен Тест', show: userProfile?.role === 'student' },
     { path: '/factory', icon: Factory, label: 'Фабрика', show: !userProfile || userProfile.role === 'teacher' },
+    { path: '/mass-factory', icon: Layers, label: 'PDF Фабрика', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/classrooms', icon: Users, label: 'Училници', show: !!userProfile },
     { path: '/exams-grading', icon: Trophy, label: 'Dugga', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/library', icon: LibraryIcon, label: 'Библиотека', show: true },

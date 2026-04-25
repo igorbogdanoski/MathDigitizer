@@ -13,6 +13,7 @@ import { collection, addDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import ReactCrop, { Crop as CropType, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { GeoGebraViewer } from './GeoGebraViewer';
 
 export const SmartOCR: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'upload' | 'draw'>('upload');
@@ -28,6 +29,7 @@ export const SmartOCR: React.FC = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [isEnriching, setIsEnriching] = useState(false);
   const [extractedTask, setExtractedTask] = useState<Partial<MathTask> | null>(null);
+  const [activeGeogebraCmds, setActiveGeogebraCmds] = useState<string[] | null>(null);
   const [latexCode, setLatexCode] = useState<string>('');
   const [isCopied, setIsCopied] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -354,6 +356,21 @@ export const SmartOCR: React.FC = () => {
           </div>
           
           <div className="w-px h-6 bg-indigo-200 dark:bg-indigo-800 hidden sm:block"></div>
+          
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">Визуелизација:</span>
+            <select
+              defaultValue="geogebra"
+              className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 dark:text-slate-200 shadow-sm"
+            >
+              <option value="none">Без дијаграм</option>
+              <option value="tikz">LaTeX (TikZ)</option>
+              <option value="geogebra">GeoGebra (Интерактивно)</option>
+              <option value="nanobanana">AI Контекстуална Слика</option>
+            </select>
+          </div>
+
+          <div className="w-px h-6 bg-indigo-200 dark:bg-indigo-800 hidden md:block"></div>
           
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">Логичка Реконструкција:</span>
@@ -689,6 +706,34 @@ export const SmartOCR: React.FC = () => {
                             )}
                           </div>
                         )}
+
+                        {/* GeoGebra / Visualization Sub-card */}
+                        {(extractedTask.geogebra_commands?.length ?? 0) > 0 && (
+                          <div className="bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-inner mt-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-white dark:bg-slate-700 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 flex items-center justify-center">
+                                  <Activity className="w-4 h-4 text-indigo-500" />
+                                </div>
+                                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">GeoGebra Command API</h4>
+                              </div>
+                              <Button 
+                                size="sm" 
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md font-bold"
+                                onClick={() => setActiveGeogebraCmds(extractedTask.geogebra_commands || [])}
+                              >
+                                <Code className="w-4 h-4 mr-2" />
+                                Отвори во GeoGebra
+                              </Button>
+                            </div>
+                            <div className="bg-slate-900 rounded-xl p-3 text-emerald-400 font-mono text-xs overflow-x-auto">
+                              {extractedTask.geogebra_commands?.map((cmd, i) => (
+                                <div key={i} className="whitespace-nowrap"><span className="text-slate-500">evalCommand:</span> {cmd}</div>
+                              ))}
+                            </div>
+                            <p className="text-[10px] text-slate-500 mt-3 text-center uppercase tracking-widest font-bold">Овој код е подготвен за автоматско полнење на GeoGebra Applet.</p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -698,6 +743,9 @@ export const SmartOCR: React.FC = () => {
           </div>
         </div>
       </div>
+      {activeGeogebraCmds && (
+        <GeoGebraViewer commands={activeGeogebraCmds} onClose={() => setActiveGeogebraCmds(null)} />
+      )}
     </div>
   );
 };

@@ -12,6 +12,7 @@ export interface KnowledgeModelResponse {
   };
   chain_of_thought_explanation: string;
   solution_steps: string[];
+  misconceptions: { mistake: string; teacher_reaction: string }[];
   metadata: {
     tags: string[];
     difficulty: "easy" | "medium" | "hard";
@@ -31,7 +32,8 @@ export async function generateHybridMathSolution(problemText: string): Promise<K
 1. **Tree-of-Thoughts (ToT) Системски Дизајн**: Евалуирај 3 различни патишта (paths) за решавање на овој математички проблем. Опиши ги накратко.
 2. **Евалуација**: Критички спореди ги трите патишта и одбери го најдобриот баланс помеѓу педагошка јасност и математичка точност.
 3. **Chain-of-Thought (CoT) Логика**: Откако ќе го избереш најдобриот пат, разбиј го процесот на решавање на микро-чекори со детално методолошко објаснување.
-4. **Македонски Јазик & LaTeX**: Користи стручен македонски јазик и Zero-Error LaTeX стандард (inline $...$ и display $$...$$). На пример "$x^2$".
+4. **Детекција на Анатомски Грешки (Misconception Analysis)**: Системот мора да ги предвиди 3-те најчести погрешни чекори што ги прават учениците за оваа задача и како наставникот треба да реагира на нив.
+5. **Македонски Јазик & LaTeX**: Користи стручен македонски јазик и Zero-Error LaTeX стандард (inline $...$ и display $$...$$). На пример "$x^2$".
 
 ВРАТИ ГО РЕЗУЛТАТОТ СТРОГО КАКО JSON ОБЈЕКТ кој се совпаѓа со дефинираната структура.`;
 
@@ -58,6 +60,17 @@ export async function generateHybridMathSolution(problemText: string): Promise<K
             },
             chain_of_thought_explanation: { type: Type.STRING, description: "Methodological explanation of the chosen path" },
             solution_steps: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Step-by-step mathematical solution" },
+            misconceptions: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  mistake: { type: Type.STRING },
+                  teacher_reaction: { type: Type.STRING }
+                },
+                required: ["mistake", "teacher_reaction"]
+              }
+            },
             metadata: {
               type: Type.OBJECT,
               properties: {
@@ -70,7 +83,7 @@ export async function generateHybridMathSolution(problemText: string): Promise<K
               required: ["tags", "difficulty", "dok_level", "grade_level", "curriculum_topic"]
             }
           },
-          required: ["problem_text", "tree_of_thoughts", "chain_of_thought_explanation", "solution_steps", "metadata"]
+          required: ["problem_text", "tree_of_thoughts", "chain_of_thought_explanation", "solution_steps", "misconceptions", "metadata"]
         }
       }
     });

@@ -8,7 +8,7 @@ import {
   MessageCircleQuestion, RotateCcw, ArrowUpDown, Sparkles, Brain, Activity, 
   Check, Copy, Loader2, ChevronDown, ChevronUp, Image as ImageIcon, 
   Play, Pause, Plus, Info, AlertTriangle, Quote, Zap, Microscope, BookOpen, Compass,
-  Share2, Network, Link2, PlayCircle, Youtube, Cpu, ShieldCheck, Layers, LayoutDashboard
+  Share2, Network, Link2, PlayCircle, Youtube, Cpu, ShieldCheck, Layers, LayoutDashboard, CheckCircle
 } from 'lucide-react';
 import { db } from '../../lib/firebase';
 import { useQueryClient } from '@tanstack/react-query';
@@ -357,6 +357,26 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
                   <div>
                     <span className="text-[10px] font-bold text-orange-600 uppercase tracking-wider block mb-1">Предлог за модернизација</span>
                     <p className="text-xs text-orange-800 italic">"{task.pedagogical_insights.modern_context_suggestion}"</p>
+                  </div>
+                </div>
+              )}
+
+              {task.misconceptions && task.misconceptions.length > 0 && (
+                <div className="bg-red-50/50 border border-red-100 rounded-xl p-4 mt-6">
+                  <h4 className="flex items-center gap-2 text-sm font-bold text-red-900 mb-3">
+                    <Activity className="w-4 h-4 text-red-600 animate-pulse" />
+                    Детекција на Анатомски Грешки (Misconceptions)
+                  </h4>
+                  <div className="space-y-4">
+                    {task.misconceptions.map((mc, idx) => (
+                       <div key={idx} className="bg-white p-3 rounded-lg border border-red-200">
+                          <p className="text-xs font-bold text-red-800 line-through decoration-red-400 mb-2">Грешка: {mc.mistake}</p>
+                          <div className="bg-indigo-50 p-2 rounded text-xs text-indigo-800 border-l-2 border-indigo-500">
+                             <span className="font-bold flex items-center gap-1 mb-1"><CheckCircle className="w-3 h-3"/> Реакција:</span>
+                             {mc.teacher_reaction}
+                          </div>
+                       </div>
+                    ))}
                   </div>
                 </div>
               )}

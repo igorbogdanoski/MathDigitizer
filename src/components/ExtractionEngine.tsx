@@ -3,7 +3,7 @@ import {
   Globe, Wand2, ChevronUp, ChevronDown, Loader2, Sparkles, BookOpen, Download, 
   FileJson, CheckCircle, Save, Check, Youtube, Link as LinkIcon, FileText, 
   PlayCircle, Image as ImageIcon, AlertTriangle, Quote, Microscope, BookOpen as BookOpenIcon, Zap, Layers,
-  Activity, Clock, Printer, FileType2
+  Activity, Clock, Printer, FileType2, BrainCircuit
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
@@ -20,6 +20,7 @@ import { VisualMathCanvas } from './VisualMathCanvas';
 import { useNavigate } from 'react-router-dom';
 import { KahootMaker } from './KahootMaker';
 import { MakedoTestGenerator } from './MakedoTestGenerator';
+import { GeoGebraViewer } from './GeoGebraViewer';
 
 interface ExtractionEngineProps {
   setActiveTutorTask: (task: MathTask) => void;
@@ -50,6 +51,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
   const [isEnriching, setIsEnriching] = useState<Record<number, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [savedTasks, setSavedTasks] = useState<Set<number>>(new Set());
+  const [activeGeogebraCmds, setActiveGeogebraCmds] = useState<string[] | null>(null);
   
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -889,6 +891,29 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                        <MathRenderer content={task.original_text} />
                     </div>
 
+                    {(task.geogebra_commands?.length ?? 0) > 0 && (
+                      <div className="mb-6 bg-slate-900 rounded-2xl p-4 shadow-inner border border-slate-700 flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="flex items-center gap-2 text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
+                            <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                            GeoGebra API Команди
+                          </h4>
+                          <Button 
+                            size="sm" 
+                            className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-0 rounded-lg shadow-md"
+                            onClick={() => setActiveGeogebraCmds(task.geogebra_commands || [])}
+                          >
+                            Илустрирај во GeoGebra
+                          </Button>
+                        </div>
+                        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-emerald-300 font-mono text-xs overflow-x-auto space-y-1">
+                          {task.geogebra_commands?.map((cmd, i) => (
+                            <div key={i} className="whitespace-nowrap"><span className="text-slate-600">evalCommand:</span> {cmd}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {task.illustration_prompt && (
                       <div className="mb-6 bg-slate-800 rounded-2xl p-4 shadow-inner border border-slate-700 flex flex-col gap-2">
                         <h4 className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -1036,6 +1061,45 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                       )}
                     </div>
 
+                    {/* Pedagogical Insights */}
+                    {task.pedagogical_insights && (
+                      <div className="mt-8 p-6 bg-emerald-50/50 rounded-2xl border border-emerald-100">
+                        <label className="text-xs font-bold text-emerald-800 uppercase tracking-widest flex items-center gap-2 mb-4">
+                          <BrainCircuit className="w-4 h-4 text-emerald-600" />
+                          Педагошки Увид (CoT)
+                        </label>
+                        
+                        <div className="space-y-4 text-sm text-slate-700">
+                          {task.pedagogical_insights.common_pitfalls?.length > 0 && (
+                            <div>
+                              <strong className="text-emerald-900 block mb-1">Чести грешки кај учениците:</strong>
+                              <ul className="list-disc pl-5 space-y-1">
+                                {task.pedagogical_insights.common_pitfalls.map((pitfall, pIdx) => (
+                                  <li key={pIdx}>{pitfall}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {task.pedagogical_insights.socratic_questions?.length > 0 && (
+                            <div>
+                              <strong className="text-emerald-900 block mb-1">Сократови прашања (За наставник):</strong>
+                              <ul className="list-disc pl-5 space-y-1">
+                                {task.pedagogical_insights.socratic_questions.map((q, qIdx) => (
+                                  <li key={qIdx}>{q}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {task.pedagogical_insights.teaching_strategy && (
+                            <div>
+                              <strong className="text-emerald-900 block mb-1">Стратегија за предавање:</strong>
+                              <p>{task.pedagogical_insights.teaching_strategy}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Teacher Notes / Manual Intervention */}
                     <div className="mt-8 p-6 bg-slate-50 rounded-2xl border border-slate-200">
                       <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2 mb-3">
@@ -1128,6 +1192,10 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
         </div>
       )}
       </>
+      )}
+
+      {activeGeogebraCmds && (
+        <GeoGebraViewer commands={activeGeogebraCmds} onClose={() => setActiveGeogebraCmds(null)} />
       )}
     </div>
   );
