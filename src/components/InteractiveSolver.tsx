@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { CheckCircle2, XCircle, Loader2, Send, ArrowRight, Lightbulb, Sparkles, RotateCcw, X, Camera, AlertTriangle, PenTool, Eraser } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Send, ArrowRight, Lightbulb, Sparkles, RotateCcw, X, Camera, AlertTriangle, PenTool, Eraser, Activity } from 'lucide-react';
 import { Button } from './ui/Button';
 import { MathRenderer } from './MathRenderer';
 import { MathTask, CognitiveTelemetryStep, TaskAttempt, UserProfile } from '../lib/schema';

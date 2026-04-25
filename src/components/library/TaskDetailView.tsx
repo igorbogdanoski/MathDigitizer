@@ -8,7 +8,7 @@ import {
   MessageCircleQuestion, RotateCcw, ArrowUpDown, Sparkles, Brain, Activity, 
   Check, Copy, Loader2, ChevronDown, ChevronUp, Image as ImageIcon, 
   Play, Pause, Plus, Info, AlertTriangle, Quote, Zap, Microscope, BookOpen, Compass,
-  Share2, Network, Link2, PlayCircle, Youtube, Cpu, ShieldCheck, Layers, LayoutDashboard, CheckCircle
+  Share2, Network, Link2, PlayCircle, Cpu, ShieldCheck, Layers, LayoutDashboard, CheckCircle
 } from 'lucide-react';
 import { db } from '../../lib/firebase';
 import { useQueryClient } from '@tanstack/react-query';
@@ -483,7 +483,7 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-4">Хоризонтална Мрежа</label>
                         <div className="flex flex-wrap gap-2">
                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors cursor-pointer">
-                             <Youtube className="w-3.5 h-3.5 text-red-400" />
+                             <PlayCircle className="w-3.5 h-3.5 text-red-400" />
                              <span className="text-[10px] text-slate-300">Видео Упатство</span>
                            </div>
                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors cursor-pointer">

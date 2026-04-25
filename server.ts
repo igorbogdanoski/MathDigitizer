@@ -29,12 +29,11 @@ async function startServer() {
 
     try {
       console.log(`[YoutubeScraper] Fetching transcript for: ${url}`);
-      // Dynamically import ESM to avoid node CJS/ESM conflicts
-      const { YoutubeTranscript } = await import("youtube-transcript/dist/youtube-transcript.esm.js");
+      const { YoutubeTranscript } = require("youtube-transcript");
       const transcript = await YoutubeTranscript.fetchTranscript(url);
       
       // Combine texts into a single block
-      const fullText = transcript.map(t => t.text).join(" ");
+      const fullText = transcript.map((t: any) => t.text).join(" ");
       
       return res.json({ 
         url,
@@ -62,7 +61,7 @@ async function startServer() {
     // Note: Use explicit dist paths and fallbacks for production 
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    app.get('*all', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

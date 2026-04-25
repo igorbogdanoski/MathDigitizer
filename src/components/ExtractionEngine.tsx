@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Globe, Wand2, ChevronUp, ChevronDown, Loader2, Sparkles, BookOpen, Download, 
-  FileJson, CheckCircle, Save, Check, Youtube, Link as LinkIcon, FileText, 
+  FileJson, CheckCircle, Save, Check, Link as LinkIcon, FileText, 
   PlayCircle, Image as ImageIcon, AlertTriangle, Quote, Microscope, BookOpen as BookOpenIcon, Zap, Layers,
   Activity, Clock, Printer, FileType2, BrainCircuit
 } from 'lucide-react';
@@ -385,7 +385,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
           
           <div className="relative z-10 max-w-3xl mx-auto text-center space-y-6">
             <div className="inline-flex items-center justify-center p-3 bg-white/5 backdrop-blur-md rounded-2xl mb-2 border border-white/10 shadow-inner">
-              <Youtube className="w-8 h-8 text-red-500 mr-2 drop-shadow-md" />
+              <PlayCircle className="w-8 h-8 text-red-500 mr-2 drop-shadow-md" />
               <div className="h-6 w-px bg-white/20 mx-2"></div>
               <FileText className="w-7 h-7 text-emerald-400 mx-2 drop-shadow-md" />
               <div className="h-6 w-px bg-white/20 mx-2"></div>
@@ -446,7 +446,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
 
                     <div className="bg-emerald-900/30 border border-emerald-400/30 rounded-2xl p-4 mt-2">
                        <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-3">
-                          <Youtube className="w-5 h-5 text-emerald-400" />
+                          <PlayCircle className="w-5 h-5 text-emerald-400" />
                           Вграден YouTube Scraper (Бесплатно / Не е потребна ScraperAPI екстензија)
                        </h4>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-emerald-100/80">
