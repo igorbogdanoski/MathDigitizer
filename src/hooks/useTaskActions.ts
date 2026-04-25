@@ -30,10 +30,11 @@ export function useTaskActions() {
     }
   };
 
-  const handleGenerateImage = async (prompt: string, taskId: string) => {
+  const handleGenerateImage = async (prompt: string, task: MathTask) => {
+    const taskId = task.id || '';
     store.setIsGeneratingImage({ ...store.isGeneratingImage, [taskId]: true });
     try {
-      const imageUrl = await generateImage(prompt);
+      const imageUrl = await generateImage(prompt, task.grade_level);
       store.setGeneratedImages({ ...store.generatedImages, [taskId]: imageUrl });
     } catch (err) {
       console.error("Грешка при генерирање слика:", err);

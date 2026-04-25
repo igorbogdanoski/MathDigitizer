@@ -6,6 +6,8 @@ import { MathRenderer } from '../MathRenderer';
 import { Button } from '../ui/Button';
 import { Loader2, CheckCircle, Save, Clock, HelpCircle, FileType2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
+import { Helmet } from 'react-helmet-async';
 
 export const SummativeExam = ({ examId }: { examId: string }) => {
   const [exam, setExam] = useState<SummativeExamType | null>(null);
@@ -152,7 +154,16 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
   if (!isStarted) {
     return (
       <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6 text-slate-800">
-         <div className="bg-white p-10 rounded-[2rem] shadow-xl max-w-xl w-full border border-slate-200">
+         <Helmet>
+           <title>Влез во Испит | {exam.test_data.title}</title>
+           <meta name="description" content="Придружете се на испитот преку Dugga режим." />
+           <meta name="robots" content="noindex, nofollow" />
+         </Helmet>
+         <motion.div 
+           initial={{ opacity: 0, y: 20 }}
+           animate={{ opacity: 1, y: 0 }}
+           className="bg-white p-10 rounded-[2rem] shadow-xl max-w-xl w-full border border-slate-200"
+         >
             <div className="flex justify-center mb-6">
                <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
                  <FileType2 className="w-8 h-8" />
@@ -177,7 +188,7 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
                  Започни со Решавање
               </Button>
             </form>
-         </div>
+         </motion.div>
          <p className="mt-8 text-slate-400 font-medium text-sm flex items-center gap-2">
             <Clock className="w-4 h-4" /> Секое напуштање на прозорецот се бележи.
          </p>
@@ -189,11 +200,15 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
   if (isSubmitted) {
     return (
       <div className="min-h-screen bg-emerald-50 flex items-center justify-center p-6 text-center">
-         <div className="bg-white p-10 rounded-[2rem] shadow-xl border border-emerald-100 max-w-md w-full">
+         <motion.div 
+           initial={{ opacity: 0, scale: 0.9 }}
+           animate={{ opacity: 1, scale: 1 }}
+           className="bg-white p-10 rounded-[2rem] shadow-xl border border-emerald-100 max-w-md w-full"
+         >
             <CheckCircle className="w-20 h-20 text-emerald-500 mx-auto mb-6" />
             <h2 className="text-3xl font-black text-slate-800 mb-4">Успешно!</h2>
             <p className="text-slate-600 font-medium text-lg">Вашите одговори се забележани и испратени кај наставникот.</p>
-         </div>
+         </motion.div>
       </div>
     );
   }
@@ -203,6 +218,11 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+       <Helmet>
+         <title>{exam.test_data.title} | Официјален Испит</title>
+         <meta name="description" content="Официјален онлајн испит / Dugga режим преку MathDigitizer Pro." />
+         <meta name="robots" content="noindex, nofollow" />
+       </Helmet>
        {/* Top Lockdown Header */}
        <header className="h-16 bg-slate-900 text-white flex items-center justify-between px-6 sticky top-0 z-50">
           <div className="font-bold flex items-center gap-3">

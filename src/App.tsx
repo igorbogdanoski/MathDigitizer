@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { GamificationProvider, useGamification } from './contexts/GamificationContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -11,6 +12,7 @@ import { Library } from './components/Library';
 import MaterialsFactory from './components/MaterialsFactory';
 import { TodoList } from './components/TodoList';
 import { Flashcards } from './components/Flashcards';
+import { AdaptiveTest } from './components/AdaptiveTest';
 import { Dashboard } from './components/Dashboard';
 import { TutorChat } from './components/TutorChat';
 import { Classrooms } from './components/Classrooms';
@@ -124,6 +126,12 @@ const AppRoutes = () => {
               <Flashcards onReviewComplete={() => updateQuestProgress('flashcard')} />
             </ProtectedRoute>
           } />
+
+          <Route path="adaptive-test" element={
+            <ProtectedRoute allowedRoles={['student']}>
+              <AdaptiveTest />
+            </ProtectedRoute>
+          } />
           
           <Route path="dashboard" element={
             <ProtectedRoute>
@@ -163,14 +171,16 @@ const AppRoutes = () => {
 
 export default function App() {
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <GamificationProvider>
-          <Router>
-            <AppRoutes />
-          </Router>
-        </GamificationProvider>
-      </AuthProvider>
-    </ToastProvider>
+    <HelmetProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <GamificationProvider>
+            <Router>
+              <AppRoutes />
+            </Router>
+          </GamificationProvider>
+        </AuthProvider>
+      </ToastProvider>
+    </HelmetProvider>
   );
 }

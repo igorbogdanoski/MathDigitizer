@@ -115,7 +115,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
           original_text: originalText,
           solution_steps: steps.filter(s => s.trim() !== ''),
           latex_formulas: [],
-          nanobanana_prompt: '',
+          illustration_prompt: '',
           difficulty,
           grade_level: gradeLevel,
           ...((folderName.trim()) ? {

@@ -28,6 +28,8 @@ export default function MaterialsFactory() {
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsedTopics, setCollapsedTopics] = useState<Record<string, boolean>>({});
+  const [targetGrade, setTargetGrade] = useState<string>('Сите Одделенија / Мешано');
+  const [targetLanguage, setTargetLanguage] = useState<'mk' | 'en' | 'ru' | 'tr'>('mk');
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedMaterial, setGeneratedMaterial] = useState<any>(null);
@@ -44,7 +46,7 @@ export default function MaterialsFactory() {
     setIsGenerating(true);
     try {
       const tasksToProcess = tasks.filter(t => t.id && selectedTasks.has(t.id));
-      const result = await generateEducationalMaterial(tasksToProcess, selectedType);
+      const result = await generateEducationalMaterial(tasksToProcess, selectedType, targetGrade, targetLanguage);
       setGeneratedMaterial(result);
       showToast('Материјалот е успешно генериран!', 'success');
     } catch (error) {
@@ -188,9 +190,53 @@ export default function MaterialsFactory() {
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <div className="w-1.5 h-8 bg-indigo-600 rounded-full"></div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">1. Изберете тип на материјал</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">1. Подготовка на материјалот</h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        {/* Settings Bar */}
+        <div className="flex flex-wrap items-center gap-4 bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/30">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Јазик:</span>
+            <select
+              value={targetLanguage}
+              onChange={(e) => setTargetLanguage(e.target.value as any)}
+              className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="mk">Македонски</option>
+              <option value="en">English (Англиски)</option>
+              <option value="ru">Русский (Руски)</option>
+              <option value="tr">Türkçe (Турски)</option>
+            </select>
+          </div>
+          
+          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 hidden sm:block mx-2"></div>
+          
+          <div className="flex items-center gap-3">
+             <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Одделение / Година:</span>
+             <select
+               value={targetGrade}
+               onChange={(e) => setTargetGrade(e.target.value)}
+               className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 min-w-40"
+             >
+               <option value="Сите Одделенија / Мешано">Сите Одделенија / Мешано</option>
+               <option value="I Одделение">I Одделение</option>
+               <option value="II Одделение">II Одделение</option>
+               <option value="III Одделение">III Одделение</option>
+               <option value="IV Одделение">IV Одделение</option>
+               <option value="V Одделение">V Одделение</option>
+               <option value="VI Одделение">VI Одделение</option>
+               <option value="VII Одделение">VII Одделение</option>
+               <option value="VIII Одделение">VIII Одделение</option>
+               <option value="IX Одделение">IX Одделение</option>
+               <option value="I Година (Средно)">I Година (Средно)</option>
+               <option value="II Година (Средно)">II Година (Средно)</option>
+               <option value="III Година (Средно)">III Година (Средно)</option>
+               <option value="IV Година (Средно)">IV Година (Средно)</option>
+             </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
           {materialTypes.map((type) => {
             const Icon = type.icon;
             const isSelected = selectedType === type.id;

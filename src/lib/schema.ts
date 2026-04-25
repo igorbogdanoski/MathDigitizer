@@ -87,7 +87,8 @@ export interface MathTask {
   id?: string;
   evidence_quote?: string; // ANTI-HALLUCINATION: Exact quote from the source video/doc mapping to this task
   source_timestamp?: string; // The time (e.g. 04:15) or Page (e.g. Page 3) where the task is found
-  nanobanana_prompt?: string; // English prompt for generating an illustration or diagram
+  illustration_prompt?: string; // English prompt ONLY for real-world scenarios (cars, apples, physics situations) via Image AI
+  math_graphic_config?: any; // JSON config representing geometric or mathematical graphs (triangles, functions)
   type?: 'theory' | 'task';
   title: string;
   original_text: string;

@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import { Copy, Check, Info, Loader2, X } from 'lucide-react';
 import { explainFormula } from '../lib/gemini';
 import { VisualMathCanvas } from './VisualMathCanvas';
+import { AlgebraTilesCanvas } from './AlgebraTilesCanvas';
 
 interface MathRendererProps {
   content: string;
@@ -76,10 +77,17 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className, 
 
   const components = {
     code({ node, inline, className, children, ...props }: any) {
-      const match = /language-(\w+)/.exec(className || "");
-      if (!inline && match && match[1] === "math-plot") {
+      const match = /language-(\w+|-)/.exec(className || "");
+      const lang = match ? match[1] : "";
+      
+      if (!inline && lang === "math-plot") {
         return <VisualMathCanvas jsonConfig={String(children).replace(/\n$/, "")} />;
       }
+      
+      if (!inline && lang === "algebra-tiles") {
+        return <AlgebraTilesCanvas jsonConfig={String(children).replace(/\n$/, "")} />;
+      }
+
       return (
         <code className={className} {...props}>
           {children}

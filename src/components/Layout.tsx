@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { BrainCircuit, HomeIcon, Wand2, Factory, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X } from 'lucide-react';
+import { BrainCircuit, HomeIcon, Wand2, Factory, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { signInWithGoogle, logOut } from '../lib/firebase';
@@ -39,7 +39,9 @@ export const Layout: React.FC = () => {
     { path: '/smart-ocr', icon: ScanLine, label: 'Smart OCR', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/extract', icon: Wand2, label: 'Екстракција', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/smart-grader', icon: CheckCircle, label: 'AI Оценувач', show: !userProfile || userProfile.role === 'teacher' },
-    { path: '/analytics', icon: BrainCircuit, label: 'Аналитика', show: !userProfile || userProfile.role === 'teacher' },
+    { path: '/analytics', icon: BrainCircuit, label: 'Аналитика', show: userProfile?.role === 'teacher' },
+    { path: '/flashcards', icon: Brain, label: 'Флешкарти', show: userProfile?.role === 'student' },
+    { path: '/adaptive-test', icon: Zap, label: 'Адаптивен Тест', show: userProfile?.role === 'student' },
     { path: '/factory', icon: Factory, label: 'Фабрика', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/classrooms', icon: Users, label: 'Училници', show: !!userProfile },
     { path: '/exams-grading', icon: Trophy, label: 'Dugga', show: !userProfile || userProfile.role === 'teacher' },
@@ -66,23 +68,23 @@ export const Layout: React.FC = () => {
               {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
             
-            <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2 rounded-xl shadow-sm shadow-blue-500/20 hidden sm:flex">
+            <Link to="/" className="flex items-center gap-3 flex-shrink-0 group">
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2 rounded-xl shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform duration-300 hidden sm:flex">
                 <BrainCircuit className="w-5 h-5 text-white" />
               </div>
               <div className="flex flex-col">
-                <h1 className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent leading-none">
+                <h1 className="text-xl font-black tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent leading-none">
                   MathDigitizer <span className="text-blue-600 dark:text-blue-400">Pro</span>
                 </h1>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
-                  од Игор Богданоски
+                <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400 mt-1">
+                  EdTech Platform
                 </span>
               </div>
             </Link>
           </div>
           
-          <nav className="flex-1 max-w-3xl hidden lg:flex justify-center">
-            <div className="flex bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50 overflow-x-auto no-scrollbar shadow-inner gap-1">
+          <nav className="flex-1 max-w-4xl hidden lg:flex justify-center ml-4">
+            <div className="flex bg-slate-50 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm gap-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
@@ -90,13 +92,13 @@ export const Layout: React.FC = () => {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
+                    className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 whitespace-nowrap ${
                       isActive 
-                        ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-400 shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-600' 
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
+                        ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-400 shadow-sm ring-1 ring-slate-200 dark:ring-slate-600' 
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>{item.label}</span>
                   </Link>
                 );

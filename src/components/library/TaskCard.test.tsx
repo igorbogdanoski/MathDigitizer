@@ -13,7 +13,7 @@ const mockTask: MathTask = {
   solution_steps: ['Чекор 1', 'Чекор 2'],
   latex_formulas: ['x = 2'],
   created_at: new Date().toISOString(),
-  nanobanana_prompt: '',
+  illustration_prompt: '',
   source_url: ''
 };
 

@@ -9,7 +9,7 @@ import { Card, CardContent } from './ui/Card';
 import { MathTask, GradedSubmission } from '../lib/schema';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { MathRenderer } from './MathRenderer';
-import { analyzeSolutionImage } from '../lib/gemini';
+import { analyzeSolutionImage, generateTargetedPracticeTasks } from '../lib/gemini';
 import { useAuth } from '../contexts/AuthContext';
 import { addDoc, collection } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -24,6 +24,8 @@ export const SmartGrader: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isGeneratingPractice, setIsGeneratingPractice] = useState(false);
+  const [practiceTasks, setPracticeTasks] = useState<MathTask[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,8 +48,23 @@ export const SmartGrader: React.FC = () => {
       setSelectedImage(event.target?.result as string);
       setImageMimeType(file.type);
       setResult(null); // Clear previous results
+      setPracticeTasks([]);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleGeneratePractice = async () => {
+    if (!selectedTask || !result || !result.identified_weaknesses || result.identified_weaknesses.length === 0) return;
+    setIsGeneratingPractice(true);
+    try {
+      const generated = await generateTargetedPracticeTasks(result.identified_weaknesses, selectedTask, 3);
+      setPracticeTasks(generated);
+    } catch (e) {
+       console.error("Failed to generate practice", e);
+       alert("Настана грешка при генерирање на задачите.");
+    } finally {
+       setIsGeneratingPractice(false);
+    }
   };
 
   const runAnalysis = async () => {
@@ -396,6 +413,46 @@ export const SmartGrader: React.FC = () => {
                         </li>
                       ))}
                     </ul>
+                  </div>
+                )}
+
+                {/* Target Practice Gen */}
+                {result.identified_weaknesses && result.identified_weaknesses.length > 0 && (
+                  <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                    <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between bg-indigo-50 dark:bg-indigo-900/10 p-5 rounded-2xl border border-indigo-100 dark:border-indigo-800/30">
+                      <div>
+                        <h4 className="font-bold text-indigo-700 dark:text-indigo-400 text-sm uppercase tracking-wider mb-1">
+                          Генерирај Задачи за Вежбање
+                        </h4>
+                        <p className="text-xs text-indigo-600/80 dark:text-indigo-400/80">
+                          Креирај персонализирани задачи фокусирани на: <span className="font-bold">{result.identified_weaknesses.join(', ')}</span>
+                        </p>
+                      </div>
+                      <Button
+                        onClick={handleGeneratePractice}
+                        disabled={isGeneratingPractice}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0 shadow-lg shadow-indigo-500/20"
+                      >
+                         {isGeneratingPractice ? 'Се генерираат задачи...' : 'Генерирај Домашна'}
+                      </Button>
+                    </div>
+
+                    {practiceTasks.length > 0 && (
+                      <div className="space-y-4">
+                        <h4 className="font-bold text-slate-800 dark:text-slate-200">Персонализирани Задачи:</h4>
+                        {practiceTasks.map((pt, i) => (
+                          <div key={i} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase px-2 py-1 rounded">Задача {i + 1}</span>
+                              <span className="text-xs font-semibold text-slate-700 dark:text-white">{pt.title}</span>
+                            </div>
+                            <div className="text-sm text-slate-600 dark:text-slate-300">
+                               <MathRenderer content={pt.original_text} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

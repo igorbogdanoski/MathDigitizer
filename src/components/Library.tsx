@@ -17,6 +17,7 @@ import { TestGenerator } from './TestGenerator';
 import { InteractiveSolver } from './InteractiveSolver';
 import { CreateTaskModal } from './library/CreateTaskModal';
 import { LessonPlanGenerator } from './LessonPlanGenerator';
+import { KnowledgeModelModal } from './library/KnowledgeModelModal';
 import { auth } from '../lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -380,6 +381,13 @@ export const Library: React.FC = () => {
             // For now, we'll just alert or assume it's handled
             alert(`Браво! Освоивте ${xp} XP за интерактивно решавање!`);
           }}
+        />
+      )}
+
+      {store.activeKnowledgeModelTask && (
+        <KnowledgeModelModal
+          task={store.activeKnowledgeModelTask}
+          onClose={() => store.setActiveKnowledgeModelTask(null)}
         />
       )}
 

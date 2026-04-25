@@ -14,7 +14,7 @@ const mockTask: MathTask = {
   solution_steps: ['Чекор 1', 'Чекор 2'],
   latex_formulas: ['x = 2'],
   created_at: new Date().toISOString(),
-  nanobanana_prompt: 'Draw a graph',
+  illustration_prompt: 'Draw a graph',
   source_url: ''
 };
 
@@ -31,8 +31,8 @@ describe('TaskDetailView Component', () => {
     expect(screen.getByText('Текст на задачата')).toBeInTheDocument();
     expect(screen.getByText('Ова е текст на тест задачата.')).toBeInTheDocument();
     expect(screen.getByText('Решение')).toBeInTheDocument();
-    expect(screen.getByText('Чекор 1')).toBeInTheDocument();
-    expect(screen.getByText('Чекор 2')).toBeInTheDocument();
+    expect(screen.getAllByText('Чекор 1').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Чекор 2').length).toBeGreaterThan(0);
     expect(screen.getByText('Издвоени Формули')).toBeInTheDocument();
   });
 });

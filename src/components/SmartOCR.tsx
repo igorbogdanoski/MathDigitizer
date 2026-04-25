@@ -5,7 +5,7 @@ import {
   Activity
 } from 'lucide-react';
 import { Button } from './ui/Button';
-import { extractMathTasksFromImage, enrichTaskPedagogy } from '../lib/gemini';
+import { extractMathTasksFromImage, extractMathTasksFromPdf, enrichTaskPedagogy } from '../lib/gemini';
 import { MathTask } from '../lib/schema';
 import { MathRenderer } from './MathRenderer';
 import { useToast } from '../contexts/ToastContext';
@@ -32,6 +32,10 @@ export const SmartOCR: React.FC = () => {
   const [isCopied, setIsCopied] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('code');
+  
+  // Advanced OCR Settings
+  const [targetLanguage, setTargetLanguage] = useState<'auto' | 'mk' | 'en' | 'ru' | 'tr'>('mk');
+  const [enableLogicalReconstruction, setEnableLogicalReconstruction] = useState(true);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
@@ -108,7 +112,7 @@ export const SmartOCR: React.FC = () => {
       if (!items) return;
 
       for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
+        if (items[i].type.indexOf('image') !== -1 || items[i].type === 'application/pdf') {
           const file = items[i].getAsFile();
           if (file) processFile(file);
           break;
@@ -121,17 +125,23 @@ export const SmartOCR: React.FC = () => {
   }, []);
 
   const processFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      showToast('Ве молиме прикачете слика (JPG, PNG).', 'error');
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      showToast('Ве молиме прикачете слика (JPG, PNG) или PDF документ.', 'error');
       return;
     }
 
     setMimeType(file.type);
     const reader = new FileReader();
     reader.onload = (event) => {
-      setImage(event.target?.result as string);
-      // Auto-scan when image is loaded
-      scanImage(event.target?.result as string, file.type);
+      const base64Data = event.target?.result as string;
+      if (file.type.startsWith('image/')) {
+        setImage(base64Data);
+      } else {
+        setImage(null); // No preview for PDF right now in the cropper
+      }
+      
+      // Auto-scan when image/pdf is loaded
+      scanImage(base64Data, file.type);
     };
     reader.readAsDataURL(file);
   };
@@ -159,8 +169,23 @@ export const SmartOCR: React.FC = () => {
     setLatexCode('');
     
     try {
-      const base64Image = base64Data.split(',')[1];
-      const result = await extractMathTasksFromImage(base64Image, mime);
+      const base64String = base64Data.split(',')[1];
+      
+      let result;
+      if (mime === 'application/pdf') {
+        result = await extractMathTasksFromPdf(
+          base64String,
+          targetLanguage,
+          enableLogicalReconstruction
+        );
+      } else {
+        result = await extractMathTasksFromImage(
+          base64String, 
+          mime, 
+          targetLanguage, 
+          enableLogicalReconstruction
+        );
+      }
       
       if (!result || result.length === 0) {
         throw new Error("Не се пронајдени задачи на оваа слика.");
@@ -273,40 +298,78 @@ export const SmartOCR: React.FC = () => {
   return (
     <div className="flex flex-col h-[calc(100vh-100px)] max-w-7xl mx-auto p-4 space-y-6 animate-in fade-in duration-500">
       {/* Header / Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
-            <ScanLine className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
+              <ScanLine className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white font-display tracking-tight">Advanced Vision OCR</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Специјализиран за ракопис, оштетен текст и стари учебници</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white font-display tracking-tight">Smart OCR 2.0</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Дигитализација на математика со светска прецизност</p>
+
+          <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
+            <button
+              onClick={() => setActiveTab('upload')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'upload' 
+                  ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <ImageIcon className="w-4 h-4" />
+              Слика / PDF
+            </button>
+            <button
+              onClick={() => setActiveTab('draw')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'draw' 
+                  ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <PenTool className="w-4 h-4" />
+              Ракопис
+            </button>
           </div>
         </div>
 
-        <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
-          <button
-            onClick={() => setActiveTab('upload')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'upload' 
-                ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' 
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <ImageIcon className="w-4 h-4" />
-            Слика / PDF
-          </button>
-          <button
-            onClick={() => setActiveTab('draw')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'draw' 
-                ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' 
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <PenTool className="w-4 h-4" />
-            Ракопис
-          </button>
+        {/* Model B Advanced Settings */}
+        <div className="flex flex-wrap gap-4 items-center bg-indigo-50/50 dark:bg-indigo-900/10 p-3 rounded-xl border border-indigo-100 dark:border-indigo-900/30">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">Излезен Јазик:</span>
+            <select
+              value={targetLanguage}
+              onChange={(e) => setTargetLanguage(e.target.value as any)}
+              className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 dark:text-slate-200"
+            >
+              <option value="auto">Автоматски (Оригинален)</option>
+              <option value="mk">Македонски</option>
+              <option value="en">English (Англиски)</option>
+              <option value="tr">Türkçe (Турски)</option>
+              <option value="ru">Русский (Руски)</option>
+            </select>
+          </div>
+          
+          <div className="w-px h-6 bg-indigo-200 dark:bg-indigo-800 hidden sm:block"></div>
+          
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">Логичка Реконструкција:</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer" 
+                checked={enableLogicalReconstruction}
+                onChange={(e) => setEnableLogicalReconstruction(e.target.checked)}
+              />
+              <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-indigo-600"></div>
+              <span className="ml-2 text-xs font-medium text-slate-600 dark:text-slate-400">
+                {enableLogicalReconstruction ? 'Вклучена' : 'Исклучена'}
+              </span>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -350,16 +413,23 @@ export const SmartOCR: React.FC = () => {
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex-1 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all hover:border-indigo-400 group"
+                  className="flex-1 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all hover:border-indigo-400 group relative"
                 >
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/*,application/pdf" 
+                    onChange={handleFileSelect} 
+                  />
                   <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <Upload className="w-8 h-8 text-indigo-500" />
                   </div>
                   <p className="text-lg text-slate-700 dark:text-slate-300 font-medium mb-2">
-                    Повлечете слика или залепете (CTRL+V)
+                    Повлечете слика/PDF или залепете (CTRL+V)
                   </p>
                   <p className="text-sm text-slate-500">
-                    Поддржани формати: JPG, PNG
+                    Поддржани формати: JPG, PNG, PDF
                   </p>
                 </div>
               ) : (
@@ -544,10 +614,11 @@ export const SmartOCR: React.FC = () => {
                               </Button>
                             )}
                           </div>
-                          <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="grid grid-cols-2 gap-4 text-sm mt-3 border-t border-indigo-100 dark:border-indigo-800/50 pt-3">
                             {extractedTask.type !== 'theory' && <div><span className="text-slate-500">Тежина:</span> <span className="font-medium text-slate-900 dark:text-white">{extractedTask.difficulty}</span></div>}
                             <div><span className="text-slate-500">Тема:</span> <span className="font-medium text-slate-900 dark:text-white">{extractedTask.curriculum_topic}</span></div>
                             <div><span className="text-slate-500">Тип:</span> <span className={`font-medium px-2 py-0.5 rounded text-[10px] uppercase font-bold ${extractedTask.type === 'theory' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'}`}>{extractedTask.type}</span></div>
+                            {extractedTask.detected_language && <div><span className="text-slate-500">Јазик:</span> <span className="font-medium text-slate-900 dark:text-white uppercase text-[10px] bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded ml-1">{extractedTask.detected_language}</span></div>}
                           </div>
                         </div>
 

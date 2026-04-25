@@ -258,7 +258,7 @@ export function exportToMarkdown(tasks: MathTask[], filename: string = "math_tas
       mdContent += `\n`;
     }
     
-    mdContent += `### NanoBanana Prompt (English):\n\`\`\`text\n${task.nanobanana_prompt}\n\`\`\`\n\n`;
+    mdContent += `### NanoBanana Prompt (English):\n\`\`\`text\n${task.illustration_prompt}\n\`\`\`\n\n`;
     mdContent += `---\n\n`;
   });
 

@@ -13,10 +13,21 @@ interface MathPlotConfig {
   elements: any[];
 }
 
-export const VisualMathCanvas = ({ jsonConfig }: { jsonConfig: string }) => {
+export const VisualMathCanvas = ({ jsonConfig }: { jsonConfig: any }) => {
   const config: MathPlotConfig | null = useMemo(() => {
     try {
-      return JSON.parse(jsonConfig);
+      if (typeof jsonConfig === 'object' && jsonConfig !== null) {
+         return jsonConfig;
+      }
+      if (typeof jsonConfig === 'string') {
+         // It might be double stringified, let's parse until it's an object
+         let parsed = JSON.parse(jsonConfig);
+         if (typeof parsed === 'string') {
+            parsed = JSON.parse(parsed);
+         }
+         return parsed;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -26,9 +37,11 @@ export const VisualMathCanvas = ({ jsonConfig }: { jsonConfig: string }) => {
     return <div className="text-red-500 font-mono text-sm p-4 bg-red-50 rounded">Invalid math-plot JSON</div>;
   }
 
-  const { viewport, grid, elements } = config;
-  const W = viewport.xMax - viewport.xMin;
-  const H = viewport.yMax - viewport.yMin;
+  const viewport = config.viewport || { xMin: -10, xMax: 10, yMin: -10, yMax: 10 };
+  const grid = config.grid;
+  const elements = Array.isArray(config.elements) ? config.elements : [];
+  const W = Math.max((viewport.xMax - viewport.xMin) || 20, 1);
+  const H = Math.max((viewport.yMax - viewport.yMin) || 20, 1);
   
   // Internal SVG resolution (perfectly matched to viewport aspect ratio)
   const svgWidth = 800;
@@ -207,7 +220,8 @@ export const VisualMathCanvas = ({ jsonConfig }: { jsonConfig: string }) => {
              }
 
              if (el.type === 'polygon') {
-               const pts = el.points.map((p: any) => `${mapX(p.x)},${mapY(p.y)}`).join(' ');
+               const ptsArray = Array.isArray(el.points) ? el.points : [];
+               const pts = ptsArray.map((p: any) => `${mapX(p.x)},${mapY(p.y)}`).join(' ');
                return (
                  <polygon key={i} points={pts} fill={el.fill || 'rgba(59, 130, 246, 0.2)'} stroke={el.stroke || '#3b82f6'} strokeWidth="2" strokeLinejoin="round" />
                );
@@ -217,7 +231,7 @@ export const VisualMathCanvas = ({ jsonConfig }: { jsonConfig: string }) => {
                // We support raw SVG paths or a simple evaluator. To keep it safe, if 'expression' is passed, we plot points safely 
                // by passing to a safe math parser, but for now we expect the AI to give us robust approximations or we parse simple linear/quadratics.
                // Since evaluating raw JS is dangerous, we highly recommend AI to pass `points: [{x,y}...]` instead of `expression`.
-               if (el.points && Array.isArray(el.points)) {
+               if (Array.isArray(el.points) && el.points.length > 0) {
                   const pathData = el.points.map((p: any, idx: number) => `${idx===0?'M':'L'} ${mapX(p.x)} ${mapY(p.y)}`).join(' ');
                   return (
                      <path key={i} d={pathData} fill="none" stroke={el.color || '#8b5cf6'} strokeWidth={el.strokeWidth || 3} />

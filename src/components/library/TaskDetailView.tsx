@@ -139,6 +139,15 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
               <Button
                 variant="outline"
                 size="sm"
+                onClick={(e) => { e.stopPropagation(); store.setActiveKnowledgeModelTask(task); }}
+                className="h-6 px-2 text-xs bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200 hover:bg-fuchsia-100"
+              >
+                <Brain className="w-3 h-3 mr-1" />
+                Модел на Знаење
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={(e) => { e.stopPropagation(); actions.handleGenerateSimilar(task); }}
                 disabled={actions.isGeneratingSimilar[taskId]}
                 className="h-6 px-2 text-xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
@@ -589,7 +598,7 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
           </div>
         )}
 
-        {task.nanobanana_prompt && (
+        {task.illustration_prompt && (
           <div className="border border-slate-200 rounded-lg overflow-hidden">
             <button 
               onClick={(e) => { e.stopPropagation(); togglePrompt(taskId); }}
@@ -609,7 +618,7 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={(e) => { e.stopPropagation(); actions.handleGenerateImage(task.nanobanana_prompt!, taskId); }}
+                    onClick={(e) => { e.stopPropagation(); actions.handleGenerateImage(task.illustration_prompt!, task); }}
                     disabled={actions.isGeneratingImage[taskId]}
                     className="h-7 text-xs"
                   >
@@ -621,7 +630,7 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
                   </Button>
                 </div>
                 <div className="bg-slate-900 p-3 rounded-lg text-green-400 font-mono text-xs leading-relaxed overflow-x-auto mb-4">
-                  {task.nanobanana_prompt}
+                  {task.illustration_prompt}
                 </div>
                 {actions.generatedImages[taskId] && (
                   <div className="mt-4 border border-slate-200 rounded-lg overflow-hidden bg-slate-50">

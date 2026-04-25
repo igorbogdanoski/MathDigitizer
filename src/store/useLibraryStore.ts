@@ -72,6 +72,8 @@ interface LibraryState {
   setActiveGraphTask: (task: MathTask | null) => void;
   activeSolverTask: MathTask | null;
   setActiveSolverTask: (task: MathTask | null) => void;
+  activeKnowledgeModelTask: MathTask | null;
+  setActiveKnowledgeModelTask: (task: MathTask | null) => void;
   selectedTaskId: string | null;
   setSelectedTaskId: (id: string | null) => void;
   
@@ -216,6 +218,8 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   setActiveGraphTask: (activeGraphTask) => set({ activeGraphTask }),
   activeSolverTask: null,
   setActiveSolverTask: (activeSolverTask) => set({ activeSolverTask }),
+  activeKnowledgeModelTask: null,
+  setActiveKnowledgeModelTask: (activeKnowledgeModelTask) => set({ activeKnowledgeModelTask }),
   selectedTaskId: null,
   setSelectedTaskId: (selectedTaskId) => set({ selectedTaskId }),
 

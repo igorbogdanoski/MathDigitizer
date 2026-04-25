@@ -8,7 +8,7 @@ import {
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { MathTask } from '../lib/schema';
-import { extractMathTasksFromUrl, generateImage, advancedMultimodalExtraction, enrichTaskPedagogy, generateTaskEmbedding } from '../lib/gemini';
+import { extractMathTasksFromUrl, generateImage, generateMathGraphicConfig, advancedMultimodalExtraction, enrichTaskPedagogy, generateTaskEmbedding } from '../lib/gemini';
 import { exportToJson, exportToMarkdown } from '../lib/export';
 import { useAuth } from '../contexts/AuthContext';
 import { useGamification } from '../contexts/GamificationContext';
@@ -16,6 +16,7 @@ import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { MathRenderer } from './MathRenderer';
+import { VisualMathCanvas } from './VisualMathCanvas';
 import { useNavigate } from 'react-router-dom';
 import { KahootMaker } from './KahootMaker';
 import { MakedoTestGenerator } from './MakedoTestGenerator';
@@ -33,6 +34,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
   const [engineMode, setEngineMode] = useState<'extract' | 'kahoot' | 'makedotest'>('extract');
   
   const [url, setUrl] = useState('');
+  const [manualTranscript, setManualTranscript] = useState('');
   const [textInput, setTextInput] = useState('');
   const [sourceType, setSourceType] = useState<'url' | 'file' | 'text'>('url');
   const [fileData, setFileData] = useState<{base64: string, mimeType: string, name: string} | null>(null);
@@ -216,7 +218,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
           case 4: textInstructions += " Направи само кратко резиме и најважни клучни точки/задачи(Summary)."; break;
         }
 
-        extractedTasks = await extractMathTasksFromUrl(url + (timeRange ? ` (Range: ${timeRange.start}-${timeRange.end})` : '') + ' Instructions: ' + textInstructions, model, timeRange);
+        extractedTasks = await extractMathTasksFromUrl(url + (timeRange ? ` (Range: ${timeRange.start}-${timeRange.end})` : '') + ' Instructions: ' + textInstructions, model, timeRange, manualTranscript);
       } else {
         const sourcePayload = sourceType === 'file' ? 
           { type: 'file' as const, data: fileData!.base64, mimeType: fileData!.mimeType } :
@@ -319,13 +321,15 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
     }
   };
   
-  const handleGenerateImage = async (prompt: string, index: number) => {
+  const handleGenerateGraphics = async (prompt: string, index: number) => {
     setIsGeneratingImage(prev => ({ ...prev, [index]: true }));
     try {
-      const imageUrl = await generateImage(prompt);
-      setGeneratedImages(prev => ({ ...prev, [index]: imageUrl }));
+      const configJson = await generateMathGraphicConfig(prompt);
+      const updatedTasks = [...tasks];
+      updatedTasks[index] = { ...updatedTasks[index], math_graphic_config: configJson };
+      setTasks(updatedTasks);
     } catch (err) {
-      console.error("Грешка при слика:", err);
+      console.error("Грешка при генерирање графика:", err);
     } finally {
       setIsGeneratingImage(prev => ({ ...prev, [index]: false }));
     }
@@ -427,6 +431,17 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                         className="pl-14 h-16 text-lg bg-white/90 border-white/40 focus:bg-white text-slate-800 placeholder-slate-400 rounded-2xl shadow-inner transition-all w-full"
                       />
                     </div>
+                    
+                    <div className="relative group mt-1">
+                      <textarea
+                        placeholder="Опционално: Овде залепете рачен транскрипт доколку системот не успее да го симне..."
+                        value={manualTranscript}
+                        onChange={(e) => setManualTranscript(e.target.value)}
+                        disabled={isLoading}
+                        className="w-full h-24 p-4 text-sm bg-white/10 text-white border border-white/20 rounded-xl focus:border-indigo-400 focus:bg-white/20 focus:ring-1 focus:ring-indigo-400 resize-none font-medium placeholder:text-slate-300 transition-all font-mono"
+                      />
+                    </div>
+
                     <div className="bg-emerald-900/30 border border-emerald-400/30 rounded-2xl p-4 mt-2">
                        <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-3">
                           <Youtube className="w-5 h-5 text-emerald-400" />
@@ -874,14 +889,14 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                        <MathRenderer content={task.original_text} />
                     </div>
 
-                    {task.nanobanana_prompt && (
+                    {task.illustration_prompt && (
                       <div className="mb-6 bg-slate-800 rounded-2xl p-4 shadow-inner border border-slate-700 flex flex-col gap-2">
                         <h4 className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                           <ImageIcon className="w-3.5 h-3.5 text-blue-400" />
                           Visual AI / NanoBanana Промпт
                         </h4>
                         <p className="text-xs text-blue-300 font-mono leading-relaxed bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
-                          {task.nanobanana_prompt}
+                          {task.illustration_prompt}
                         </p>
                       </div>
                     )}
@@ -1041,35 +1056,37 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                   </div>
                   
                   {/* NanoBanana Visualizer AI Box inside the card */}
-                  <div className="bg-slate-50/50 lg:w-96 border-t lg:border-t-0 lg:border-l border-slate-100 p-8 flex flex-col items-center justify-center relative overflow-hidden">
-                    {generatedImages[index] ? (
-                      <div className="w-full text-center space-y-6 z-10">
-                        <img 
-                          src={generatedImages[index]} 
-                          alt={`Илустрација за ${task.title}`} 
-                          className="w-full rounded-2xl shadow-md border border-slate-200"
-                        />
-                        <Button 
-                          variant="outline" 
-                          className="w-full text-indigo-700 border-indigo-200 hover:bg-indigo-50 h-12 font-bold rounded-xl"
-                          onClick={() => window.open(generatedImages[index], '_blank')}
-                        >
-                          <Download className="w-5 h-5 mr-2" />
-                          Симни Визуелизација
-                        </Button>
+                  <div className="bg-slate-50/50 lg:w-96 border-t lg:border-t-0 lg:border-l border-slate-100 p-8 flex flex-col items-center flex-grow relative overflow-hidden h-full">
+                    {task.math_graphic_config ? (
+                      <div className="w-full h-full text-center space-y-6 z-10 flex flex-col justify-center">
+                        <VisualMathCanvas jsonConfig={task.math_graphic_config} />
+                        {task.illustration_prompt && (
+                             <Button 
+                               variant="outline" 
+                               className="w-full text-indigo-700 border-indigo-200 hover:bg-indigo-50 h-10 font-bold rounded-xl"
+                               onClick={() => {
+                                  // Trigger regen
+                                  handleGenerateGraphics(task.illustration_prompt || `Math diagram for: ${task.title}`, index);
+                               }}
+                               disabled={isGeneratingImage[index]}
+                             >
+                               {isGeneratingImage[index] ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Wand2 className="w-4 h-4 mr-2" />}
+                               Регенерирај Графика
+                             </Button>
+                        )}
                       </div>
                     ) : (
-                      <div className="text-center z-10 space-y-5 w-full">
+                      <div className="text-center z-10 space-y-5 w-full m-auto">
                         <div className="w-20 h-20 bg-white rounded-[2rem] shadow-sm border border-slate-200 flex items-center justify-center mx-auto mb-2 text-indigo-300">
                           <ImageIcon className="w-10 h-10 opacity-70" />
                         </div>
                         <div className="space-y-1.5">
-                          <h4 className="font-extrabold text-slate-800 text-base">NanoBanana Визуелизација</h4>
-                          <p className="text-xs text-slate-500 px-2 leading-relaxed">Генерирајте точен графикон или геометриска фигура за оваа задача преку prompt-to-image AI.</p>
+                          <h4 className="font-extrabold text-slate-800 text-base">Визуелизација</h4>
+                          <p className="text-xs text-slate-500 px-2 leading-relaxed">Генерирајте инстантен векторски геометриски графикон базиран на AI промпт.</p>
                         </div>
                         
                         <Button 
-                          onClick={() => handleGenerateImage(task.nanobanana_prompt || `Math diagram for: ${task.title}`, index)}
+                          onClick={() => handleGenerateGraphics(task.illustration_prompt || `Math diagram for: ${task.title}`, index)}
                           disabled={isGeneratingImage[index]}
                           variant="default"
                           className="w-full bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 shadow-md text-white border-0 h-12 font-bold rounded-xl"
@@ -1081,7 +1098,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                           )}
                         </Button>
 
-                        {task.nanobanana_prompt && (
+                        {task.illustration_prompt && (
                           <div className="mt-6 pt-6 border-t border-slate-200 w-full text-left">
                             <button 
                               onClick={() => togglePrompt(index)}
@@ -1091,7 +1108,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                             </button>
                             {expandedPrompts[index] && (
                               <div className="mt-3 text-xs font-mono text-slate-600 bg-white p-3 rounded-xl border border-slate-200 h-28 overflow-y-auto leading-relaxed shadow-inner">
-                                {task.nanobanana_prompt}
+                                {task.illustration_prompt}
                               </div>
                             )}
                           </div>
