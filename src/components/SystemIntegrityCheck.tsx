@@ -28,7 +28,7 @@ export const SystemIntegrityCheck: React.FC = () => {
   ]);
 
   const [isTesting, setIsTesting] = useState(false);
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const ai = new GoogleGenAI({});
 
   const updateStatus = (service: string, status: HealthStatus['status'], message: string, latency?: number) => {
     setStatuses(prev => prev.map(s => s.service === service ? { ...s, status, message, latency } : s));

@@ -120,7 +120,7 @@ export const PedagogueEditor: React.FC = () => {
   const handleAIAction = async (action: 'refine_rigor' | 'modernize_context' | 'generate_socratic' | 'generate_modeling') => {
     setIsAILoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const ai = new GoogleGenAI({});
       // Construct prompt based on action
       let prompt = "";
       if (action === 'refine_rigor') {

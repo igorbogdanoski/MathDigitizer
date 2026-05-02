@@ -26,10 +26,7 @@ export const GlobalAITutor: React.FC = () => {
     setIsLoading(true);
     try {
       const { GoogleGenAI } = await import('@google/genai');
-      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("Missing API Key");
-      
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = new GoogleGenAI({});
       const session = await ai.chats.create({
         model: 'gemini-3.1-pro-preview',
         config: {
