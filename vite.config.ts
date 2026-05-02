@@ -82,12 +82,10 @@ export default defineConfig(({mode}) => {
       environment: 'jsdom',
       setupFiles: './src/setupTests.ts',
     },
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
+        '@google/genai': path.resolve(__dirname, 'src/lib/geminiProxyClient.ts'),
       },
     },
     server: {

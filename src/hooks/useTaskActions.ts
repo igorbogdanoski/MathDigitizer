@@ -109,7 +109,7 @@ export function useTaskActions() {
     store.setIsGeneratingTagFormulas({ ...store.isGeneratingTagFormulas, [taskId]: true });
     try {
       const { GoogleGenAI } = await import('@google/genai');
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const ai = new GoogleGenAI({});
       const prompt = `За секој од следните математички концепти (тагови), врати ја основната LaTeX формула која го претставува.\nТагови: ${task.tags.join(', ')}\n\nВрати СТРОГО JSON објект каде клучот е тагот, а вредноста е LaTeX формулата (без $$). Пример: {"Квадратна равенка": "ax^2 + bx + c = 0"}`;
       const response = await ai.models.generateContent({
         model: "gemini-3.1-pro-preview",

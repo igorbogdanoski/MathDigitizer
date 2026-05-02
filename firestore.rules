@@ -234,17 +234,21 @@ service cloud.firestore {
     }
 
     match /flashcards/{cardId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
+      allow read: if isAuthenticated() && resource.data.user_uid == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.user_uid == request.auth.uid;
+      allow update: if isAuthenticated() &&
+                    resource.data.user_uid == request.auth.uid &&
+                    request.resource.data.user_uid == resource.data.user_uid;
+      allow delete: if isAuthenticated() && resource.data.user_uid == request.auth.uid;
     }
 
     match /graded_submissions/{subId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
+      allow read: if isAuthenticated() && resource.data.teacher_uid == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.teacher_uid == request.auth.uid;
+      allow update: if isAuthenticated() &&
+                    resource.data.teacher_uid == request.auth.uid &&
+                    request.resource.data.teacher_uid == resource.data.teacher_uid;
+      allow delete: if isAuthenticated() && resource.data.teacher_uid == request.auth.uid;
     }
 
     match /live_sessions/{pin} {

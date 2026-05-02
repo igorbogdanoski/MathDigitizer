@@ -153,7 +153,7 @@ export const PedagogueCommandCenter: React.FC = () => {
     if (!selectedTask) return;
     setIsAnalyzing(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const ai = new GoogleGenAI({});
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `Analyze this math task and provide a cognitive fingerprint (scores 0-100):

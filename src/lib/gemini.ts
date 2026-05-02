@@ -1,54 +1,7 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { MathTask } from "./schema";
 
-// Иницијализација на Gemini клиентот
-let _aiInstance: any = null;
-let cachedApiKey: string | undefined = undefined;
-
-try {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  cachedApiKey = process.env.GEMINI_API_KEY;
-} catch (e) {}
-
-const initAiPromise = (async () => {
-  if (!cachedApiKey || cachedApiKey === "undefined") {
-    try {
-      if (typeof window !== 'undefined') {
-        const res = await fetch(`/api/config?_cb=${Date.now()}`);
-        if (res.ok) {
-          const text = await res.text();
-          if (!text.startsWith('<')) {
-            const data = JSON.parse(text);
-            cachedApiKey = data.apiKey;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("Failed to fetch API key from server", e);
-    }
-  }
-  _aiInstance = new GoogleGenAI({ apiKey: cachedApiKey || "missing_key" });
-})();
-
-export const ai: any = new Proxy({}, {
-  get(target, prop) {
-    if (prop === 'models') {
-      return new Proxy({}, {
-        get(mTarget, mProp) {
-          return async (...args: any[]) => {
-            await initAiPromise;
-            return _aiInstance.models[mProp](...args);
-          };
-        }
-      });
-    }
-    return async (...args: any[]) => {
-      await initAiPromise;
-      return _aiInstance[prop](...args);
-    };
-  }
-});
+export const ai: any = new GoogleGenAI({});
 
 function handleGeminiError(error: any): never {
   const msg = error instanceof Error ? error.message : JSON.stringify(error);
@@ -286,7 +239,7 @@ export async function generateInterventionTasks(topic: string, struggleDetails: 
       }
     });
 
-    const responseText = result.text();
+    const responseText = result.text;
     if (!responseText) throw new Error("No response from AI");
     
     // Clean potential markdown blocks
@@ -979,7 +932,7 @@ Ensure valid JSON output without markdown blocks like \`\`\`json.`;
     });
 
     const response = await chatSession.sendMessage(prompt);
-    let output = response.response.text();
+    let output = response.response.text;
     output = output.replace(/```json/g, "").replace(/```/g, "").trim();
     
     let result;
@@ -1594,6 +1547,8 @@ ${task.solution_steps?.join('\n')}
             analysis: { type: Type.STRING },
             errorsFound: { type: Type.ARRAY, items: { type: Type.STRING } },
             suggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
+            good_sides: { type: Type.ARRAY, items: { type: Type.STRING } },
+            bad_sides: { type: Type.ARRAY, items: { type: Type.STRING } },
             score: { type: Type.NUMBER, description: "Генерални поени (0-100)." },
             pedagogical_evaluation: {
               type: Type.OBJECT,
@@ -1670,7 +1625,7 @@ ${originalTask.original_text}
       }
     });
 
-    const text = response.text();
+    const text = response.text;
     if (!text) throw new Error("Empty response from AI");
     
     return JSON.parse(text) as MathTask[];

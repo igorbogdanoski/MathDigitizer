@@ -212,9 +212,7 @@ export const AnalyticsDashboard: React.FC = () => {
 ВРАТИ САМО МАРКДАУН, БЕЗ ВОВЕД.`;
 
       const { GoogleGenAI } = await import('@google/genai');
-      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("Missing API Key");
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = new GoogleGenAI({});
       
       const response = await ai.models.generateContent({
         model: 'gemini-3.1-pro-preview',
