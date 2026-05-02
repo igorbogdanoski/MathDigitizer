@@ -15,7 +15,10 @@ import ReactCrop, { Crop as CropType, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { GeoGebraViewer } from './GeoGebraViewer';
 
+import { SEO } from './SEO';
+
 export const SmartOCR: React.FC = () => {
+
   const [activeTab, setActiveTab] = useState<'upload' | 'draw'>('upload');
   
   // Upload State
@@ -38,7 +41,8 @@ export const SmartOCR: React.FC = () => {
   // Advanced OCR Settings
   const [targetLanguage, setTargetLanguage] = useState<'auto' | 'mk' | 'en' | 'ru' | 'tr'>('mk');
   const [enableLogicalReconstruction, setEnableLogicalReconstruction] = useState(true);
-  
+  const [ocrModel, setOcrModel] = useState<string>('gemini-3.1-pro-preview');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
@@ -178,14 +182,16 @@ export const SmartOCR: React.FC = () => {
         result = await extractMathTasksFromPdf(
           base64String,
           targetLanguage,
-          enableLogicalReconstruction
+          enableLogicalReconstruction,
+          ocrModel
         );
       } else {
         result = await extractMathTasksFromImage(
           base64String, 
           mime, 
           targetLanguage, 
-          enableLogicalReconstruction
+          enableLogicalReconstruction,
+          ocrModel
         );
       }
       
@@ -286,19 +292,24 @@ export const SmartOCR: React.FC = () => {
     if (!extractedTask) return;
     setIsEnriching(true);
     try {
-      const insights = await enrichTaskPedagogy(extractedTask as MathTask);
+      const insights = await enrichTaskPedagogy(extractedTask as MathTask, ocrModel);
       setExtractedTask({ ...extractedTask, pedagogical_insights: insights });
       showToast('Педагошките елементи се успешно генерирани!', 'success');
-    } catch (error) {
+    } catch (error: any) {
       console.error("Грешка при збогатување:", error);
-      showToast('Настана грешка при генерирање на педагогијата.', 'error');
+      showToast(error.message || 'Настана грешка при генерирање на педагогијата.', 'error');
     } finally {
       setIsEnriching(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-100px)] max-w-7xl mx-auto p-4 space-y-6 animate-in fade-in duration-500">
+    <div className="flex flex-col min-h-[calc(100vh-100px)] lg:h-[calc(100vh-100px)] max-w-7xl mx-auto p-4 space-y-4 lg:space-y-6 animate-in fade-in duration-500">
+      <SEO 
+        title="Smart OCR & Проверка на ракопис" 
+        description="Специјализиран модел за препознавање македонски ракопис и стари кирилични учебници. Напредна AI OCR технологија." 
+        keywords="ocr, математика, ракопис, скенирање, gemini vision, ai, македонски математика OCR"
+      />
       {/* Header / Toolbar */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
@@ -370,6 +381,18 @@ export const SmartOCR: React.FC = () => {
             </select>
           </div>
 
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">Модел:</span>
+            <select
+              value={ocrModel}
+              onChange={(e) => setOcrModel(e.target.value)}
+              className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 dark:text-slate-200 shadow-sm"
+            >
+              <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (World-Class)</option>
+              <option value="gemini-3-flash-preview">Gemini 3 Flash (Fast)</option>
+            </select>
+          </div>
+
           <div className="w-px h-6 bg-indigo-200 dark:bg-indigo-800 hidden md:block"></div>
           
           <div className="flex items-center gap-3">
@@ -392,7 +415,7 @@ export const SmartOCR: React.FC = () => {
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
         {/* Left Panel: Upload/Crop OR Draw Canvas */}
-        <div className="flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[400px] lg:min-h-0">
           <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
             <h2 className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
               {activeTab === 'upload' ? (
@@ -509,7 +532,7 @@ export const SmartOCR: React.FC = () => {
         </div>
 
         {/* Right Panel: Extracted LaTeX & Preview */}
-        <div className="flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[500px] lg:min-h-0">
           <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Button 

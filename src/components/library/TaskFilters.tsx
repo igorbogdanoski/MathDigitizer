@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Filter, ChevronDown, ArrowUpDown, X, History as HistoryIcon, CheckSquare, Square, FileText, Download, FileSpreadsheet, Plus, BookOpen, Zap, Brain, Loader2 } from 'lucide-react';
+import { Search, Filter, ChevronDown, ArrowUpDown, X, History as HistoryIcon, CheckSquare, Square, FileText, Download, FileSpreadsheet, Plus, BookOpen, Zap, Brain, Loader2, Trash2 } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
@@ -8,7 +8,7 @@ import { exportToMarkdown, exportToWord } from '../../lib/export';
 import { useTaskFilters } from '../../hooks/useTaskFilters';
 import { GenerationStyleToggle } from '../GenerationStyleToggle';
 import { generateTaskEmbedding } from '../../lib/gemini';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
 interface TaskFiltersProps {
@@ -42,6 +42,8 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
     tagFilter, setTagFilter,
     gradeFilter, setGradeFilter,
     dokFilter, setDokFilter,
+    folderFilter, setFolderFilter,
+    allFolders,
     sortDifficulty, setSortDifficulty,
     searchHistory, saveSearchToHistory, setSearchHistory,
     clearFilters,
@@ -87,6 +89,20 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
     setIsGeneratingEmbeddings(false);
   };
 
+  const handleBulkDelete = async () => {
+    if (!confirm(`Дали сте сигурни дека сакате да избришете ${selectedForTest.size} задачи? Оваа акција е неповратна.`)) {
+      return;
+    }
+    for (const taskId of selectedForTest) {
+      try {
+        await deleteDoc(doc(db, 'tasks', taskId));
+      } catch (err) {
+        console.error("Failed to delete task " + taskId, err);
+      }
+    }
+    setSelectedForTest(new Set());
+    alert('Задачите се успешно избришани.');
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -168,7 +184,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                     onClick={() => { setSearchMode('keyword'); setSemanticQueryEmbedding(null); }}
                     className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${searchMode === 'keyword' ? 'bg-white text-indigo-700 shadow flex items-center gap-1' : 'text-slate-500 flex items-center gap-1'}`}
                  >
-                    <Search className="w-3 h-3" /> Текстуално
+                    <Search className="w-3 h-3" /> Текстуално (Fuzzy)
                  </button>
                  <button
                     type="button"
@@ -219,7 +235,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               )}
             </form>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button
                 variant={isSelectionMode ? "default" : "outline"}
                 onClick={() => {
@@ -229,7 +245,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                 className={isSelectionMode ? "bg-indigo-600 hover:bg-indigo-700" : ""}
               >
                 {isSelectionMode ? <CheckSquare className="w-4 h-4 mr-2" /> : <Square className="w-4 h-4 mr-2" />}
-                {isSelectionMode ? 'Заврши селекција' : 'Селектирај за тест'}
+                {isSelectionMode ? 'Заврши селекција' : 'Селектирај'}
               </Button>
               
               {!isSelectionMode && (
@@ -245,7 +261,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               )}
 
               {isSelectionMode && selectedForTest.size > 0 && (
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-2 items-center flex-wrap">
                   <Button
                     variant="default"
                     onClick={() => setShowTestGenerator(true)}
@@ -258,7 +274,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                   <Button
                     variant="default"
                     onClick={() => document.dispatchEvent(new CustomEvent('open-lesson-plan-modal'))}
-                    className="bg-orange-600 hover:bg-orange-700"
+                    className="bg-orange-600 hover:bg-orange-700 hidden lg:flex"
                   >
                     <BookOpen className="w-4 h-4 mr-2" />
                     Дневна Подготовка ({selectedForTest.size})
@@ -270,10 +286,31 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                        const evt = new CustomEvent('generate-live-session');
                        document.dispatchEvent(evt);
                     }}
-                    className="bg-purple-600 hover:bg-purple-700 ml-2"
+                    className="bg-purple-600 hover:bg-purple-700 hidden lg:flex"
                   >
                     <Zap className="w-4 h-4 mr-2" />
-                    Жива Училница (Квиз)
+                    Жива Училница
+                  </Button>
+                  
+                  <Button
+                    variant="default"
+                    onClick={() => {
+                       const evt = new CustomEvent('export-to-flashcards');
+                       document.dispatchEvent(evt);
+                    }}
+                    className="bg-sky-600 hover:bg-sky-700 hidden lg:flex"
+                  >
+                    <Brain className="w-4 h-4 mr-2" />
+                    Quizlet ({selectedForTest.size})
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={handleBulkDelete}
+                    className="flex text-white bg-red-600 hover:bg-red-700 hover:text-white border-red-700"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Избриши ({selectedForTest.size})
                   </Button>
                 </div>
               )}
@@ -341,13 +378,13 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               
               <div className="relative w-full sm:w-40">
                 <select
-                  value={filters.folderFilter}
-                  onChange={(e) => filters.setFolderFilter(e.target.value)}
+                  value={folderFilter}
+                  onChange={(e) => setFolderFilter(e.target.value)}
                   className="w-full h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-no-repeat bg-[right_8px_center] bg-[length:16px_16px]"
                   style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")' }}
                 >
                   <option value="all">Сите Папки</option>
-                  {filters.allFolders.map(folder => (
+                  {allFolders.map(folder => (
                     <option key={folder} value={folder}>{folder}</option>
                   ))}
                 </select>
@@ -462,7 +499,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               Тежина {sortDifficulty === 'asc' ? '↑' : sortDifficulty === 'desc' ? '↓' : ''}
             </Button>
 
-            {(searchQuery || difficultyFilter !== 'all' || sourceFilter !== 'all' || tagFilter.length > 0 || gradeFilter.length > 0 || dokFilter.length > 0 || sortDifficulty !== 'none') && (
+            {(searchQuery || difficultyFilter !== 'all' || sourceFilter !== 'all' || tagFilter.length > 0 || gradeFilter.length > 0 || dokFilter.length > 0 || folderFilter !== 'all' || sortDifficulty !== 'none') && (
               <Button variant="ghost" onClick={clearFilters} className="text-slate-500 hover:text-slate-700">
                 <X className="w-4 h-4 mr-2" />
                 Исчисти филтри
@@ -490,3 +527,4 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
     </Card>
   );
 };
+

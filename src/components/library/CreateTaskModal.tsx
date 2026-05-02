@@ -6,6 +6,7 @@ import { generateTaskEmbedding } from '../../lib/gemini';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
+import { VoiceInputButton } from '../VoiceInputButton';
 import { X, Save, Plus, Trash2, Loader2, BookOpen, Edit3 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -180,7 +181,10 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Текст на задачата</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-slate-700">Текст на задачата</label>
+                  <VoiceInputButton onResult={text => setOriginalText(prev => prev + text)} className="h-6 py-0 px-2" />
+                </div>
                 <textarea 
                   required 
                   value={originalText}
@@ -251,8 +255,14 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
               <label className="block text-sm font-medium text-slate-700 mb-1 border-b pb-2">Чекори за решавање</label>
               {steps.map((step, idx) => (
                 <div key={idx} className="flex gap-2">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-sm">
-                    {idx + 1}
+                  <div className="flex-shrink-0 flex flex-col items-center gap-1 w-8">
+                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-sm">
+                      {idx + 1}
+                    </div>
+                    <VoiceInputButton 
+                       onResult={text => handleStepChange(idx, step + text)} 
+                       className="w-8 h-8 rounded-full p-0 flex items-center justify-center border-none shadow-sm bg-white" 
+                    />
                   </div>
                   <textarea 
                     value={step}

@@ -2,6 +2,7 @@ import React from 'react';
 import { MathTask } from '../../lib/schema';
 import { Button } from '../ui/Button';
 import { MathRenderer } from '../MathRenderer';
+import { GeoGebraViewer } from '../GeoGebraViewer';
 import { useLibraryStore } from '../../store/useLibraryStore';
 import { useTaskActions } from '../../hooks/useTaskActions';
 import { 
@@ -12,6 +13,20 @@ import {
 } from 'lucide-react';
 import { db } from '../../lib/firebase';
 import { useQueryClient } from '@tanstack/react-query';
+
+// Helper to calculate cosine similarity
+function cosineSimilarity(A: number[], B: number[]) {
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < A.length; i++) {
+    dotProduct += A[i] * B[i];
+    normA += A[i] * A[i];
+    normB += B[i] * B[i];
+  }
+  if (normA === 0 || normB === 0) return 0;
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
 
 interface TaskDetailViewProps {
   task: MathTask;
@@ -126,7 +141,7 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
 
             <div className="flex-1" />
             
-            <div className="flex gap-2 flex-wrap justify-end">
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-2 px-2 no-scrollbar sm:flex-wrap sm:justify-end sm:overflow-visible sm:pb-0 sm:mx-0 sm:px-0">
               <Button
                 variant="outline"
                 size="sm"
@@ -613,8 +628,42 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
                     </div>
                   </div>
                 )}
+                
+                {task.pedagogical_insights?.differentiated_learning && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 print:block print:space-y-4">
+                    {task.pedagogical_insights.differentiated_learning.support && (
+                      <div className="space-y-2">
+                        <h4 className="text-[10px] font-bold text-amber-600 uppercase tracking-[0.1em] flex items-center gap-2">
+                           <LayoutDashboard className="w-3 h-3 text-amber-500" />
+                           Поддршка (Tier 2/3)
+                        </h4>
+                        <div className="text-xs text-slate-700 bg-amber-50/50 p-3 rounded-xl border border-amber-200 leading-relaxed font-medium">
+                          {task.pedagogical_insights.differentiated_learning.support}
+                        </div>
+                      </div>
+                    )}
+                    {task.pedagogical_insights.differentiated_learning.extension && (
+                      <div className="space-y-2">
+                        <h4 className="text-[10px] font-bold text-fuchsia-600 uppercase tracking-[0.1em] flex items-center gap-2">
+                           <Zap className="w-3 h-3 text-fuchsia-500" />
+                           Проширување (Напредни)
+                        </h4>
+                        <div className="text-xs text-slate-700 bg-fuchsia-50/50 p-3 rounded-xl border border-fuchsia-200 leading-relaxed font-medium">
+                          {task.pedagogical_insights.differentiated_learning.extension}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
+          </div>
+        )}
+
+        {(task.geogebra_commands?.length ?? 0) > 0 && (
+          <div className="mt-4 border border-slate-200 rounded-lg overflow-hidden p-2 bg-white">
+            <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 px-2">GeoGebra Интерактивен Приказ</div>
+            <GeoGebraViewer commands={task.geogebra_commands!} inline={true} />
           </div>
         )}
 
@@ -681,6 +730,7 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               {task.type === 'theory' ? 'Клучни Точки' : 'Решение'}
             </h3>
+
             <div className="flex items-center gap-2">
                 <Button 
                 variant="ghost" 
@@ -886,6 +936,60 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
           </div>
         )}
       </div>
+
+      {/* RAG Semantic Related Tasks - Full Width Bottom Section */}
+      {task.embedding && store.tasks && store.tasks.length > 1 && (
+        <div className="md:col-span-2 pt-6 mt-4 border-t border-slate-200">
+          <div className="flex items-center gap-2 mb-4">
+            <Brain className="w-5 h-5 text-purple-500" />
+            <h3 className="text-sm font-bold text-slate-800">Поврзани задачи (RAG AI Match)</h3>
+            <span className="text-[10px] font-bold px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full ml-2">
+              Semantic Search
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {store.tasks
+              .filter(t => t.id !== task.id && t.embedding) // Exclude current and non-embedded
+              .map(t => ({
+                task: t,
+                score: cosineSimilarity(task.embedding!, t.embedding!)
+              }))
+              .filter(t => t.score > 0.4) // Threshold
+              .sort((a, b) => b.score - a.score)
+              .slice(0, 3)
+              .map(({ task: relatedTask, score }) => (
+                <div key={relatedTask.id} className="bg-slate-50 border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-2 opacity-10 font-mono text-[10px] font-bold select-none pointer-events-none">
+                    {(score * 100).toFixed(1)}% Match
+                  </div>
+                  <h4 className="font-bold text-xs text-slate-700 mb-2 truncate pr-16">{relatedTask.title}</h4>
+                  <div className="text-[11px] text-slate-500 line-clamp-2 mb-3 h-8">
+                    <MathRenderer content={relatedTask.original_text} />
+                  </div>
+                  <div className="flex items-center justify-between mt-auto">
+                    <div className="flex gap-1 overflow-hidden flex-wrap max-h-6">
+                       {relatedTask.tags?.slice(0, 2).map(tag => (
+                         <span key={tag} className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded truncate max-w-[60px]">{tag}</span>
+                       ))}
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={(e) => {
+                         e.stopPropagation();
+                         store.setSelectedTaskId(relatedTask.id!);
+                         document.getElementById(`task-card-${relatedTask.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }}
+                      className="h-6 text-[10px] text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 shrink-0"
+                    >
+                      Види
+                    </Button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -60,6 +60,21 @@
       },
       "required": ["text", "completed", "userId", "createdAt"]
     },
+    "WhiteboardSession": {
+      "title": "WhiteboardSession",
+      "description": "A saved whiteboard session state.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "roomId": { "type": "string" },
+        "strokes": { "type": "array", "items": { "type": "object" } },
+        "latexBoxes": { "type": "array", "items": { "type": "object" } },
+        "authorId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "roomId", "authorId", "createdAt", "updatedAt"]
+    },
     "SystemIntegrityTest": {
       "title": "SystemIntegrityTest",
       "description": "Transient document for testing system connectivity.",
@@ -83,6 +98,10 @@
     "/todos/{todoId}": {
       "schema": { "$ref": "#/entities/Todo" },
       "description": "Collection of user to-do tasks."
+    },
+    "/whiteboardSessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/WhiteboardSession" },
+      "description": "Collection of saved whiteboard sessions."
     },
     "/_system_integrity_test/{testId}": {
       "schema": { "$ref": "#/entities/SystemIntegrityTest" },

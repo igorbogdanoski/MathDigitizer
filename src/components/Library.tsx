@@ -102,16 +102,46 @@ export const Library: React.FC = () => {
       }
     };
     
+    // Create Quizlet / Flashcards handler
+    const handleExportFlashcards = async () => {
+      const selected = getSelectedTasks();
+      if (selected.length === 0) return;
+      if (!auth.currentUser) return;
+      
+      let created = 0;
+      for (const task of selected) {
+        try {
+          await addDoc(collection(db, 'flashcards'), {
+            front: task.original_text,
+            back: task.solution_steps.join('\n'),
+            user_uid: auth.currentUser.uid,
+            created_at: new Date().toISOString(),
+            ease_factor: 2.5,
+            interval: 0,
+            next_review: new Date().toISOString(),
+            source_task_id: task.id || null
+          });
+          created++;
+        } catch (e) {
+          console.error("Грешка при зачувување на флешкарта:", e);
+        }
+      }
+      alert(`Успешно се генерирани ${created} флешкарти! Пренасочување...`);
+      window.location.href = '/flashcards';
+    };
+    
     document.addEventListener('open-create-task-modal', handleOpenModal);
     document.addEventListener('open-lesson-plan-modal', handleOpenLessonPlan);
     document.addEventListener('generate-live-session', handleLiveSession);
     document.addEventListener('open-manipulatives', handleOpenManipulatives);
+    document.addEventListener('export-to-flashcards', handleExportFlashcards);
     
     return () => {
       document.removeEventListener('open-create-task-modal', handleOpenModal);
       document.removeEventListener('open-lesson-plan-modal', handleOpenLessonPlan);
       document.removeEventListener('generate-live-session', handleLiveSession);
       document.removeEventListener('open-manipulatives', handleOpenManipulatives);
+      document.removeEventListener('export-to-flashcards', handleExportFlashcards);
     };
   }, [store.selectedForTest]);
 

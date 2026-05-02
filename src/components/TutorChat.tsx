@@ -6,6 +6,21 @@ import { MathTask } from '../lib/schema';
 import { MathRenderer } from './MathRenderer';
 import { getTutorChatSession, analyzeSolutionImage, generateSpeech } from '../lib/gemini';
 import { InteractiveCanvas } from './InteractiveCanvas';
+import { useLibraryStore } from '../store/useLibraryStore';
+
+// Helper to calculate cosine similarity
+function cosineSimilarity(A: number[], B: number[]) {
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < A.length; i++) {
+    dotProduct += A[i] * B[i];
+    normA += A[i] * A[i];
+    normB += B[i] * B[i];
+  }
+  if (normA === 0 || normB === 0) return 0;
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
 
 interface TutorChatProps {
   task: MathTask;
@@ -13,6 +28,7 @@ interface TutorChatProps {
 }
 
 export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
+  const store = useLibraryStore();
   const [messages, setMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +37,21 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [activePedagogyStep, setActivePedagogyStep] = useState(1);
   
+  // RAG Tasks
+  const relatedTasks = React.useMemo(() => {
+    if (!task.embedding || !store.tasks) return [];
+    return store.tasks
+      .filter(t => t.id !== task.id && t.embedding)
+      .map(t => ({
+        task: t,
+        score: cosineSimilarity(task.embedding!, t.embedding!)
+      }))
+      .filter(t => t.score > 0.4)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 2)
+      .map(t => t.task);
+  }, [task, store.tasks]);
+
   // TTS State
   const [playingAudioIndex, setPlayingAudioIndex] = useState<number | null>(null);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState<number | null>(null);
@@ -31,7 +62,7 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
 
   useEffect(() => {
     const initChat = async () => {
-      const session = await getTutorChatSession(task);
+      const session = await getTutorChatSession(task, relatedTasks);
       setChatSession(session);
       setMessages([{
         role: 'model',

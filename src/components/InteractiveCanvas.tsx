@@ -379,7 +379,7 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
                   )}
                   {shape.type === 'arrow' && (
                     <Arrow
-                      points={shape.points}
+                      points={shape.points || []}
                       stroke={shape.color}
                       fill={shape.color}
                       strokeWidth={shape.strokeWidth}
@@ -430,7 +430,7 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
                   )}
                   {currentShape.type === 'arrow' && (
                     <Arrow
-                      points={currentShape.points}
+                      points={currentShape.points || []}
                       stroke={currentShape.color}
                       fill={currentShape.color}
                       strokeWidth={currentShape.strokeWidth}

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { 
   Globe, Wand2, ChevronUp, ChevronDown, Loader2, Sparkles, BookOpen, Download, 
   FileJson, CheckCircle, Save, Check, Link as LinkIcon, FileText, 
   PlayCircle, Image as ImageIcon, AlertTriangle, Quote, Microscope, BookOpen as BookOpenIcon, Zap, Layers,
-  Activity, Clock, Printer, FileType2, BrainCircuit
+  Activity, Clock, Printer, FileType2, BrainCircuit, Video
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
@@ -21,6 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import { KahootMaker } from './KahootMaker';
 import { MakedoTestGenerator } from './MakedoTestGenerator';
 import { GeoGebraViewer } from './GeoGebraViewer';
+import { SEO } from './SEO';
 
 interface ExtractionEngineProps {
   setActiveTutorTask: (task: MathTask) => void;
@@ -90,10 +92,11 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
 
     setIsEnriching(prev => ({ ...prev, [index]: true }));
     try {
-      const insights = await enrichTaskPedagogy(task);
+      const insights = await enrichTaskPedagogy(task, model);
       setTasks(prev => prev.map((t, i) => i === index ? { ...t, pedagogical_insights: insights } : t));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Грешка при збогатување:", error);
+      alert(error.message || "Настана грешка при збогатувањето");
     } finally {
       setIsEnriching(prev => ({ ...prev, [index]: false }));
     }
@@ -220,7 +223,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
           case 4: textInstructions += " Направи само кратко резиме и најважни клучни точки/задачи(Summary)."; break;
         }
 
-        extractedTasks = await extractMathTasksFromUrl(url + (timeRange ? ` (Range: ${timeRange.start}-${timeRange.end})` : '') + ' Instructions: ' + textInstructions, model, timeRange, manualTranscript);
+        extractedTasks = await extractMathTasksFromUrl(url, model, timeRange, manualTranscript, textInstructions);
       } else {
         const sourcePayload = sourceType === 'file' ? 
           { type: 'file' as const, data: fileData!.base64, mimeType: fileData!.mimeType } :
@@ -343,6 +346,11 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-16">
+      <SEO 
+        title="Multimodal AI Екстракција" 
+        description="Внесете YouTube линк, слика или PDF за да извлечете математички задачи со AI дигитализација и LaTeX." 
+        keywords="ai екстракција, математика, youtube математика, pdf ocr"
+      />
       
       {/* Top Level Mode Selector */}
       <div className="flex justify-center mb-8">
@@ -651,15 +659,82 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
               </div>
             </form>
 
+            {/* YouTube Iframe Preview */}
+            {isYoutube && textInput && (
+              <div className="mt-8 mb-4 border border-indigo-200/30 rounded-2xl overflow-hidden shadow-2xl relative z-10 mx-auto w-full max-w-4xl bg-black">
+                 <div className="bg-indigo-900/50 p-2 flex items-center justify-between text-indigo-200 text-xs font-bold border-b border-indigo-500/30">
+                    <div className="flex items-center gap-2">
+                      <Video className="w-4 h-4 text-red-500" />
+                      YOUTUBE PREVIEW
+                    </div>
+                    <span className="text-white/50">Local Bypass Enabled</span>
+                 </div>
+                 <div className="aspect-video w-full">
+                    <iframe 
+                      src={`https://www.youtube.com/embed/${textInput.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=))([^"&?\/\s]{11})/)?.[1]}`}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                 </div>
+                 <div className="p-3 bg-slate-900 text-slate-300 text-xs">
+                    Ова видео ќе биде анализирано преку нашиот интерен бесплатен YouTube Scraper сервер, што значи дека користите RAG и Gemini Vision за неограничена обработка без $50/месец API квоти (се додека видеото има CC).
+                 </div>
+              </div>
+            )}
+
             {/* Error Message */}
             {error && (
-              <div className="mt-4 p-5 bg-red-500/10 border-l-4 border-red-500 rounded-r-2xl text-red-200 text-sm font-medium backdrop-blur-md animate-in slide-in-from-bottom-2 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-3 opacity-10">
-                  <AlertTriangle className="w-16 h-16 text-red-500" />
+              <div className="mt-6 border border-red-500/30 rounded-2xl bg-gradient-to-br from-red-500/10 to-red-900/10 text-red-200 text-sm font-medium backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
+                  <AlertTriangle className="w-32 h-32 text-red-500" />
                 </div>
-                <div className="flex items-center gap-2 relative z-10">
-                   <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
-                   <p className="leading-relaxed">{error}</p>
+                <div className="p-6 relative z-10">
+                   <div className="flex items-start gap-4">
+                     <div className="p-3 bg-red-500/20 rounded-xl shrink-0">
+                       <AlertTriangle className="w-6 h-6 text-red-400" />
+                     </div>
+                     <div className="flex-1">
+                       <h3 className="text-red-300 font-bold text-base mb-1">
+                         {error.includes("транскрипт") || error.includes("NO_TRANSCRIPT") 
+                           ? "Не можеме да го вчитаме транскриптот од ова видео" 
+                           : "Настана грешка при процесирањето"}
+                       </h3>
+                       <p className="text-red-200/80 leading-relaxed mb-4">
+                         {error.replace("Грешка: ", "").replace("NO_TRANSCRIPT: ", "")}
+                       </p>
+                       
+                       {/* Actionable Fallbacks for YouTube Errors */}
+                       {(error.includes("транскрипт") || error.includes("NO_TRANSCRIPT")) && (
+                         <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-red-500/20">
+                           <button 
+                             onClick={() => setSourceType('file')}
+                             className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-lg transition-colors text-xs font-bold"
+                           >
+                             <ImageIcon className="w-4 h-4" />
+                             Прикачи Слика/PDF наместо тоа
+                           </button>
+                           <button 
+                             onClick={() => setSourceType('text')}
+                             className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white/80 rounded-lg transition-colors text-xs font-bold"
+                           >
+                             <FileText className="w-4 h-4" />
+                             Копирај транскрипт рачно
+                           </button>
+                           <button 
+                             onClick={() => {
+                               setUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ'); // Example working one, or just clear
+                               setError(null);
+                             }}
+                             className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white/80 rounded-lg transition-colors text-xs font-bold"
+                           >
+                             <Video className="w-4 h-4" />
+                             Пробај со друго видео
+                           </button>
+                         </div>
+                       )}
+                     </div>
+                   </div>
                 </div>
               </div>
             )}
@@ -700,6 +775,53 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
           </div>
         </div>
       </div>
+
+      {/* Stunning Empty State */}
+      {!isLoading && tasks.length === 0 && !error && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-16 text-center max-w-3xl mx-auto space-y-8"
+        >
+          <div className="relative inline-flex items-center justify-center p-8">
+            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 blur-[100px] rounded-full mix-blend-multiply"></div>
+            <div className="relative z-10 w-32 h-32 rounded-3xl bg-white border border-slate-100 shadow-2xl flex items-center justify-center transform rotate-3 hover:rotate-0 transition-transform duration-500">
+               <BrainCircuit className="w-16 h-16 text-indigo-500 drop-shadow-md" />
+            </div>
+          </div>
+          <div>
+            <h2 className="text-4xl md:text-5xl font-black text-slate-800 tracking-tight mb-4 mb-2">Дигитализација на<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-500">Следно Ниво</span></h2>
+            <p className="text-slate-500 text-lg md:text-xl leading-relaxed max-w-2xl mx-auto font-medium">
+              Не трошете време на препишување. Внесете YouTube линк или прикачете фотографија од зададена задача и препуштете го процесирањето на MathDigitizer.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 max-w-4xl mx-auto text-left">
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+              <div className="w-10 h-10 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mb-4">
+                <Video className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-slate-800 mb-2">Анализа на Видеа</h4>
+              <p className="text-sm text-slate-500">Влечеме транскрипти директно од YouTube и креираме текстуален преглед на предавањето.</p>
+            </div>
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+              <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
+                <Microscope className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-slate-800 mb-2">Напреден OCR</h4>
+              <p className="text-sm text-slate-500">Скенираме PDF/слики и ги претвораме во чист LaTeX код заедно со систем за решавање.</p>
+            </div>
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+              <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-4">
+                <Layers className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-slate-800 mb-2">Генерација на квизови</h4>
+              <p className="text-sm text-slate-500">Од секоја екстракција, можете да креирате Kahoot квиз или МакедоТест со еден клик.</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Results Section */}
       {!isLoading && tasks.length > 0 && (
@@ -801,9 +923,20 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 printable-tasks-container">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ staggerChildren: 0.15 }}
+            className="grid grid-cols-1 gap-8 printable-tasks-container"
+          >
             {tasks.map((task, index) => (
-              <div key={index} className="bg-white rounded-[2rem] shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden transition-all duration-500 flex flex-col group relative printable-task-card">
+              <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                key={index} 
+                className="bg-white rounded-[2rem] shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden transition-all duration-500 flex flex-col group relative printable-task-card"
+              >
                 <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-400 to-indigo-600 no-print"></div>
                 <div className="p-3 bg-slate-50/80 border-b border-slate-100 flex justify-between items-center ml-1">
                   <div className="flex px-3 gap-3 items-center">
@@ -1050,13 +1183,13 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                         </span>
                       ))}
                       {task.grade_level && (
-                        <span className="text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg uppercase tracking-wider">
-                          {task.grade_level}
+                        <span className="text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg uppercase tracking-wider flex items-center gap-1.5 inline-flex">
+                          <BookOpen className="w-3.5 h-3.5" /> БРО: {task.grade_level}
                         </span>
                       )}
                       {task.curriculum_topic && (
                         <span className="text-[11px] font-bold text-purple-600 bg-purple-50 border border-purple-200 px-3 py-1.5 rounded-lg uppercase tracking-wider">
-                          {task.curriculum_topic}
+                          ТЕМА: {task.curriculum_topic}
                         </span>
                       )}
                     </div>
@@ -1186,9 +1319,9 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                     )}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       )}
       </>

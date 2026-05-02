@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Star, Zap, Target, Award, TrendingUp, Users, Loader2, ChevronRight, Medal, Brain, PieChart as PieChartIcon, CheckCircle2, Circle, Activity } from 'lucide-react';
+import { Trophy, Star, Zap, Target, Award, TrendingUp, Users, Loader2, ChevronRight, Medal, Brain, PieChart as PieChartIcon, CheckCircle2, Circle, Activity, Paintbrush, ScanLine, Library as LibraryIcon, Wand2, Layers } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from './ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { db, auth } from '../lib/firebase';
@@ -8,8 +9,11 @@ import { UserStats, UserProfile } from '../lib/schema';
 import { motion } from 'motion/react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { TeacherDashboard } from './TeacherDashboard';
+import { AvatarShop } from './AvatarShop';
 
+import { StudentSkillTree } from './StudentSkillTree';
 import { Skeleton } from './ui/Skeleton';
+import { SEO } from './SEO';
 
 interface DashboardProps {
   userProfile?: UserProfile | null;
@@ -19,6 +23,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [leaderboard, setLeaderboard] = useState<(UserStats & { displayName?: string, photoURL?: string })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAvatarShopOpen, setIsAvatarShopOpen] = useState(false);
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -103,12 +108,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      <SEO 
+        title="Телеметрија и Напредок" 
+        description="Следете го вашиот личен напредок, нивоа, значки и образовни перформанси преку напредна DOK телеметрија." 
+        keywords="телеметрија, математика, dashboard, напредок, значки, xp, едукација"
+      />
       {/* Header / XP Bar */}
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-8 shadow-xl">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner">
-              <span className="text-3xl font-black">{stats.level}</span>
+            <div className="relative group">
+              <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner overflow-hidden cursor-pointer" onClick={() => setIsAvatarShopOpen(true)}>
+                {auth.currentUser?.photoURL ? (
+                  <img src={auth.currentUser.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-3xl font-black">{stats.level}</span>
+                )}
+              </div>
+              <div 
+                className="absolute -bottom-2 -right-2 bg-indigo-500 rounded-full p-1.5 border border-white/30 cursor-pointer hover:bg-indigo-400 transition-colors shadow-lg"
+                onClick={() => setIsAvatarShopOpen(true)}
+              >
+                <Paintbrush className="w-4 h-4 text-white" />
+              </div>
             </div>
             <div>
               <div className="flex items-center gap-3 mb-1">
@@ -158,6 +180,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
         {/* Background Decorative Elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-400/10 rounded-full -ml-24 -mb-24 blur-2xl"></div>
+      </section>
+
+      {/* Interactive Mathematics Skill Tree */}
+      <section className="mb-8">
+        <StudentSkillTree currentXP={stats.xp} />
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -399,6 +426,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
           </Card>
         </div>
       </div>
+      <div className="mt-8 mb-4 flex items-center justify-between">
+        <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <Zap className="w-5 h-5 text-indigo-500" />
+          Брз Пристап на Екосистемот
+        </h3>
+        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Сите алатки на едно место</span>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+        {[
+          { title: "Smart OCR", desc: "Скенирај задачи", icon: <ScanLine className="w-5 h-5 text-blue-500" />, to: "/smart-ocr", bg: "bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20", borderColor: "border-blue-100 dark:border-blue-800/50" },
+          { title: "Библиотека", desc: "Банка на знаење", icon: <LibraryIcon className="w-5 h-5 text-emerald-500" />, to: "/library", bg: "bg-emerald-50 dark:bg-emerald-900/10 hover:bg-emerald-100 dark:hover:bg-emerald-900/20", borderColor: "border-emerald-100 dark:border-emerald-800/50" },
+          { title: "Модул Екстракција", desc: "Од YouTube видеа", icon: <Wand2 className="w-5 h-5 text-purple-500" />, to: "/extract", bg: "bg-purple-50 dark:bg-purple-900/10 hover:bg-purple-100 dark:hover:bg-purple-900/20", borderColor: "border-purple-100 dark:border-purple-800/50" },
+          { title: "Тест Фабрика", desc: "Генерирај тестови во секунда", icon: <Layers className="w-5 h-5 text-rose-500" />, to: "/mass-factory", bg: "bg-rose-50 dark:bg-rose-900/10 hover:bg-rose-100 dark:hover:bg-rose-900/20", borderColor: "border-rose-100 dark:border-rose-800/50" }
+        ].map((item, idx) => (
+          <Link key={idx} to={item.to} className={`flex flex-col p-4 rounded-2xl border transition-all ${item.bg} ${item.borderColor}`}>
+            <div className="bg-white dark:bg-slate-800 p-2.5 rounded-xl w-max shadow-sm mb-3">
+              {item.icon}
+            </div>
+            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm mb-1">{item.title}</h4>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{item.desc}</p>
+          </Link>
+        ))}
+      </div>
+
+      <AvatarShop 
+        isOpen={isAvatarShopOpen} 
+        onClose={() => setIsAvatarShopOpen(false)} 
+        currentLevel={stats.level} 
+        currentAvatar={auth.currentUser?.photoURL || null} 
+      />
     </div>
   );
 };

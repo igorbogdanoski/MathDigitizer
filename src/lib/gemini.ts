@@ -14,12 +14,14 @@ try {
 const initAiPromise = (async () => {
   if (!cachedApiKey || cachedApiKey === "undefined") {
     try {
-      const res = await fetch(`/api/config?_cb=${Date.now()}`);
-      if (res.ok) {
-        const text = await res.text();
-        if (!text.startsWith('<')) {
-          const data = JSON.parse(text);
-          cachedApiKey = data.apiKey;
+      if (typeof window !== 'undefined') {
+        const res = await fetch(`/api/config?_cb=${Date.now()}`);
+        if (res.ok) {
+          const text = await res.text();
+          if (!text.startsWith('<')) {
+            const data = JSON.parse(text);
+            cachedApiKey = data.apiKey;
+          }
         }
       }
     } catch (e) {
@@ -113,6 +115,20 @@ const ALGEBRA_TILES_INSTRUCTION = `
 }
 \`\`\`
 Ова ќе изгенерира интерактивен визуелен приказ за ученикот. Многу е важно JSON да биде перфектен. Поддржани плочки: "x^2", "y^2", "xy", "x", "y", "1".
+`;
+
+const JSXGRAPH_INSTRUCTION = `
+За НАПРЕДНА 2D и 3D геометрија, каде аглите и пропорциите мора да се математички точни (скриптирање), користи \`jsxgraph\` блок.
+ПРИМЕР:
+\`\`\`jsxgraph
+// JavaScript код за JSXGraph (без HTML тагови, само pure JS за мапирање на 'board' објектот)
+var p1 = board.create('point', [0, 0], {name: 'A', size: 4});
+var p2 = board.create('point', [3, 0], {name: 'B', size: 4});
+var p3 = board.create('point', [0, 4], {name: 'C', size: 4});
+var poly = board.create('polygon', [p1, p2, p3]);
+var angle = board.create('angle', [p2, p1, p3], {radius: 1});
+\`\`\`
+Ова ќе генерира вистински, скалабилен SVG дијаграм каде пропорциите и аглите се прецизни и геометриски точни. Користи го ова за геометриски фигури.
 `;
 
 function parseGeminiResponse(text: string) {
@@ -283,7 +299,16 @@ export async function generateInterventionTasks(topic: string, struggleDetails: 
   }
 }
 
-export async function getTutorChatSession(task: MathTask) {
+export async function getTutorChatSession(task: MathTask, relatedTasks?: MathTask[]) {
+    let ragContext = "";
+    if (relatedTasks && relatedTasks.length > 0) {
+      ragContext = `
+      ПОВРЗАНИ ЗАДАЧИ ОД БИБЛИОТЕКАТА (RAG КОНТЕКСТ):
+      Ученикот во системот ги има следните слични задачи со решенија. Можеш индиректно да се повикаш на "задачата која ја имаш во библиотеката..." за да му дадеш помош како аналогија, но ако тоа има смисла:
+      ${relatedTasks.map(t => `- Наслов: ${t.title}, Концепт: ${t.curriculum_topic || 'Математика'}, Дел од текст: ${t.original_text.substring(0, 100)}...`).join('\n')}
+      `;
+    }
+
     const systemInstruction = `Ти си Врвен Светски AI Тутор по математика (MathDigitizer Pro Tutor), специјалист за ZPD (Зона на проксимален развој) и Сократов дијалог. Твојата мисија е да го водиш ученикот до длабоко разбирање на концептот без никогаш да му го дадеш решението на готово.
     
     КОНТЕКСТ НА ЗАДАЧАТА:
@@ -292,12 +317,13 @@ export async function getTutorChatSession(task: MathTask) {
     Ниво (DoK): ${task.dok_level}
     Текст: ${task.original_text}
     Решение (за твоја референца, НИКОГАШ не го покажувај директно): ${task.solution_steps.join('\n')}
+    ${ragContext}
     
     ТВОЈАТА СТРАТЕГИЈА (АПСОЛУТНИ СТРОГИ ПРАВИЛА):
     1. **АПСОЛУТНО НИКОГАШ не го давај крајниот одговор или директното решение**: Ова е најважното правило. Дури и ако ученикот те моли, плаче, или вели дека се откажува, ТИ НЕ СМЕЕШ да го напишеш решението. Твојот одговор мора да биде: „Јас сум тука да ти помогнам ти самиот да го откриеш одговорот. Ајде да се вратиме еден чекор назад...“
     2. **Дијагностика и Скелиња (Scaffolding)**: Прво прашај го ученикот што разбира од задачата. Потоа, раскрши ја задачата на микро-чекори. Поставувај САМО ПО ЕДНО прашање во исто време. Пронајди ја границата помеѓу она што ученикот го знае и она што не го знае (његовата Зона на проксимален развој - ZPD).
     3. **Анализа на грешки преку Сократов Дијалог (Productive Failure)**: Ако ученикот згреши, СТРОГО Е ЗАБРАНЕТО да кажеш "Грешка" или "Ова е неточно" и да го дадеш точниот чекор. Наместо тоа, искористи ја грешката како можност. На пр. ако добие негативен корен: "Гледам дека доби негативен корен. Што знаеме за квадратот на кој било реален број?". Натерај го самиот да ја увиди контрадикцијата!
-    4. **Визуелизација и Аналогии**: Користи аналогии од реалниот живот за да објасниш апстрактни концепти (пр. равенките се како вага, дропките се како сечење пица). ${MATH_PLOT_INSTRUCTION} ${ALGEBRA_TILES_INSTRUCTION}
+    4. **Визуелизација и Аналогии**: Користи аналогии од реалниот живот за да објасниш апстрактни концепти (пр. равенките се како вага, дропките се како сечење пица). ${MATH_PLOT_INSTRUCTION} ${ALGEBRA_TILES_INSTRUCTION} ${JSXGRAPH_INSTRUCTION}
     5. **Позитивно засилување**: Силно пофалувај го секој точен чекор и самостоен заклучок. Гради ја самодовербата на ученикот.
     6. **LaTeX Форматирање**: Задолжително користи LaTeX за секој математички израз ($...$ за inline, $$...$$ за блок).
     
@@ -414,7 +440,7 @@ ${originalTask.original_text}
   }
 }
 
-export async function enrichTaskPedagogy(task: MathTask): Promise<any> {
+export async function enrichTaskPedagogy(task: MathTask, model: string = "gemini-3.1-pro-preview"): Promise<any> {
   const prompt = `Ти си "Pedagogical Content Architect" од светска класа. Твоја задача е да земеш извлечена математичка задача и да ја збогатиш со врвни педагошки сознанија кои се срцето на нашата апликација.
 
 МАТЕМАТИЧКА ЗАДАЧА:
@@ -430,12 +456,15 @@ export async function enrichTaskPedagogy(task: MathTask): Promise<any> {
 4. **Prerequisites**: Наведи ги точно потребните предзнаења за оваа задача.
 5. **Real-world Modeling**: Опиши детален сценарио од реалниот живот каде оваа математика се применува (modeling_scenario).
 6. **Modern Context**: Предложи како задачата би се напишала во модерен Gen-Z контекст (modern_context_suggestion).
+7. **Differentiated Learning**: Обезбеди \`differentiated_learning\` објект со пристап за потпора (\`support\` - за спори ученици) и за проширување (\`extension\` - за напредни).
+
+ВАЖНО: ПИШУВАЈ СТРОГО НА МАКЕДОНСКА КИРИЛИЦА. НЕ КОРИСТИ ЛАТИНИЦА ОСВЕН ЗА МАТЕМАТИЧКИ СИМБОЛИ, ПРОГРАМСКИ КОД И ENGLISH PROMPTS ЗА СЛИКИ. \`modern_context_suggestion\` МОРА ДА БИДЕ НА МАКЕДОНСКА КИРИЛИЦА.
 
 Врати СТРОГО JSON објект (PedagogicalInsight).`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: model,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -448,9 +477,17 @@ export async function enrichTaskPedagogy(task: MathTask): Promise<any> {
             prerequisites: { type: Type.ARRAY, items: { type: Type.STRING } },
             modeling_scenario: { type: Type.STRING },
             modern_context_suggestion: { type: Type.STRING },
-            quality_score: { type: Type.NUMBER }
+            quality_score: { type: Type.NUMBER },
+            differentiated_learning: {
+              type: Type.OBJECT,
+              properties: {
+                support: { type: Type.STRING },
+                extension: { type: Type.STRING }
+              },
+              required: ["support", "extension"]
+            }
           },
-          required: ["common_pitfalls", "socratic_questions", "teaching_strategy", "prerequisites", "modeling_scenario", "quality_score"]
+          required: ["common_pitfalls", "socratic_questions", "teaching_strategy", "prerequisites", "modeling_scenario", "quality_score", "differentiated_learning"]
         }
       }
     });
@@ -465,29 +502,31 @@ export async function enrichTaskPedagogy(task: MathTask): Promise<any> {
 
 export async function extractMathTasksFromPdf(base64Pdf: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, modelName: string = 'gemini-3.1-pro-preview'): Promise<MathTask[]> {
   const prompt = `Ти си експерт за дигитализација на математички текстови и креатор на "Advanced Vision OCR".
-Анализирај го приложениот документ кој може да биде скан од стар кириличен учебник (пр. од 80-тите) со нејасен текст.
+Анализирај го приложениот документ кој може да биде скан од стар учебник, испит, документ со графици или документ со комплексен табеларен распоред.
 
 СТРАТЕГИЈА ЗА "ADVANCED VISION OCR":
 ${enableLogicalReconstruction 
-  ? `1. **Напредно Препознавање и Логичка Реконструкција (ВКЛУЧЕНО)**: Доколку наидеш на оштетен или нејасен текст во скениран учебник, направи дедукција и логичка реконструкција врз основа на математичкиот контекст.`
+  ? `1. **Напредно Препознавање и Логичка Реконструкција (ВКЛУЧЕНО)**: Доколку наидеш на оштетен, нејасен текст, табели или комплексен распоред во скениран учебник, направи дедукција и логичка реконструкција врз основа на математичкиот контекст.`
   : `1. **Класично Препознавање OCR (Без Реконструкција)**: Препиши го точно тоа што е на документот. Ако нешто е целосно нечитливо, означи го со [нечитливо].`}
 2. **Јазични Поставки (Мултијазичност)**: 
    - НАЈПРВО АВТОМАТСКИ ПРЕПОЗНАЈ ГО ЈАЗИКОТ на изворниот документ (најчесто Македонски, Руски, Турски или Англиски) и запиши ја кратенката ('mk', 'en', 'ru', 'tr') во \`detected_language\`.
-   - ${targetLanguage === 'auto' ? `Бидејќи крајниот јазик е 'auto', целиот излез (оригинален текст, чекори, итн.) задржи го на тој препознаен јазик.` : `ВНИМАНИЕ: Без разлика на кој јазик е изворниот текст, ТИ МОРАШ ДА ГО ПРЕВЕДЕШ целиот математички текст (\`original_text\`, \`title\`), објаснувањата и чекорите за решавање СТРОГО на **${targetLanguage === 'mk' ? 'Македонски' : targetLanguage === 'en' ? 'Англиски' : targetLanguage === 'ru' ? 'Руски' : 'Турски'} јазик**.`}
-3. **Зачувување на стара синтакса**: Зачувај ја структурата на старите типови на задачи користејќи прецизен LaTeX.
+   - ${targetLanguage === 'auto' ? `Бидејќи крајниот јазик е 'auto', целиот излез (оригинален текст, чекори, итн.) задржи го на тој препознаен јазик.` : `ВНИМАНИЕ: Без разлика на кој јазик е изворниот текст, ТИ МОРАШ ДА ГО ПРЕВЕДЕШ целиот математички текст (\`original_text\`, \`title\`), објаснувањата и чекорите за решавање СТРОГО на **${targetLanguage === 'mk' ? 'Македонски (СТРОГО МАКЕДОНСКА КИРИЛИЦА, НЕ КОРИСТИ ЛАТИНИЦА)' : targetLanguage === 'en' ? 'Англиски' : targetLanguage === 'ru' ? 'Руски' : 'Турски'} јазик**.`}
+3. **Комплексни Распореди и Табели**: Ако задачата содржи табела, конвертирај ја табелата во прецизен Markdown формат (\`| Column | Column |\`). Зачувај ја структурата на старите типови на задачи користејќи прецизен Markdown и LaTeX. Ако некоја задача е во табелатна ќелија, извади ја како посебна задача ако има смисла.
+4. **Геометрија и Графици**: Ако документот содржи график или геометриска слика која е дел од задачата, генерирај \`geogebra_commands\` низа од команди за да ја реконструираш геометријата (на пр. "A = (0,0)", "Circle(A, 3)"). Ако сликата е пејзаж или реален објект, стави го во \`illustration_prompt\`.
 
 Твојата цел е ПЕРФЕКТНО да ги извлечеш сите математички задачи.
 За секоја задача, врати:
 - type: "task" (задача) или "theory" (теорија)
 - detected_language: Кратенка од детектираниот јазик (mk, en, tr...)
 - title: Краток наслов
-- original_text: Целосниот текст со LaTeX ($...$ и $$...$$).
+- original_text: Целосниот текст со LaTeX ($...$ и $$...$$) и Markdown Табели.
 - solution_steps: Решение чекор-по-чекор (LaTeX).
 - latex_formulas: Клучни формули.
-- illustration_prompt: Промпт за дијаграм на англиски.
+- illustration_prompt: Промпт за визуелизација на англиски (за реални објекти/пејзажи).
+- geogebra_commands: Низа од стрингови со точни команди (доколку има математички графици или геометрија).
 - tags, difficulty, dok_level, grade_level, curriculum_topic.
 
-Осигурај се дека LaTeX кодот е валиден.`;
+Осигурај се дека LaTeX кодот е валиден и табелите се читливо презентирани во original_text.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -712,7 +751,7 @@ export async function generateEducationalMaterial(tasks: MathTask[], type: Mater
   ${JSON.stringify(tasks.map(t => ({ title: t.title, text: t.original_text, topic: t.curriculum_topic, difficulty: t.difficulty, grade: t.grade_level })), null, 2)}
   
   ПРАВИЛА:
-  1. Користи ${targetLanguage === 'mk' ? 'Македонски' : targetLanguage === 'en' ? 'Англиски' : targetLanguage === 'ru' ? 'Руски' : 'Турски'} јазик за сите наслови, инструкции и објаснувања. Мораш стручно да го адаптираш тонот според одделението (${targetGrade}).
+  1. Користи ${targetLanguage === 'mk' ? 'Македонски (СТРОГО МАКЕДОНСКА КИРИЛИЦА)' : targetLanguage === 'en' ? 'Англиски' : targetLanguage === 'ru' ? 'Руски' : 'Турски'} јазик за сите наслови, инструкции и објаснувања. Мораш стручно да го адаптираш тонот според одделението (${targetGrade}).
   2. Користи перфектен Zero-Error LaTeX за сите формули ($...$ и $$...$$).
   3. Тагирај ги задачите во материјалот по тежина и одделение каде што е соодветно (пр. "[Лесна, VIII Одделение]").
   4. Врати СТРОГО JSON објект со соодветна структура за овој тип на материјал.
@@ -793,13 +832,14 @@ export async function advancedMultimodalExtraction(
   
 СТРАТЕГИЈА ЗА МАКСИМАЛНА ПРЕЦИЗНОСТ И АВТОМАТСКО ПРЕПОЗНАВАЊЕ НА ЈАЗИК (Chain-of-Thought):
 1. **Автоматска Детекција на Јазик**: Изворот најчесто ќе биде на: Македонски, Руски, Турски или Англиски. АВТОМАТСКИ ПРЕПОЗНАЈ ГО ЈАЗИКОТ пред да почнеш со екстракција. Запиши го кодот на јазикот ('mk', 'ru', 'tr', 'en') во \`detected_language\`.
-2. **Автентична Екстракција**: ЗАДРЖИ ГО ПРЕПОЗНАЕНИОТ ЈАЗИК во целост при креирање на \`original_text\`, \`title\` и \`solution_steps\`. Не преведувај, освен ако јазикот не е од овие 4 (во тој случај преведи на 'mk'). Важно е математичкиот контекст да остане апсолутно точен на тој јазик.
-3. **Теорија вс. Задачи**: Прво направи идентификација дали изворот содржи теоретски вовед, дефиниции или формули. ИЗВЛЕЧИ ЈА ТЕОРИЈАТА како посебен објект со \`type: "theory"\`. Задачите извлечи ги како \`type: "task"\`. За теорија, \`solution_steps\` нека содржи клучни поенти или изведувања.
-4. **Стандарди**: Доколку извлекуваш или преведуваш на македонски, користи ДЕЦИМАЛНА ЗАПИРКА (на пр. 3,14) и соодветна терминологија. За останатите јазици користи ги нивните локални образовни стандарди.
-5. **LaTeX**: Секој симбол, бројка и формула МОРА да биде во перфектен LaTeX ($...$).
-6. **Визуелна Реконструкција**: ВНИМАТЕЛНО РАЗЛИКУВАЈ! Ако задачата бара илустрација на реални објекти (на пр. автомобил, јаболка), генерирај англиски промпт во \`illustration_prompt\`. АКО ПАК задачата бара математички график, функција или геометриска слика (на пр. триаголник, координатен систем, парабола), остави го \`illustration_prompt\` празно, и генерирај \`math_graphic_config\` според MathPlotConfig JSON форматот. Ако не е потребен графички приказ, остави ги двете празни.
-7. **Време на видео (Timestamps)**: Доколку изворот е видео или транскрипт од видео според кој можеш да лоцираш време, или доколку се работи за повеќе-страничен документ и знаеш на која страница е, запиши го во \`source_timestamp\` (пр. "04:15" или "Page 3").
-8. **Custom Instructions**: ${customInstructions || 'Нема специфични насоки.'}
+2. **Автентична Екстракција**: ЗАДРЖИ ГО ПРЕПОЗНАЕНИОТ ЈАЗИК во целост. Важно е математичкиот контекст да остане апсолутно точен.
+3. **Теорија вс. Задачи**: Прво направи идентификација дали изворот содржи теоретски вовед, дефиниции или формули.
+4. **Стандарди**: Доколку извлекуваш или преведуваш на македонски, користи ДЕЦИМАЛНА ЗАПИРКА (на пр. 3,14) и соодветна терминологија.
+5. **LaTeX**: Секој симбол, бројка и формула МОРА да биде во перфектен LaTeX ($...$ за inline, $$...$$ за block).
+6. **Напредно OCR и Ракопис**: Доколку документот е слика или PDF со РАКОПИС, потруди се да ги разбереш сите прешкртани зборови и лошо напишани променливи. ДОКОЛКУ ИМА ТАБЕЛА или СЛОЖЕН РАСПОРЕД (complex layout), реконструирај ги податоците од табелата во Markdown формат или јасно објасни ја нивната поврзаност во наративот.
+7. **Визуелна Реконструкција**: ВНИМАТЕЛНО РАЗЛИКУВАЈ! Ако задачата бара математички график, функција или геометриска слика, остави го \`illustration_prompt\` празно, и генерирај \`geogebra_commands\` каде што секоја команда ќе биде валидна GeoGebra команда (пр. "A = (2, 3)", "f(x) = x^2", "Polygon(A, B, C)"). Доколку е реален објект, пополни \`illustration_prompt\`.
+8. **Време на видео (Timestamps)**: Доколку изворот е видео или транскрипт од видео според кој можеш да лоцираш време, или доколку се работи за повеќе-страничен документ, запиши го во \`source_timestamp\`.
+9. **Custom Instructions**: ${customInstructions || 'Нема специфични насоки.'}
 
 Врати JSON објект кој го анализира процесот и ги структурира податоците.`;
 
@@ -813,20 +853,21 @@ export async function advancedMultimodalExtraction(
       
       let urlContext = "";
 
-      if (source.data.includes('youtube.com') || source.data.includes('youtu.be')) {
+      if (!urlContext) {
+         const isYoutube = source.data.includes('youtube.com') || source.data.includes('youtu.be');
          try {
-           const res = await fetch(`/api/youtube/transcript?url=${encodeURIComponent(source.data)}`);
+           const apiEndpoint = isYoutube ? `/api/youtube/transcript?url=${encodeURIComponent(source.data)}` : `/api/scrape?url=${encodeURIComponent(source.data)}`;
+           const res = await fetch(apiEndpoint);
            if (res.ok) {
              const text = await res.text();
              if (!text.startsWith('<')) {
                const data = JSON.parse(text);
-               if (data.transcript) {
-                 urlContext = data.transcript;
-               }
+               if (data.transcript) urlContext = data.transcript;
+               else if (data.content) urlContext = data.title + "\n\n" + data.content;
              }
            }
          } catch (e) {
-           console.warn("Локалниот Youtube Scraper не успеа во слободен режим.");
+           console.warn("Локалниот API Scraper не успеа во слободен режим.");
          }
       }
 
@@ -877,7 +918,9 @@ export async function advancedMultimodalExtraction(
                   original_text: { type: Type.STRING },
                   solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
                   latex_formulas: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  illustration_prompt: { type: Type.STRING, description: 'Prompt for NanoBanana real-world illustrations ONLY.' }, math_graphic_config: { type: Type.OBJECT, description: 'JSON for geometric or mathematical plots.' },
+                  illustration_prompt: { type: Type.STRING, description: 'Prompt for NanoBanana real-world illustrations ONLY.' },
+                  geogebra_commands: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'GeoGebra exact string commands to plot shapes or graphs (e.g. "f(x)=x^2", "A=(1,2)"). Leave empty if no graph needed.' },
+                  math_graphic_config: { type: Type.OBJECT, description: 'JSON for geometric or mathematical plots.' },
                   tags: { type: Type.ARRAY, items: { type: Type.STRING } },
                   difficulty: { type: Type.STRING, enum: ["easy", "medium", "hard"] },
                   dok_level: { type: Type.NUMBER, description: "Depth of Knowledge (1-4)" },
@@ -904,7 +947,56 @@ export async function advancedMultimodalExtraction(
   }
 }
 
-export async function extractMathTasksFromUrl(url: string, model: string = "gemini-3.1-pro-preview", timeRange?: {start: string, end: string}, manualTranscript?: string): Promise<MathTask[]> {
+export async function generateCurriculumTasks(prompt: string): Promise<MathTask[]> {
+  try {
+    const aiModel = ai.getGenerativeModel({ model: "gemini-3.1-pro-preview" });
+    const systemInstruction = `Ти си Експерт по Математика и Креатор на Наставни Материјали. 
+Твојата мисија е да генерираш задачи кои се стриктно усогласени со зададените национални програми (пр. БРО - Биро за Развој на Образованието, Македонија).
+Секогаш враќај одговор исклучиво во JSON формат кој содржи низа од задачи.
+
+Format requirement:
+{
+  "tasks": [
+    {
+      "original_text": "string (The problem statement, in Macedonian, using LaTeX inline if needed)",
+      "solution_steps": ["step 1", "step 2"],
+      "difficulty": "easy" | "medium" | "hard",
+       "tags": ["tag1", "tag2"],
+       "hint": "string (A helpful hint)",
+       "answer": "string (The final answer)"
+    }
+  ]
+}
+
+Ensure valid JSON output without markdown blocks like \`\`\`json.`;
+
+    const chatSession = aiModel.startChat({
+      generationConfig: {
+        temperature: 0.7,
+        responseMimeType: "application/json",
+      },
+      systemInstruction: systemInstruction,
+    });
+
+    const response = await chatSession.sendMessage(prompt);
+    let output = response.response.text();
+    output = output.replace(/```json/g, "").replace(/```/g, "").trim();
+    
+    let result;
+    try {
+      result = JSON.parse(output);
+      return result.tasks || [];
+    } catch (e) {
+      console.error("Failed to parse curriculum tasks JSON:", output);
+      return [];
+    }
+  } catch (error) {
+    console.error("Error generating curriculum tasks:", error);
+    return [];
+  }
+}
+
+export async function extractMathTasksFromUrl(url: string, model: string = "gemini-3.1-pro-preview", timeRange?: {start: string, end: string}, manualTranscript?: string, instructions?: string): Promise<MathTask[]> {
   let timeContext = "";
   if (timeRange && (timeRange.start || timeRange.end)) {
     timeContext = `\nВНИМАНИЕ: Фокусирај се ИСКЛУЧИВО на делот од видеото/содржината од ${timeRange.start || 'почеток'} до ${timeRange.end || 'крај'}. Игнорирај го останатиот дел.`;
@@ -913,22 +1005,25 @@ export async function extractMathTasksFromUrl(url: string, model: string = "gemi
   // ЧЕКОР 1: Прибирање фактографски контекст (Транскрипт)
   let videoContext = manualTranscript || "";
   
-  if (!videoContext && (url.includes('youtube.com') || url.includes('youtu.be'))) {
+  if (!videoContext) {
+     const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
      try {
-       console.log("Обид за извлекување преку интерниот бесплатен Youtube Proxy API...");
-       // 1. Прво пробај преку нашиот нов бесплатен Express API (youtube-transcript)
-       const res = await fetch(`/api/youtube/transcript?url=${encodeURIComponent(url)}`);
+       console.log(isYoutube ? "Обид за извлекување преку интерниот Youtube API..." : "Обид за извлекување преку Web Scraper API...");
+       const apiEndpoint = isYoutube ? `/api/youtube/transcript?url=${encodeURIComponent(url)}` : `/api/scrape?url=${encodeURIComponent(url)}`;
+       const res = await fetch(apiEndpoint);
        if (res.ok) {
          const text = await res.text();
          if (!text.startsWith('<')) {
            const data = JSON.parse(text);
            if (data.transcript) {
              videoContext = data.transcript;
+           } else if (data.content) {
+             videoContext = data.title + "\n\n" + data.content;
            }
          }
        }
      } catch (e) {
-       console.warn("Локалниот Youtube Scraper не успеа, паѓаме на Gemini пребарување.");
+       console.warn("Локалниот Scraper не успеа, паѓаме на Gemini пребарување.");
      }
   }
 
@@ -953,12 +1048,12 @@ ${timeContext}
       videoContext = searchResponse.text || "NO_TRANSCRIPT_FOUND";
       
       if (videoContext.includes("NO_TRANSCRIPT_FOUND")) {
-        throw new Error("Не може да се пристапи до точниот транскрипт. Ве молиме обезбедете PDF/Слика или копирајте го транскриптот рачно за да избегнеме халуцинации.");
+        throw new Error("Не можевме да го пронајдеме транскриптот за ова видео. Видеото можеби нема превод (CC) или е ограничено. Ве молиме изберете друго видео или прикачете слика/PDF од задачите.");
       }
     } catch (err) {
-      if (err instanceof Error && err.message.includes("NO_TRANSCRIPT")) throw err;
+      if (err instanceof Error && err.message.includes("Не можевме да го пронајдеме транскриптот")) throw err;
       console.warn("Грешка при пребарување на транскрипт преку Google Search:", err);
-      throw new Error("Не може да се пристапи до точниот транскрипт. Системот за пребарување е блокиран.");
+      throw new Error("Не може да се пристапи до точниот транскрипт. Системот за пребарување е блокиран или видеото е недостапно.");
     }
   }
 
@@ -979,9 +1074,12 @@ ${videoContext}
 5. **LaTeX Енкодинг**: Секој математички симбол, бројка или равенка МОРА да биде во перфектен LaTeX ($...$).
 6. **Илустрации и Графици**: Формирај \`illustration_prompt\` за стварни/животни објекти. Формирај \`math_graphic_config\` (JSON објект) за геометрија и координатни системи.
 
-ПРАВИЛА ЗА ЈАЗИК:
+ПРАВИЛА ЗА ЈАЗИК И НАСТАВНА ПРОГРАМА:
 - "original_text", "title" и "solution_steps" треба да бидат на детектираниот јазик, граматички обработени за да изгледаат како професионален учебник.
+- ЗАДОЛЖИТЕЛНО (КРИТИЧНО): Во полето \`grade_level\` обиди се најпрецизно да го одредиш одделението според македонските програми на МОН/БРО (пр: "7-мо одделение", "I година средно").
+- ЗАДОЛЖИТЕЛНО: Во полето \`curriculum_topic\` смести ја точната тема според наставната програма (пр: "Плоштина на многуаголници", "Линеарни равенки").
 
+${instructions ? `\nСПЕЦИФИЧНИ ИНСТРУКЦИИ ЗА ИЗВЛЕКУВАЊЕ:\n${instructions}\n` : ""}
 Врати JSON објект со следната структура која симулира NotebookLM (прво длабинска анализа, па потоа теорија и задачи).`;
 
   try {
@@ -1037,11 +1135,6 @@ ${videoContext}
 }
 
 export async function generateMathGraphicConfig(prompt: string): Promise<string> {
-  const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error("Gemini API key is missing");
-  const { GoogleGenAI } = await import('@google/genai');
-  const ai = new GoogleGenAI({ apiKey });
-
   const systemInstruction = `Ти си Експерт по Математички Визуелизации (GeoGebra / TikZ / JSXGraph). Твоја задача е да конвертираш математички или геометриски промпт во валидна JSON конфигурација за MathPlotConfig.
 Строги правила за JSON форматот:
 {
@@ -1112,20 +1205,22 @@ export async function generateImage(prompt: string, gradeLevel?: string): Promis
 
 export async function extractMathTasksFromImage(base64Image: string, mimeType: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, model: string = "gemini-3.1-pro-preview"): Promise<MathTask[]> {
   const prompt = `Ти си Врвен Светски Експерт за Дигитализација на Математика и дизајнер на "Advanced Vision OCR". 
-Твојата мисија е ПЕРФЕКТНО да ја анализираш сликата и да ги извлечеш задачите.
+Твојата мисија е ПЕРФЕКТНО да ја анализираш сликата и да ги извлечеш задачите, вклучувајќи ги и оние од ракописи.
 
 СПЕЦИФИЧНИ ИНСТРУКЦИИ ЗА "ADVANCED VISION OCR":
 ${enableLogicalReconstruction 
-  ? `1. **Напредно Препознавање и Логичка Реконструкција (ВКЛУЧЕНО)**: Сликата може да биде нејасен ракопис или оштетен текст од стар учебник. Твоја задача е да направиш **ЛОГИЧКА РЕКОНСТРУКЦИЈА** на оштетениот дел врз основа на математичкиот контекст. Дедуцирај ги нејасните симболи од логиката на самата равенка.`
+  ? `1. **Напредно Препознавање, Ракопис и Логичка Реконструкција (ВКЛУЧЕНО)**: Сликата може да биде нејасен ракопис или оштетен текст од стар учебник. Твоја задача е да направиш **ЛОГИЧКА РЕКОНСТРУКЦИЈА** на оштетениот дел врз основа на математичкиот контекст. 
+     - **Анализа на Нотација**: Валидирај ја математичката нотација на ракописот. Ако детектираш текстуални или нотациски грешки во ракописот на ученикот, забележи ги или поправи ги логички во екстракцијата. Дедуцирај ги нејасните симболи од логиката на самата равенка.`
   : `1. **Класично Препознавање OCR (Без Реконструкција)**: Препиши го точно тоа што е на сликата. Ако нешто е целосно нечитливо, означи го со [нечитливо].`}
 2. **Јазични Поставки (Мултијазичност)**: 
    - НАЈПРВО АВТОМАТСКИ ПРЕПОЗНАЈ ГО ЈАЗИКОТ на изворниот документ (Македонски, Англиски, Руски, Турски кон текстот). Запиши ја кратенката ('mk', 'en', 'ru', 'tr', итн.) во \`detected_language\`.
-   - ${targetLanguage === 'auto' ? `Бидејќи крајниот јазик е 'auto', целиот излез (оригинален текст, чекори, итн.) задржи го на тој препознаен јазик.` : `ВНИМАНИЕ: Без разлика на кој јазик е изворниот текст, ТИ МОРАШ ДА ГО ПРЕВЕДЕШ целиот математички текст (\`original_text\`, \`title\`), објаснувањата и чекорите за решавање СТРОГО на **${targetLanguage === 'mk' ? 'Македонски' : targetLanguage === 'en' ? 'Англиски' : targetLanguage === 'ru' ? 'Руски' : 'Турски'} јазик**.`}
+   - ${targetLanguage === 'auto' ? `Бидејќи крајниот јазик е 'auto', целиот излез (оригинален текст, чекори, итн.) задржи го на тој препознаен јазик.` : `ВНИМАНИЕ: Без разлика на кој јазик е изворниот текст, ТИ МОРАШ ДА ГО ПРЕВЕДЕШ целиот математички текст (\`original_text\`, \`title\`), објаснувањата и чекорите за решавање СТРОГО на **${targetLanguage === 'mk' ? 'Македонски (СТРОГО МАКЕДОНСКА КИРИЛИЦА, НЕ КОРИСТИ ЛАТИНИЦА)' : targetLanguage === 'en' ? 'Англиски' : targetLanguage === 'ru' ? 'Руски' : 'Турски'} јазик**.`}
 3. **Zero-Error LaTeX Standard**: 
    - Сите математички изрази, броеви и променливи МОРА да бидат во $inline$ LaTeX формат.
    - Сите издвоени формули и равенки МОРА да бидат во $$display$$ LaTeX формат.
    - Зачувај ја структурата на старите типови на задачи (пр. системи равенки со големи загради, комплексни дропки, лимеси).
-4. **Chain-of-Thought Logic**: За секоја извлечена задача, генерирај детално, скалилесто решение.
+4. **Визуелна Реконструкција**: Ако се работи за ракописен график или табела, конвертирај ја табелата во Markdown, а графикот во правилни \`geogebra_commands\`.
+5. **Chain-of-Thought Logic**: За секоја извлечена задача, генерирај детално, скалилесто решение.
 
 Врати ги податоците СТРОГО во JSON формат (низа од објекти).`;
 
@@ -1450,8 +1545,10 @@ export async function analyzeSolutionImage(task: MathTask, base64Image: string, 
     execution: { score: number, comment: string };
     presentation: { score: number, comment: string };
   };
+  good_sides?: string[];
+  bad_sides?: string[];
 }> {
-  const prompt = `Ти си Специјализиран AI За Оценување Математика (Math Auto-Grader). Ученикот прикачи слика од својата работа за следната задача:
+  const prompt = `Ти си Високо Платен и Најпознат AI Специјализиран Тутор по Математика (AI Tutor & Grader). Ученикот прикачи слика од својата работа за следната задача. Аналогна си на највисоките светски едукативни стандарди каде "само небото е граница" во учењето.
 
 ЗАДАЧА:
 ${task.original_text}
@@ -1459,22 +1556,28 @@ ${task.original_text}
 РЕШЕНИЕ ЗА РЕФЕРЕНЦА:
 ${task.solution_steps?.join('\n')}
 
-МЕТОДОЛОГИЈА ЗА ОЦЕНУВАЊЕ (The Formative Auto-Grader Protocol):
-1. **Транскрипција & Споредба:** Прочитај го ракописот. Спореди го чекор-по-чекор со референтното решение.
-2. **Локализација на Грешки:** Најди ја ТОЧНАТА локација на грешката (пр. "Ученикот заборавил минус пред тројката во вториот чекор").
-3. **Парцијални поени (Partial Scoring):** Додели поени од 0 до 100. Ако ученикот имал правилен концепт, но компјутациска грешка, не му давај 0.
-4. **Формативна Рубрика (Rubric Breakdown):** Раздели го извештајот во 3 димензии (секоја од 0 до 100 поени):
-   - Concept: Дали ученикот го разбрал методот и формулата? (Концептуално знаење)
-   - Execution: Дали алгебарската и аритметичката пресметка е точна? (Процедурално знаење)
-   - Presentation: Дали чекорите се запишани логично, читливо и по ред? (Комуникациски вештини)
-5. **Динамична Педагошка Метрика (Cognitive Framework):** Анализирај ја природата на задачата (дали е едноставна пресметка, комплексен проблем, или доказ). Самостојно одбери го НАЈПОГОДНИОТ педагошки фајмворк за да го оцениш знаењето што го покажал ученикот:
-   - 'bloom' (Блумова таксономија) - најдобра за општо когнитивно ниво (вредности: "remember", "understand", "apply", "analyze", "evaluate", "create").
-   - 'dok' (Webb's Depth of Knowledge) - најдобра за мерење комплексност (вредности: "level_1", "level_2", "level_3", "level_4").
-   - 'solo' (SOLO Taxonomy) - најдобра за евалуација на структура и квалитет на аргументацијата (вредности: "prestructural", "unistructural", "multistructural", "relational", "extended_abstract").
-6. **Детекција на Празнини во Знаење (Knowledge Gaps):** Во полето 'identified_weaknesses' наведи 1-3 конкретни математички концепти во кои ученикот греши (на пр. "Дропки", "Редици", "Негативни броеви", "Питагорова теорема"). Ако нема грешки, врати празна листа [].
-7. **Фидбек:** Напиши конструктивен формат каде ја објаснуваш грешката но и фалиш што е направено добро. Користи LaTeX.
+МЕТОДОЛОГИЈА ЗА ОЦЕНУВАЊЕ (The Master Tutor Protocol):
+1. **Транскрипција, OCR & Споредба:** Детално прочитај го ракописот. Идентификувај ги сите специфични математички нотации и текстуални грешки во формулацијата на ученикот. Спореди го чекор-по-чекор со референтното решение.
+2. **Локализација на Грешки & Нотација:** Најди ја ТОЧНАТА локација на грешката. Строго посочи доколку ученикот користи неправилна математичка нотација (на пр. заборавени загради, лоша нотација за дропки, погрешен запис на вектори/агли) или ако има текстуална неконзистентност.
+3. **Парцијални поени (Partial Scoring):** Додели поени од 0 до 100. Ако концептот е правилен, но има пресметковна грешка или лоша нотација, бодувај праведно и охрабрувачки, но потенцирај ја нотацијата.
+4. **Добри и Лоши Страни:** Експлицитно извлечи ги ДОБРИТЕ страни (она што ученикот одлично го совладал или паметно го извел) и ЛОШИТЕ страни (каде алгоритмот се крши, вклучувајќи нотациски грешки).
+5. **Формативна Рубрика:** Раздели го извештајот во 3 димензии (секоја од 0 до 100 поени):
+   - Concept: Дали ученикот го разбрал типот на задачата и концептот?
+   - Execution: Дали алгебарската/математичката манипулација е точна?
+   - Presentation: Дали чекорите се уредни и логично подредени?
+6. **Педагошка Евалуација:** Во \`pedagogical_evaluation\` дај јасна проценка според Bloom.
 
-Врати го одговорот ВО СТРОГО JSON ФОРМАТ.`;
+СИТЕ МАТЕМАТИЧКИ СИМБОЛИ ПРОДОЛЖИ ДА ГИ ПИШУВАШ ВО ПЕРФЕКТЕН LaTeX ($...$).
+ВРАТИ СТРИКТЕН JSON СО СЛЕДНИТЕ КЛУЧЕВИ:
+- "analysis" (Генерален инспиративен и туторски фидбек на македонски, како врвен ментор кој гради самодоверба)
+- "errorsFound" (Листа на конкретни грешки. Празна листа ако нема)
+- "suggestions" (Препораки за следниот пат / Како "врвен совет од менторот")
+- "good_sides" (Што е одлично направено во решавањето, листа од стрингови)
+- "bad_sides" (Кои се критичните слаби точки, листа од стрингови)
+- "identified_weaknesses" (Листа од 1-3 кратки фрази, пр. "Квадрирање бином", "Правила за знаци" - за да знаеме кои понатамошни задачи да ги генерираме)
+- "score" (број 0-100)
+- "pedagogical_evaluation" (Објект со: 'framework': 'bloom', 'level': 'apply'/'analyze' итн., и 'reason' зошто)
+- "rubric_breakdown" (Објект со 3 клучеви: concept, execution, presentation. Секој е објект со 'score' (број 0-10) и 'comment' (стринг фидбек))`;
 
   try {
     const response = await ai.models.generateContent({
@@ -1512,7 +1615,7 @@ ${task.solution_steps?.join('\n')}
               required: ["concept", "execution", "presentation"]
             }
           },
-          required: ["analysis", "errorsFound", "suggestions", "score", "pedagogical_evaluation", "rubric_breakdown"]
+          required: ["analysis", "errorsFound", "suggestions", "good_sides", "bad_sides", "score", "pedagogical_evaluation", "rubric_breakdown"]
         }
       }
     });
@@ -1635,5 +1738,56 @@ ${tasks.map((t, idx) => `[Задача ${idx+1}]\nНаслов: ${t.title}\nТе
   } catch (error) {
     console.error("Error generating MakedoTest:", error);
     throw error;
+  }
+}
+
+export async function generateFlashcards(topic: string, count: number = 5): Promise<{front: string, back: string}[]> {
+  const prompt = `Ти си експерт за креирање на едукативни картички (flashcards) по математика. 
+Креирај точно ${count} картички за следната тема: "${topic}".
+Секоја картичка треба да има прашање/термин на предната страна ("front") и прецизен, краток одговор/дефиниција на задната страна ("back").
+Користи Markdown и KaTeX (пр. $x^2 + y^2 = r^2$) за математичките формули ако е потребно.
+
+ВРАТИ ИСКЛУЧИВО JSON ОБЈЕКТ СО СЛЕДНИОТ ФОРМАТ:
+{
+  "flashcards": [
+    {
+      "front": "Прашање или термин...",
+      "back": "Одговор или дефиниција..."
+    }
+  ]
+}`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-pro-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            flashcards: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  front: { type: Type.STRING },
+                  back: { type: Type.STRING }
+                },
+                required: ["front", "back"]
+              }
+            }
+          },
+          required: ["flashcards"]
+        }
+      }
+    });
+
+    if (!response.text) throw new Error("Нема одговор од Gemini API.");
+    const parsed = JSON.parse(response.text);
+    return parsed.flashcards;
+  } catch (error) {
+    console.error("Error generating flashcards:", error);
+    handleGeminiError(error);
   }
 }

@@ -7,6 +7,7 @@ import { Copy, Check, Info, Loader2, X } from 'lucide-react';
 import { explainFormula } from '../lib/gemini';
 import { VisualMathCanvas } from './VisualMathCanvas';
 import { AlgebraTilesCanvas } from './AlgebraTilesCanvas';
+import { GeometryWorkspace } from './live/GeometryWorkspace';
 
 interface MathRendererProps {
   content: string;
@@ -86,6 +87,10 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className, 
       
       if (!inline && lang === "algebra-tiles") {
         return <AlgebraTilesCanvas jsonConfig={String(children).replace(/\n$/, "")} />;
+      }
+
+      if (!inline && lang === "jsxgraph") {
+        return <GeometryWorkspace scriptCode={String(children).replace(/\n$/, "")} />;
       }
 
       return (

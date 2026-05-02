@@ -65,7 +65,7 @@ export const PedagogueCommandCenter: React.FC = () => {
     d3.select(svgRef.current).selectAll("*").remove();
 
     const nodes: Node[] = [
-      { id: selectedTask.id, title: selectedTask.title, type: 'task' },
+      { id: selectedTask.id as string, title: selectedTask.title, type: 'task' },
       ...(selectedTask.related_task_ids || []).map(id => {
         const t = tasks.find(task => task.id === id);
         return { id, title: t?.title || 'Related Task', type: 'task' } as Node;
@@ -77,8 +77,8 @@ export const PedagogueCommandCenter: React.FC = () => {
     ];
 
     const links: Link[] = [
-      ...(selectedTask.related_task_ids || []).map(id => ({ source: selectedTask.id, target: id, value: 1 })),
-      ...(selectedTask.prerequisite_task_ids || []).map(id => ({ source: id, target: selectedTask.id, value: 2 }))
+      ...(selectedTask.related_task_ids || []).map(id => ({ source: selectedTask.id as string, target: id, value: 1 })),
+      ...(selectedTask.prerequisite_task_ids || []).map(id => ({ source: id, target: selectedTask.id as string, value: 2 }))
     ];
 
     const simulation = d3.forceSimulation<Node>(nodes)
@@ -177,7 +177,7 @@ export const PedagogueCommandCenter: React.FC = () => {
         }
       });
       
-      const data = JSON.parse(response.text);
+      const data = JSON.parse(response.text || "{}");
       setCognitiveFingerprint(data);
     } catch (e) {
       console.error(e);

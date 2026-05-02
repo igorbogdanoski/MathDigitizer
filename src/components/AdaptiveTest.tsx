@@ -4,7 +4,7 @@ import { db, auth } from '../lib/firebase';
 import { MathTask, UserStats } from '../lib/schema';
 import { MathRenderer } from './MathRenderer';
 import { Button } from './ui/Button';
-import { Brain, Trophy, Loader2, ArrowRight, Zap, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Brain, Trophy, Loader2, ArrowRight, Zap, RefreshCw, AlertTriangle, TrendingUp, TrendingDown, Target } from 'lucide-react';
 import { useGamification } from '../contexts/GamificationContext';
 import { autoGradeSubmission } from '../lib/gemini';
 import { calculateSM2 } from '../lib/srsAlgorithm';
@@ -20,6 +20,13 @@ export const AdaptiveTest: React.FC = () => {
   const [feedback, setFeedback] = useState<{ score: number, feedback: string, socratic_hint?: string, error_detected?: string } | null>(null);
   const [sessionScore, setSessionScore] = useState(0);
   const [sessionCount, setSessionCount] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [multiplier, setMultiplier] = useState(1);
+  const [showCombo, setShowCombo] = useState(false);
+  
+  const [trajectory, setTrajectory] = useState<{score: number, difficulty: string}[]>([]);
+  const [adaptationState, setAdaptationState] = useState<'neutral' | 'hardening' | 'softening'>('neutral');
+
   const { awardXP, updateQuestProgress } = useGamification();
   const { showToast } = useToast();
 
@@ -116,11 +123,30 @@ export const AdaptiveTest: React.FC = () => {
       else if (result.score >= 50) quality = 3;
       else if (result.score >= 30) quality = 2;
 
-      // Award XP
-      if (result.score > 0) {
-        setSessionScore(prev => prev + result.score);
-        await awardXP(result.score);
+      // Streak and gamification logic
+      let currentStreak = streak;
+      if (result.score >= 70) {
+        currentStreak += 1;
+        setStreak(currentStreak);
+        setShowCombo(true);
+        setTimeout(() => setShowCombo(false), 3000);
+      } else if (result.score < 50) {
+        currentStreak = 0;
+        setStreak(0);
       }
+      
+      const newMultiplier = Math.min(3, 1 + currentStreak * 0.2);
+      setMultiplier(newMultiplier);
+
+      const xpEarned = Math.round(result.score * newMultiplier);
+
+      // Award XP
+      if (xpEarned > 0) {
+        setSessionScore(prev => prev + xpEarned);
+        await awardXP(xpEarned);
+      }
+      
+      setTrajectory(prev => [...prev, { score: result.score, difficulty: task.difficulty || 'medium' }]);
       
       // Update SRS data for this topic
       if (auth.currentUser && task.curriculum_topic) {
@@ -128,12 +154,15 @@ export const AdaptiveTest: React.FC = () => {
       }
       
       // Computerized Adaptive Testing (CAT) Logic: Inject tasks based on performance
+      setAdaptationState('neutral');
       if (task.curriculum_topic) {
         if (result.score < 50 && ['medium', 'hard'].includes(task.difficulty || 'medium')) {
            // Target easier task
+           setAdaptationState('softening');
            injectAdaptiveTask('easy', task.curriculum_topic);
         } else if (result.score >= 80 && ['easy', 'medium'].includes(task.difficulty || 'medium')) {
            // Target harder task
+           setAdaptationState('hardening');
            injectAdaptiveTask('hard', task.curriculum_topic);
         }
       }
@@ -257,8 +286,21 @@ export const AdaptiveTest: React.FC = () => {
           </h2>
           <p className="text-sm text-slate-500">Систем за просторно повторување (SRS)</p>
         </div>
-        <div className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-300 font-bold px-4 py-2 rounded-full text-sm">
-          Задача {currentTaskIndex + 1} од {tasks.length}
+        <div className="flex items-center gap-4">
+          <AnimatePresence>
+             {streak > 1 && (
+               <motion.div
+                 initial={{ scale: 0.8, opacity: 0 }}
+                 animate={{ scale: 1, opacity: 1 }}
+                 className={`flex items-center gap-1 font-bold ${showCombo ? 'text-rose-500 scale-110' : 'text-amber-500'} transition-all`}
+               >
+                 🔥 {streak} Комбо! (x{multiplier.toFixed(1)})
+               </motion.div>
+             )}
+          </AnimatePresence>
+          <div className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-300 font-bold px-4 py-2 rounded-full text-sm">
+            Задача {currentTaskIndex + 1} од {tasks.length}
+          </div>
         </div>
       </div>
 
@@ -270,7 +312,33 @@ export const AdaptiveTest: React.FC = () => {
           />
         </div>
         
-        <div className="mb-8 mt-2">
+        {trajectory.length > 0 && (
+           <div className="absolute top-4 right-4 flex items-center gap-2">
+              <div className="flex gap-1">
+                 {trajectory.map((t, idx) => (
+                    <div 
+                       key={idx} 
+                       className={`w-2 h-6 rounded-full ${t.score >= 80 ? 'bg-emerald-500' : t.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                       title={`Задача ${idx+1}: ${t.score}%`}
+                    ></div>
+                 ))}
+              </div>
+              <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
+              <div title="Тековна Траекторија на Алгоритамот" className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-md ${
+                 adaptationState === 'hardening' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 
+                 adaptationState === 'softening' ? 'text-rose-600 bg-rose-50 dark:bg-rose-900/30' : 
+                 'text-slate-500 bg-slate-100 dark:bg-slate-800'
+              }`}>
+                 {adaptationState === 'hardening' ? <TrendingUp className="w-3 h-3" /> : 
+                  adaptationState === 'softening' ? <TrendingDown className="w-3 h-3" /> : 
+                  <Target className="w-3 h-3" />}
+                 {adaptationState === 'hardening' ? 'Потешкотино Ниво ↑' : 
+                  adaptationState === 'softening' ? 'Потешкотино Ниво ↓' : 'Стабилно'}
+              </div>
+           </div>
+        )}
+
+        <div className="mb-8 mt-6">
           <h3 className="font-semibold text-slate-500 uppercase tracking-wider text-xs mb-2 hidden sm:block">Тема: {currentTask.curriculum_topic || 'Општо'}</h3>
           <div className="text-xl md:text-2xl font-medium text-slate-900 dark:text-slate-100 leading-relaxed">
             <MathRenderer content={currentTask.original_text} />

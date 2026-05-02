@@ -153,7 +153,7 @@ export const GameHost = ({ sessionPin }: { sessionPin: string }) => {
     // Calculate stats if discussion
     const stats: Record<number, number> = {};
     if (session.status === 'discussion') {
-      currentQuestion?.options.forEach((_, i) => stats[i] = 0);
+      currentQuestion?.options.forEach((_: any, i: number) => stats[i] = 0);
       participants.forEach(p => {
         if (p.current_answer_index !== undefined) {
           stats[p.current_answer_index] = (stats[p.current_answer_index] || 0) + 1;

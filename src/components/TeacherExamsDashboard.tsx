@@ -17,6 +17,13 @@ export const TeacherExamsDashboard = () => {
   const [isGrading, setIsGrading] = useState<SummativeAttempt | null>(null);
   const [aiFeedbacks, setAiFeedbacks] = useState<Record<number, {score: number, feedback: string}>>({});
   const [isAIGrading, setIsAIGrading] = useState(false);
+  const [gradeFilter, setGradeFilter] = useState<string>('all');
+
+  const uniqueGrades = Array.from(new Set(exams.map(e => e.test_data?.grade_level).filter(Boolean))).sort();
+
+  const filteredExams = gradeFilter === 'all' 
+     ? exams 
+     : exams.filter(e => e.test_data?.grade_level === gradeFilter);
 
   useEffect(() => {
     if (!user) return;
@@ -71,7 +78,7 @@ export const TeacherExamsDashboard = () => {
      const newFeedbacks: Record<number, any> = {};
 
      try {
-       const filteredQs = selectedExam.test_data.questions.filter(q => q.type !== 'section');
+       const filteredQs = selectedExam.test_data.questions.filter((q: any) => q.type !== 'section');
        
        // Run auto grade for each question
        for (const q of filteredQs) {
@@ -111,13 +118,27 @@ export const TeacherExamsDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
          {/* EXAM LIST */}
          <div className="lg:col-span-1 space-y-4">
-            <h2 className="text-xl font-bold text-slate-700 px-2">Ваши Испити</h2>
-            {exams.length === 0 && (
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-2 mb-2 gap-2">
+               <h2 className="text-xl font-bold text-slate-700">Ваши Испити</h2>
+               {uniqueGrades.length > 0 && (
+                 <select
+                   value={gradeFilter}
+                   onChange={(e) => setGradeFilter(e.target.value)}
+                   className="h-9 rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                 >
+                   <option value="all">Сите Одделенија</option>
+                   {uniqueGrades.map(grade => (
+                     <option key={grade as string} value={grade as string}>{grade as string}</option>
+                   ))}
+                 </select>
+               )}
+            </div>
+            {filteredExams.length === 0 && (
                <div className="p-6 bg-slate-50 border border-slate-200 text-center rounded-xl text-slate-500">
-                  Немате креирано ниеден Dugga испит. Одете во "Материјали" {'->'} "МакедоТест Pro" за да креирате.
+                  Нема испити за овој критериум. Одете во "Материјали" {'->'} "МакедоТест Pro" за да креирате.
                </div>
             )}
-            {exams.map(exam => (
+            {filteredExams.map(exam => (
               <button 
                 key={exam.id}
                 onClick={() => loadAttempts(exam)}
@@ -216,7 +237,7 @@ export const TeacherExamsDashboard = () => {
                      </div>
                   </div>
 
-                  {selectedExam.test_data.questions.filter(q => q.type !== 'section').map((q, qIndex) => {
+                  {selectedExam.test_data.questions.filter((q: any) => q.type !== 'section').map((q: any, qIndex: number) => {
                      const ans = isGrading.answers[qIndex]; // The index mapping isn't 100% matched to filtered list if there are sections, 
                      // Wait, in SummativeExam we used the raw `idx` from the `questions` array. We should use standard mapping.
                      // Let's find the original index.

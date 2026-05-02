@@ -142,11 +142,11 @@ export const SmartGrader: React.FC = () => {
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-wider mb-4 border border-emerald-500/30">
             <BrainCircuit className="w-4 h-4" />
-            AI Систем за Оценување
+            Високо-платен Специјализиран Ментор
           </div>
-          <h1 className="text-4xl font-black mb-4">Smart Grader & Bloom Analysis</h1>
+          <h1 className="text-4xl font-black mb-4">AI Tutor & Smart Grader</h1>
           <p className="text-slate-400 text-lg">
-            Автоматска визуелна анализа на студентски ракописи. АИ ги пронаоѓа грешките, го детектира когнитивното ниво според Блум каде ученикот наишол на проблем и генерира формат за поени.
+            Автоматска визуелна анализа на ракописи која работи како Валиден Експертски Ментор. Покажува добри и лоши страни, ги детектира грешките и генерира формат за поени.
           </p>
         </div>
         <div className="relative z-10 bg-white/10 p-6 rounded-2xl backdrop-blur-md border border-white/10 shrink-0">
@@ -389,14 +389,51 @@ export const SmartGrader: React.FC = () => {
                   </div>
                 )}
 
-                {/* Socratic Feedback */}
+                {/* General Feedback */}
                 <div className="space-y-3">
                   <h4 className="font-bold text-indigo-600 flex items-center gap-2 text-sm uppercase tracking-wider">
-                    <Brain className="w-4 h-4" /> Генерален Фидбек
+                    <Brain className="w-4 h-4" /> Инспиративен AI Ментор
                   </h4>
-                  <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl text-sm text-slate-700 dark:text-slate-300 leading-relaxed border border-slate-100 dark:border-slate-700">
+                  <div className="bg-gradient-to-r from-indigo-50 to-slate-50 dark:from-indigo-900/20 dark:to-slate-900/20 p-5 rounded-2xl text-sm text-slate-700 dark:text-slate-300 leading-relaxed border border-indigo-100 dark:border-indigo-800/30 shadow-inner">
                      <MathRenderer content={result.analysis} inline/>
                   </div>
+                </div>
+
+                {/* Good and Bad Sides Split View */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Good Sides */}
+                  {result.good_sides && result.good_sides.length > 0 && (
+                    <div className="space-y-3 bg-emerald-50 dark:bg-emerald-900/10 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
+                      <h4 className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2 text-sm uppercase tracking-wider">
+                        Што е направено ОДЛИЧНО
+                      </h4>
+                      <ul className="space-y-2 text-sm text-emerald-800 dark:text-emerald-300">
+                        {result.good_sides.map((good: string, i: number) => (
+                          <li key={i} className="flex gap-2 items-start">
+                            <span className="text-emerald-500 font-bold mt-0.5">•</span>
+                            <span className="leading-relaxed"><MathRenderer content={good} inline /></span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Bad Sides */}
+                  {result.bad_sides && result.bad_sides.length > 0 && (
+                    <div className="space-y-3 bg-rose-50 dark:bg-rose-900/10 p-5 rounded-2xl border border-rose-100 dark:border-rose-900/30">
+                      <h4 className="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-2 text-sm uppercase tracking-wider">
+                        Каде алгоритмот се крши
+                      </h4>
+                      <ul className="space-y-2 text-sm text-rose-800 dark:text-rose-300">
+                        {result.bad_sides.map((bad: string, i: number) => (
+                          <li key={i} className="flex gap-2 items-start">
+                            <span className="text-rose-500 font-bold mt-0.5">•</span>
+                            <span className="leading-relaxed"><MathRenderer content={bad} inline /></span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
                 {/* Suggestions */}

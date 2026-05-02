@@ -4,6 +4,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { GamificationProvider, useGamification } from './contexts/GamificationContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { AccessibilityProvider } from './contexts/AccessibilityContext';
 import { Layout } from './components/Layout';
 import { Home } from './components/Home';
 import { ExtractionEngine } from './components/ExtractionEngine';
@@ -11,6 +12,7 @@ import { SmartOCR } from './components/SmartOCR';
 import { Library } from './components/Library';
 import MaterialsFactory from './components/MaterialsFactory';
 import { CurriculumFactory } from './components/CurriculumFactory';
+import { CurriculumTestGenerator } from './components/CurriculumTestGenerator';
 import { TodoList } from './components/TodoList';
 import { Flashcards } from './components/Flashcards';
 import { AdaptiveTest } from './components/AdaptiveTest';
@@ -31,6 +33,7 @@ import { GamePlayer } from './components/live/GamePlayer';
 import { SummativeExam } from './components/live/SummativeExam';
 import { TeacherExamsDashboard } from './components/TeacherExamsDashboard';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
+import { VirtualWhiteboardPage } from './components/live/VirtualWhiteboardPage';
 import { useParams } from 'react-router-dom';
 
 // Wrapper for extracting pin from params
@@ -81,7 +84,7 @@ const AppRoutes = () => {
           } />
           
           <Route path="smart-grader" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['teacher', 'student']}>
               <SmartGrader />
             </ProtectedRoute>
           } />
@@ -89,6 +92,12 @@ const AppRoutes = () => {
           <Route path="analytics" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <AnalyticsDashboard />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="curriculum" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <CurriculumTestGenerator />
             </ProtectedRoute>
           } />
           
@@ -129,7 +138,7 @@ const AppRoutes = () => {
           } />
           
           <Route path="flashcards" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['student', 'teacher']}>
               <Flashcards onReviewComplete={() => updateQuestProgress('flashcard')} />
             </ProtectedRoute>
           } />
@@ -149,6 +158,12 @@ const AppRoutes = () => {
           <Route path="students/:studentId" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <StudentTelemetryView />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="live-board" element={
+            <ProtectedRoute>
+              <VirtualWhiteboardPage />
             </ProtectedRoute>
           } />
         </Route>
@@ -180,13 +195,15 @@ export default function App() {
   return (
     <HelmetProvider>
       <ToastProvider>
-        <AuthProvider>
-          <GamificationProvider>
-            <Router>
-              <AppRoutes />
-            </Router>
-          </GamificationProvider>
-        </AuthProvider>
+        <AccessibilityProvider>
+          <AuthProvider>
+            <GamificationProvider>
+              <Router>
+                <AppRoutes />
+              </Router>
+            </GamificationProvider>
+          </AuthProvider>
+        </AccessibilityProvider>
       </ToastProvider>
     </HelmetProvider>
   );

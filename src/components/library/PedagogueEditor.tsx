@@ -13,6 +13,7 @@ import { Card, CardContent } from '../ui/Card';
 import { MathRenderer } from '../MathRenderer';
 import { useLibraryStore } from '../../store/useLibraryStore';
 import { GoogleGenAI, Type } from "@google/genai";
+import { VoiceInputButton } from '../VoiceInputButton';
 
 export const PedagogueEditor: React.FC = () => {
   const { editingTask, setEditingTask, tasks, setTasks, onTaskUpdated } = useLibraryStore();
@@ -125,7 +126,7 @@ export const PedagogueEditor: React.FC = () => {
       if (action === 'refine_rigor') {
         prompt = `Refine the following math task to increase its DoK level while maintaining core concepts. 
         Original Task: ${localTask.original_text}
-        Target DOK: ${Math.min(localTask.dok_level + 1, 4)}`;
+        Target DOK: ${Math.min((localTask.dok_level || 1) + 1, 4)}`;
       } else if (action === 'modernize_context') {
         prompt = `Rewrite the context of this math task to be modern, engaging for Gen Z students, and real-world applicable.
         Original Task: ${localTask.original_text}`;
@@ -171,7 +172,7 @@ export const PedagogueEditor: React.FC = () => {
         }
       });
       
-      const result = JSON.parse(response.text);
+      const result = JSON.parse(response.text || "{}");
       if (result.new_text) updateField('original_text', result.new_text);
       if (result.socratic_questions) {
         updateInsightField('socratic_questions', result.socratic_questions);
@@ -307,9 +308,17 @@ export const PedagogueEditor: React.FC = () => {
                     </div>
 
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Mathematical Narrative (LaTeX support)</label>
-                        <div className="flex gap-2">
+                      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-3">
+                          Mathematical Narrative (LaTeX support)
+                          <VoiceInputButton 
+                            onResult={(text) => {
+                              const newText = localTask.original_text + text;
+                              updateField('original_text', newText);
+                            }} 
+                          />
+                        </label>
+                        <div className="flex flex-wrap gap-2">
                           {[
                             { label: 'Fraction', tex: '\\frac{a}{b}' },
                             { label: 'Sqrt', tex: '\\sqrt{x}' },
@@ -352,14 +361,26 @@ export const PedagogueEditor: React.FC = () => {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <textarea 
-                          id="task-narrative"
-                          value={localTask.original_text}
-                          onChange={(e) => updateField('original_text', e.target.value)}
-                          className="w-full bg-slate-900 border border-white/5 rounded-2xl p-6 text-slate-200 font-mono text-sm leading-relaxed focus:border-indigo-500 outline-none h-80 resize-none transition-all"
-                          placeholder="Write your math problem here. Use $$ for display math and $ for inline math..."
-                        />
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 relative">
+                        <div className="relative">
+                          <textarea 
+                            id="task-narrative"
+                            value={localTask.original_text}
+                            onChange={(e) => updateField('original_text', e.target.value)}
+                            className="w-full bg-slate-900 border border-white/5 rounded-2xl p-6 text-slate-200 font-mono text-sm leading-relaxed focus:border-indigo-500 outline-none h-80 resize-none transition-all"
+                            placeholder="Write your math problem here. Use $$ for display math and $ for inline math..."
+                          />
+                          <VoiceInputButton 
+                            className="absolute bottom-4 right-4 !bg-slate-800 !border-slate-700 !text-slate-300 hover:!bg-indigo-600 hover:!text-white shadow-xl"
+                            onResult={(text) => {
+                                const textarea = document.getElementById('task-narrative') as HTMLTextAreaElement;
+                                const start = textarea.selectionStart || localTask.original_text.length;
+                                const before = localTask.original_text.substring(0, start);
+                                const after = localTask.original_text.substring(start);
+                                updateField('original_text', before + text + after);
+                            }}
+                          />
+                        </div>
                         <div className="w-full bg-slate-900/50 border border-white/5 rounded-2xl p-6 overflow-y-auto h-80">
                           <label className="text-[10px] font-black text-indigo-500/50 uppercase tracking-widest block mb-4">Live Visual Sync</label>
                           <div className="prose prose-invert max-w-none">
@@ -428,7 +449,21 @@ export const PedagogueEditor: React.FC = () => {
 
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Solution Architecture (Steps)</label>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-3">
+                          Solution Architecture (Steps)
+                          <VoiceInputButton 
+                            onResult={(text) => {
+                              // If there are no steps, append a new step, else append to the last step
+                              const steps = [...(localTask.solution_steps || [])];
+                              if (steps.length === 0) {
+                                steps.push(text);
+                              } else {
+                                steps[steps.length - 1] = steps[steps.length - 1] + text;
+                              }
+                              updateField('solution_steps', steps);
+                            }} 
+                           />
+                        </label>
                         <Button variant="outline" size="sm" onClick={addStep} className="border-white/10 text-slate-400">
                           <Plus className="w-3 h-3 mr-2" /> Add Step
                         </Button>
@@ -439,17 +474,41 @@ export const PedagogueEditor: React.FC = () => {
                             <div className="w-10 h-10 rounded-full bg-slate-900 border border-white/5 flex items-center justify-center shrink-0 text-slate-500 font-mono text-xs">
                               {i+1}
                             </div>
-                            <textarea
-                              value={step}
-                              onChange={(e) => updateStep(i, e.target.value)}
-                              className="flex-1 bg-slate-900 border border-white/5 rounded-xl p-3 text-slate-300 text-sm focus:border-indigo-500 outline-none min-h-[80px] resize-none"
-                            />
+                            <div className="relative flex-1">
+                              <textarea
+                                id={`step-textarea-${i}`}
+                                value={step}
+                                onChange={(e) => updateStep(i, e.target.value)}
+                                className="w-full bg-slate-900 border border-white/5 rounded-xl p-3 text-slate-300 text-sm focus:border-indigo-500 outline-none min-h-[80px] resize-none pr-10"
+                              />
+                              <VoiceInputButton 
+                                className="absolute bottom-2 right-2 !bg-slate-800 !border-slate-700 !text-slate-300 hover:!bg-indigo-600 hover:!text-white"
+                                onResult={(text) => {
+                                  const textarea = document.getElementById(`step-textarea-${i}`) as HTMLTextAreaElement;
+                                  const start = textarea?.selectionStart || step.length;
+                                  const before = step.substring(0, start);
+                                  const after = step.substring(start);
+                                  updateStep(i, before + text + after);
+                                }}
+                              />
+                            </div>
                             <Button variant="ghost" onClick={() => removeStep(i)} className="shrink-0">
                                <Trash2 className="w-4 h-4 text-slate-600 hover:text-red-500" />
                             </Button>
                           </div>
                         ))}
                       </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block">GeoGebra Visualization Commands</label>
+                      <p className="text-xs text-slate-400 mb-2">Each line represents a GeoGebra command to render a geometric shape or graph (e.g. `f(x) = x^2` or `A = (2, 3)`).</p>
+                      <textarea
+                        value={(localTask.geogebra_commands || []).join('\n')}
+                        onChange={(e) => updateField('geogebra_commands', e.target.value.split('\n').filter(l => l.trim() !== ''))}
+                        className="w-full bg-slate-900 border border-white/5 rounded-xl p-4 text-emerald-400 font-mono text-xs focus:border-indigo-500 outline-none resize-y min-h-[100px]"
+                        placeholder={"A = (1, 1)\nB = (4, 1)\nPolygon(A, B, 4)"}
+                      />
                     </div>
 
                     <div className="space-y-4">
@@ -584,6 +643,27 @@ export const PedagogueEditor: React.FC = () => {
                         className="w-full bg-slate-900 border border-white/5 rounded-2xl p-6 text-slate-300 text-sm leading-relaxed focus:border-indigo-500 outline-none h-40 resize-none transition-all"
                         placeholder="Describe the optimal teaching sequence for this task..."
                       />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-amber-500 uppercase tracking-widest">Differentiated Support (Tier 2/3)</label>
+                        <textarea 
+                          value={localTask.pedagogical_insights?.differentiated_learning?.support || ''}
+                          onChange={(e) => updateInsightField('differentiated_learning', { ...localTask.pedagogical_insights?.differentiated_learning, support: e.target.value })}
+                          className="w-full bg-slate-900 border border-amber-500/20 rounded-2xl p-6 text-slate-300 text-sm leading-relaxed focus:border-amber-500 outline-none h-32 resize-none transition-all"
+                          placeholder="How to support struggling learners..."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-fuchsia-500 uppercase tracking-widest">Differentiated Extension (Gifted)</label>
+                        <textarea 
+                          value={localTask.pedagogical_insights?.differentiated_learning?.extension || ''}
+                          onChange={(e) => updateInsightField('differentiated_learning', { ...localTask.pedagogical_insights?.differentiated_learning, extension: e.target.value })}
+                          className="w-full bg-slate-900 border border-fuchsia-500/20 rounded-2xl p-6 text-slate-300 text-sm leading-relaxed focus:border-fuchsia-500 outline-none h-32 resize-none transition-all"
+                          placeholder="How to extend and challenge advanced learners..."
+                        />
+                      </div>
                     </div>
                   </div>
                 )}

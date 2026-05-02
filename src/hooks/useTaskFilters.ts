@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useLibraryStore } from '../store/useLibraryStore';
+import Fuse from 'fuse.js';
 
 // Cosine similarity function
 function cosineSimilarity(A: number[], B: number[]) {
@@ -32,15 +33,39 @@ export function useTaskFilters() {
     customOrder
   } = store;
 
-  const allTags = useMemo(() => Array.from(new Set(tasks.flatMap(task => task.tags || []))).sort(), [tasks]);
-  const allGrades = useMemo(() => Array.from(new Set(tasks.map(task => task.grade_level).filter(Boolean))).sort(), [tasks]);
-  const allFolders = useMemo(() => Array.from(new Set(tasks.map(task => task.folder_name).filter(Boolean))).sort(), [tasks]);
+  const allTags = useMemo(() => Array.from(new Set(tasks.flatMap(task => task.tags || []))).filter((t): t is string => !!t).sort(), [tasks]);
+  const allGrades = useMemo(() => Array.from(new Set(tasks.map(task => task.grade_level).filter((g): g is string => !!g))).sort(), [tasks]);
+  const allFolders = useMemo(() => Array.from(new Set(tasks.map(task => task.folder_name).filter((f): f is string => !!f))).sort(), [tasks]);
+
+  const fuse = useMemo(() => new Fuse(tasks, {
+    keys: ['title', 'original_text', 'tags', 'folder_name'],
+    threshold: 0.3,
+    includeScore: true,
+    ignoreLocation: true,
+  }), [tasks]);
 
   const filteredTasks = useMemo(() => {
-    return tasks.map(task => {
-      let isMatch = true;
-      let semanticScore = 0;
+    let baseTasks = tasks.map(task => ({ task, isMatch: true, semanticScore: 0, fuseScore: 0 }));
 
+    if (searchMode === 'keyword' && searchQuery.trim() !== '') {
+      const results = fuse.search(searchQuery);
+      const matchedData = new Map(results.map(r => [r.item.id || r.item.original_text, r]));
+      
+      baseTasks = baseTasks.map(bt => {
+        const key = bt.task.id || bt.task.original_text;
+        if (matchedData.has(key)) {
+          bt.fuseScore = matchedData.get(key)!.score || 0;
+        } else {
+          bt.isMatch = false;
+        }
+        return bt;
+      });
+    }
+
+    return baseTasks.map(bt => {
+      if (!bt.isMatch) return bt;
+      
+      const { task } = bt;
       const matchesDifficulty = difficultyFilter === 'all' || task.difficulty === difficultyFilter;
       const matchesFolder = folderFilter === 'all' || task.folder_name === folderFilter;
       const matchesTag = tagFilter.length === 0 || (task.tags && task.tags.some(tag => tagFilter.includes(tag)));
@@ -52,41 +77,23 @@ export function useTaskFilters() {
         (sourceFilter === 'image' && task.source_url && task.source_url.includes('Слика'));
       
       if (!(matchesDifficulty && matchesFolder && matchesTag && matchesGrade && matchesDok && matchesSource)) {
-         isMatch = false;
+         bt.isMatch = false;
       }
 
-      if (isMatch) {
-         if (searchMode === 'keyword') {
-            const searchLower = searchQuery.toLowerCase();
-            const matchesSearch = 
-              searchQuery === '' || 
-              task.title.toLowerCase().includes(searchLower) ||
-              task.tags?.some(tag => tag.toLowerCase().includes(searchLower)) ||
-              (task.folder_name && task.folder_name.toLowerCase().includes(searchLower)) ||
-              task.original_text.toLowerCase().includes(searchLower);
-            
-            if (!matchesSearch) isMatch = false;
-         } else if (searchMode === 'semantic') {
-            // Semantic mode logic
-            if (semanticQueryEmbedding && task.embedding) {
-               semanticScore = cosineSimilarity(semanticQueryEmbedding, task.embedding);
-               if (semanticScore < 0.35) { // Set a reasonable threshold for similarity
-                  isMatch = false;
-               }
-            } else if (semanticQueryEmbedding && !task.embedding) {
-               // If embedding search is requested, but task has no embedding, we hide it or show at bottom
-               // Decided: hide it
-               isMatch = false;
-            } else if (!semanticQueryEmbedding && searchQuery) {
-               // If there is query but embedding not loaded yet, just show all or show nothing till it loads?
-               // Hide nothing temporarily
-            }
-         }
+      if (bt.isMatch && searchMode === 'semantic') {
+        if (semanticQueryEmbedding && task.embedding) {
+           bt.semanticScore = cosineSimilarity(semanticQueryEmbedding, task.embedding);
+           if (bt.semanticScore < 0.35) {
+              bt.isMatch = false;
+           }
+        } else if (semanticQueryEmbedding && !task.embedding) {
+           bt.isMatch = false;
+        }
       }
 
-      return { task, isMatch, semanticScore };
+      return bt;
     }).filter(t => t.isMatch);
-  }, [tasks, difficultyFilter, folderFilter, tagFilter, gradeFilter, dokFilter, sourceFilter, searchQuery, searchMode, semanticQueryEmbedding]);
+  }, [tasks, difficultyFilter, folderFilter, tagFilter, gradeFilter, dokFilter, sourceFilter, searchQuery, searchMode, semanticQueryEmbedding, fuse]);
 
   const sortedAndFilteredTasks = useMemo(() => {
     return [...filteredTasks].sort((a, b) => {
@@ -95,7 +102,12 @@ export function useTaskFilters() {
          return b.semanticScore - a.semanticScore;
       }
 
-      // 2. Fall back to standard sorts
+      // 2. Fuzzy Score
+      if (searchMode === 'keyword' && searchQuery.trim() !== '') {
+         return a.fuseScore - b.fuseScore; // lower fuse score is better
+      }
+
+      // 3. Fall back to standard sorts
       if (sortDifficulty !== 'none') {
         const difficultyScore = { easy: 1, medium: 2, hard: 3 };
         const scoreA = difficultyScore[a.task.difficulty as keyof typeof difficultyScore] || 0;
@@ -113,7 +125,7 @@ export function useTaskFilters() {
       
       return 0;
     }).map(t => t.task); // Strip the wrapper object
-  }, [filteredTasks, sortDifficulty, customOrder, searchMode, semanticQueryEmbedding]);
+  }, [filteredTasks, sortDifficulty, customOrder, searchMode, semanticQueryEmbedding, searchQuery]);
 
   return {
     ...store,
