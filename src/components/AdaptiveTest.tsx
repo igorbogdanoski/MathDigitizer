@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, getDocs, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { MathTask, UserStats } from '../lib/schema';
 import { MathRenderer } from './MathRenderer';
 import { Button } from './ui/Button';
-import { Brain, Trophy, Loader2, ArrowRight, Zap, RefreshCw, AlertTriangle, TrendingUp, TrendingDown, Target } from 'lucide-react';
+import { Brain, Trophy, Loader2, ArrowRight, Zap, RefreshCw, AlertTriangle, TrendingUp, TrendingDown, Target, Timer, CheckCircle } from 'lucide-react';
 import { useGamification } from '../contexts/GamificationContext';
-import { autoGradeSubmission } from '../lib/gemini';
+import { autoGradeSubmission, generateTargetedPracticeTasks } from '../lib/gemini';
 import { calculateSM2 } from '../lib/srsAlgorithm';
 import { useToast } from '../contexts/ToastContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -27,12 +27,58 @@ export const AdaptiveTest: React.FC = () => {
   const [trajectory, setTrajectory] = useState<{score: number, difficulty: string}[]>([]);
   const [adaptationState, setAdaptationState] = useState<'neutral' | 'hardening' | 'softening'>('neutral');
 
+  // Kahoot (Time Race) Mode
+  const [isKahootMode, setIsKahootMode] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Weakness Tracking
+  const [detectedErrors, setDetectedErrors] = useState<string[]>([]);
+  const [targetedTasks, setTargetedTasks] = useState<MathTask[]>([]);
+  const [isGeneratingTargeted, setIsGeneratingTargeted] = useState(false);
+
   const { awardXP, updateQuestProgress } = useGamification();
   const { showToast } = useToast();
 
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  useEffect(() => {
+    if (isKahootMode &&!feedback && currentTaskIndex < tasks.length) {
+      setTimeLeft(60);
+      timerRef.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current!);
+            handleTimeUp();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isKahootMode, currentTaskIndex, feedback, tasks.length]);
+
+  const handleTimeUp = async () => {
+    setIsGrading(true);
+    const task = tasks[currentTaskIndex];
+    try {
+      const mockQuestion = {
+        text: task.original_text,
+        solution: task.solution_steps.join('\n'),
+        points: 100
+      };
+      const result = await autoGradeSubmission(mockQuestion, studentAnswer || "Нема одговор - истече времето");
+      processGradingResult(result, task);
+    } catch (err) {
+      showToast('Грешка при оценување по истекот на времето.', 'error');
+      setIsGrading(false);
+    }
+  };
 
   const fetchTasks = async () => {
     setIsLoading(true);
@@ -100,20 +146,11 @@ export const AdaptiveTest: React.FC = () => {
     }
   };
 
-  const handleGrade = async () => {
-    if (!studentAnswer.trim()) return;
-    setIsGrading(true);
-    const task = tasks[currentTaskIndex];
-    try {
-      // Create a mock question format for autoGradeSubmission
-      const mockQuestion = {
-        text: task.original_text,
-        solution: task.solution_steps.join('\n'),
-        points: 100
-      };
-
-      const result = await autoGradeSubmission(mockQuestion, studentAnswer);
+  const processGradingResult = async (result: any, task: MathTask) => {
       setFeedback(result);
+      if (result.error_detected) {
+         setDetectedErrors(prev => [...prev, result.error_detected]);
+      }
       
       // SM-2 Algorithm mapping
       // score >= 90: Q=5, >=70: Q=4, >=50: Q=3, >=30: Q=2, else 1
@@ -125,6 +162,7 @@ export const AdaptiveTest: React.FC = () => {
 
       // Streak and gamification logic
       let currentStreak = streak;
+      let multiplierBonus = isKahootMode ? 1.5 : 1; // 50% XP bonus for Kahoot Mode
       if (result.score >= 70) {
         currentStreak += 1;
         setStreak(currentStreak);
@@ -135,7 +173,7 @@ export const AdaptiveTest: React.FC = () => {
         setStreak(0);
       }
       
-      const newMultiplier = Math.min(3, 1 + currentStreak * 0.2);
+      const newMultiplier = Math.min(3, (1 + currentStreak * 0.2) * multiplierBonus);
       setMultiplier(newMultiplier);
 
       const xpEarned = Math.round(result.score * newMultiplier);
@@ -169,10 +207,27 @@ export const AdaptiveTest: React.FC = () => {
       
       updateQuestProgress('solve');
       setSessionCount(prev => prev + 1);
+      setIsGrading(false);
+  };
+
+  const handleGrade = async () => {
+    if (!studentAnswer.trim()) return;
+    if (timerRef.current) clearInterval(timerRef.current);
+    setIsGrading(true);
+    const task = tasks[currentTaskIndex];
+    try {
+      // Create a mock question format for autoGradeSubmission
+      const mockQuestion = {
+        text: task.original_text,
+        solution: task.solution_steps.join('\n'),
+        points: 100
+      };
+
+      const result = await autoGradeSubmission(mockQuestion, studentAnswer);
+      await processGradingResult(result, task);
     } catch (err) {
       console.error("Grading error:", err);
       showToast('Настана грешка при оценувањето.', 'error');
-    } finally {
       setIsGrading(false);
     }
   };
@@ -256,9 +311,28 @@ export const AdaptiveTest: React.FC = () => {
     );
   }
 
+  const handleGenerateTargetedTasks = async () => {
+     if (detectedErrors.length === 0) {
+        showToast("Не се детектирани специфични грешки за анализа.", "info");
+        return;
+     }
+     setIsGeneratingTargeted(true);
+     try {
+        const lastTask = tasks[tasks.length - 1]; // Use as context base
+        const newTasks = await generateTargetedPracticeTasks(detectedErrors, lastTask, 2);
+        setTargetedTasks(newTasks);
+        showToast("Успешно креирани фокусирани задачи!", "success");
+     } catch (e) {
+        console.error(e);
+        showToast("Грешка при креирање фокусирани задачи.", "error");
+     } finally {
+        setIsGeneratingTargeted(false);
+     }
+  };
+
   if (currentTaskIndex >= tasks.length) {
     return (
-      <div className="max-w-2xl mx-auto p-12 text-center bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700">
+      <div className="max-w-4xl mx-auto p-12 text-center bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700">
         <div className="w-24 h-24 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-full flex items-center justify-center mx-auto mb-6 transform rotate-12">
           <Trophy className="w-12 h-12 text-white" />
         </div>
@@ -267,7 +341,43 @@ export const AdaptiveTest: React.FC = () => {
           Одлична работа. Ја зголемивте вашата мајсторија преку SRS алгоритмот. <br/>
           Освоени поени: <span className="font-bold text-indigo-600">{sessionScore} XP</span>
         </p>
-        <Button onClick={fetchTasks} className="bg-indigo-600 hover:bg-indigo-700 h-12 px-8 text-lg rounded-full">
+        
+        {detectedErrors.length > 0 && targetedTasks.length === 0 && (
+           <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-6 text-left border border-amber-200 dark:border-amber-800 mb-8 max-w-2xl mx-auto">
+              <h3 className="font-bold flex items-center gap-2 text-amber-800 dark:text-amber-400 mb-2">
+                 <AlertTriangle className="w-5 h-5" /> Анализа на специфични грешки
+              </h3>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mb-4">
+                 Системот забележа дека ги направивте следниве грешки низ обидите:
+              </p>
+              <ul className="list-disc list-inside text-sm text-amber-800/80 dark:text-amber-200 mb-4 space-y-1 pl-4">
+                 {detectedErrors.map((err, i) => (
+                    <li key={i}>{typeof err === 'string' ? err.substring(0, 100) + '...' : 'Концептуална грешка детектирана'}</li>
+                 ))}
+              </ul>
+              <Button onClick={handleGenerateTargetedTasks} disabled={isGeneratingTargeted} className="w-full bg-amber-600 hover:bg-amber-700 text-white shadow-sm border-0 font-bold h-10">
+                 {isGeneratingTargeted ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : <Zap className="w-4 h-4 mr-2"/>} 
+                 Генерирај Фокусирани Задачи
+              </Button>
+           </div>
+        )}
+        
+        {targetedTasks.length > 0 && (
+           <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl p-6 text-left border border-indigo-200 dark:border-indigo-800 mb-8">
+              <h3 className="font-bold flex items-center gap-2 text-indigo-800 dark:text-indigo-400 mb-4">
+                 <Target className="w-5 h-5" /> Фокусиран Тренинг 
+              </h3>
+              <div className="grid gap-4">
+                 {targetedTasks.map((tt, i) => (
+                    <div key={i} className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+                       <MathRenderer content={tt.original_text} />
+                    </div>
+                 ))}
+              </div>
+           </div>
+        )}
+
+        <Button onClick={fetchTasks} className="bg-indigo-600 hover:bg-indigo-700 h-12 px-8 text-lg rounded-full shadow-lg hover:shadow-xl transition-all">
           Започни нова сесија <RefreshCw className="w-5 h-5 ml-2" />
         </Button>
       </div>
@@ -287,6 +397,20 @@ export const AdaptiveTest: React.FC = () => {
           <p className="text-sm text-slate-500">Систем за просторно повторување (SRS)</p>
         </div>
         <div className="flex items-center gap-4">
+          <Button
+            variant={isKahootMode ? "default" : "outline"}
+            className={`rounded-full shadow-sm text-xs h-8 px-4 font-bold border transition-colors ${
+              isKahootMode 
+                ? "bg-rose-500 hover:bg-rose-600 text-white border-rose-600 ring-4 ring-rose-500/20" 
+                : "border-slate-200 text-slate-500 hover:bg-slate-50"
+            }`}
+            onClick={() => setIsKahootMode(!isKahootMode)}
+            title="Kahoot Mode дава ограничено време но носи 50% повеќе поени!"
+          >
+            <Timer className={`w-4 h-4 mr-1.5 ${isKahootMode ? "animate-pulse" : ""}`} />
+            Kahoot Mode
+          </Button>
+
           <AnimatePresence>
              {streak > 1 && (
                <motion.div
@@ -303,6 +427,25 @@ export const AdaptiveTest: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {isKahootMode && !feedback && (
+        <div className="bg-white dark:bg-slate-800 rounded-3xl p-4 border border-rose-200 dark:border-rose-900 shadow-sm flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 ${timeLeft <= 10 ? 'animate-bounce' : ''}`}>
+                 <Timer className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Трка со времето</h4>
+                <div className={`text-2xl font-black ${timeLeft <= 10 ? 'text-rose-600' : 'text-slate-800 dark:text-slate-100'}`}>
+                  00:{timeLeft.toString().padStart(2, '0')}
+                </div>
+              </div>
+            </div>
+            <div className="w-1/2 bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+               <div className={`h-full ${timeLeft <= 10 ? 'bg-rose-500' : 'bg-emerald-500'} transition-all duration-1000 ease-linear`} style={{ width: `${(timeLeft/60)*100}%` }}></div>
+            </div>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1 bg-slate-100 dark:bg-slate-700">

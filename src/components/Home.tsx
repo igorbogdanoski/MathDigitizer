@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BrainCircuit, BookOpen, Factory, Wand2, ArrowRight, Sparkles, Quote, Play, Square, Info, X, FileText, Cpu, ShieldCheck, CheckCircle, FileType2 } from 'lucide-react';
+import { BrainCircuit, BookOpen, Factory, Wand2, ArrowRight, Sparkles, Quote, Play, Square, Info, X, FileText, Cpu, ShieldCheck, CheckCircle, FileType2, Zap, Users } from 'lucide-react';
 import { Button } from './ui/Button';
 import { generateSpeech } from '../lib/gemini';
 import { motion, AnimatePresence } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
+import { MathRenderer } from './MathRenderer';
 
 const MATH_QUOTES = [
   { text: "Математиката е азбуката со која Бог го напишал универзумот.", author: "Галилео Галилеј" },
@@ -118,147 +119,207 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
     <div className="space-y-16 pb-16 animate-in fade-in duration-700 min-h-screen font-sans bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 transition-colors duration-300">
       <Helmet>
         <title>MathDigitizer Pro | Напредна едукација и математика</title>
-        <meta name="description" content="Дигитализирајте ја математиката на светско ниво. Напредна едукативна платформа со AI екстракција, Dugga испити, и Bloom's оценување." />
-        <meta name="keywords" content="математика, AI, Dugga, испити, екстракција, едукација, македонски, MathDigitizer, MathKahoot, онлајн" />
-        <link rel="canonical" href="https://mathdigitizer.mk" />
-        <meta property="og:title" content="MathDigitizer Pro | Дигитализирајте ја математиката" />
-        <meta property="og:description" content="Водечка AI платформа за математичка едукација со вграден Dugga режим, Кахут квизови и напредни алатки за наставници." />
+        <meta name="description" content="Водечка AI едукативна платформа за математика на македонски јазик. Беспрекорна дигитализација, OCR екстракција од YouTube/слики, автоматизирано Bloom/DOK оценување и интерактивни Live MathKahoot натпревари." />
+        <meta name="keywords" content="математика, AI, автоматизирано оценување, генератор на задачи, OCR математика, Live MathKahoot, Bloom's Taxonomy, едукација, македонски јазик, MathDigitizer Pro, EdTech, настава, учење" />
+        <meta name="author" content="Игор Богданоски" />
+        <link rel="canonical" href="https://mathdigitizer.pro" />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://mathdigitizer.pro/" />
+        <meta property="og:title" content="MathDigitizer Pro | Напредна AI Интелигентна Едукација" />
+        <meta property="og:description" content="Едукативна платформа без компромиси. Користи Gemini 3.1 Pro за Multimodal LaTeX Екстракција од видео и слика, Live MathKahoot натпревари, и Bloom's Smart Auto-Grader кој автоматски лоцира грешки во ракопис." />
+        <meta property="og:image" content="/og-image.jpg" />
+        <meta property="og:site_name" content="MathDigitizer Pro" />
+        <meta property="og:locale" content="mk_MK" />
+
+        {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content="https://mathdigitizer.pro/" />
+        <meta name="twitter:title" content="MathDigitizer Pro | Напредна AI Интелигентна Едукација" />
+        <meta name="twitter:description" content="Едукативна платформа без компромиси. Користи Gemini 3.1 Pro за Multimodal LaTeX Екстракција од видео и слика, Live MathKahoot натпревари, и Bloom's Smart Auto-Grader кој автоматски лоцира грешки во ракопис." />
+        <meta name="twitter:image" content="/og-image.jpg" />
+
         {/* Advanced SEO: JSON-LD Structured Data for EdTech */}
         <script type="application/ld+json">
           {`
             {
               "@context": "https://schema.org",
-              "@type": "SoftwareApplication",
+              "@type": "WebApplication",
               "name": "MathDigitizer Pro",
+              "alternateName": "MathDigitizer",
+              "url": "https://mathdigitizer.pro",
               "applicationCategory": "EducationalApplication",
-              "operatingSystem": "Web",
+              "operatingSystem": "All",
+              "inLanguage": "mk",
+              "softwareVersion": "3.1",
+              "creator": {
+                "@type": "Person",
+                "name": "Игор Богданоски"
+              },
               "offers": {
                 "@type": "Offer",
-                "price": "0",
-                "priceCurrency": "MKD"
+                "price": "0.00",
+                "priceCurrency": "MKD",
+                "availability": "https://schema.org/InStock",
+                "category": "EdTech"
               },
-              "description": "Платформа за автоматска AI екстракција на математика, Dugga онлајн испити, и автоматско оценување.",
+              "description": "Платформа за автоматска AI екстракција на математика, Dugga онлајн испити и автоматско оценување.",
+              "featureList": [
+                "Multimodal LaTeX Екстракција",
+                "Smart Auto-Grader",
+                "Live MathKahoot",
+                "Bloom Taxonomy Analytics",
+                "NanoBanana Visualization"
+              ],
               "aggregateRating": {
                 "@type": "AggregateRating",
                 "ratingValue": "4.9",
+                "bestRating": "5",
+                "worstRating": "1",
                 "ratingCount": "1250"
               }
             }
           `}
         </script>
+        <script type="application/ld+json">
+          {`
+            {
+              "@context": "https://schema.org",
+              "@type": "EducationalOrganization",
+              "name": "MathDigitizer Pro Education",
+              "url": "https://mathdigitizer.pro",
+              "logo": "https://mathdigitizer.pro/pwa-icon.svg",
+              "sameAs": []
+            }
+          `}
+        </script>
       </Helmet>
       
-      {/* Hero Section (World-Class EdTech Landing) */}
-      <section className="relative overflow-hidden rounded-[2.5rem] bg-slate-900 dark:bg-slate-950 text-white shadow-2xl mx-4 lg:mx-8 xl:mx-12 mt-4 px-6 py-20 lg:py-32 flex flex-col items-center text-center transition-colors duration-300 border border-slate-800 dark:border-slate-800/50">
-        {/* Abstract Grid and Gradients Background */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-30"></div>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-full rounded-full bg-blue-600/20 blur-[120px] pointer-events-none"></div>
+      {/* Advanced Hero Section (World-Class EdTech Landing) */}
+      <section className="relative overflow-hidden rounded-[2.5rem] bg-slate-900 dark:bg-slate-950 text-white shadow-[0_0_100px_rgba(37,99,235,0.2)] mx-4 lg:mx-8 xl:mx-12 mt-4 px-6 md:px-12 py-20 lg:py-40 flex flex-col items-center text-center transition-colors duration-500 border border-slate-800 dark:border-slate-800/80">
+        
+        {/* Deep Abstract Animated Grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20 hover:opacity-30 transition-opacity duration-1000"></div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] max-w-4xl h-[120%] rounded-[100%] bg-blue-600/20 blur-[150px] pointer-events-none mix-blend-screen"></div>
 
-        {/* Floating Geometric/Math Orbits (Motion) */}
+        {/* Floating Geometric Orbits */}
         <motion.div 
-          animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }} 
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-20 left-10 lg:left-32 w-16 h-16 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl flex items-center justify-center text-blue-300 font-mono text-2xl shadow-2xl hidden md:flex"
+          animate={{ y: [0, -40, 0], rotate: [0, 10, 0], scale: [1, 1.1, 1] }} 
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-20 left-10 lg:left-32 w-24 h-24 bg-gradient-to-br from-indigo-500/20 to-blue-500/5 backdrop-blur-2xl border border-white/10 rounded-[2rem] flex items-center justify-center text-blue-300 text-3xl shadow-[0_0_40px_rgba(59,130,246,0.2)] hidden md:flex"
         >
-          ∫
+          <MathRenderer content="$\int_a^b$" inline />
         </motion.div>
+        
         <motion.div 
-          animate={{ y: [0, 20, 0], rotate: [0, -10, 0] }} 
-          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-          className="absolute bottom-20 right-10 lg:right-32 w-20 h-20 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center text-indigo-300 font-mono text-xl shadow-2xl hidden md:flex"
+          animate={{ y: [0, 40, 0], rotate: [0, -15, 0], scale: [1, 1.1, 1] }} 
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          className="absolute bottom-20 right-10 lg:right-32 w-32 h-32 bg-gradient-to-br from-rose-500/10 to-orange-500/5 backdrop-blur-2xl border border-white/10 rounded-full flex items-center justify-center text-rose-300 font-mono text-xl shadow-[0_0_40px_rgba(244,63,94,0.2)] hidden md:flex flex-col gap-2"
         >
-          E=mc²
+          <span className="text-xl font-black">Kahoot!</span>
+          <Zap className="w-5 h-5 text-rose-400" />
         </motion.div>
 
-        <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center">
+        <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col items-center">
           <motion.div 
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 text-blue-300 text-sm font-semibold mb-8 border border-blue-500/20 backdrop-blur-md shadow-[0_0_20px_rgba(59,130,246,0.15)]"
+             initial={{ opacity: 0, scale: 0.8 }}
+             animate={{ opacity: 1, scale: 1 }}
+             transition={{ duration: 0.8, type: "spring" }}
+             className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-slate-800/80 text-blue-300 text-xs sm:text-sm font-black mb-10 border border-blue-500/30 backdrop-blur-xl shadow-[0_0_30px_rgba(59,130,246,0.3)] tracking-widest uppercase"
           >
-            <Sparkles className="w-4 h-4" />
-            <span>Платформа од следната генерација</span>
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span className="bg-gradient-to-r from-blue-300 to-indigo-300 bg-clip-text text-transparent">Едукативна платформа од следната генерација</span>
           </motion.div>
           
           <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-5xl md:text-7xl lg:text-[5.5rem] font-black tracking-tight mb-8 leading-[1.05]"
+            transition={{ delay: 0.2, duration: 0.8, ease: "easeOut" }}
+            className="text-6xl md:text-8xl lg:text-[7rem] font-black tracking-tighter mb-8 leading-[0.95]"
           >
-            Дигитализирајте ја <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-cyan-300">
-               математиката 
-            </span> на <br className="hidden lg:block"/> светско ниво
+            Еволуција на <br className="hidden md:block" />
+            <span className="relative inline-block mt-2">
+              <span className="absolute -inset-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 blur-2xl opacity-40"></span>
+              <span className="relative text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-cyan-300">
+                 математиката
+              </span>
+            </span> 
           </motion.h1>
-          
-          <motion.p 
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.2 }}
-             className="text-lg md:text-2xl text-slate-300 max-w-2xl mb-12 leading-relaxed"
-          >
-            Интегриран Dugga испитен режим, AI екстракција од видеа и автоматско оценување по Блум.
-          </motion.p>
           
           <motion.div 
              initial={{ opacity: 0, y: 20 }}
              animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.3 }}
-             className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
+             transition={{ delay: 0.4, duration: 0.8 }}
+             className="text-lg md:text-2xl text-slate-300 max-w-3xl mb-14 leading-relaxed font-medium"
+          >
+            Ги спојуваме <strong className="text-white">Dugga испитните стандарди</strong>, <strong className="text-rose-300">Kahoot! гемификацијата</strong> и моќната <strong className="text-blue-300">Gemini 3.1 Pro AI екстракција</strong> во еден врвен систем.
+          </motion.div>
+          
+          <motion.div 
+             initial={{ opacity: 0, y: 20 }}
+             animate={{ opacity: 1, y: 0 }}
+             transition={{ delay: 0.6, duration: 0.8 }}
+             className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto relative z-20"
           >
             {!user ? (
               <Button 
                 size="lg" 
                 onClick={signInWithGoogle}
-                className="bg-blue-600 hover:bg-blue-500 text-white border-none text-base h-16 px-10 rounded-2xl shadow-[0_0_40px_rgba(37,99,235,0.4)] hover:shadow-[0_0_50px_rgba(37,99,235,0.6)] group overflow-hidden relative transition-all duration-300"
+                className="bg-white hover:bg-slate-100 text-slate-900 border-none text-lg h-16 px-10 rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_rgba(255,255,255,0.4)] group overflow-hidden relative transition-all duration-300"
               >
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
-                <Sparkles className="w-5 h-5 mr-3 group-hover:animate-pulse relative z-10" />
-                <span className="relative z-10 font-bold">Регистрирај се Бесплатно</span>
+                <div className="absolute inset-0 bg-blue-100 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+                <Sparkles className="w-6 h-6 mr-3 group-hover:animate-pulse relative z-10 text-blue-600" />
+                <span className="relative z-10 font-black">Регистрирај се Бесплатно</span>
               </Button>
             ) : (
               <Button 
                 size="lg" 
                 onClick={() => navigate('/classrooms')}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white border-none text-base h-16 px-10 rounded-2xl shadow-[0_0_40px_rgba(79,70,229,0.4)] hover:shadow-[0_0_50px_rgba(79,70,229,0.6)] group overflow-hidden relative transition-all duration-300"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white border-none text-lg h-16 px-10 rounded-2xl shadow-[0_0_40px_rgba(79,70,229,0.5)] hover:shadow-[0_0_60px_rgba(79,70,229,0.7)] group overflow-hidden relative transition-all duration-300"
               >
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
-                <Factory className="w-5 h-5 mr-3 relative z-10" />
-                <span className="relative z-10 font-bold">Оди во Контролниот Центар</span>
+                <Factory className="w-6 h-6 mr-3 relative z-10" />
+                <span className="relative z-10 font-black">Оди во Контролниот Центар</span>
               </Button>
             )}
             <Button 
               size="lg" 
               variant="outline"
               onClick={() => setShowGuide(true)}
-              className="bg-white/5 hover:bg-white/10 text-white border-white/10 text-base h-16 px-10 rounded-2xl backdrop-blur-md transition-all duration-300"
+              className="bg-slate-800/50 hover:bg-slate-700/50 text-white border-slate-600 text-lg h-16 px-10 rounded-2xl backdrop-blur-xl transition-all duration-300"
             >
-              <Info className="w-5 h-5 mr-3" />
-              <span className="font-bold">Како функционира?</span>
+              <FileText className="w-6 h-6 mr-3" />
+              <span className="font-bold">Методологија</span>
             </Button>
           </motion.div>
           
-          {/* Quick Join Component */}
+          {/* Quick Kahoot Entry Component */}
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 1 }}
-            className="mt-14 w-full max-w-md mx-auto"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 1 }}
+            className="mt-20 w-full max-w-xl mx-auto"
           >
-             <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Приклучок за Ученици</p>
-             <div className="bg-white/5 p-2 rounded-2xl backdrop-blur-xl border border-white/10 shadow-2xl transition-all duration-300 focus-within:bg-white/10 focus-within:border-white/20">
-              <form onSubmit={handleJoinKahoot} className="flex gap-2">
-                <input 
-                  type="text" 
-                  value={kahootPin}
-                  onChange={(e) => setKahootPin(e.target.value)}
-                  placeholder="Внесете ПИН или Испит Код..." 
-                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 h-12 text-white placeholder-white/40 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all font-mono font-bold tracking-widest text-center"
-                />
-                <Button type="submit" className="bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl px-6 h-12 font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all duration-300">
-                  Влези
+             <div className="flex items-center justify-center gap-3 mb-4">
+               <div className="h-px w-10 bg-slate-700"></div>
+               <p className="text-xs font-black uppercase tracking-widest text-slate-400">Студентски Портал</p>
+               <div className="h-px w-10 bg-slate-700"></div>
+             </div>
+             <div className="bg-slate-800/40 p-3 rounded-[2rem] backdrop-blur-2xl border border-slate-700 shadow-2xl transition-all duration-500 focus-within:bg-slate-800/80 focus-within:border-indigo-500/50 focus-within:shadow-[0_0_40px_rgba(79,70,229,0.3)]">
+              <form onSubmit={handleJoinKahoot} className="flex gap-3">
+                <div className="relative flex-1">
+                   <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400" />
+                   <input 
+                     type="text" 
+                     value={kahootPin}
+                     onChange={(e) => setKahootPin(e.target.value)}
+                     placeholder="Внеси ПИН за Игра / Испит..." 
+                     className="w-full bg-slate-900/50 border border-slate-600/50 rounded-2xl pl-14 pr-6 h-16 text-white text-xl placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all font-mono font-black tracking-wider text-center"
+                   />
+                </div>
+                <Button type="submit" className="bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-white rounded-2xl px-10 h-16 font-black text-xl shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300 hover:scale-105 active:scale-95">
+                  ВЛЕЗИ
                 </Button>
               </form>
             </div>
@@ -266,111 +327,99 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
         </div>
       </section>
 
-      {/* Social Proof / Stats Tape */}
-      <div className="border-y border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden py-4 transition-colors duration-300 shadow-sm">
-         <div className="max-w-7xl mx-auto px-6 flex flex-wrap justify-center sm:justify-between items-center gap-8 text-slate-500 dark:text-slate-400 font-semibold text-sm md:text-base">
-            <div className="flex items-center gap-2"><CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400"/> Dugga Официјален Режим</div>
-            <div className="flex items-center gap-2"><Sparkles className="w-5 h-5 text-blue-500 dark:text-blue-400"/> Gemini 3.1 Pro Мотор</div>
-            <div className="flex items-center gap-2"><FileType2 className="w-5 h-5 text-rose-500 dark:text-rose-400"/> Инстант PDF Збирки</div>
-            <div className="flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-indigo-500 dark:text-indigo-400"/> Блум Оценување</div>
+      {/* Social Proof / Stats Tape (Updated) */}
+      <div className="border-y border-slate-200 dark:border-slate-800/60 bg-white dark:bg-slate-900/50 py-6 transition-colors duration-500 shadow-sm overflow-hidden relative">
+         <div className="absolute inset-0 bg-gradient-to-r from-white via-transparent to-white dark:from-slate-900 dark:via-transparent dark:to-slate-900 z-10 w-full pointer-events-none"></div>
+         <div className="max-w-7xl mx-auto px-6 flex justify-center items-center gap-10 md:gap-16 text-slate-500 dark:text-slate-400 font-bold text-sm md:text-lg animate-[pulse_4s_ease-in-out_infinite]">
+            <div className="flex items-center gap-3 shrink-0"><CheckCircle className="w-6 h-6 text-emerald-500"/> Dugga Enterprise Испити</div>
+            <div className="flex items-center gap-3 shrink-0"><Cpu className="w-6 h-6 text-blue-500"/> Gemini 3.1 Pro Engine</div>
+            <div className="flex items-center gap-3 shrink-0"><Play className="w-6 h-6 text-rose-500"/> MathKahoot Интеракција</div>
+            <div className="flex items-center gap-3 shrink-0"><ShieldCheck className="w-6 h-6 text-indigo-500"/> SRS Адаптивни Тестови</div>
          </div>
       </div>
 
-      {/* Modern Bento Grid Features (World-Class Design) */}
-      <section className="max-w-7xl mx-auto px-6 py-12">
-        <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-12 text-center tracking-tight transition-colors duration-300">Мудро конструиран едукативен екосистем</h2>
+      {/* Advanced Bento Grid Features */}
+      <section className="max-w-[85rem] mx-auto px-6 py-20">
+        <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white mb-6 text-center tracking-tighter">Напреден Едукативен Екосистем</h2>
+        <p className="text-slate-500 dark:text-slate-400 text-center mb-16 text-lg max-w-2xl mx-auto font-medium">Конструиран за десеткратно зголемување на продуктивноста на наставникот и ангажманот на ученикот.</p>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Main Focus: Dugga Exams (Spans 2 columns) */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+          {/* Main Focus: Live Kahoot Mode (Spans 12 cols) */}
           <motion.div 
-            whileHover={{ y: -5 }}
-            onClick={() => navigate('/exams-grading')}
-            className="md:col-span-2 bg-gradient-to-br from-indigo-900 to-slate-900 dark:from-indigo-950 dark:to-slate-950 p-8 md:p-12 rounded-[2.5rem] shadow-xl hover:shadow-2xl hover:shadow-indigo-900/20 transition-all cursor-pointer group relative overflow-hidden border border-transparent dark:border-slate-800/50"
-          >
-            <div className="absolute -right-20 -top-20 w-96 h-96 bg-indigo-500/20 blur-3xl rounded-full"></div>
-            <div className="relative z-10 flex flex-col h-full">
-               <div className="w-16 h-16 bg-white/10 backdrop-blur border border-white/20 rounded-2xl flex items-center justify-center mb-8 shadow-lg">
-                 <ShieldCheck className="w-8 h-8 text-indigo-300" />
-               </div>
-               <h3 className="text-3xl font-black text-white mb-4">Dugga Центар за Оценување</h3>
-               <p className="text-lg text-indigo-100/80 mb-8 max-w-md leading-relaxed">
-                 Сумативно онлајн тестирање во безбедна "lockdown" околина, автоматско бодување и телеметрија во реално време за секој ученик.
-               </p>
-               <div className="mt-auto flex items-center text-white font-bold tracking-wide">
-                 Погледни Испити <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-2 transition-transform" />
-               </div>
-            </div>
-            {/* Visual Deco */}
-            <div className="hidden md:block absolute right-8 bottom-8 left-1/2 ml-16 top-8 bg-slate-800/50 rounded-2xl border border-white/10 p-6 overflow-hidden">
-               <div className="space-y-4">
-                  <div className="h-6 w-1/3 bg-indigo-500/20 rounded"></div>
-                  <div className="h-4 w-3/4 bg-white/5 rounded"></div>
-                  <div className="h-4 w-full bg-white/5 rounded"></div>
-                  <div className="mt-8 flex gap-2">
-                     <div className="h-10 w-24 bg-emerald-500/20 border border-emerald-500/50 rounded-lg"></div>
-                     <div className="h-10 w-24 bg-white/5 rounded-lg"></div>
-                  </div>
-               </div>
-            </div>
-          </motion.div>
-
-          {/* AI Extractor */}
-          <motion.div 
-            whileHover={{ y: -5 }}
-            onClick={() => navigate('/extract')}
-            className="md:col-span-1 bg-white dark:bg-slate-800 p-8 md:p-10 rounded-[2.5rem] shadow-lg hover:shadow-xl border border-slate-200 dark:border-slate-700 transition-all cursor-pointer group flex flex-col relative overflow-hidden"
-          >
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30">
-              <Wand2 className="w-7 h-7 text-white" />
-            </div>
-            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-3 transition-colors duration-300">AI Екстракција</h3>
-            <p className="text-slate-600 dark:text-slate-400 mb-6 flex-1 leading-relaxed transition-colors duration-300">
-              Вметнете YouTube линк или слика. Платформата ќе ги извлече сите задачи со прецизен LaTeX.
-            </p>
-            <div className="flex items-center text-blue-600 dark:text-blue-400 font-bold tracking-wide mt-auto transition-colors duration-300">
-              Дигитализирај <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-2 transition-transform" />
-            </div>
-          </motion.div>
-
-          {/* MathKahoot */}
-          <motion.div 
-            whileHover={{ y: -5 }}
+            whileHover={{ y: -8, scale: 1.01 }}
             onClick={() => navigate('/library')}
-            className="md:col-span-1 bg-white dark:bg-slate-800 p-8 md:p-10 rounded-[2.5rem] shadow-lg hover:shadow-xl border border-slate-200 dark:border-slate-700 transition-all cursor-pointer group flex flex-col relative overflow-hidden"
+            className="md:col-span-12 bg-gradient-to-br from-rose-500 to-orange-500 dark:from-rose-900 dark:to-orange-900 p-10 md:p-14 rounded-[3rem] shadow-2xl hover:shadow-rose-500/30 transition-all duration-500 cursor-pointer group relative overflow-hidden"
           >
-            <div className="w-14 h-14 bg-gradient-to-br from-rose-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-rose-500/30">
-              <Play className="w-7 h-7 text-white" />
+            <div className="absolute -right-20 -top-20 w-[600px] h-[600px] bg-white/10 blur-[80px] rounded-full mix-blend-overlay"></div>
+            <div className="relative z-10 flex flex-col h-full w-full md:w-2/3">
+               <div className="w-20 h-20 bg-white/20 backdrop-blur-xl border border-white/30 rounded-[1.5rem] flex items-center justify-center mb-8 shadow-2xl">
+                 <Play className="w-10 h-10 text-white fill-white" />
+               </div>
+               <h3 className="text-4xl md:text-5xl font-black text-white mb-6 leading-tight">MathKahoot!<br/>Жива Училница</h3>
+               <p className="text-xl text-rose-50/90 mb-10 leading-relaxed font-semibold">
+                 Претворете ги задачите во интерактивна трка. Прикажете го PIN-от на проектор и гледајте како гемификацијата го зголемува фокусот 10x.
+               </p>
+               <div className="mt-auto inline-flex items-center bg-white text-rose-600 font-black text-lg px-8 py-4 rounded-2xl w-max shadow-xl group-hover:scale-105 transition-transform">
+                 Започни Сесија <ArrowRight className="w-6 h-6 ml-3" />
+               </div>
             </div>
-            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-3 transition-colors duration-300">MathKahoot!</h3>
-            <p className="text-slate-600 dark:text-slate-400 mb-6 flex-1 leading-relaxed transition-colors duration-300">
-              Моќна гемификација на училницата. Интерактивни квизови во реално време, идеални за ученици.
-            </p>
-            <div className="flex items-center text-rose-500 dark:text-rose-400 font-bold tracking-wide mt-auto transition-colors duration-300">
-              Играј веднаш <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-2 transition-transform" />
+            {/* Kahoot Decor Graphic */}
+            <div className="hidden md:flex absolute -right-10 bottom-0 top-0 items-center justify-center w-1/2 pointer-events-none">
+                <div className="w-full max-w-sm h-3/4 bg-white/10 backdrop-blur-md rounded-l-[3rem] border-y border-l border-white/20 p-8 shadow-2xl flex flex-col justify-center gap-4">
+                   <div className="text-white font-black text-3xl text-center mb-4">Кој е резултатот?</div>
+                   <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-red-500 h-24 rounded-2xl border-b-4 border-red-700"></div>
+                      <div className="bg-blue-500 h-24 rounded-2xl border-b-4 border-blue-700"></div>
+                      <div className="bg-amber-400 h-24 rounded-2xl border-b-4 border-amber-600"></div>
+                      <div className="bg-emerald-500 h-24 rounded-2xl border-b-4 border-emerald-700"></div>
+                   </div>
+                </div>
             </div>
           </motion.div>
 
-          {/* DOK & PDF Factory */}
+          {/* AI Extractor (Spans 4 cols) */}
           <motion.div 
-            whileHover={{ y: -5 }}
-            onClick={() => navigate('/classrooms')}
-            className="md:col-span-2 bg-slate-800 dark:bg-slate-900 p-8 md:p-12 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all cursor-pointer group flex flex-col relative overflow-hidden border border-transparent dark:border-slate-800/50"
+            whileHover={{ y: -8, scale: 1.02 }}
+            onClick={() => navigate('/extract')}
+            className="md:col-span-6 bg-white dark:bg-slate-800 p-10 rounded-[3rem] shadow-xl hover:shadow-2xl border border-slate-200 dark:border-slate-700 transition-all duration-500 cursor-pointer group flex flex-col relative overflow-hidden"
           >
-            {/* Visual Deco */}
-            <div className="absolute right-0 top-0 opacity-10">
-               <Cpu className="w-64 h-64 text-amber-500 transform translate-x-1/4 -translate-y-1/4 group-hover:rotate-12 transition-transform duration-700 ease-out" />
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-blue-500/30">
+              <Wand2 className="w-8 h-8 text-white" />
+            </div>
+            <h3 className="text-3xl font-black text-slate-900 dark:text-white mb-4 leading-tight">AI Визуелна<br/>Екстракција</h3>
+            <p className="text-lg text-slate-600 dark:text-slate-400 mb-8 flex-1 font-medium">
+              Youtube линк или слика. Ние го претвораме видеото во интерактивни задачи со точен LaTeX.
+            </p>
+            <div className="flex items-center text-blue-600 dark:text-blue-400 font-black text-lg">
+              Пробај <ArrowRight className="w-6 h-6 ml-2 group-hover:translate-x-2 transition-transform" />
+            </div>
+          </motion.div>
+
+          {/* DOK & PDF Factory (Spans 8 cols) */}
+          <motion.div 
+            whileHover={{ y: -8, scale: 1.01 }}
+            onClick={() => navigate('/classrooms')}
+            className="md:col-span-6 bg-slate-100 dark:bg-slate-800/50 p-10 md:p-14 rounded-[3rem] shadow-xl hover:shadow-2xl transition-all duration-500 cursor-pointer group flex flex-col relative overflow-hidden border border-slate-200 dark:border-slate-700"
+          >
+            <div className="absolute right-0 top-0 opacity-5">
+               <FileType2 className="w-[400px] h-[400px] text-amber-500 transform translate-x-1/4 -translate-y-1/4 group-hover:rotate-12 transition-transform duration-700" />
             </div>
             
-            <div className="relative z-10 flex flex-col h-full md:w-3/5">
-                <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-amber-500/30">
-                  <BookOpen className="w-8 h-8 text-white" />
+            <div className="relative z-10 flex flex-col h-full w-full">
+                <div className="flex gap-4 mb-8">
+                   <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/30">
+                     <BookOpen className="w-8 h-8 text-white" />
+                   </div>
+                   <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                     <ShieldCheck className="w-8 h-8 text-white" />
+                   </div>
                 </div>
-                <h3 className="text-3xl font-black text-white mb-4">Фабрика за Тестови</h3>
-                <p className="text-lg text-slate-300 mb-8 leading-relaxed">
-                  Генерирајте инстант работни листови, скрипти и учебници спремни за печатење. Одредете ја тежината според DOK.
+                <h3 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-6 leading-tight">Dugga Испити &<br/>PDF Производство</h3>
+                <p className="text-xl text-slate-600 dark:text-slate-300 mb-10 leading-relaxed font-medium">
+                  Организирајте сигурни lockdown тестирања или генерирајте инстант работни листови спремни за печатење. Одредете тежина според DOK.
                 </p>
-                <div className="flex items-center text-amber-400 font-bold tracking-wide mt-auto">
-                  Конструирај PDF <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-2 transition-transform" />
+                <div className="mt-auto flex items-center text-slate-800 dark:text-white font-black text-lg bg-white dark:bg-slate-700 px-8 py-4 rounded-2xl w-max shadow-md group-hover:shadow-xl transition-all">
+                  Кон Печатницата <ArrowRight className="w-6 h-6 ml-3" />
                 </div>
             </div>
           </motion.div>

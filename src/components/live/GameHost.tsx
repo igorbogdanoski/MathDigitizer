@@ -8,6 +8,7 @@ import { Button } from '../ui/Button';
 import { motion, AnimatePresence } from 'motion/react';
 import { Users, Play, SkipForward, BarChart, Trophy, LogOut, CheckCircle2, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { playSound } from '../../lib/sound';
 
 export const GameHost = ({ sessionPin }: { sessionPin: string }) => {
   const { user } = useAuth();
@@ -17,7 +18,15 @@ export const GameHost = ({ sessionPin }: { sessionPin: string }) => {
   useEffect(() => {
     if (!sessionPin) return;
     const unsub = onSnapshot(doc(db, 'live_sessions', sessionPin), (doc) => {
-      if (doc.exists()) setSession(doc.data() as LiveKahootSession);
+      if (doc.exists()) {
+        const data = doc.data() as LiveKahootSession;
+        setSession(prev => {
+          if (prev && prev.status === 'lobby' && data.status === 'playing') playSound('start');
+          if (prev && prev.status === 'playing' && data.status === 'discussion') playSound('start');
+          if (prev && prev.status !== 'finished' && data.status === 'finished') playSound('win');
+          return data;
+        });
+      }
     });
     return () => unsub();
   }, [sessionPin]);

@@ -34,6 +34,7 @@ import { SummativeExam } from './components/live/SummativeExam';
 import { TeacherExamsDashboard } from './components/TeacherExamsDashboard';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { VirtualWhiteboardPage } from './components/live/VirtualWhiteboardPage';
+import { AIPedagogyCritique } from './components/AIPedagogyCritique';
 import { useParams } from 'react-router-dom';
 
 // Wrapper for extracting pin from params
@@ -92,6 +93,12 @@ const AppRoutes = () => {
           <Route path="analytics" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <AnalyticsDashboard />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="ai-pedagogy" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <AIPedagogyCritique />
             </ProtectedRoute>
           } />
           

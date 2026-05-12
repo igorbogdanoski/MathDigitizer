@@ -14,6 +14,7 @@ import { db, auth } from '../lib/firebase';
 import ReactCrop, { Crop as CropType, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { GeoGebraViewer } from './GeoGebraViewer';
+import { MathEditor } from './MathEditor';
 
 import { SEO } from './SEO';
 
@@ -118,7 +119,8 @@ export const SmartOCR: React.FC = () => {
       if (!items) return;
 
       for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1 || items[i].type === 'application/pdf') {
+        const itemType = items[i].type;
+        if (itemType.indexOf('image') !== -1 || itemType === 'application/pdf' || itemType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
           const file = items[i].getAsFile();
           if (file) processFile(file);
           break;
@@ -131,23 +133,24 @@ export const SmartOCR: React.FC = () => {
   }, []);
 
   const processFile = (file: File) => {
-    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
-      showToast('Ве молиме прикачете слика (JPG, PNG) или PDF документ.', 'error');
+    const isDocx = file.name.endsWith('.docx') || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf' && !isDocx) {
+      showToast('Ве молиме прикачете слика (JPG, PNG), PDF или Word (.docx) документ.', 'error');
       return;
     }
 
-    setMimeType(file.type);
+    setMimeType(file.type || (isDocx ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : ''));
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64Data = event.target?.result as string;
       if (file.type.startsWith('image/')) {
         setImage(base64Data);
       } else {
-        setImage(null); // No preview for PDF right now in the cropper
+        setImage(null);
       }
       
-      // Auto-scan when image/pdf is loaded
-      scanImage(base64Data, file.type);
+      scanImage(base64Data, file.type || (isDocx ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : ''));
     };
     reader.readAsDataURL(file);
   };
@@ -621,12 +624,22 @@ export const SmartOCR: React.FC = () => {
                 </div>
               ) : (
                 viewMode === 'code' ? (
-                  <textarea
-                    value={latexCode}
-                    onChange={(e) => setLatexCode(e.target.value)}
-                    className="w-full h-full p-4 font-mono text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-slate-800 dark:text-slate-200"
-                    placeholder="LaTeX кодот ќе се појави овде..."
-                  />
+                  <div className="flex flex-col h-full gap-4">
+                    <div className="flex-none hidden xl:block">
+                      <p className="text-xs text-slate-500 mb-2">Напреден Математички Едитор (За вметнување равенки во кодот, копирај го резултатот тука и вметни го со $\dots$):</p>
+                      <MathEditor 
+                        value="" 
+                        onChange={(val) => insertLatex(val)} 
+                        className="bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 shadow-sm rounded-xl py-2"
+                      />
+                    </div>
+                    <textarea
+                      value={latexCode}
+                      onChange={(e) => setLatexCode(e.target.value)}
+                      className="w-full flex-1 p-4 font-mono text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-slate-800 dark:text-slate-200"
+                      placeholder="LaTeX кодот ќе се појави овде..."
+                    />
+                  </div>
                 ) : (
                   <div className="prose prose-slate dark:prose-invert max-w-none">
                     {extractedTask?.evidence_quote && (

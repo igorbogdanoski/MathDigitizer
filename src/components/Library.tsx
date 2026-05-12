@@ -43,6 +43,7 @@ export const Library: React.FC = () => {
   const [showLessonPlanModal, setShowLessonPlanModal] = useState(false);
   const [showManipulativesModal, setShowManipulativesModal] = useState(false);
   const [manipulativeType, setManipulativeType] = useState<'algebra-tiles' | 'geogebra-3d'>('algebra-tiles');
+  const [isGeneratingKahoot, setIsGeneratingKahoot] = useState(false);
 
   useEffect(() => {
     const handleOpenModal = () => setShowCreateModal(true);
@@ -56,49 +57,37 @@ export const Library: React.FC = () => {
     };
     
     // Create Kahoot handler
+
     const handleLiveSession = async () => {
       const selected = getSelectedTasks();
       if (selected.length === 0) return;
       
-      const pin = Math.floor(100000 + Math.random() * 900000).toString();
-      const quiz_data = {
-         title: "Интерактивен Квиз / Жива Училница",
-         questions: selected.map(task => ({
-           question: task.original_text,
-           // We will quickly generate 3 dummy options, and 1 real. 
-           // Ordinarily we would use Gemini to spawn the distractors.
-           options: [
-             `Недоволно податоци`,
-             `Не е можно да се пресмета`,
-             task.solution_steps[task.solution_steps.length - 1]?.replace(/^[0-9]+\.\s*/, '') || "Точно",
-             `Сите од горенаведените`
-           ].sort(() => Math.random() - 0.5),
-           correctIndex: 0 // We will map the correct one after sorting
-         })),
-         hints: selected.map(task => task.solution_steps[0] || "")
-      };
-      
-      // Map correct indices
-      quiz_data.questions.forEach((q, i) => {
-         const correctAns = selected[i].solution_steps[selected[i].solution_steps.length - 1]?.replace(/^[0-9]+\.\s*/, '') || "Точно";
-         q.correctIndex = q.options.indexOf(correctAns);
-      });
-
+      setIsGeneratingKahoot(true);
       try {
+        const pin = Math.floor(100000 + Math.random() * 900000).toString();
+        // Import generateKahootFromTasks dynamically or statically
+        const { generateKahootFromTasks } = await import('../lib/gemini');
+        
+        const quiz_data = await generateKahootFromTasks(selected);
+        
+        if (!quiz_data) throw new Error("Failed to generate Kahoot.");
+
         await setDoc(doc(db, 'live_sessions', pin), {
           id: pin,
-          host_uid: auth.currentUser?.uid || 'anonymous',
+          teacher_uid: auth.currentUser?.uid || 'anonymous',
           status: 'lobby',
           quiz_data: quiz_data,
           participants: {},
           current_question_index: 0,
-          created_at: new Date().toISOString()
+          created_at: Date.now()
         });
-        // Open inside a new tab to avoid breaking library state
+        
         window.open(`/live/${pin}/host`, '_blank');
       } catch (err) {
         console.error("Error creating live session:", err);
         alert("Грешка при креирање на жива училница.");
+      } finally {
+        setIsGeneratingKahoot(false);
       }
     };
     
@@ -287,7 +276,17 @@ export const Library: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {isGeneratingKahoot && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-white animate-in fade-in">
+           <div className="w-16 h-16 border-4 border-indigo-500 border-t-white rounded-full animate-spin mb-6"></div>
+           <h2 className="text-3xl font-black mb-2 tracking-tight">AI-то генерира Kahoot...</h2>
+           <p className="text-slate-200 font-bold max-w-md text-center opacity-80">
+             Се извлекуваат погрешните одговори и дистракторите специфични за вашите задачи. Може да потрае неколку секунди.
+           </p>
+        </div>
+      )}
+      
       {/* Filters & Search */}
       <TaskFilters 
         filters={filters}

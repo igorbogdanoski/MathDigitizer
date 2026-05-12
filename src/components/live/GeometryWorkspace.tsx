@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 // Using arbitrary types for JSXGraph since it doesn't have official TS definitions installed
 declare const JXG: any;
@@ -12,13 +12,14 @@ interface GeometryWorkspaceProps {
 }
 
 export const GeometryWorkspace: React.FC<GeometryWorkspaceProps> = ({ 
-  boardId = 'jxgbox', 
+  boardId, 
   elements = [], 
   width = '100%', 
   height = '500px',
   scriptCode
 }) => {
   const boardRef = useRef<any>(null);
+  const [targetId] = useState<string>(() => boardId || `jxgbox-${Math.random().toString(36).substr(2, 9)}`);
 
   useEffect(() => {
     // Dynamic import to avoid SSR issues if ever ported to Next.js
@@ -37,7 +38,7 @@ export const GeometryWorkspace: React.FC<GeometryWorkspaceProps> = ({
       }
 
       try {
-        const board = JXG.JSXGraph.initBoard(boardId, {
+        const board = JXG.JSXGraph.initBoard(targetId, {
           boundingbox: [-10, 10, 10, -10],
           axis: true,
           showCopyright: false,
@@ -74,11 +75,11 @@ export const GeometryWorkspace: React.FC<GeometryWorkspaceProps> = ({
         window.JXG.JSXGraph.freeBoard(boardRef.current);
       }
     };
-  }, [scriptCode, elements, boardId]);
+  }, [scriptCode, elements, targetId]);
 
   return (
     <div 
-      id={boardId} 
+      id={targetId} 
       className="jxgbox rounded-xl border border-slate-300 shadow-sm bg-white" 
       style={{ width, height, margin: '0 auto' }} 
     />

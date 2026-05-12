@@ -84,7 +84,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
     }
   };
 
-  const isYoutube = url.toLowerCase().includes('youtube.com') || url.toLowerCase().includes('youtu.be');
+  const isYoutube = url.toLowerCase().includes('youtube.com') || url.toLowerCase().includes('youtu.be') || url.toLowerCase().includes('vimeo.com');
 
   const handleEnrich = async (index: number) => {
     const task = tasks[index];
@@ -196,9 +196,14 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
     if (sourceType === 'text' && !textInput.trim()) return;
     if (sourceType === 'file' && !fileData) return;
 
-    if (sourceType === 'url' && !isValidUrl(url)) {
-      setError('Внесете валиден URL линк.');
-      return;
+    const urls = sourceType === 'url' ? url.split('\n').map(u => u.trim()).filter(Boolean) : [];
+
+    if (sourceType === 'url') {
+       const invalidUrls = urls.filter(u => !isValidUrl(u));
+       if (invalidUrls.length > 0) {
+         setError('Внесете валиден URL линк за сите ставки.');
+         return;
+       }
     }
 
     setIsLoading(true);
@@ -223,7 +228,12 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
           case 4: textInstructions += " Направи само кратко резиме и најважни клучни точки/задачи(Summary)."; break;
         }
 
-        extractedTasks = await extractMathTasksFromUrl(url, model, timeRange, manualTranscript, textInstructions);
+        for (let i = 0; i < urls.length; i++) {
+            setStatusText(`Процесирање на линк ${i + 1} од ${urls.length}...`);
+            const singleTasks = await extractMathTasksFromUrl(urls[i], model, timeRange, urls.length === 1 ? manualTranscript : '', textInstructions);
+            extractedTasks = [...extractedTasks, ...singleTasks];
+            setProgress(Math.max(10, Math.min(90, Math.floor(((i + 1) / urls.length) * 100))));
+        }
       } else {
         const sourcePayload = sourceType === 'file' ? 
           { type: 'file' as const, data: fileData!.base64, mimeType: fileData!.mimeType } :
@@ -429,16 +439,15 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                 {sourceType === 'url' && (
                   <div className="flex flex-col gap-3">
                     <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                        {isYoutube ? <PlayCircle className="w-6 h-6 text-red-400" /> : <LinkIcon className="w-6 h-6 text-indigo-400" />}
+                      <div className="absolute top-4 left-0 pl-5 flex items-start pointer-events-none">
+                        {url.toLowerCase().includes('youtube') || url.toLowerCase().includes('youtu.be') || url.toLowerCase().includes('vimeo') ? <PlayCircle className="w-6 h-6 text-red-400" /> : <LinkIcon className="w-6 h-6 text-indigo-400" />}
                       </div>
-                      <Input
-                        type="url"
-                        placeholder="Вметнете линк (YouTube, Wikipedia, Блог...)"
+                      <textarea
+                        placeholder="Вметнете еден или повеќе линкови (YouTube, Vimeo...). Секој линк во нов ред. (Bulk Mode - инспирирано од ReClip)"
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
                         disabled={isLoading}
-                        className="pl-14 h-16 text-lg bg-white/90 border-white/40 focus:bg-white text-slate-800 placeholder-slate-400 rounded-2xl shadow-inner transition-all w-full"
+                        className="pl-14 pt-4 min-h-[5rem] text-lg bg-white/90 border-white/40 focus:bg-white text-slate-800 placeholder-slate-400 rounded-2xl shadow-inner transition-all w-full resize-y"
                       />
                     </div>
                     
@@ -659,27 +668,45 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
               </div>
             </form>
 
-            {/* YouTube Iframe Preview */}
-            {isYoutube && textInput && (
-              <div className="mt-8 mb-4 border border-indigo-200/30 rounded-2xl overflow-hidden shadow-2xl relative z-10 mx-auto w-full max-w-4xl bg-black">
-                 <div className="bg-indigo-900/50 p-2 flex items-center justify-between text-indigo-200 text-xs font-bold border-b border-indigo-500/30">
-                    <div className="flex items-center gap-2">
-                      <Video className="w-4 h-4 text-red-500" />
-                      YOUTUBE PREVIEW
-                    </div>
-                    <span className="text-white/50">Local Bypass Enabled</span>
-                 </div>
-                 <div className="aspect-video w-full">
-                    <iframe 
-                      src={`https://www.youtube.com/embed/${textInput.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=))([^"&?\/\s]{11})/)?.[1]}`}
-                      className="w-full h-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                 </div>
-                 <div className="p-3 bg-slate-900 text-slate-300 text-xs">
-                    Ова видео ќе биде анализирано преку нашиот интерен бесплатен YouTube Scraper сервер, што значи дека користите RAG и Gemini Vision за неограничена обработка без $50/месец API квоти (се додека видеото има CC).
-                 </div>
+            {/* YouTube Iframe Preview & Bulk Link Cards (ReClip Inspired) */}
+            {sourceType === 'url' && url.trim().length > 0 && (
+              <div className="mt-8 mb-4">
+                 {(() => {
+                   const urls = url.split('\n').filter(u => u.trim().length > 0);
+                   const isMulti = urls.length > 1;
+                   const firstYoutube = urls.find(u => u.toLowerCase().includes('youtube.com') || u.toLowerCase().includes('youtu.be'));
+                   const yId = firstYoutube?.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=))([^"&?\/\s]{11})/)?.[1];
+                   
+                   return (
+                     <div className="flex flex-col gap-4">
+                       {isMulti && (
+                         <div className="bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 font-bold p-3 rounded-xl flex items-center justify-center gap-2 animate-in fade-in">
+                           <Layers className="w-5 h-5 text-emerald-400" />
+                           Bulk Мод Активиран: Ќе се излечат задачи од {urls.length} линкови последователно!
+                         </div>
+                       )}
+                       {yId && (
+                         <div className="border border-indigo-200/30 rounded-2xl overflow-hidden shadow-2xl relative z-10 mx-auto w-full max-w-4xl bg-black">
+                           <div className="bg-indigo-900/50 p-2 flex items-center justify-between text-indigo-200 text-xs font-bold border-b border-indigo-500/30">
+                              <div className="flex items-center gap-2">
+                                <Video className="w-4 h-4 text-red-500" />
+                                {isMulti ? 'YOUTUBE ПРЕГЛЕД (Прво Видео)' : 'YOUTUBE PREVIEW'}
+                              </div>
+                              <span className="text-white/50">{isMulti ? `(1 од ${urls.length})` : 'Local Bypass Enabled'}</span>
+                           </div>
+                           <div className="aspect-video w-full">
+                              <iframe 
+                                src={`https://www.youtube.com/embed/${yId}`}
+                                className="w-full h-full border-0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              />
+                           </div>
+                         </div>
+                       )}
+                     </div>
+                   );
+                 })()}
               </div>
             )}
 

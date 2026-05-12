@@ -45,26 +45,27 @@ export const StudentSkillTree: React.FC<{ currentXP: number }> = ({ currentXP })
   return (
     <div className="w-full relative bg-slate-950 rounded-[3rem] p-8 md:p-12 overflow-hidden shadow-2xl border border-slate-800 min-h-[800px] flex items-center justify-center">
       {/* Background decorations */}
-      <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#6366f1 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-      <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-indigo-600/20 rounded-full blur-[120px]" />
-      <div className="absolute top-[60%] -right-[10%] w-[40%] h-[60%] bg-blue-600/20 rounded-full blur-[120px]" />
+      <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#6366f1 2px, transparent 2px)', backgroundSize: '60px 60px' }} />
+      <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(2,6,23,1))] pointer-events-none"></div>
+      <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-indigo-600/30 rounded-full blur-[150px] mix-blend-screen" />
+      <div className="absolute top-[60%] -right-[10%] w-[40%] h-[60%] bg-rose-600/20 rounded-full blur-[150px] mix-blend-screen" />
       
       {/* Title */}
       <div className="absolute top-10 left-10 z-20">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-mono uppercase tracking-[0.2em] mb-4 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
-          <BrainCircuit className="w-4 h-4" />
-          Зрно на Знаење (Knowledge Graph)
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-indigo-300 text-xs font-black uppercase tracking-[0.2em] mb-4 shadow-[0_0_20px_rgba(4,4,5,0.5)] backdrop-blur-md">
+          <BrainCircuit className="w-4 h-4 text-rose-400" />
+          Студентска Кампања
         </div>
-        <h2 className="text-4xl font-black text-white tracking-tight">Твојата Траекторија</h2>
-        <p className="text-slate-400 mt-2 max-w-sm">Отклучувај нови математички концепти преку решавање на дневени предизвици и собирање на XP.</p>
+        <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">Граф на Знаење</h2>
+        <p className="text-slate-400 mt-3 max-w-sm font-medium">Отклучувај нови математички концепти преку решавање на дневните предизвици и собирање на XP.</p>
       </div>
 
-      <div className="relative w-full max-w-4xl h-[700px] mt-20">
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
+      <div className="relative w-full max-w-5xl h-[700px] mt-24">
+        <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-[0_0_10px_rgba(99,102,241,0.5)]" preserveAspectRatio="none">
            <defs>
-              <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
-                 <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.8" />
-                 <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.4" />
+              <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="1">
+                 <stop offset="0%" stopColor="#818cf8" stopOpacity="0.8" />
+                 <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.8" />
               </linearGradient>
            </defs>
           {KNOWLEDGE_NODES.map(node => (
@@ -78,15 +79,16 @@ export const StudentSkillTree: React.FC<{ currentXP: number }> = ({ currentXP })
                 <motion.line
                   initial={{ pathLength: 0 }}
                   animate={{ pathLength: 1 }}
-                  transition={{ duration: 1.5, ease: "easeInOut" }}
+                  transition={{ duration: 2, ease: "easeInOut" }}
                   key={`${depId}-${node.id}`}
                   x1={`${depNode.x}%`}
                   y1={`${depNode.y}%`}
                   x2={`${node.x}%`}
                   y2={`${node.y}%`}
-                  stroke={unlocked ? "url(#lineGrad)" : "#1e293b"}
-                  strokeWidth="3"
-                  className={unlocked ? "animate-pulse" : ""}
+                  stroke={unlocked ? "url(#lineGrad)" : "rgba(30,34,55,0.8)"}
+                  strokeWidth={unlocked ? "4" : "2"}
+                  className={unlocked ? "" : "stroke-dasharray-4"}
+                  strokeDasharray={unlocked ? "none" : "8 8"}
                 />
               );
             })
@@ -101,23 +103,23 @@ export const StudentSkillTree: React.FC<{ currentXP: number }> = ({ currentXP })
           return (
             <motion.div
               key={node.id}
-              whileHover={unlocked ? { scale: 1.1 } : {}}
+              whileHover={unlocked ? { scale: 1.15 } : {}}
               onClick={() => setSelectedNode(node)}
               className={`absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 
-                          ${unlocked ? 'drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]' : 'opacity-60'}`}
+                          ${unlocked ? 'drop-shadow-[0_0_20px_rgba(99,102,241,0.6)]' : 'opacity-50 grayscale'}`}
               style={{ left: `${node.x}%`, top: `${node.y}%` }}
             >
               <div className={`
-                flex items-center justify-center rounded-2xl w-14 h-14 border-2 transition-all
-                ${completed ? 'bg-indigo-600 border-indigo-400 text-white' : 
-                  unlocked ? 'bg-slate-800 border-indigo-500 text-indigo-400' : 'bg-slate-900 border-slate-700 text-slate-600'}
-                ${isSelected ? 'ring-4 ring-indigo-500/50 scale-110' : ''}
+                flex items-center justify-center rounded-[1.2rem] w-16 h-16 border-2 transition-all duration-300
+                ${completed ? 'bg-gradient-to-br from-indigo-500 to-blue-600 border-white/20 text-white shadow-inner' : 
+                  unlocked ? 'bg-slate-900 border-indigo-500 text-indigo-400' : 'bg-slate-900 border-slate-700 text-slate-600'}
+                ${isSelected ? 'ring-4 ring-rose-500/50 scale-110 rotate-3' : ''}
               `}>
-                {completed ? <CheckCircle2 className="w-7 h-7" /> : unlocked ? <Zap className="w-7 h-7" /> : <Lock className="w-6 h-6" />}
+                {completed ? <CheckCircle2 className="w-8 h-8" /> : unlocked ? <Zap className="w-8 h-8" /> : <Lock className="w-6 h-6" />}
               </div>
-              <div className="absolute top-16 left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
-                 <div className={`font-bold text-sm ${unlocked ? 'text-white' : 'text-slate-500'}`}>{node.label}</div>
-                 <div className={`text-[10px] font-mono uppercase font-black tracking-widest ${unlocked ? 'text-amber-400' : 'text-slate-600'}`}>
+              <div className="absolute top-20 left-1/2 -translate-x-1/2 whitespace-nowrap text-center bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-700/50">
+                 <div className={`font-black text-xs uppercase tracking-wide ${unlocked ? 'text-white' : 'text-slate-500'}`}>{node.label}</div>
+                 <div className={`text-[10px] font-mono uppercase font-black tracking-widest ${unlocked ? 'text-rose-400' : 'text-slate-600'}`}>
                     {node.requiredXP} XP
                  </div>
               </div>
@@ -129,44 +131,44 @@ export const StudentSkillTree: React.FC<{ currentXP: number }> = ({ currentXP })
       <AnimatePresence>
         {selectedNode && (
           <motion.div 
-             initial={{ opacity: 0, y: 50, scale: 0.9 }}
-             animate={{ opacity: 1, y: 0, scale: 1 }}
-             exit={{ opacity: 0, y: 50, scale: 0.9 }}
+             initial={{ opacity: 0, x: 50, scale: 0.95 }}
+             animate={{ opacity: 1, x: 0, scale: 1 }}
+             exit={{ opacity: 0, x: 50, scale: 0.95 }}
              className="absolute bottom-10 right-10 z-50 w-96"
           >
-             <Card className="bg-slate-900/90 backdrop-blur-xl border-slate-700 shadow-2xl overflow-hidden">
-                <div className="h-1 bg-gradient-to-r from-indigo-500 to-blue-500"></div>
-                <CardContent className="p-6">
-                   <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center gap-3">
-                         <div className={`p-3 rounded-xl ${isNodeUnlocked(selectedNode) ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-500'}`}>
-                            {isNodeCompleted(selectedNode) ? <Star className="w-6 h-6" /> : isNodeUnlocked(selectedNode) ? <BookOpen className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
+             <Card className="bg-slate-900/95 backdrop-blur-2xl border-slate-700 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden rounded-[2rem]">
+                <div className="h-1.5 bg-gradient-to-r from-rose-500 via-indigo-500 to-blue-500"></div>
+                <CardContent className="p-8">
+                   <div className="flex justify-between items-start mb-6">
+                      <div className="flex items-center gap-4">
+                         <div className={`p-4 rounded-2xl ${isNodeUnlocked(selectedNode) ? 'bg-indigo-500/20 border border-indigo-500/30 text-indigo-400' : 'bg-slate-800 text-slate-500'}`}>
+                            {isNodeCompleted(selectedNode) ? <Star className="w-7 h-7" /> : isNodeUnlocked(selectedNode) ? <BookOpen className="w-7 h-7" /> : <Lock className="w-7 h-7" />}
                          </div>
                          <div>
-                            <h3 className="text-xl font-bold text-white">{selectedNode.label}</h3>
-                            <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-400 font-mono">
-                               Status: {isNodeCompleted(selectedNode) ? 'Mastered' : isNodeUnlocked(selectedNode) ? 'Learning' : 'Locked'}
+                            <h3 className="text-2xl font-black text-white leading-tight">{selectedNode.label}</h3>
+                            <span className="text-[10px] uppercase font-black tracking-widest text-emerald-400 font-mono bg-emerald-400/10 px-2 py-0.5 rounded-lg">
+                               {isNodeCompleted(selectedNode) ? 'Mastered' : isNodeUnlocked(selectedNode) ? 'In Progress' : 'Locked'}
                             </span>
                          </div>
                       </div>
-                      <button onClick={() => setSelectedNode(null)} className="text-slate-500 hover:text-white transition-colors">
+                      <button onClick={() => setSelectedNode(null)} className="text-slate-500 hover:text-white transition-colors bg-white/5 p-2 rounded-full">
                          <X className="w-5 h-5" />
                       </button>
                    </div>
-                   <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                   <p className="text-slate-300 text-sm leading-relaxed mb-8 font-medium">
                       {selectedNode.description}
                    </p>
                    
                    {!isNodeUnlocked(selectedNode) && (
-                      <div className="bg-slate-800/50 rounded-xl p-3 flex items-center justify-between border border-slate-700">
-                         <span className="text-xs font-bold text-slate-400 uppercase">Потребно:</span>
-                         <span className="text-sm font-mono text-amber-500 font-black">{selectedNode.requiredXP} XP</span>
+                      <div className="bg-slate-800/80 rounded-2xl p-4 flex items-center justify-between border border-slate-700">
+                         <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Потребно:</span>
+                         <span className="text-lg font-mono text-rose-400 font-black tracking-wider">{selectedNode.requiredXP} XP</span>
                       </div>
                    )}
                    
                    {isNodeUnlocked(selectedNode) && (
-                      <button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-indigo-600/20 flex justify-center items-center gap-2">
-                         <BrainCircuit className="w-4 h-4" /> Вежбај го овој концепт
+                      <button className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-black py-4 rounded-2xl transition-all duration-300 shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:shadow-[0_0_30px_rgba(79,70,229,0.6)] flex justify-center items-center gap-2 hover:scale-[1.02] active:scale-[0.98]">
+                         <BrainCircuit className="w-5 h-5" /> ЗАПОЧНИ ТРЕНИНГ
                       </button>
                    )}
                 </CardContent>

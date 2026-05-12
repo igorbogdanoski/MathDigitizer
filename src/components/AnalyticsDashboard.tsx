@@ -14,7 +14,7 @@ import { Button } from './ui/Button';
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer,
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, 
-  BarChart, Bar, AreaChart, Area
+  BarChart, Bar, AreaChart, Area, ComposedChart
 } from 'recharts';
 import { AnimatePresence, motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
@@ -91,7 +91,12 @@ export const AnalyticsDashboard: React.FC = () => {
       st.submissions.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     });
 
-    return Array.from(map.values()).sort((a, b) => b.submissions.length - a.submissions.length);
+    return Array.from(map.values()).sort((a, b) => {
+      if (b.averageScore === a.averageScore) {
+        return b.submissions.length - a.submissions.length;
+      }
+      return b.averageScore - a.averageScore;
+    });
   }, [submissions]);
 
   const classStats = useMemo(() => {
@@ -207,8 +212,9 @@ export const AnalyticsDashboard: React.FC = () => {
 Генерирај персонализиран Сократов (Socratic) педагошки план за математичка интервенција. 
 Користи висок академски стил на македонски јазик.
 1. Когнитивна Дијагноза (Фокус на Zone of Proximal Development - ZPD).
-2. Стратегија за премостување на '${activeStudentAdvancedStats.primaryDeficit}'.
-3. 2 Специфични задачи насочени кон ZPD (со латекс \`$inline$\` и \`$$display$$\`).
+2. Специфични прилагодени педагошки практики за да се премостат наведените грешки.
+3. Листа на Сократови прашања кои наставникот треба да ги постави за да го подобри разбирањето на ученикот.
+4. 2 Специфични задачи насочени кон ZPD (со латекс \`$inline$\` и \`$$display$$\`).
 ВРАТИ САМО МАРКДАУН, БЕЗ ВОВЕД.`;
 
       const { GoogleGenAI } = await import('@google/genai');
@@ -247,14 +253,42 @@ export const AnalyticsDashboard: React.FC = () => {
 
   const longitudinalData = useMemo(() => {
     if (!activeStudentData) return [];
-    return activeStudentData.submissions.map((sub, index) => ({
-      name: 'Eval ' + (index + 1),
-      score: sub.score,
-      concept: sub.rubric_breakdown?.concept.score || sub.score,
-      execution: sub.rubric_breakdown?.execution.score || sub.score,
-      date: new Date(sub.created_at).toLocaleDateString('mk-MK')
-    }));
+    let prevScore = activeStudentData.submissions[0]?.score || 0;
+    return activeStudentData.submissions.map((sub, index) => {
+      const vel = index === 0 ? 0 : sub.score - prevScore;
+      prevScore = sub.score;
+      return {
+        name: 'Eval ' + (index + 1),
+        score: sub.score,
+        concept: sub.rubric_breakdown?.concept.score || sub.score,
+        execution: sub.rubric_breakdown?.execution.score || sub.score,
+        velocity: vel,
+        date: new Date(sub.created_at).toLocaleDateString('mk-MK')
+      };
+    });
   }, [activeStudentData]);
+
+  // Interactive ZPD Calculator State
+  const [zpdAvg, setZpdAvg] = useState(50);
+  const [zpdVel, setZpdVel] = useState(0);
+
+  useEffect(() => {
+    if (activeStudentData && activeStudentAdvancedStats) {
+      setZpdAvg(activeStudentData.averageScore);
+      setZpdVel(activeStudentAdvancedStats.velocity);
+    }
+  }, [activeStudentData, activeStudentAdvancedStats]);
+
+  const calculatedZPD = useMemo(() => {
+    return Math.min(100, Math.round(zpdAvg + (100 - zpdAvg) * 0.3) + (zpdVel > 0 ? Math.min(10, zpdVel) : 0));
+  }, [zpdAvg, zpdVel]);
+
+  const zpdNextSteps = useMemo(() => {
+    if (zpdVel < -10 || zpdAvg < 40) return "Враќање на основни концепти. Фокус на утврдување претходно знаење преку дијагностички задачи.";
+    if (zpdVel < 5) return "Консолидација со задачи од ист тип (Scaffolding). Дозирајте помош додека самостојноста не се зголеми.";
+    if (zpdVel < 15) return "Внесување на нов концепт (Слаба зона на проксимален развој). Охрабрете премин кон апстрактно решавање.";
+    return "Напредно проширување! Задачите нека вклучуваат реални сценарија, високо критичко мислење и самостојна евалуација.";
+  }, [zpdAvg, zpdVel]);
 
   const sortedWeaknesses = useMemo(() => {
     if (!activeStudentData) return [];
@@ -311,7 +345,79 @@ export const AnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+        {/* Global Class Leaderboard Graph */}
+        <div className="xl:col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] overflow-hidden shadow-sm p-8">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+              <h3 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
+                <Target className="w-7 h-7 text-rose-500" /> 
+                Аналитичка Лидерска Табла
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 font-medium">
+                Глобален ранкинг според Концептуална Совладливост (Просечен Резултат) и Моментум
+              </p>
+            </div>
+            <div className="flex gap-2">
+               <span className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600">
+                  <span className="w-3 h-3 rounded-full bg-indigo-500 block"></span>
+                  Просек (0-100)
+               </span>
+               <span className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600">
+                  <span className="w-3 h-3 rounded-full bg-emerald-400 block"></span>
+                  Вкупни Евалуации
+               </span>
+            </div>
+          </div>
+          
+          <div className="h-[450px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={studentStats} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.9}/>
+                    <stop offset="95%" stopColor="#818cf8" stopOpacity={0.4}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="id" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 800 }} dy={10} />
+                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 800 }} domain={[0, 100]} dx={-10} />
+                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#10b981', fontWeight: 800 }} dx={10} />
+                <RechartsTooltip 
+                  cursor={{ fill: 'rgba(99, 102, 241, 0.05)' }}
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50 p-4 rounded-2xl shadow-xl">
+                           <div className="font-black text-lg text-slate-800 dark:text-white mb-2">{label}</div>
+                           <div className="flex flex-col gap-2">
+                             {payload.map((entry: any, index: number) => (
+                               <div key={index} className="flex items-center gap-3">
+                                 <span className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></span>
+                                 <span className="text-sm font-bold text-slate-500 dark:text-slate-400">{entry.name}:</span>
+                                 <span className="text-lg font-black" style={{ color: entry.color }}>{entry.value}</span>
+                               </div>
+                             ))}
+                           </div>
+                           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-400 dark:text-slate-500 flex items-center justify-between">
+                             <span>Cognitive ZPD Target:</span>
+                             <span className="text-indigo-500 dark:text-indigo-400 font-mono bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md">
+                               {payload[0] && payload[0].payload ? Math.min(100, Math.round(payload[0].payload.averageScore + (100 - payload[0].payload.averageScore) * 0.3)) : 0}
+                             </span>
+                           </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar yAxisId="left" dataKey="averageScore" name="Просек" fill="url(#colorScore)" radius={[6, 6, 0, 0]} maxBarSize={60} />
+                <Line yAxisId="right" type="monotone" dataKey={(d) => d.submissions.length} name="Евалуации" stroke="#10b981" strokeWidth={3} dot={{ r: 5, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
         {/* Sidebar: Student Mastery List */}
         <div className="xl:col-span-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] overflow-hidden shadow-sm flex flex-col xl:h-[800px] xl:sticky xl:top-6">
           <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col gap-2 shrink-0">
@@ -362,30 +468,7 @@ export const AnalyticsDashboard: React.FC = () => {
           <div className="xl:col-span-3 space-y-6">
             
             {/* Vitals Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* ZPD Card */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm rounded-[2rem] overflow-hidden">
-                <CardContent className="p-8">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="w-12 h-12 bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-600 shadow-inner">
-                      <Target className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 font-mono bg-slate-50 dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-600">
-                      Vygotsky ZPD
-                    </span>
-                  </div>
-                  <div>
-                    <h4 className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Целен Капацитет (ZPD)</h4>
-                    <div className="text-5xl font-black text-slate-800 dark:text-slate-100 flex items-baseline gap-2 tracking-tighter">
-                       {activeStudentAdvancedStats?.zpdValue}<span className="text-2xl text-slate-300 dark:text-slate-600 font-medium">%</span>
-                    </div>
-                    <p className="text-xs text-emerald-700 font-bold mt-4 bg-emerald-50/80 inline-flex items-center px-3 py-1.5 rounded-lg border border-emerald-200">
-                       Зона на Нареден Развој
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Momentum Card */}
               <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm rounded-[2rem] overflow-hidden">
                 <CardContent className="p-8">
@@ -429,6 +512,69 @@ export const AnalyticsDashboard: React.FC = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Interactive ZPD Calculator */}
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm rounded-[2rem] overflow-hidden">
+              <CardContent className="p-8 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+                <div className="space-y-8 pr-0 md:pr-10 md:border-r border-slate-100 dark:border-slate-700">
+                  <h3 className="font-black text-slate-800 dark:text-slate-100 text-xl flex items-center gap-3">
+                    <Calculator className="w-6 h-6 text-indigo-500" />
+                    Интерактивен ZPD Калкулатор
+                  </h3>
+                  
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <label className="text-sm font-bold text-slate-600 dark:text-slate-300">Тековен Просек ({zpdAvg}%)</label>
+                      </div>
+                      <input 
+                        type="range" min="0" max="100" value={zpdAvg} 
+                        onChange={(e) => setZpdAvg(parseInt(e.target.value))}
+                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-indigo-600"
+                      />
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <label className="text-sm font-bold text-slate-600 dark:text-slate-300">Напредок / Моментум ({zpdVel > 0 ? '+' : ''}{zpdVel})</label>
+                      </div>
+                      <input 
+                        type="range" min="-50" max="50" value={zpdVel} 
+                        onChange={(e) => setZpdVel(parseInt(e.target.value))}
+                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-emerald-500"
+                      />
+                    </div>
+                    
+                    <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50">
+                       <p className="text-xs text-indigo-800 dark:text-indigo-300 font-medium">
+                         Променете ги вредностите за да симулирате различни сценарија и да ги проверите препорачаните педагошки чекори за вашата наредна интервенција.
+                       </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col h-full justify-center">
+                  <h4 className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Целен Капацитет (ZPD)</h4>
+                  <div className="text-6xl font-black text-slate-800 dark:text-slate-100 flex items-baseline gap-2 tracking-tighter mb-6">
+                    {calculatedZPD}<span className="text-3xl text-slate-300 dark:text-slate-600 font-medium">%</span>
+                  </div>
+                  
+                  <h4 className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Предложени следни чекори</h4>
+                  <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 w-full mb-4">
+                    <p className="text-sm text-slate-700 dark:text-slate-300 font-bold leading-relaxed space-y-2">
+                       {zpdNextSteps}
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={() => { setZpdAvg(activeStudentData?.averageScore || 50); setZpdVel(activeStudentAdvancedStats?.velocity || 0); }}
+                    variant="outline" 
+                    className="self-start text-xs rounded-xl h-8 px-4"
+                  >
+                    Врати на реални податоци
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Pedagogue Architect Control */}
             <div className="bg-indigo-600 rounded-[2rem] p-8 md:p-12 text-white grid grid-cols-1 md:grid-cols-2 gap-12 items-center shadow-xl shadow-indigo-600/20 relative overflow-hidden border border-indigo-500/50">
@@ -482,7 +628,7 @@ export const AnalyticsDashboard: React.FC = () => {
                   </h3>
                   <div className="h-[350px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={longitudinalData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                      <ComposedChart data={longitudinalData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                         <defs>
                           <linearGradient id="colorConcept" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4}/>
@@ -493,17 +639,19 @@ export const AnalyticsDashboard: React.FC = () => {
                             <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                         <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 700 }} dy={15} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 700 }} domain={[0, 100]} dx={-10} />
+                        <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 700 }} domain={[0, 100]} dx={-10} />
+                        <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#10b981', fontWeight: 700 }} domain={[-50, 50]} dx={10} />
                         <RechartsTooltip 
                            contentStyle={{ borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)', padding: '16px' }}
                            itemStyle={{ fontWeight: 800, fontSize: '14px' }}
                         />
                         <Legend iconType="circle" wrapperStyle={{ paddingTop: '30px', fontSize: '13px', fontWeight: 700 }} />
-                        <Area type="monotone" name="Концептуално Разбирање" dataKey="concept" stroke="#8b5cf6" strokeWidth={4} fillOpacity={1} fill="url(#colorConcept)" activeDot={{ r: 6, strokeWidth: 0, fill: '#8b5cf6' }} />
-                        <Area type="monotone" name="Процедурална Флуентност" dataKey="execution" stroke="#0ea5e9" strokeWidth={4} fillOpacity={1} fill="url(#colorExec)" activeDot={{ r: 6, strokeWidth: 0, fill: '#0ea5e9' }} />
-                      </AreaChart>
+                        <Area yAxisId="left" type="monotone" name="Концептуално Разбирање" dataKey="concept" stroke="#8b5cf6" strokeWidth={4} fillOpacity={1} fill="url(#colorConcept)" activeDot={{ r: 6, strokeWidth: 0, fill: '#8b5cf6' }} />
+                        <Area yAxisId="left" type="monotone" name="Процедурална Флуентност" dataKey="execution" stroke="#0ea5e9" strokeWidth={4} fillOpacity={1} fill="url(#colorExec)" activeDot={{ r: 6, strokeWidth: 0, fill: '#0ea5e9' }} />
+                        <Line yAxisId="right" type="monotone" name="Моментум (Velocity)" dataKey="velocity" stroke="#10b981" strokeWidth={3} dot={{ r: 5, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+                      </ComposedChart>
                     </ResponsiveContainer>
                   </div>
                 </CardContent>

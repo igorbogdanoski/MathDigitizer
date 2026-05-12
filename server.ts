@@ -56,7 +56,22 @@ async function startServer() {
       console.log(`[YoutubeScraper] Fetching transcript for: ${url}`);
       const module = await import("youtube-transcript") as any;
       const YoutubeTranscript = module.YoutubeTranscript || module.default?.YoutubeTranscript || module.default;
-      const transcript = await YoutubeTranscript.fetchTranscript(url);
+      
+      let transcript;
+      try {
+        transcript = await YoutubeTranscript.fetchTranscript(url, { lang: 'mk' });
+        console.log(`[YoutubeScraper] Successful extraction using 'mk' language.`);
+      } catch (errMk) {
+        console.log(`[YoutubeScraper] Language 'mk' failed, trying 'en'...`);
+        try {
+          transcript = await YoutubeTranscript.fetchTranscript(url, { lang: 'en' });
+          console.log(`[YoutubeScraper] Successful extraction using 'en' language.`);
+        } catch (errEn) {
+          console.log(`[YoutubeScraper] Language 'en' failed, fetching default transcript...`);
+          transcript = await YoutubeTranscript.fetchTranscript(url);
+          console.log(`[YoutubeScraper] Successful extraction using default language.`);
+        }
+      }
       
       // Combine texts into a single block
       const fullText = transcript.map((t: any) => t.text).join(" ");

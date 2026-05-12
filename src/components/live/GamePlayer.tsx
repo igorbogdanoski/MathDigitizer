@@ -4,7 +4,8 @@ import { doc, onSnapshot, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { LiveKahootSession } from '../../lib/schema';
 import { MathRenderer } from '../MathRenderer';
 import { Button } from '../ui/Button';
-import { CheckCircle2, UserCircle2, Trophy, Loader2, Lightbulb, Zap } from 'lucide-react';
+import { CheckCircle2, UserCircle2, Trophy, Loader2, Lightbulb, Zap, Volume2 } from 'lucide-react';
+import { playSound } from '../../lib/sound';
 
 export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
   const [pin, setPin] = useState(sessionPin || '');
@@ -15,6 +16,8 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
   const [isJoining, setIsJoining] = useState(false);
   const [activeHint, setActiveHint] = useState<string | null>(null);
   const [isHintLoading, setIsHintLoading] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
   // Generate a random UID for anonymous student if none exists
   useEffect(() => {
@@ -30,18 +33,26 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
     if (!sessionPin || !uid) return;
     const unsub = onSnapshot(doc(db, 'live_sessions', sessionPin), (doc) => {
       if (doc.exists()) {
-        setSession(doc.data() as LiveKahootSession);
+        const data = doc.data() as LiveKahootSession;
+        setSession(prev => {
+           if (soundEnabled) {
+              if (prev && prev.status === 'lobby' && data.status === 'playing') playSound('start');
+              if (prev && prev.status === 'playing' && data.status === 'finished') playSound('win');
+           }
+           return data;
+        });
       } else {
         setError('Играта не постои или е завршена.');
       }
     });
     return () => unsub();
-  }, [sessionPin, uid]);
+  }, [sessionPin, uid, soundEnabled]);
 
   const joinGame = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsJoining(true);
+    if (soundEnabled) playSound('tick');
     try {
       const docRef = doc(db, 'live_sessions', pin);
       const snap = await getDoc(docRef);
@@ -67,10 +78,7 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
         }
       });
       
-      // Update URL to trigger the listener
       window.history.pushState({}, '', `/play?pin=${pin}`);
-      // Force trigger the listener by setting state directly here if needed, 
-      // but reloading with ?pin= is handled by the parent
       window.location.search = `?pin=${pin}`;
 
     } catch (err) {
@@ -82,16 +90,24 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
 
   const submitAnswer = async (index: number) => {
     if (!session || !pin) return;
-    
-    // Quick local check if already answered to prevent double trigger
     if (session.participants[uid]?.has_answered_current) return;
 
     const currentQ = session.quiz_data.questions[session.current_question_index];
     const isCorrect = index === currentQ.correctIndex;
     
-    // Simplistic scoring: 1000 for correct. (Can add timer-based later)
-    const points = isCorrect ? 1000 : 0;
+    // Competitive Time-based scoring matching Kahoot
+    // Base 500 points + up to 500 bonus for speed
+    let bonus = 0;
+    if (isCorrect && timeLeft !== null && currentQ.timeLimit) {
+       const timeRatio = timeLeft / currentQ.timeLimit;
+       bonus = Math.round(500 * timeRatio);
+    }
+    const points = isCorrect ? (500 + bonus) : 0;
     
+    if (soundEnabled) {
+      playSound(isCorrect ? 'correct' : 'wrong');
+    }
+
     await updateDoc(doc(db, 'live_sessions', pin), {
       [`participants.${uid}.has_answered_current`]: true,
       [`participants.${uid}.current_answer_index`]: index,
@@ -180,7 +196,6 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
   }, [session.current_question_index]);
 
   // Client-side timer logic
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   useEffect(() => {
     if (session.status === 'playing' && session.current_question_start_time && currentQ.timeLimit && !hasAnswered) {
