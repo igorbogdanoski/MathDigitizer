@@ -12,8 +12,6 @@ import { useNavigate } from 'react-router-dom';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 
 interface MaterialPreviewProps {
   type: MaterialType;
@@ -58,6 +56,11 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
     setIsExporting(true);
     
     try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf')
+      ]);
+
       // Create a temporary container for precision rendering without scrollbars
       const tempContainer = document.createElement('div');
       // Apply rigorous print styling
@@ -74,7 +77,8 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
       const textareas = clone.querySelectorAll('textarea');
       textareas.forEach(ta => {
          const div = document.createElement('div');
-         div.innerHTML = ta.value;
+         // Use textContent (not innerHTML) to prevent XSS from user-authored form values
+         div.textContent = ta.value;
          ta.parentNode?.replaceChild(div, ta);
       });
       
@@ -82,7 +86,8 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
       inputs.forEach(input => {
          if(input.type === 'text') {
            const span = document.createElement('span');
-           span.innerHTML = input.value;
+           // Use textContent (not innerHTML) to prevent XSS from user-authored form values
+           span.textContent = input.value;
            input.parentNode?.replaceChild(span, input);
          }
       });
@@ -181,6 +186,9 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                       <textarea
                         value={q.question}
                         onChange={(e) => updateNestedField(`questions.${idx}.question`, e.target.value)}
+                        title={`Прашање ${idx + 1}`}
+                        aria-label={`Прашање ${idx + 1}`}
+                        placeholder="Внеси прашање"
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                       />
                     ) : (
@@ -202,6 +210,9 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                             <input
                               value={opt}
                               onChange={(e) => updateNestedField(`questions.${idx}.options.${optIdx}`, e.target.value)}
+                              title={`Опција ${String.fromCharCode(65 + optIdx)} за прашање ${idx + 1}`}
+                              aria-label={`Опција ${String.fromCharCode(65 + optIdx)} за прашање ${idx + 1}`}
+                              placeholder="Внеси опција"
                               className="flex-1 bg-transparent border-none focus:ring-0 text-sm outline-none"
                             />
                           ) : (
@@ -234,6 +245,9 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                       <textarea
                         value={card.front}
                         onChange={(e) => updateNestedField(`cards.${idx}.front`, e.target.value)}
+                        title={`Предна страна на картичка ${idx + 1}`}
+                        aria-label={`Предна страна на картичка ${idx + 1}`}
+                        placeholder="Внеси прашање"
                         className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none h-32"
                       />
                     ) : (
@@ -251,6 +265,9 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                       <textarea
                         value={card.back}
                         onChange={(e) => updateNestedField(`cards.${idx}.back`, e.target.value)}
+                        title={`Задна страна на картичка ${idx + 1}`}
+                        aria-label={`Задна страна на картичка ${idx + 1}`}
+                        placeholder="Внеси решение"
                         className="w-full bg-indigo-700 border border-indigo-500 rounded-xl p-3 text-sm text-white focus:ring-2 focus:ring-white/30 outline-none h-32"
                       />
                     ) : (
@@ -307,6 +324,8 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                 <input
                   value={editedData.title}
                   onChange={(e) => updateNestedField('title', e.target.value)}
+                  title="Наслов на документ"
+                  aria-label="Наслов на документ"
                   className="text-3xl font-black text-slate-900 mb-2 border-b border-indigo-200 focus:border-indigo-500 outline-none w-full bg-indigo-50/50"
                   placeholder="Внесете наслов..."
                 />
@@ -355,6 +374,9 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                          <input
                            value={section.heading}
                            onChange={(e) => updateNestedField(`sections.${idx}.heading`, e.target.value)}
+                           title={`Наслов на секција ${idx + 1}`}
+                           aria-label={`Наслов на секција ${idx + 1}`}
+                           placeholder="Внеси наслов на секција"
                            className="bg-indigo-50/50 border-b border-indigo-200 focus:border-indigo-500 outline-none font-bold w-full"
                          />
                        ) : (
@@ -366,6 +388,9 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                         <textarea
                           value={section.content}
                           onChange={(e) => updateNestedField(`sections.${idx}.content`, e.target.value)}
+                          title={`Содржина на секција ${idx + 1}`}
+                          aria-label={`Содржина на секција ${idx + 1}`}
+                          placeholder="Внеси содржина"
                           className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-4 text-sm focus:ring-2 focus:ring-amber-500 outline-none h-40"
                         />
                       ) : (
@@ -396,6 +421,9 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                 <textarea
                   value={editedData.answerKey}
                   onChange={(e) => updateNestedField('answerKey', e.target.value)}
+                  title="Клуч со решенија"
+                  aria-label="Клуч со решенија"
+                  placeholder="Внеси клуч со решенија"
                   className="w-full bg-white border border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-indigo-500 outline-none h-64"
                 />
               ) : (
@@ -468,7 +496,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
               {isExporting ? 'Конвертирање...' : 'Зачувај како PDF'}
             </Button>
             
-            <button onClick={onClose} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-200 rounded-xl transition-all ml-2 bg-white">
+            <button onClick={onClose} title="Затвори преглед" aria-label="Затвори преглед" className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-200 rounded-xl transition-all ml-2 bg-white">
               <X className="w-5 h-5" />
             </button>
           </div>

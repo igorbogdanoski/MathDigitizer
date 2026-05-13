@@ -6,6 +6,9 @@ import { db, auth } from '../lib/firebase';
 import { useToast } from '../contexts/ToastContext';
 import { ai } from '../lib/gemini';
 import { Type } from '@google/genai';
+import { useAuth } from '../contexts/AuthContext';
+import { hasProAccess } from '../lib/saas';
+import { ProFeatureGate } from './ProFeatureGate';
 
 interface LessonPlan {
   title: string;
@@ -21,6 +24,7 @@ interface Curriculum {
 }
 
 export const CurriculumFactory = () => {
+  const { userProfile } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [curriculum, setCurriculum] = useState<Curriculum | null>(null);
@@ -97,6 +101,15 @@ export const CurriculumFactory = () => {
     } catch(e) {
       console.error(e);
     }
+  }
+
+  if (!hasProAccess(userProfile)) {
+    return (
+      <ProFeatureGate
+        featureName="Mass Curriculum Factory"
+        description="Batch курикулум обработка е Pro capability. Отклучете ја за големи PDF/учебник ingestion workflows."
+      />
+    );
   }
 
   return (

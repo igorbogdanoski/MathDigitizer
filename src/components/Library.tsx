@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { MathTask } from '../lib/schema';
@@ -9,7 +8,7 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { MathRenderer } from './MathRenderer';
 import { History, Search, Filter, BookOpen, Loader2, Image as ImageIcon, ChevronDown, ChevronUp, Copy, Check, ArrowUpDown, X, History as HistoryIcon, Info, Plus, Play, Pause, RotateCcw, Download, Trash2, MessageCircleQuestion, FileText, CheckSquare, Square, Activity, Brain, Sparkles, FileSpreadsheet, GripVertical, Layers, LayoutDashboard } from 'lucide-react';
-import { generateImage, generateSimilarTask, generateDifferentiatedTasks } from '../lib/gemini';
+import { generateImage, generateSimilarTask, generateDifferentiatedTasks, generateKahootFromTasks } from '../lib/gemini';
 import { exportToMarkdown } from '../lib/export';
 import { deleteDoc, doc, addDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { TutorChat } from './TutorChat';
@@ -37,8 +36,6 @@ export const Library: React.FC = () => {
   const actions = useTaskActions();
   const { sortedAndFilteredTasks } = filters;
 
-  const parentRef = useRef<HTMLDivElement>(null);
-  
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showLessonPlanModal, setShowLessonPlanModal] = useState(false);
   const [showManipulativesModal, setShowManipulativesModal] = useState(false);
@@ -65,9 +62,6 @@ export const Library: React.FC = () => {
       setIsGeneratingKahoot(true);
       try {
         const pin = Math.floor(100000 + Math.random() * 900000).toString();
-        // Import generateKahootFromTasks dynamically or statically
-        const { generateKahootFromTasks } = await import('../lib/gemini');
-        
         const quiz_data = await generateKahootFromTasks(selected);
         
         if (!quiz_data) throw new Error("Failed to generate Kahoot.");
@@ -136,13 +130,6 @@ export const Library: React.FC = () => {
 
   // Use the new real-time hook
   useRealtimeTasks();
-
-  const rowVirtualizer = useVirtualizer({
-    count: sortedAndFilteredTasks.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 150,
-    overscan: 5,
-  });
 
   const getSelectedTasks = () => {
     return store.tasks.filter(t => t.id && store.selectedForTest.has(t.id));
@@ -303,7 +290,6 @@ export const Library: React.FC = () => {
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         {/* Left Column: List */}
         <div 
-          ref={parentRef}
           className={`flex-1 w-full max-h-[calc(100vh-12rem)] overflow-y-auto pr-2 ${store.selectedTaskId ? 'lg:w-1/3 lg:flex-none' : ''}`}
         >
           {sortedAndFilteredTasks.length === 0 ? (
@@ -312,31 +298,13 @@ export const Library: React.FC = () => {
               <p>Не се пронајдени задачи кои одговараат на пребарувањето.</p>
             </div>
           ) : (
-            <div
-              style={{
-                height: `${rowVirtualizer.getTotalSize()}px`,
-                width: '100%',
-                position: 'relative',
-              }}
-            >
-              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                const index = virtualRow.index;
-                const task = sortedAndFilteredTasks[index];
+            <div className="space-y-4">
+              {sortedAndFilteredTasks.map((task, index) => {
                 const taskId = task.id || String(index);
                 const isSelected = store.selectedTaskId === taskId;
                 return (
                   <div
-                    key={virtualRow.key}
-                    data-index={virtualRow.index}
-                    ref={rowVirtualizer.measureElement}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      transform: `translateY(${virtualRow.start}px)`,
-                      paddingBottom: '1rem',
-                    }}
+                    key={taskId}
                   >
                     <TaskCard
                       task={task}
@@ -439,7 +407,7 @@ export const Library: React.FC = () => {
                     <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px] sm:max-w-xs">{store.activeGraphTask.title}</p>
                   </div>
                 </div>
-                <button onClick={() => store.setActiveGraphTask(null)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                <button onClick={() => store.setActiveGraphTask(null)} title="Затвори график" aria-label="Затвори график" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -480,6 +448,8 @@ export const Library: React.FC = () => {
             >
               <button 
                 onClick={() => store.setZoomedImage(null)} 
+                title="Затвори слика"
+                aria-label="Затвори слика"
                 className="absolute -top-12 right-0 p-2 text-white hover:text-slate-300 transition-colors bg-slate-800/50 rounded-full"
               >
                 <X className="w-6 h-6" />
@@ -522,7 +492,7 @@ export const Library: React.FC = () => {
                      </p>
                    </div>
                  </div>
-                 <button onClick={() => setShowManipulativesModal(false)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                 <button onClick={() => setShowManipulativesModal(false)} title="Затвори манипулативи" aria-label="Затвори манипулативи" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                    <X className="w-5 h-5" />
                  </button>
                </div>

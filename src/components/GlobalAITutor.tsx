@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BrainCircuit, X, MessageCircle, Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
 import { MathRenderer } from './MathRenderer';
+import { ai } from '../lib/gemini';
 
 export const GlobalAITutor: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,11 +26,6 @@ export const GlobalAITutor: React.FC = () => {
   const initChat = async () => {
     setIsLoading(true);
     try {
-      const { GoogleGenAI } = await import('@google/genai');
-      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("Missing API Key");
-      
-      const ai = new GoogleGenAI({ apiKey });
       const session = await ai.chats.create({
         model: 'gemini-3.1-pro-preview',
         config: {
@@ -116,6 +112,8 @@ export const GlobalAITutor: React.FC = () => {
                </div>
                <button 
                  onClick={() => setIsOpen(false)}
+                 aria-label="Затвори асистент"
+                 title="Затвори асистент"
                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors"
                >
                   <X className="w-5 h-5" />
@@ -170,6 +168,8 @@ export const GlobalAITutor: React.FC = () => {
                 <button 
                   type="submit" 
                   disabled={isLoading || !input.trim() || !chatSession} 
+                  aria-label="Испрати порака"
+                  title="Испрати порака"
                   className="h-12 w-12 flex items-center justify-center rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 disabled:hover:bg-indigo-600 transition-colors"
                 >
                   <Send className="w-4 h-4 ml-0.5" />

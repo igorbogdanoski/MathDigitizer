@@ -4,6 +4,7 @@ import { collection, query, orderBy, onSnapshot, getDocs, limit } from 'firebase
 import { db } from '../lib/firebase';
 import { MathTask } from '../lib/schema';
 import { useLibraryStore } from '../store/useLibraryStore';
+import { captureError } from '../lib/observability';
 
 export function useRealtimeTasks() {
   const queryClient = useQueryClient();
@@ -44,15 +45,11 @@ export function useRealtimeTasks() {
       currentStore.setTasks(updatedTasks);
       currentStore.setIsLoading(false);
     }, (error) => {
-      console.error("Firestore Real-time Error: ", error);
-      // Construct a detailed error object as per guidelines
-      const errInfo = {
-        error: error.message,
-        operationType: 'list',
-        path: 'tasks',
-        authInfo: { userId: 'unknown' } // Simplified for this hook
-      };
-      console.error('Firestore Error: ', JSON.stringify(errInfo));
+      captureError(error, {
+        name: 'realtime.tasks',
+        path: '/library',
+        details: { operationType: 'list', collection: 'tasks', limit: 250 },
+      });
     });
 
     return () => unsubscribe();

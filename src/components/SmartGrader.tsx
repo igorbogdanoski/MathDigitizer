@@ -533,6 +533,7 @@ Feedback: ${doc.feedback_summary}`;
               accept="image/*" 
               ref={fileInputRef}
               onChange={handleImageSelect}
+              aria-label="Избери слика за оценување"
               className="hidden" 
             />
             

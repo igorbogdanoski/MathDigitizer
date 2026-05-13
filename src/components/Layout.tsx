@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, Bug } from 'lucide-react';
+import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, Bug, Inbox } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import { signInWithGoogle, logOut } from '../lib/firebase';
 import { RoleSelection } from './RoleSelection';
 import { GlobalAITutor } from './GlobalAITutor';
+import { SEO } from './SEO';
+import { getRouteSeo } from '../lib/seo';
 
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -16,6 +18,7 @@ export const Layout: React.FC = () => {
   const location = useLocation();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const routeSeo = getRouteSeo(location.pathname);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -41,6 +44,7 @@ export const Layout: React.FC = () => {
 
   const mainNavItems = [
     { path: '/', icon: HomeIcon, label: 'Почетна', show: true },
+    { path: '/pricing', icon: Zap, label: 'Pricing', show: true },
     { path: '/smart-ocr', icon: ScanLine, label: 'Smart OCR', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/extract', icon: Wand2, label: 'Екстракција', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/library', icon: LibraryIcon, label: 'Библиотека', show: true },
@@ -56,6 +60,7 @@ export const Layout: React.FC = () => {
     { path: '/factory', icon: Factory, label: 'Фабрика', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/mass-factory', icon: Layers, label: 'PDF Фабрика', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/ai-pedagogy', icon: Bug, label: 'AI Педагогија', show: userProfile?.role === 'teacher' },
+    { path: '/school-inquiries', icon: Inbox, label: 'School Leads', show: userProfile?.role === 'teacher' },
     { path: '/live-board', icon: Monitor, label: 'В. Табла', show: true },
     { path: '/classrooms', icon: Users, label: 'Училници', show: !!userProfile },
     { path: '/exams-grading', icon: Trophy, label: 'Dugga', show: !userProfile || userProfile.role === 'teacher' },
@@ -68,6 +73,14 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 font-sans transition-colors duration-300 relative selection:bg-indigo-300/30">
+      <SEO
+        title={routeSeo.title}
+        description={routeSeo.description}
+        keywords={routeSeo.keywords}
+        canonical={routeSeo.canonical}
+        noindex={routeSeo.noindex}
+        structuredData={routeSeo.structuredData}
+      />
       <header className="sticky top-0 z-50 transition-colors duration-300 border-b border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           

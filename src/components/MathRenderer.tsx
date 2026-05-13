@@ -7,7 +7,7 @@ import { Copy, Check, Info, Loader2, X } from 'lucide-react';
 import { explainFormula } from '../lib/gemini';
 import { VisualMathCanvas } from './VisualMathCanvas';
 import { AlgebraTilesCanvas } from './AlgebraTilesCanvas';
-import { GeometryWorkspace } from './live/GeometryWorkspace';
+import { GeometryWorkspace } from './GeometryWorkspace';
 
 interface MathRendererProps {
   content: string;
@@ -135,7 +135,7 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className, 
               </div>
               <span className="text-sm font-bold">Објаснување на формула</span>
             </div>
-            <button onClick={() => setExplanation(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+            <button onClick={() => setExplanation(null)} aria-label="Затвори" title="Затвори" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
               <X className="w-4 h-4" />
             </button>
           </div>

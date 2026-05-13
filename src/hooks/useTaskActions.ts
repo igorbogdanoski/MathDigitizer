@@ -2,7 +2,7 @@ import { collection, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/fi
 import { db, auth } from '../lib/firebase';
 import { MathTask } from '../lib/schema';
 import { 
-  generateImage, generateSimilarTask, generateDifferentiatedTasks, 
+  ai, generateImage, generateSimilarTask, generateDifferentiatedTasks, 
   modernizeTaskContext, generateConsistencyTasks, generatePrerequisiteTest 
 } from '../lib/gemini';
 import { useLibraryStore } from '../store/useLibraryStore';
@@ -108,8 +108,6 @@ export function useTaskActions() {
     if (!task.tags || task.tags.length === 0) return;
     store.setIsGeneratingTagFormulas({ ...store.isGeneratingTagFormulas, [taskId]: true });
     try {
-      const { GoogleGenAI } = await import('@google/genai');
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const prompt = `За секој од следните математички концепти (тагови), врати ја основната LaTeX формула која го претставува.\nТагови: ${task.tags.join(', ')}\n\nВрати СТРОГО JSON објект каде клучот е тагот, а вредноста е LaTeX формулата (без $$). Пример: {"Квадратна равенка": "ax^2 + bx + c = 0"}`;
       const response = await ai.models.generateContent({
         model: "gemini-3.1-pro-preview",

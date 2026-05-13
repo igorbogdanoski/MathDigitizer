@@ -31,7 +31,7 @@ export const CurriculumTestGenerator: React.FC = () => {
       За секоја задача обезбеди чекор-по-чекор решение.
       `;
       
-      const tasks = await generateCurriculumTasks(prompt);
+      const tasks = await generateCurriculumTasks(prompt, { strategy: 'tot' });
       
       let count = 0;
       for (const t of tasks) {

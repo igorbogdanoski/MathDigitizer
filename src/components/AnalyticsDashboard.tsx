@@ -20,6 +20,9 @@ import { AnimatePresence, motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import { ai } from '../lib/gemini';
+import { hasProAccess } from '../lib/saas';
+import { ProFeatureGate } from './ProFeatureGate';
 
 // Advanced Math Pedagogy Strands (Kilpatrick et al., "Adding It Up")
 const MATH_STRANDS = [
@@ -31,7 +34,7 @@ const MATH_STRANDS = [
 ];
 
 export const AnalyticsDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [submissions, setSubmissions] = useState<GradedSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
@@ -39,6 +42,16 @@ export const AnalyticsDashboard: React.FC = () => {
   // Intervention Plan
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [interventionPlan, setInterventionPlan] = useState<string | null>(null);
+  const isPro = hasProAccess(userProfile);
+
+  if (!isPro) {
+    return (
+      <ProFeatureGate
+        featureName="Advanced Analytics"
+        description="Оваа аналитика е дел од Pro планот. Отклучете ја за подлабоки педагошки сигнали, когнитивни индикатори и интервенциски планови."
+      />
+    );
+  }
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -217,11 +230,6 @@ export const AnalyticsDashboard: React.FC = () => {
 4. 2 Специфични задачи насочени кон ZPD (со латекс \`$inline$\` и \`$$display$$\`).
 ВРАТИ САМО МАРКДАУН, БЕЗ ВОВЕД.`;
 
-      const { GoogleGenAI } = await import('@google/genai');
-      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("Missing API Key");
-      const ai = new GoogleGenAI({ apiKey });
-      
       const response = await ai.models.generateContent({
         model: 'gemini-3.1-pro-preview',
         contents: prompt,
@@ -297,6 +305,18 @@ export const AnalyticsDashboard: React.FC = () => {
       .map(([concept, count]) => ({ concept, count }));
   }, [activeStudentData]);
 
+  const getSeriesDotClass = (seriesName?: string) => {
+    if (seriesName === 'Просек') return 'bg-indigo-500';
+    if (seriesName === 'Евалуации') return 'bg-emerald-500';
+    return 'bg-slate-400';
+  };
+
+  const getSeriesTextClass = (seriesName?: string) => {
+    if (seriesName === 'Просек') return 'text-indigo-600 dark:text-indigo-400';
+    if (seriesName === 'Евалуации') return 'text-emerald-600 dark:text-emerald-400';
+    return 'text-slate-600 dark:text-slate-300';
+  };
+
   if (isLoading) {
     return <div className="p-8 text-center flex items-center justify-center h-96 text-slate-500 font-mono text-sm uppercase tracking-widest animate-pulse">Анализа на когнитивниот простор...</div>;
   }
@@ -319,7 +339,7 @@ export const AnalyticsDashboard: React.FC = () => {
     <div className="max-w-[1400px] mx-auto space-y-6 pb-20">
       {/* Header Panel */}
       <div className="bg-slate-950 text-white rounded-[2rem] p-8 md:p-12 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 border border-slate-800 shadow-2xl">
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#6366f1 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:40px_40px]" />
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-mono uppercase tracking-[0.2em] mb-6 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
             <Microscope className="w-4 h-4 text-indigo-400" />
@@ -393,9 +413,9 @@ export const AnalyticsDashboard: React.FC = () => {
                            <div className="flex flex-col gap-2">
                              {payload.map((entry: any, index: number) => (
                                <div key={index} className="flex items-center gap-3">
-                                 <span className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></span>
+                                 <span className={`w-3 h-3 rounded-full ${getSeriesDotClass(entry.name)}`}></span>
                                  <span className="text-sm font-bold text-slate-500 dark:text-slate-400">{entry.name}:</span>
-                                 <span className="text-lg font-black" style={{ color: entry.color }}>{entry.value}</span>
+                                 <span className={`text-lg font-black ${getSeriesTextClass(entry.name)}`}>{entry.value}</span>
                                </div>
                              ))}
                            </div>
@@ -530,6 +550,7 @@ export const AnalyticsDashboard: React.FC = () => {
                       <input 
                         type="range" min="0" max="100" value={zpdAvg} 
                         onChange={(e) => setZpdAvg(parseInt(e.target.value))}
+                        title="Тековен просек"
                         className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-indigo-600"
                       />
                     </div>
@@ -541,6 +562,7 @@ export const AnalyticsDashboard: React.FC = () => {
                       <input 
                         type="range" min="-50" max="50" value={zpdVel} 
                         onChange={(e) => setZpdVel(parseInt(e.target.value))}
+                        title="Напредок и моментум"
                         className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-emerald-500"
                       />
                     </div>
@@ -730,7 +752,7 @@ export const AnalyticsDashboard: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <button onClick={() => setInterventionPlan(null)} className="p-3 bg-white dark:bg-slate-800 rounded-xl text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                 <button onClick={() => setInterventionPlan(null)} aria-label="Затвори интервенциски план" title="Затвори" className="p-3 bg-white dark:bg-slate-800 rounded-xl text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>

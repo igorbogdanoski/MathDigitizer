@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Block private/live exam paths
+Disallow: /live/
+Disallow: /play
+Disallow: /exam/
+
+Sitemap: https://mathdigitizer.pro/sitemap.xml

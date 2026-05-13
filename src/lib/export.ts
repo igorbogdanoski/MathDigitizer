@@ -1,6 +1,17 @@
-import { Document, Paragraph, TextRun, Packer, HeadingLevel, Bookmark, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 import { MathTask } from "./schema";
+
+type DocxModule = typeof import('docx');
+
+const DOCX_REMOTE_ENTRY = 'https://esm.sh/docx@9.6.1?bundle';
+let docxModulePromise: Promise<DocxModule> | null = null;
+
+async function getDocxModule(): Promise<DocxModule> {
+  if (!docxModulePromise) {
+    docxModulePromise = import(/* @vite-ignore */ DOCX_REMOTE_ENTRY) as Promise<DocxModule>;
+  }
+  return docxModulePromise;
+}
 
 export function exportToJson(tasks: MathTask[], filename: string = "math_tasks.json") {
   const dataStr = JSON.stringify(tasks, null, 2);
@@ -15,6 +26,7 @@ export function exportToJson(tasks: MathTask[], filename: string = "math_tasks.j
 }
 
 export async function exportToWord(tasks: MathTask[], filename: string = "math_materials.docx") {
+  const { Document, Paragraph, TextRun, Packer, HeadingLevel } = await getDocxModule();
   const children: any[] = [];
   
   children.push(
@@ -99,6 +111,7 @@ export async function exportToWord(tasks: MathTask[], filename: string = "math_m
 }
 
 export async function exportLessonPlanToWord(planData: any, filename: string = "lesson-plan.docx") {
+  const { Document, Paragraph, Packer, HeadingLevel, AlignmentType } = await getDocxModule();
   const children: any[] = [];
   
   // Title

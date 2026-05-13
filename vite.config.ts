@@ -95,5 +95,80 @@ export default defineConfig(({mode}) => {
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
     },
+    build: {
+      manifest: true,
+      rolldownOptions: {
+        output: {
+          codeSplitting: true,
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return undefined;
+
+            if (id.includes('react-dom') || id.includes('react-router-dom') || id.includes('react')) {
+              return 'vendor-react-core';
+            }
+
+            if (id.includes('firebase')) {
+              return 'vendor-firebase';
+            }
+
+            if (id.includes('@google/genai')) {
+              return 'vendor-ai';
+            }
+
+            if (id.includes('recharts')) {
+              return 'vendor-recharts';
+            }
+
+            if (id.includes('/d3-') || id.includes('/d3/')) {
+              return 'vendor-d3';
+            }
+
+            if (id.includes('katex')) {
+              return 'vendor-katex';
+            }
+
+            if (id.includes('mathlive')) {
+              return 'vendor-mathlive';
+            }
+
+            if (id.includes('remark-math') || id.includes('rehype-katex')) {
+              return 'vendor-markdown-math';
+            }
+
+            if (id.includes('jspdf')) {
+              return 'vendor-jspdf';
+            }
+
+            if (id.includes('html2canvas')) {
+              return 'vendor-html2canvas';
+            }
+
+            if (id.includes('pdfjs-dist')) {
+              return 'vendor-pdfjs';
+            }
+
+            if (id.includes('docx')) {
+              return 'vendor-docx';
+            }
+
+            if (id.includes('mammoth')) {
+              return 'vendor-mammoth';
+            }
+
+            if (id.includes('react-konva') || id.includes('konva')) {
+              return 'vendor-konva';
+            }
+
+            if (id.includes('jsxgraph')) {
+              return 'vendor-jsxgraph';
+            }
+
+            const pkgMatch = id.match(/node_modules\/(?:\.pnpm\/)?(@?[^\/]+(?:\/[^\/]+)?)/);
+            const pkgName = pkgMatch?.[1]?.replace('@', '').replace('/', '-') || 'misc';
+            return `vendor-${pkgName}`;
+          },
+        },
+      },
+    },
   };
 });

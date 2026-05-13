@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Trophy, Star, Zap, Target, Award, TrendingUp, Users, Loader2, ChevronRight, Medal, Brain, PieChart as PieChartIcon, CheckCircle2, Circle, Activity, Paintbrush, ScanLine, Library as LibraryIcon, Wand2, Layers } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Trophy, Star, Zap, Target, Award, TrendingUp, Users, Loader2, ChevronRight, Medal, Brain, PieChart as PieChartIcon, CheckCircle2, Circle, Activity, Paintbrush, ScanLine, Library as LibraryIcon, Wand2, Layers, AlertTriangle, Info } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from './ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { db, auth } from '../lib/firebase';
-import { collection, query, orderBy, limit, getDocs, doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { addDoc, collection, query, where, orderBy, limit, getDocs, doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { UserStats, UserProfile } from '../lib/schema';
 import { motion } from 'motion/react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
@@ -14,16 +14,28 @@ import { AvatarShop } from './AvatarShop';
 import { StudentSkillTree } from './StudentSkillTree';
 import { Skeleton } from './ui/Skeleton';
 import { SEO } from './SEO';
+import { useToast } from '../contexts/ToastContext';
+import { captureError } from '../lib/observability';
+
+type ReceiptStatus = 'pending' | 'reviewed' | 'approved' | 'rejected';
 
 interface DashboardProps {
   userProfile?: UserProfile | null;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const [stats, setStats] = useState<UserStats | null>(null);
   const [leaderboard, setLeaderboard] = useState<(UserStats & { displayName?: string, photoURL?: string })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAvatarShopOpen, setIsAvatarShopOpen] = useState(false);
+  const [latestApprovedReceiptAt, setLatestApprovedReceiptAt] = useState<string | null>(null);
+  const [hasPendingReceipt, setHasPendingReceipt] = useState(false);
+  const [hasReviewedReceipt, setHasReviewedReceipt] = useState(false);
+  const [hasRejectedReceipt, setHasRejectedReceipt] = useState(false);
+  const previousReceiptStatusesRef = useRef<Record<string, ReceiptStatus>>({});
+  const hasInitializedReceiptFeedRef = useRef(false);
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -45,7 +57,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
         const leaders = snapshot.docs.map(doc => doc.data() as UserStats);
         setLeaderboard(leaders as any);
       } catch (err) {
-        console.error("Error fetching leaderboard:", err);
+        captureError(err, { name: 'dashboard.fetch-leaderboard', path: '/dashboard' });
       } finally {
         setIsLoading(false);
       }
@@ -54,6 +66,90 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
     fetchLeaderboard();
     return () => unsubscribeStats();
   }, []);
+
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    const receiptQuery = query(
+      collection(db, 'payment_receipts'),
+      where('requester_uid', '==', auth.currentUser.uid)
+    );
+
+    const unsubscribeReceipts = onSnapshot(
+      receiptQuery,
+      (snapshot) => {
+        let approvedAt: string | null = null;
+        let pending = false;
+        let reviewed = false;
+        let rejected = false;
+        const nextStatuses: Record<string, ReceiptStatus> = {};
+
+        snapshot.docs.forEach((receiptDoc) => {
+          const receipt = receiptDoc.data() as {
+            status?: string;
+            reviewed_at?: string;
+            created_at?: string;
+          };
+          const status = (receipt.status ?? 'pending') as ReceiptStatus;
+          nextStatuses[receiptDoc.id] = status;
+
+          if (hasInitializedReceiptFeedRef.current) {
+            const previousStatus = previousReceiptStatusesRef.current[receiptDoc.id];
+            if (status === 'approved' && previousStatus !== 'approved') {
+              showToast('Вашата уплата е одобрена. Pro пристапот е активиран.', 'success');
+            }
+          }
+
+          if (status === 'pending') {
+            pending = true;
+          }
+
+          if (status === 'reviewed') {
+            reviewed = true;
+          }
+
+          if (status === 'rejected') {
+            rejected = true;
+          }
+
+          if (status === 'approved') {
+            const candidate = receipt.reviewed_at ?? receipt.created_at ?? null;
+            if (!candidate) return;
+
+            if (!approvedAt || Date.parse(candidate) > Date.parse(approvedAt)) {
+              approvedAt = candidate;
+            }
+          }
+        });
+
+        previousReceiptStatusesRef.current = nextStatuses;
+        hasInitializedReceiptFeedRef.current = true;
+        setLatestApprovedReceiptAt(approvedAt);
+        setHasPendingReceipt(pending);
+        setHasReviewedReceipt(reviewed);
+        setHasRejectedReceipt(rejected);
+      },
+      (error) => {
+        captureError(error, { name: 'dashboard.receipt-status', path: '/dashboard' });
+      }
+    );
+
+    return () => unsubscribeReceipts();
+  }, [showToast]);
+
+  const formatReceiptTimestamp = (iso?: string | null) => {
+    if (!iso) return null;
+    const parsed = new Date(iso);
+    if (Number.isNaN(parsed.getTime())) return iso;
+
+    return parsed.toLocaleString('mk-MK', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
   const getLevelProgress = () => {
     if (!stats) return 0;
@@ -106,6 +202,107 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
     );
   }
 
+  const billingHealthBadge = useMemo(() => {
+    if (latestApprovedReceiptAt) {
+      return {
+        label: 'Billing: Pro active',
+        className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
+      };
+    }
+
+    if (hasPendingReceipt) {
+      return {
+        label: 'Billing: Pending review',
+        className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200',
+      };
+    }
+
+    if (hasReviewedReceipt) {
+      return {
+        label: 'Billing: In review stage',
+        className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200',
+      };
+    }
+
+    if (hasRejectedReceipt) {
+      return {
+        label: 'Billing: Needs action',
+        className: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200',
+      };
+    }
+
+    return {
+      label: 'Billing: No receipt submitted',
+      className: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
+    };
+  }, [hasPendingReceipt, hasRejectedReceipt, hasReviewedReceipt, latestApprovedReceiptAt]);
+
+  const billingCtaLabel = useMemo(() => {
+    if (latestApprovedReceiptAt) return null;
+    if (hasRejectedReceipt) return 'Повторно испрати доказ';
+    if (hasPendingReceipt || hasReviewedReceipt) return 'Провери billing детали';
+    return 'Активирај Pro и испрати доказ';
+  }, [hasPendingReceipt, hasRejectedReceipt, hasReviewedReceipt, latestApprovedReceiptAt]);
+
+  const billingGuideItems = useMemo(() => {
+    return [
+      {
+        key: 'pending',
+        title: 'Pending review',
+        description: 'Тимот ја чека првата валидација.',
+        isActive: hasPendingReceipt,
+      },
+      {
+        key: 'reviewed',
+        title: 'In review stage',
+        description: 'Потврдата е проверена и е во финална обработка.',
+        isActive: !hasPendingReceipt && hasReviewedReceipt,
+      },
+      {
+        key: 'rejected',
+        title: 'Needs action',
+        description: 'Потребна е корекција или повторно праќање доказ.',
+        isActive: !hasPendingReceipt && !hasReviewedReceipt && hasRejectedReceipt,
+      },
+      {
+        key: 'none',
+        title: 'No receipt submitted',
+        description: 'Избери Pro план и испрати платежен доказ за активација.',
+        isActive: !latestApprovedReceiptAt && !hasPendingReceipt && !hasReviewedReceipt && !hasRejectedReceipt,
+      },
+      {
+        key: 'approved',
+        title: 'Pro active',
+        description: 'Се е успешно верификувано, пристапот е активен.',
+        isActive: Boolean(latestApprovedReceiptAt),
+      },
+    ];
+  }, [hasPendingReceipt, hasRejectedReceipt, hasReviewedReceipt, latestApprovedReceiptAt]);
+
+  const activeGuideItem = useMemo(() => {
+    return billingGuideItems.find((item) => item.isActive) ?? billingGuideItems[0];
+  }, [billingGuideItems]);
+
+  const trackBillingCtaClick = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+
+    try {
+      await addDoc(collection(db, 'student_progress'), {
+        studentId: currentUser.uid,
+        eventType: 'billing_cta_click',
+        source: 'dashboard_billing_health',
+        currentBillingBadge: billingHealthBadge.label,
+        currentGuideFocus: activeGuideItem.title,
+        ctaLabel: billingCtaLabel,
+        targetPath: '/pricing',
+        createdAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      captureError(error, { name: 'dashboard.track-billing-cta', path: '/dashboard', details: { targetPath: '/pricing' } });
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <SEO 
@@ -113,6 +310,75 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
         description="Следете го вашиот личен напредок, нивоа, значки и образовни перформанси преку напредна DOK телеметрија." 
         keywords="телеметрија, математика, dashboard, напредок, значки, xp, едукација"
       />
+
+      {latestApprovedReceiptAt ? (
+        <section className="rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 p-4 md:p-5">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <div>
+              <div className="text-sm font-black text-emerald-800 dark:text-emerald-200">Pro е активиран</div>
+              <p className="text-sm text-emerald-700 dark:text-emerald-300">Вашата уплата е одобрена и Pro пристапот е активен.</p>
+            </div>
+            <div className="text-xs font-semibold text-emerald-800 dark:text-emerald-200">
+              Активирано: {formatReceiptTimestamp(latestApprovedReceiptAt)}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {!latestApprovedReceiptAt && hasPendingReceipt ? (
+        <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-4 md:p-5">
+          <div className="text-sm font-black text-amber-800 dark:text-amber-200">Уплатата е во review</div>
+          <p className="text-sm text-amber-700 dark:text-amber-300">Тимот ја проверува доставената потврда. Pro ќе се активира веднаш по одобрување.</p>
+        </section>
+      ) : null}
+
+      <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+            <AlertTriangle className="w-4 h-4 text-slate-500 dark:text-slate-300" />
+            Billing Health
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${billingHealthBadge.className}`}>
+              {billingHealthBadge.label}
+            </span>
+            {billingCtaLabel ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-8 px-3"
+                onClick={() => {
+                  void trackBillingCtaClick();
+                  navigate('/pricing');
+                }}
+              >
+                {billingCtaLabel}
+              </Button>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 mb-2">
+            <Info className="w-3.5 h-3.5" />
+            Status guide
+          </div>
+          <div className="text-xs text-slate-700 dark:text-slate-200 mb-2">
+            <span className="font-semibold">Current focus:</span> {activeGuideItem.title} - {activeGuideItem.description}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+            {billingGuideItems.map((item) => (
+              <div
+                key={item.key}
+                className={`rounded-lg px-2.5 py-2 border ${item.isActive ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-900 dark:text-indigo-200' : 'border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/20 text-slate-600 dark:text-slate-300'}`}
+              >
+                <span className="font-semibold">{item.title}:</span> {item.description}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Header / XP Bar */}
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-8 shadow-xl">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">

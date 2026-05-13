@@ -1,9 +1,44 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { MathTask } from "./schema";
+import { PromptStrategy, buildPromptEnvelope, buildRagTaskContext } from "./promptEngineering";
+import { buildRagContextFromLibrary } from "./ragContext";
 
 // Иницијализација на Gemini клиентот
 let _aiInstance: any = null;
 let cachedApiKey: string | undefined = undefined;
+
+async function postJson(url: string, payload: any) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload ?? {})
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Proxy call failed (${response.status}): ${errorBody}`);
+  }
+
+  return response.json();
+}
+
+function createBrowserProxyClient() {
+  return {
+    models: {
+      generateContent: (payload: any) => postJson('/api/ai/generate-content', payload),
+      embedContent: (payload: any) => postJson('/api/ai/embed-content', payload),
+    },
+    chats: {
+      create: async (payload: any) => {
+        const { chatId } = await postJson('/api/ai/chats/create', payload);
+        return {
+          sendMessage: (messagePayload: any) =>
+            postJson(`/api/ai/chats/${encodeURIComponent(chatId)}/send-message`, messagePayload)
+        };
+      }
+    }
+  };
+}
 
 try {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -14,8 +49,15 @@ try {
 const initAiPromise = (async () => {
   if (!cachedApiKey || cachedApiKey === "undefined") {
     try {
-      if (typeof window !== 'undefined') {
-        const res = await fetch(`/api/config?_cb=${Date.now()}`);
+      const hasHttpOrigin =
+        typeof window !== 'undefined' &&
+        typeof window.location?.origin === 'string' &&
+        /^https?:\/\//i.test(window.location.origin);
+      const isTestRuntime = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+
+      if (hasHttpOrigin && !isTestRuntime) {
+        const configUrl = new URL(`/api/config?_cb=${Date.now()}`, window.location.origin).toString();
+        const res = await fetch(configUrl);
         if (res.ok) {
           const text = await res.text();
           if (!text.startsWith('<')) {
@@ -28,7 +70,18 @@ const initAiPromise = (async () => {
       console.warn("Failed to fetch API key from server", e);
     }
   }
-  _aiInstance = new GoogleGenAI({ apiKey: cachedApiKey || "missing_key" });
+
+  if (cachedApiKey && cachedApiKey !== "undefined") {
+    _aiInstance = new GoogleGenAI({ apiKey: cachedApiKey });
+    return;
+  }
+
+  if (typeof window !== 'undefined') {
+    _aiInstance = createBrowserProxyClient();
+    return;
+  }
+
+  _aiInstance = new GoogleGenAI({ apiKey: "missing_key" });
 })();
 
 export const ai: any = new Proxy({}, {
@@ -148,6 +201,27 @@ function parseGeminiResponse(text: string) {
     }
     throw error;
   }
+}
+
+export interface GenerationOrchestrationOptions {
+  strategy?: PromptStrategy;
+  retrievalTasks?: MathTask[];
+}
+
+async function buildGenerationRagContext(query: string, retrievalTasks?: MathTask[]): Promise<string> {
+  if (!retrievalTasks || retrievalTasks.length === 0) {
+    return 'RAG КОНТЕКСТ: Нема релевантни задачи од библиотеката за ова барање.';
+  }
+
+  const rag = await buildRagContextFromLibrary({
+    query,
+    tasks: retrievalTasks,
+    embedQuery: generateTaskEmbedding,
+    maxItems: 4,
+    similarityThreshold: 0.33
+  });
+
+  return `${buildRagTaskContext(rag.selectedTasks)}\nРЕЖИМ НА RETRIEVAL: ${rag.retrievalMode}`;
 }
 
 export async function generateKahootFromFiles(files: {base64: string, mimeType: string}[], prompt: string): Promise<any> {
@@ -322,25 +396,43 @@ export async function generateSpeech(text: string): Promise<string> {
   }
 }
 
-export async function generateInterventionTasks(topic: string, struggleDetails: string): Promise<MathTask[]> {
-  const prompt = `Ти си Експерт Креатор на Педагошки Материјали. Еден ученик има проблем со темата: "${topic}".
-Детали: ${struggleDetails}.
-Твојата цел е да креираш "Интервентен сет" од точно 3 лесни задачи (scaffolding tasks) кои ќе го вратат ученикот чекор назад до основите на оваа тема.
-
-За секоја задача, конструирај JSON објект со следниве полиња (задолжителни):
-- title: Наслов на задачата
-- original_text: Текстот на задачата
-- type: 'task'
-- difficulty: 'easy'
-- dok_level: 1 или 2
-- curriculum_topic: '${topic} - Основни Концепти'
-- tags: низа од стрингови (пр. ["интервенција", "основи", "чекор-по-чекор"])
-- solution_steps: низа од стрингови (чекорите)
-- latex_formulas: низа од стрингови
-- hints: низа од стрингови (најмалку 2 хинта кои Сократски водат до решението)
-- source_url: 'intervention_generator'
-
-Врати мапа каде клуч е 'tasks', а вредноста е низа од овие 3 објекти. Врати исклучиво валиден JSON без маркдаун блокови.`;
+export async function generateInterventionTasks(
+  topic: string,
+  struggleDetails: string,
+  options: GenerationOrchestrationOptions = {}
+): Promise<MathTask[]> {
+  const ragContext = await buildGenerationRagContext(`${topic}\n${struggleDetails}`, options.retrievalTasks);
+  const prompt = buildPromptEnvelope({
+    role: 'Ти си Експерт Креатор на Педагошки Материјали.',
+    mission: 'Генерирај интервентен сет што го враќа ученикот кон базичните концепти со scaffolded задачи.',
+    strategy: options.strategy ?? 'sos',
+    ragContext,
+    userInput: `ТЕМА: ${topic}\nДЕТАЛИ ЗА ПОТЕШКОТИЈА: ${struggleDetails}`,
+    hardRules: [
+      'Врати точно 3 задачи.',
+      'Сите задачи мора да бидат easy и DoK 1 или 2.',
+      `Полето curriculum_topic нека биде "${topic} - Основни Концепти".`,
+      'Додај најмалку 2 hints по задача со Сократски стил.',
+      'Врати исклучиво валиден JSON без markdown блокови.'
+    ],
+    outputContract: `{
+  "tasks": [
+    {
+      "title": "string",
+      "original_text": "string",
+      "type": "task",
+      "difficulty": "easy",
+      "dok_level": 1,
+      "curriculum_topic": "string",
+      "tags": ["string"],
+      "solution_steps": ["string"],
+      "latex_formulas": ["string"],
+      "hints": ["string"],
+      "source_url": "intervention_generator"
+    }
+  ]
+}`
+  });
 
   try {
     const result = await ai.models.generateContent({
@@ -1029,38 +1121,44 @@ export async function advancedMultimodalExtraction(
   }
 }
 
-export async function generateCurriculumTasks(prompt: string): Promise<MathTask[]> {
+export async function generateCurriculumTasks(
+  prompt: string,
+  options: GenerationOrchestrationOptions = {}
+): Promise<MathTask[]> {
   try {
-    const systemInstruction = `Ти си Експерт по Математика и Креатор на Наставни Материјали. 
-Твојата мисија е да генерираш задачи кои се стриктно усогласени со зададените национални програми (пр. БРО - Биро за Развој на Образованието, Македонија).
-Секогаш враќај одговор исклучиво во JSON формат кој содржи низа од задачи.
-
-КРИТИЧНО ПРАВИЛО:
-ZERO-ERROR LaTeX: СИТЕ МАТЕМАТИЧКИ СИМБОЛИ, БРОЕВИ, РАВЕНКИ И ФОРМУЛИ МОРА ДА БИДАТ СТРОГО ВО LaTeX ФОРМАТ ВО original_text И ВО solution_steps! Користи $...$ за inline математика (пр. Нека е $x=5$) и $$...$$ за математика во нов ред. ОВА Е НАЈСТРОГОТО ПРАВИЛО!
-
-Format requirement:
-{
+    const ragContext = await buildGenerationRagContext(prompt, options.retrievalTasks);
+    const orchestratedPrompt = buildPromptEnvelope({
+      role: 'Ти си Експерт по Математика и Креатор на Наставни Материјали.',
+      mission: 'Генерирај задачи строго усогласени со национални наставни програми (пр. БРО).',
+      strategy: options.strategy ?? 'tot',
+      ragContext,
+      userInput: prompt,
+      hardRules: [
+        'Врати исклучиво JSON формат со клуч tasks.',
+        'Секоја задача мора да има математички точни solution_steps.',
+        'ZERO-ERROR LaTeX во original_text и solution_steps ($...$ и $$...$$).',
+        'Избегнувај markdown блокови во одговорот.'
+      ],
+      outputContract: `{
   "tasks": [
     {
-      "original_text": "string (The problem statement, in Macedonian, using LaTeX inline if needed)",
-      "solution_steps": ["step 1", "step 2"],
-      "difficulty": "easy" | "medium" | "hard",
-       "tags": ["tag1", "tag2"],
-       "hint": "string (A helpful hint)",
-       "answer": "string (The final answer)"
+      "original_text": "string",
+      "solution_steps": ["string"],
+      "difficulty": "easy|medium|hard",
+      "tags": ["string"],
+      "hint": "string",
+      "answer": "string"
     }
   ]
-}
-
-Ensure valid JSON output without markdown blocks like \`\`\`json.`;
+}`
+    });
 
     const response = await ai.models.generateContent({
       model: "gemini-3.1-pro-preview",
-      contents: prompt,
+      contents: orchestratedPrompt,
       config: {
         temperature: 0.7,
-        responseMimeType: "application/json",
-        systemInstruction: systemInstruction,
+        responseMimeType: "application/json"
       }
     });
 

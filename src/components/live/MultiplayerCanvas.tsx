@@ -7,6 +7,7 @@ import { MathRenderer } from '../MathRenderer';
 import { motion } from 'motion/react';
 import { db, auth } from '../../lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { ai } from '../../lib/gemini';
 
 interface Point {
   x: number;
@@ -169,12 +170,7 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
     try {
       const dataUrl = stageRef.current.toDataURL({ pixelRatio: 1 });
       const base64Data = dataUrl.split(',')[1];
-      
-      const { GoogleGenAI } = await import('@google/genai');
-      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("Missing API Key");
-      
-      const ai = new GoogleGenAI({ apiKey });
+
       const response = await ai.models.generateContent({
         model: 'gemini-3.1-pro-preview',
         contents: [
@@ -297,12 +293,18 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
                <Eraser className="w-5 h-5" />
             </Button>
             <div className="flex items-center gap-2 px-3 border-l border-slate-200 ml-2">
-               {['#4f46e5', '#e11d48', '#16a34a', '#0f172a'].map(c => (
+               {[
+                 { value: '#4f46e5', className: 'bg-indigo-600', label: 'Индиго' },
+                 { value: '#e11d48', className: 'bg-rose-600', label: 'Розева' },
+                 { value: '#16a34a', className: 'bg-green-600', label: 'Зелена' },
+                 { value: '#0f172a', className: 'bg-slate-900', label: 'Темна' }
+               ].map((swatch) => (
                  <button 
-                   key={c}
-                   onClick={() => { setColor(c); setTool('pen'); }}
-                   className={`w-7 h-7 rounded-full transition-transform shadow-sm ${color === c && tool === 'pen' ? 'scale-125 ring-2 ring-offset-2 ring-indigo-500' : ''}`}
-                   style={{ backgroundColor: c }}
+                   key={swatch.value}
+                   onClick={() => { setColor(swatch.value); setTool('pen'); }}
+                   aria-label={`Постави боја: ${swatch.label}`}
+                   title={`Постави боја: ${swatch.label}`}
+                   className={`w-7 h-7 rounded-full transition-transform shadow-sm ${swatch.className} ${color === swatch.value && tool === 'pen' ? 'scale-125 ring-2 ring-offset-2 ring-indigo-500' : ''}`}
                  />
                ))}
             </div>
@@ -340,7 +342,7 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
       </div>
       
       <div className="flex-1 w-full bg-white relative overflow-hidden" ref={containerRef}>
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1.5px, transparent 1.5px)', backgroundSize: '30px 30px' }} />
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#000_1.5px,transparent_1.5px)] [background-size:30px_30px]" />
         
         {/* DOM HTML Overlays for LaTeX */}
         {latexBoxes.map(box => (

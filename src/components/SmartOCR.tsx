@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useRef, useEffect } from 'react';
 import { 
   Upload, Image as ImageIcon, Copy, Check, Loader2, RefreshCw, Download, 
   FileText, Code, Save, ScanLine, PenTool, Crop, AlertTriangle, Quote, Zap,
@@ -14,7 +14,7 @@ import { db, auth } from '../lib/firebase';
 import ReactCrop, { Crop as CropType, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { GeoGebraViewer } from './GeoGebraViewer';
-import { MathEditor } from './MathEditor';
+const MathEditor = lazy(() => import('./MathEditor').then((m) => ({ default: m.MathEditor })));
 
 import { SEO } from './SEO';
 
@@ -359,6 +359,8 @@ export const SmartOCR: React.FC = () => {
             <select
               value={targetLanguage}
               onChange={(e) => setTargetLanguage(e.target.value as any)}
+              title="Излезен јазик"
+              aria-label="Излезен јазик"
               className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 dark:text-slate-200"
             >
               <option value="auto">Автоматски (Оригинален)</option>
@@ -375,6 +377,8 @@ export const SmartOCR: React.FC = () => {
             <span className="text-xs font-semibold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">Визуелизација:</span>
             <select
               defaultValue="geogebra"
+              title="Визуелизација"
+              aria-label="Визуелизација"
               className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 dark:text-slate-200 shadow-sm"
             >
               <option value="none">Без дијаграм</option>
@@ -389,6 +393,8 @@ export const SmartOCR: React.FC = () => {
             <select
               value={ocrModel}
               onChange={(e) => setOcrModel(e.target.value)}
+              title="OCR модел"
+              aria-label="OCR модел"
               className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 dark:text-slate-200 shadow-sm"
             >
               <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (World-Class)</option>
@@ -463,7 +469,9 @@ export const SmartOCR: React.FC = () => {
                     ref={fileInputRef} 
                     className="hidden" 
                     accept="image/*,application/pdf" 
-                    onChange={handleFileSelect} 
+                    onChange={handleFileSelect}
+                    title="Прикачи слика или PDF"
+                    aria-label="Прикачи слика или PDF"
                   />
                   <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <Upload className="w-8 h-8 text-indigo-500" />
@@ -607,6 +615,8 @@ export const SmartOCR: React.FC = () => {
                     <button
                       key={idx}
                       onClick={() => insertLatex(item.insert)}
+                      title={`Вметни симбол ${item.label}`}
+                      aria-label={`Вметни симбол ${item.label}`}
                       className="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:shadow-md transition-all active:scale-95 flex-shrink-0"
                     >
                       <MathRenderer content={`$${item.label}$`} />
@@ -627,11 +637,13 @@ export const SmartOCR: React.FC = () => {
                   <div className="flex flex-col h-full gap-4">
                     <div className="flex-none hidden xl:block">
                       <p className="text-xs text-slate-500 mb-2">Напреден Математички Едитор (За вметнување равенки во кодот, копирај го резултатот тука и вметни го со $\dots$):</p>
-                      <MathEditor 
-                        value="" 
-                        onChange={(val) => insertLatex(val)} 
-                        className="bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 shadow-sm rounded-xl py-2"
-                      />
+                      <Suspense fallback={<div className="text-xs text-slate-400 py-2">Вчитување на математички едитор...</div>}>
+                        <MathEditor 
+                          value="" 
+                          onChange={(val) => insertLatex(val)} 
+                          className="bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 shadow-sm rounded-xl py-2"
+                        />
+                      </Suspense>
                     </div>
                     <textarea
                       value={latexCode}

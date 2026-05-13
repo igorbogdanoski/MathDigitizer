@@ -9,6 +9,8 @@ import { Button } from './ui/Button';
 import { Skeleton } from './ui/Skeleton';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { KnowledgeGraphVisualizer } from './KnowledgeGraphVisualizer';
+import { useLibraryStore } from '../store/useLibraryStore';
+import { generateInterventionTasks } from '../lib/gemini';
 
 export const StudentTelemetryView: React.FC = () => {
   const { studentId } = useParams<{ studentId: string }>();
@@ -17,6 +19,7 @@ export const StudentTelemetryView: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [interventionTasks, setInterventionTasks] = useState<MathTask[]>([]);
+  const libraryTasks = useLibraryStore((state) => state.tasks);
 
   useEffect(() => {
     if (!studentId) return;
@@ -311,10 +314,21 @@ export const StudentTelemetryView: React.FC = () => {
                    if (!stats?.struggleTopic) return;
                    setIsGenerating(true);
                    try {
-                     const { generateInterventionTasks } = await import('../lib/gemini');
+                     const struggleTopicName = stats.struggleTopic.name.toLowerCase();
+                     const retrievalTasks = libraryTasks.filter((task) => {
+                       const topic = (task.curriculum_topic || '').toLowerCase();
+                       const tags = (task.tags || []).join(' ').toLowerCase();
+                       const title = (task.title || '').toLowerCase();
+                       return topic.includes(struggleTopicName) || tags.includes(struggleTopicName) || title.includes(struggleTopicName);
+                     });
+
                      const tasks = await generateInterventionTasks(
                        stats.struggleTopic.name, 
-                       `Ученикот има просек од ${stats.struggleTopic.avg} грешки по задача и бара премногу помош. Потребни се полесни задачи за враќање кон основите.`
+                       `Ученикот има просек од ${stats.struggleTopic.avg} грешки по задача и бара премногу помош. Потребни се полесни задачи за враќање кон основите.`,
+                       {
+                         strategy: 'sos',
+                         retrievalTasks: retrievalTasks.length > 0 ? retrievalTasks : libraryTasks
+                       }
                      );
                      
                      // Optionally redirect to intervention or show in UI

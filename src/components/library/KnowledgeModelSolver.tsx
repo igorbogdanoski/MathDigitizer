@@ -4,12 +4,14 @@ import { BrainCircuit, Loader2, Sparkles, CheckCircle2, Copy } from 'lucide-reac
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import { useLibraryStore } from '../../store/useLibraryStore';
 
 interface Props {
   initialProblem?: string;
 }
 
 export function KnowledgeModelSolver({ initialProblem = '' }: Props) {
+  const tasks = useLibraryStore((state) => state.tasks);
   const [problemText, setProblemText] = useState(initialProblem);
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<KnowledgeModelResponse | null>(null);
@@ -22,7 +24,10 @@ export function KnowledgeModelSolver({ initialProblem = '' }: Props) {
     setResult(null);
 
     try {
-      const response = await generateHybridMathSolution(problemText);
+      const response = await generateHybridMathSolution(problemText, {
+        strategy: 'hybrid',
+        retrievalTasks: tasks
+      });
       setResult(response);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');

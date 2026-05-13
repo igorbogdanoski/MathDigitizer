@@ -1,10 +1,8 @@
 {
-  "projectId": "gen-lang-client-0956771496",
-  "appId": "1:240340471026:web:667f8ae6d39ee31794146b",
-  "apiKey": "AIzaSyDWLdiFhO43VQVWqV1VsKLDoAQAJsEIOwc",
-  "authDomain": "gen-lang-client-0956771496.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-78b66c2e-8ca0-449c-8e89-6a89b72ffcef",
-  "storageBucket": "gen-lang-client-0956771496.firebasestorage.app",
-  "messagingSenderId": "240340471026",
-  "measurementId": ""
+  "apiKey": "AIzaSyBcjD4dUqJIEZaIvmcHAcZgXF0PHeyKwOk",
+  "authDomain": "mathdigitizer-pro.firebaseapp.com",
+  "projectId": "mathdigitizer-pro",
+  "storageBucket": "mathdigitizer-pro.firebasestorage.app",
+  "messagingSenderId": "178118524137",
+  "appId": "1:178118524137:web:df9336039498383f860478"
 }

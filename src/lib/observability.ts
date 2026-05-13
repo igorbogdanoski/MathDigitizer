@@ -1,0 +1,162 @@
+export type ObservabilitySeverity = 'info' | 'warning' | 'error';
+
+export interface ObservabilityEvent {
+  id: string;
+  type: 'error' | 'timing' | 'route';
+  severity: ObservabilitySeverity;
+  name: string;
+  message: string;
+  timestamp: string;
+  durationMs?: number;
+  path?: string;
+  details?: Record<string, unknown>;
+}
+
+const STORAGE_KEY = 'mathdigitizer.observability.v1';
+const MAX_EVENTS = 50;
+
+function safeStorage(): Storage | null {
+  try {
+    return typeof window !== 'undefined' ? window.localStorage : null;
+  } catch {
+    return null;
+  }
+}
+
+function readEvents(): ObservabilityEvent[] {
+  const storage = safeStorage();
+  if (!storage) return [];
+
+  try {
+    const raw = storage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as ObservabilityEvent[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeEvents(events: ObservabilityEvent[]) {
+  const storage = safeStorage();
+  if (!storage) return;
+
+  try {
+    storage.setItem(STORAGE_KEY, JSON.stringify(events.slice(0, MAX_EVENTS)));
+  } catch {
+    // Best-effort only.
+  }
+}
+
+function pushEvent(event: ObservabilityEvent) {
+  const next = [event, ...readEvents()].slice(0, MAX_EVENTS);
+  writeEvents(next);
+
+  if (typeof window !== 'undefined') {
+    const target = window as Window & { __MD_OBSERVABILITY__?: ObservabilityEvent[] };
+    target.__MD_OBSERVABILITY__ = next;
+  }
+}
+
+function toMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error';
+  }
+}
+
+function createId(prefix: string) {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return `${prefix}_${crypto.randomUUID()}`;
+  }
+  return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
+
+export function captureError(error: unknown, context: { name: string; path?: string; severity?: ObservabilitySeverity; details?: Record<string, unknown> }) {
+  const event: ObservabilityEvent = {
+    id: createId('err'),
+    type: 'error',
+    severity: context.severity ?? 'error',
+    name: context.name,
+    message: toMessage(error),
+    timestamp: new Date().toISOString(),
+    path: context.path,
+    details: context.details,
+  };
+
+  pushEvent(event);
+  console.error(`[observability] ${context.name}`, error);
+  return event;
+}
+
+export function recordTiming(name: string, durationMs: number, context?: { path?: string; severity?: ObservabilitySeverity; details?: Record<string, unknown> }) {
+  const event: ObservabilityEvent = {
+    id: createId('tim'),
+    type: 'timing',
+    severity: context?.severity ?? 'info',
+    name,
+    message: `${name} took ${durationMs.toFixed(1)}ms`,
+    timestamp: new Date().toISOString(),
+    durationMs,
+    path: context?.path,
+    details: context?.details,
+  };
+
+  pushEvent(event);
+  return event;
+}
+
+export function recordRouteView(path: string, durationMs?: number) {
+  const event: ObservabilityEvent = {
+    id: createId('route'),
+    type: 'route',
+    severity: 'info',
+    name: 'route-view',
+    message: `Viewed route ${path}`,
+    timestamp: new Date().toISOString(),
+    durationMs,
+    path,
+  };
+
+  pushEvent(event);
+  return event;
+}
+
+export function getObservabilityEvents(): ObservabilityEvent[] {
+  return readEvents();
+}
+
+export function clearObservabilityEvents() {
+  writeEvents([]);
+  if (typeof window !== 'undefined') {
+    const target = window as Window & { __MD_OBSERVABILITY__?: ObservabilityEvent[] };
+    target.__MD_OBSERVABILITY__ = [];
+  }
+}
+
+let globalHandlersInstalled = false;
+
+export function installGlobalObservabilityHandlers() {
+  if (globalHandlersInstalled || typeof window === 'undefined') return;
+  globalHandlersInstalled = true;
+
+  window.addEventListener('error', (event) => {
+    captureError(event.error ?? event.message, {
+      name: 'unhandled-window-error',
+      path: window.location.pathname,
+      severity: 'error',
+      details: { filename: event.filename, lineno: event.lineno, colno: event.colno },
+    });
+  });
+
+  window.addEventListener('unhandledrejection', (event) => {
+    captureError(event.reason, {
+      name: 'unhandled-promise-rejection',
+      path: window.location.pathname,
+      severity: 'error',
+    });
+  });
+}

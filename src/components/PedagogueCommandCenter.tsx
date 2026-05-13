@@ -12,7 +12,8 @@ import { MathTask } from '../lib/schema';
 import { Button } from './ui/Button';
 import { Card, CardContent } from './ui/Card';
 import { MathRenderer } from './MathRenderer';
-import { GoogleGenAI, Type } from "@google/genai";
+import { Type } from "@google/genai";
+import { ai } from '../lib/gemini';
 
 interface Node extends d3.SimulationNodeDatum {
   id: string;
@@ -153,7 +154,6 @@ export const PedagogueCommandCenter: React.FC = () => {
     if (!selectedTask) return;
     setIsAnalyzing(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `Analyze this math task and provide a cognitive fingerprint (scores 0-100):
@@ -237,6 +237,8 @@ export const PedagogueCommandCenter: React.FC = () => {
           
           <button 
             onClick={() => setIsCommandCenterOpen(false)}
+            aria-label="Close command center"
+            title="Close command center"
             className="p-2 text-slate-400 hover:text-white hover:bg-red-500/10 rounded-lg transition-colors"
           >
             <X className="w-6 h-6" />
@@ -248,9 +250,7 @@ export const PedagogueCommandCenter: React.FC = () => {
         {/* Main Viewport */}
         <main className="flex-1 relative overflow-hidden bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
           {/* Subtle Grid Background */}
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
-            style={{ backgroundImage: 'radial-gradient(#6366f1 1px, transparent 1px)', backgroundSize: '40px 40px' }} 
-          />
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:40px_40px]" />
           
           <AnimatePresence mode="wait">
             {activeTab === 'map' && (
@@ -477,7 +477,7 @@ export const PedagogueCommandCenter: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] text-slate-500 font-mono">PERSONA:</span>
-                      <select className="bg-slate-800 border-none text-[10px] text-slate-300 rounded px-2 py-1 outline-none">
+                      <select title="Student persona" aria-label="Student persona" className="bg-slate-800 border-none text-[10px] text-slate-300 rounded px-2 py-1 outline-none">
                         <option>Struggling with Abstraction</option>
                         <option>Quick but Careless</option>
                         <option>Math Anxious</option>
@@ -502,7 +502,7 @@ export const PedagogueCommandCenter: React.FC = () => {
                         className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-6 py-4 text-sm text-slate-200 placeholder:text-slate-600 focus:border-indigo-500 transition-colors outline-none pr-12"
                         placeholder="Practice your Socratic redirection here..."
                       />
-                      <button className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
+                      <button title="Send response" aria-label="Send response" className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
                         <Play className="w-4 h-4 text-white" />
                       </button>
                     </div>
@@ -522,6 +522,8 @@ export const PedagogueCommandCenter: React.FC = () => {
         >
           <button 
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            aria-label={isSidebarOpen ? 'Collapse details panel' : 'Expand details panel'}
+            title={isSidebarOpen ? 'Collapse details panel' : 'Expand details panel'}
             className="absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-white"
           >
             {isSidebarOpen ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}

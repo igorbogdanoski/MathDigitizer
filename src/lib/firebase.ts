@@ -1,11 +1,11 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithRedirect, signOut } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize Firebase SDK
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
@@ -58,9 +58,21 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 
 export const signInWithGoogle = async () => {
   try {
-    await signInWithPopup(auth, googleProvider);
-  } catch (error) {
+    googleProvider.setCustomParameters({
+      prompt: 'select_account'
+    });
+    const result = await signInWithRedirect(auth, googleProvider);
+    return result;
+  } catch (error: any) {
     console.error("Error signing in with Google", error);
+    if (error.code === 'auth/popup-blocked') {
+      alert("Прелистувачот го блокираше прозорецот за најава.\nВе молиме кликнете на иконата за поп-ап блокерот во горниот десен агол (во адресната лента) и изберете 'Always allow pop-ups for this site'.");
+    } else if (error.code === 'auth/unauthorized-domain') {
+      alert("Грешка: Доменот не е дозволен во Firebase.\nВе молиме додадете го овој домен (vercel.app) во Firebase.");
+    } else {
+      alert("Грешка при најава: " + (error.message || "Непозната грешка."));
+    }
+    throw error;
   }
 };
 

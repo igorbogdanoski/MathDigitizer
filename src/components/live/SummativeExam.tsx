@@ -270,6 +270,7 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
                                          name={`q_${idx}`} 
                                          checked={answers[idx] === optIdx}
                                          onChange={() => handleAnswerChange(idx, optIdx)}
+                                         aria-label={opt}
                                          className="w-5 h-5 text-indigo-600 focus:ring-indigo-500 border-slate-300"
                                        />
                                        <span className="font-medium text-slate-700 text-lg"><MathRenderer content={opt} /></span>

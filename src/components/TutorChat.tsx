@@ -7,6 +7,7 @@ import { MathRenderer } from './MathRenderer';
 import { getTutorChatSession, analyzeSolutionImage, generateSpeech } from '../lib/gemini';
 import { InteractiveCanvas } from './InteractiveCanvas';
 import { useLibraryStore } from '../store/useLibraryStore';
+import { captureError } from '../lib/observability';
 
 // Helper to calculate cosine similarity
 function cosineSimilarity(A: number[], B: number[]) {
@@ -98,7 +99,7 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
       // Synthetically advance pedagogy steps
       if (activePedagogyStep < 3) setActivePedagogyStep(prev => prev + 1);
     } catch (error) {
-      console.error("Chat error:", error);
+      captureError(error, { name: 'tutor-chat.send-message', path: '/tutor-chat', details: { taskId: task.id } });
       setMessages(prev => [...prev, { role: 'model', text: "Извини, настана комуникациска грешка. Можеш ли да повториш?" }]);
     } finally {
       setIsLoading(false);
@@ -122,7 +123,7 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
       setMessages(prev => [...prev, { role: 'model', text: analysisText }]);
       if (activePedagogyStep < 3) setActivePedagogyStep(prev => prev + 1);
     } catch (err) {
-      console.error("Image analysis error:", err);
+      captureError(err, { name: 'tutor-chat.image-analysis', path: '/tutor-chat', details: { taskId: task.id, mimeType } });
       setMessages(prev => [...prev, { role: 'model', text: "Извини, не успеав да ја дешифрирам сликата. Обиди се со појасен агол." }]);
     } finally {
       setIsAnalyzingImage(false);
@@ -141,7 +142,7 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
       };
       reader.readAsDataURL(file);
     } catch (err) {
-      console.error("File reading error:", err);
+      captureError(err, { name: 'tutor-chat.file-read', path: '/tutor-chat', details: { taskId: task.id } });
     }
   };
 
@@ -195,7 +196,7 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
       await audio.play();
       setPlayingAudioIndex(index);
     } catch (error) {
-      console.error("TTS Error:", error);
+      captureError(error, { name: 'tutor-chat.tts', path: '/tutor-chat', details: { messageIndex: index, taskId: task.id } });
     } finally {
       setIsGeneratingAudio(null);
     }
@@ -256,14 +257,14 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
           {/* Mobile Header Overrides */}
           <div className="md:hidden p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-between items-center shrink-0">
              <div className="font-bold truncate pr-4 text-slate-800 dark:text-white"><Brain className="w-4 h-4 inline mr-2 text-indigo-500"/>{task.title}</div>
-             <button onClick={onClose} className="p-2 text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-full"><X className="w-5 h-5"/></button>
+             <button onClick={onClose} aria-label="Затвори тутор" title="Затвори тутор" className="p-2 text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-full"><X className="w-5 h-5"/></button>
           </div>
 
           <div className="absolute top-4 right-4 hidden md:flex items-center gap-2 z-10">
              <Button variant="outline" size="sm" onClick={handleGetHint} disabled={isLoading || !chatSession} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-sm text-amber-600 hover:text-amber-700">
                <Lightbulb className="w-4 h-4 mr-2" /> Scaffolding Hint
              </Button>
-             <button onClick={onClose} className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-slate-400 hover:text-red-500 border border-slate-200 dark:border-slate-700 shadow-sm rounded-full transition-colors">
+             <button onClick={onClose} aria-label="Затвори тутор" title="Затвори тутор" className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-slate-400 hover:text-red-500 border border-slate-200 dark:border-slate-700 shadow-sm rounded-full transition-colors">
                <X className="w-5 h-5" />
              </button>
           </div>
@@ -325,7 +326,7 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
           ) : (
             <div className="p-4 md:p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0">
               <form onSubmit={handleSend} className="flex gap-2 relative">
-                <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
+                <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" aria-label="Прикачи слика" title="Прикачи слика" />
                 <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isLoading || isAnalyzingImage} className="h-14 w-14 rounded-2xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 shrink-0" title="Прикачи слика">
                   <Camera className="w-5 h-5 text-slate-500" />
                 </Button>

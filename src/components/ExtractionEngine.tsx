@@ -10,7 +10,7 @@ import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { MathTask } from '../lib/schema';
 import { extractMathTasksFromUrl, generateImage, generateMathGraphicConfig, advancedMultimodalExtraction, enrichTaskPedagogy, generateTaskEmbedding } from '../lib/gemini';
-import { exportToJson, exportToMarkdown } from '../lib/export';
+import { exportToJson, exportToLatex, exportToMarkdown, exportToTxt } from '../lib/export';
 import { useAuth } from '../contexts/AuthContext';
 import { useGamification } from '../contexts/GamificationContext';
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
@@ -554,6 +554,8 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
                       disabled={isLoading}
+                      title="AI модел"
+                      aria-label="AI модел"
                       className="h-10 px-3 rounded-xl bg-white/10 border border-white/20 text-indigo-50 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 [&>option]:text-slate-800 backdrop-blur-sm cursor-pointer hover:bg-white/20 transition-colors"
                     >
                       <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (World-Class)</option>
@@ -603,6 +605,8 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                             min="0" max="4" step="1" 
                             value={interpretativeLevel} 
                             onChange={(e) => setInterpretativeLevel(parseInt(e.target.value))}
+                            title="Интерпретативно ниво"
+                            aria-label="Интерпретативно ниво"
                             className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-red-500 hover:accent-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/50" 
                           />
                        </div>
@@ -697,6 +701,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                            <div className="aspect-video w-full">
                               <iframe 
                                 src={`https://www.youtube.com/embed/${yId}`}
+                                title="YouTube preview"
                                 className="w-full h-full border-0"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                 allowFullScreen
@@ -786,12 +791,14 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                 </div>
                 
                 <div className="w-full bg-black/40 rounded-full h-3 overflow-hidden border border-white/5 shadow-inner">
-                  <div 
+                  <motion.div
                     className="bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-500 h-full rounded-full transition-all duration-700 ease-out relative" 
-                    style={{ width: `${progress}%` }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.7, ease: 'easeOut' }}
                   >
                     <div className="absolute top-0 left-0 bottom-0 right-0 bg-white/20 w-full animate-pulse"></div>
-                  </div>
+                  </motion.div>
                 </div>
                 
                 <p className="mt-6 text-indigo-300/80 text-xs md:text-sm leading-relaxed max-w-2xl">
@@ -932,7 +939,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                 Markdown
               </Button>
               <Button variant="outline" onClick={() => {
-                import('../lib/export').then(m => m.exportToLatex(tasks));
+                exportToLatex(tasks);
               }} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm text-xs h-8 px-3">
                 LaTeX
               </Button>
@@ -940,7 +947,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                 A4 PDF
               </Button>
               <Button variant="outline" onClick={() => {
-                import('../lib/export').then(m => m.exportToTxt(tasks));
+                exportToTxt(tasks);
               }} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm text-xs h-8 px-3">
                 TXT
               </Button>

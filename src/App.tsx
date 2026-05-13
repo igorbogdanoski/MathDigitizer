@@ -1,41 +1,47 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { GamificationProvider, useGamification } from './contexts/GamificationContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
-import { Layout } from './components/Layout';
-import { Home } from './components/Home';
-import { ExtractionEngine } from './components/ExtractionEngine';
-import { SmartOCR } from './components/SmartOCR';
-import { Library } from './components/Library';
-import MaterialsFactory from './components/MaterialsFactory';
-import { CurriculumFactory } from './components/CurriculumFactory';
-import { CurriculumTestGenerator } from './components/CurriculumTestGenerator';
-import { TodoList } from './components/TodoList';
-import { Flashcards } from './components/Flashcards';
-import { AdaptiveTest } from './components/AdaptiveTest';
-import { Dashboard } from './components/Dashboard';
-import { TutorChat } from './components/TutorChat';
-import { Classrooms } from './components/Classrooms';
-import { ClassroomDetail } from './components/ClassroomDetail';
-import { SmartGrader } from './components/SmartGrader';
-import { PedagogueCommandCenter } from './components/PedagogueCommandCenter';
-import { PedagogueEditor } from './components/library/PedagogueEditor';
+import { installGlobalObservabilityHandlers, recordRouteView, recordTiming } from './lib/observability';
+const Layout = lazy(() => import('./components/Layout').then((m) => ({ default: m.Layout })));
+const Home = lazy(() => import('./components/Home').then((m) => ({ default: m.Home })));
+const ExtractionEngine = lazy(() => import('./components/ExtractionEngine').then((m) => ({ default: m.ExtractionEngine })));
+const SmartOCR = lazy(() => import('./components/SmartOCR').then((m) => ({ default: m.SmartOCR })));
+const Library = lazy(() => import('./components/Library').then((m) => ({ default: m.Library })));
+const MaterialsFactory = lazy(() => import('./components/MaterialsFactory'));
+const CurriculumFactory = lazy(() => import('./components/CurriculumFactory').then((m) => ({ default: m.CurriculumFactory })));
+const CurriculumTestGenerator = lazy(() => import('./components/CurriculumTestGenerator').then((m) => ({ default: m.CurriculumTestGenerator })));
+const TodoList = lazy(() => import('./components/TodoList').then((m) => ({ default: m.TodoList })));
+const Flashcards = lazy(() => import('./components/Flashcards').then((m) => ({ default: m.Flashcards })));
+const AdaptiveTest = lazy(() => import('./components/AdaptiveTest').then((m) => ({ default: m.AdaptiveTest })));
+const Dashboard = lazy(() => import('./components/Dashboard').then((m) => ({ default: m.Dashboard })));
+const TutorChat = lazy(() => import('./components/TutorChat').then((m) => ({ default: m.TutorChat })));
+const Classrooms = lazy(() => import('./components/Classrooms').then((m) => ({ default: m.Classrooms })));
+const ClassroomDetail = lazy(() => import('./components/ClassroomDetail').then((m) => ({ default: m.ClassroomDetail })));
+const SmartGrader = lazy(() => import('./components/SmartGrader').then((m) => ({ default: m.SmartGrader })));
+const PedagogueCommandCenter = lazy(() => import('./components/PedagogueCommandCenter').then((m) => ({ default: m.PedagogueCommandCenter })));
+const PedagogueEditor = lazy(() => import('./components/library/PedagogueEditor').then((m) => ({ default: m.PedagogueEditor })));
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { ReloadPrompt } from './components/ReloadPrompt';
+const ReloadPrompt = lazy(() => import('./components/ReloadPrompt').then((m) => ({ default: m.ReloadPrompt })));
 import { MathTask } from './lib/schema';
 import { signInWithGoogle } from './lib/firebase';
-import { StudentTelemetryView } from './components/StudentTelemetryView';
-import { GameHost } from './components/live/GameHost';
-import { GamePlayer } from './components/live/GamePlayer';
-import { SummativeExam } from './components/live/SummativeExam';
-import { TeacherExamsDashboard } from './components/TeacherExamsDashboard';
-import { AnalyticsDashboard } from './components/AnalyticsDashboard';
-import { VirtualWhiteboardPage } from './components/live/VirtualWhiteboardPage';
-import { AIPedagogyCritique } from './components/AIPedagogyCritique';
-import { useParams } from 'react-router-dom';
+const StudentTelemetryView = lazy(() => import('./components/StudentTelemetryView').then((m) => ({ default: m.StudentTelemetryView })));
+const GameHost = lazy(() => import('./components/live/GameHost').then((m) => ({ default: m.GameHost })));
+const GamePlayer = lazy(() => import('./components/live/GamePlayer').then((m) => ({ default: m.GamePlayer })));
+const SummativeExam = lazy(() => import('./components/live/SummativeExam').then((m) => ({ default: m.SummativeExam })));
+const TeacherExamsDashboard = lazy(() => import('./components/TeacherExamsDashboard').then((m) => ({ default: m.TeacherExamsDashboard })));
+const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard').then((m) => ({ default: m.AnalyticsDashboard })));
+const VirtualWhiteboardPage = lazy(() => import('./components/live/VirtualWhiteboardPage').then((m) => ({ default: m.VirtualWhiteboardPage })));
+const AIPedagogyCritique = lazy(() => import('./components/AIPedagogyCritique').then((m) => ({ default: m.AIPedagogyCritique })));
+const Pricing = lazy(() => import('./components/Pricing').then((m) => ({ default: m.Pricing })));
+const SchoolInquiriesDashboard = lazy(() => import('./components/SchoolInquiriesDashboard').then((m) => ({ default: m.SchoolInquiriesDashboard })));
+
+const RouteFallback = () => (
+  <div className="min-h-[40vh] flex items-center justify-center text-slate-500 text-sm">Loading...</div>
+);
 
 // Wrapper for extracting pin from params
 const GameHostWrapper = () => {
@@ -61,6 +67,7 @@ const AppRoutes = () => {
 
   return (
     <>
+      <Suspense fallback={<RouteFallback />}>
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home setActiveTab={() => {}} user={user} signInWithGoogle={signInWithGoogle} />} />
@@ -173,6 +180,12 @@ const AppRoutes = () => {
               <VirtualWhiteboardPage />
             </ProtectedRoute>
           } />
+
+          <Route path="school-inquiries" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <SchoolInquiriesDashboard />
+            </ProtectedRoute>
+          } />
         </Route>
         
         {/* Fullscreen Game Routes (No Layout) */}
@@ -183,6 +196,7 @@ const AppRoutes = () => {
         } />
         <Route path="/play" element={<GamePlayerWrapper />} />
         <Route path="/exam/:examId" element={<SummativeExamWrapper />} />
+        <Route path="/pricing" element={<Pricing />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -194,8 +208,43 @@ const AppRoutes = () => {
       <ReloadPrompt />
       <PedagogueCommandCenter />
       <PedagogueEditor />
+      </Suspense>
     </>
   );
+};
+
+const ObservabilityBridge = () => {
+  const location = useLocation();
+  const lastRouteRef = useRef<string>(`${location.pathname}${location.search}`);
+  const routeEnteredAtRef = useRef<number>(performance.now());
+  const didMountRef = useRef(false);
+
+  useEffect(() => {
+    installGlobalObservabilityHandlers();
+  }, []);
+
+  useEffect(() => {
+    const currentRoute = `${location.pathname}${location.search}`;
+    const now = performance.now();
+    const previousRoute = lastRouteRef.current;
+
+    if (!didMountRef.current) {
+      recordRouteView(currentRoute);
+      didMountRef.current = true;
+      lastRouteRef.current = currentRoute;
+      routeEnteredAtRef.current = now;
+      return;
+    }
+
+    if (previousRoute !== currentRoute) {
+      recordTiming('route-visibility', now - routeEnteredAtRef.current, { path: previousRoute });
+      recordRouteView(currentRoute);
+      lastRouteRef.current = currentRoute;
+      routeEnteredAtRef.current = now;
+    }
+  }, [location.pathname, location.search]);
+
+  return null;
 };
 
 export default function App() {
@@ -206,6 +255,7 @@ export default function App() {
           <AuthProvider>
             <GamificationProvider>
               <Router>
+                <ObservabilityBridge />
                 <AppRoutes />
               </Router>
             </GamificationProvider>

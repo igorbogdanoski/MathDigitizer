@@ -18,10 +18,15 @@ import { Button } from './ui/Button';
 import { MathRenderer } from './MathRenderer';
 import { Edit3, Check, Printer } from 'lucide-react';
 import { useLibraryStore } from '../store/useLibraryStore';
+import { useAuth } from '../contexts/AuthContext';
+import { hasProAccess } from '../lib/saas';
+import { ProFeatureGate } from './ProFeatureGate';
+import { captureError } from '../lib/observability';
 
 export default function MaterialsFactory() {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { userProfile } = useAuth();
   const setEditingTask = useLibraryStore(state => state.setEditingTask);
   const [tasks, setTasks] = useState<MathTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +56,7 @@ export default function MaterialsFactory() {
       setGeneratedMaterial(result);
       showToast('Материјалот е успешно генериран!', 'success');
     } catch (error) {
-      console.error("Грешка:", error);
+      captureError(error, { name: 'materials.generate', path: '/factory', details: { selectedType, taskCount: selectedTasks.size } });
       showToast('Настана грешка при генерирањето. Обидете се повторно.', 'error');
     } finally {
       setIsGenerating(false);
@@ -67,7 +72,7 @@ export default function MaterialsFactory() {
       setDiffResult(result);
       showToast('Диференцираниот тест е успешно генериран!', 'success');
     } catch (error) {
-      console.error("Грешка:", error);
+      captureError(error, { name: 'materials.differentiated-test', path: '/factory', details: { taskCount: selectedTasks.size } });
       showToast('Настана грешка при генерирањето. Обидете се повторно.', 'error');
     } finally {
       setIsGeneratingDiff(false);
@@ -135,7 +140,7 @@ export default function MaterialsFactory() {
         })) as MathTask[];
         setTasks(fetchedTasks);
       } catch (error) {
-        console.error("Грешка при вчитување на задачи:", error);
+        captureError(error, { name: 'materials.fetch-tasks', path: '/factory' });
       } finally {
         setLoading(false);
       }
@@ -154,6 +159,15 @@ export default function MaterialsFactory() {
     { id: 'homework', name: 'Домашна работа', icon: ClipboardList, description: 'Задачи за самостојна работа дома', color: 'text-teal-600', iconBg: 'bg-teal-100' },
     { id: 'study_guide', name: 'Водич за учење', icon: GraduationCap, description: 'Детален преглед на теорија и клучни задачи', color: 'text-amber-600', iconBg: 'bg-amber-100' },
   ];
+
+  if (!hasProAccess(userProfile)) {
+    return (
+      <ProFeatureGate
+        featureName="Materials Factory"
+        description="Фабриката за материјали е Pro модул. Отклучете го за генерација на работни листови, тестови и презентации на production ниво."
+      />
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-10 pb-20 animate-in fade-in duration-700">
@@ -201,6 +215,7 @@ export default function MaterialsFactory() {
             <select
               value={targetLanguage}
               onChange={(e) => setTargetLanguage(e.target.value as any)}
+              title="Избери јазик"
               className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="mk">Македонски</option>
@@ -217,6 +232,7 @@ export default function MaterialsFactory() {
              <select
                value={targetGrade}
                onChange={(e) => setTargetGrade(e.target.value)}
+               title="Избери одделение"
                className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 min-w-40"
              >
                <option value="Сите Одделенија / Мешано">Сите Одделенија / Мешано</option>
@@ -514,7 +530,7 @@ export default function MaterialsFactory() {
                     <Download className="w-5 h-5 mr-3" />
                     Експорт (Word)
                   </Button>
-                  <button onClick={() => setDiffResult(null)} className="p-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-white dark:hover:bg-slate-700 transition-colors shadow-sm print:hidden">
+                  <button onClick={() => setDiffResult(null)} aria-label="Затвори диференциран тест" title="Затвори" className="p-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-white dark:hover:bg-slate-700 transition-colors shadow-sm print:hidden">
                     <X className="w-6 h-6" />
                   </button>
                 </div>

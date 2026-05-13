@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../lib/firebase';
 import { collection, addDoc, deleteDoc, doc, getDoc, getDocs, limit, query } from 'firebase/firestore';
-import { GoogleGenAI } from '@google/genai';
 import { 
   ShieldCheck, Activity, Database, Key, Cloud, AlertCircle, 
   CheckCircle2, RefreshCcw, Server, Globe, Lock, Cpu
@@ -9,6 +8,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { motion, AnimatePresence } from 'motion/react';
+import { ai } from '../lib/gemini';
 
 interface HealthStatus {
   service: string;
@@ -28,7 +28,6 @@ export const SystemIntegrityCheck: React.FC = () => {
   ]);
 
   const [isTesting, setIsTesting] = useState(false);
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
   const updateStatus = (service: string, status: HealthStatus['status'], message: string, latency?: number) => {
     setStatuses(prev => prev.map(s => s.service === service ? { ...s, status, message, latency } : s));
@@ -176,7 +175,7 @@ export const SystemIntegrityCheck: React.FC = () => {
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row items-center justify-center gap-8 py-8 relative">
             {/* SVG Lines */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none hidden md:block" style={{ zIndex: 0 }}>
+            <svg className="absolute inset-0 z-0 w-full h-full pointer-events-none hidden md:block">
               <path d="M 25% 50% L 50% 50% L 75% 50%" stroke="rgba(255,255,255,0.1)" strokeWidth="2" fill="none" />
               <circle cx="50%" cy="50%" r="4" fill="#4f46e5" />
             </svg>

@@ -152,6 +152,8 @@ const BugInTheSystem: React.FC = () => {
             <select
               value={difficulty}
               onChange={(e) => setDifficulty(e.target.value)}
+              title="Ниво на тежина"
+              aria-label="Ниво на тежина"
               className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-violet-500"
             >
               <option value="лесно">Лесно</option>

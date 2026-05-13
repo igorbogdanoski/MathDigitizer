@@ -4,8 +4,8 @@ import { BrainCircuit, BookOpen, Factory, Wand2, ArrowRight, Sparkles, Quote, Pl
 import { Button } from './ui/Button';
 import { generateSpeech } from '../lib/gemini';
 import { motion, AnimatePresence } from 'motion/react';
-import { Helmet } from 'react-helmet-async';
 import { MathRenderer } from './MathRenderer';
+import { SEO } from './SEO';
 
 const MATH_QUOTES = [
   { text: "Математиката е азбуката со која Бог го напишал универзумот.", author: "Галилео Галилеј" },
@@ -20,15 +20,33 @@ const MATH_QUOTES = [
   { text: "Математиката се состои од докажување на најочигледните работи на најмалку очигледен начин.", author: "Џорџ Поја" }
 ];
 
+const HOME_VALUE_POINTS = [
+  'AI екстракција што навистина штеди време во подготовка.',
+  'Педагошки analytics и интервенции наместо само генеративен шум.',
+  'Локално подготвен SaaS модел со Pro и school plan за реални институции.',
+];
+
+const HOME_SIGNAL_CARDS = [
+  { title: 'Teacher-first SaaS', value: '490 MKD', detail: 'месечно за Pro Teacher' },
+  { title: 'Годишна вредност', value: '4,900 MKD', detail: 'најдобра опција за цела година' },
+  { title: 'School rollout', value: 'По договор', detail: 'invoice, банка и onboarding' },
+  { title: 'Локални плаќања', value: 'PayPal + Банка', detail: 'без чекање на Stripe setup' },
+];
+
+const HOME_WORKFLOW_STEPS = [
+  { title: 'Екстракција', detail: 'Видео, PDF или слика во структурирани математички задачи.' },
+  { title: 'Педагошка библиотека', detail: 'RAG-ready содржина за повторна употреба, анализа и тестови.' },
+  { title: 'Испорака', detail: 'Материјали, analytics и live classroom workflows од истиот систем.' },
+];
+
 interface HomeProps {
   setActiveTab?: (tab: 'home' | 'extract' | 'library' | 'factory') => void;
   user: any;
   signInWithGoogle: () => void;
 }
 
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { hasProAccess } from '../lib/saas';
 
 export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
   const navigate = useNavigate();
@@ -38,8 +56,8 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
-  const [isUpgrading, setIsUpgrading] = useState(false);
   const [kahootPin, setKahootPin] = useState('');
+  const isPro = hasProAccess(userProfile);
 
   const handleJoinKahoot = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,23 +78,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
       signInWithGoogle();
       return;
     }
-    
-    setIsUpgrading(true);
-    try {
-      // Simulate Stripe Checkout delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Update user profile in Firestore
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, { isPro: true });
-      
-      alert("Успешно се претплативте на Pro верзијата! (Ова е симулација)");
-    } catch (error) {
-      console.error("Error upgrading to Pro:", error);
-      alert("Настана грешка при процесирање на плаќањето.");
-    } finally {
-      setIsUpgrading(false);
-    }
+    navigate('/pricing');
   };
 
   const handlePlayQuote = async () => {
@@ -117,87 +119,50 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
 
   return (
     <div className="space-y-16 pb-16 animate-in fade-in duration-700 min-h-screen font-sans bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 transition-colors duration-300">
-      <Helmet>
-        <title>MathDigitizer Pro | Напредна едукација и математика</title>
-        <meta name="description" content="Водечка AI едукативна платформа за математика на македонски јазик. Беспрекорна дигитализација, OCR екстракција од YouTube/слики, автоматизирано Bloom/DOK оценување и интерактивни Live MathKahoot натпревари." />
-        <meta name="keywords" content="математика, AI, автоматизирано оценување, генератор на задачи, OCR математика, Live MathKahoot, Bloom's Taxonomy, едукација, македонски јазик, MathDigitizer Pro, EdTech, настава, учење" />
-        <meta name="author" content="Игор Богданоски" />
-        <link rel="canonical" href="https://mathdigitizer.pro" />
-        
-        {/* Open Graph / Facebook */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://mathdigitizer.pro/" />
-        <meta property="og:title" content="MathDigitizer Pro | Напредна AI Интелигентна Едукација" />
-        <meta property="og:description" content="Едукативна платформа без компромиси. Користи Gemini 3.1 Pro за Multimodal LaTeX Екстракција од видео и слика, Live MathKahoot натпревари, и Bloom's Smart Auto-Grader кој автоматски лоцира грешки во ракопис." />
-        <meta property="og:image" content="/og-image.jpg" />
-        <meta property="og:site_name" content="MathDigitizer Pro" />
-        <meta property="og:locale" content="mk_MK" />
-
-        {/* Twitter */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:url" content="https://mathdigitizer.pro/" />
-        <meta name="twitter:title" content="MathDigitizer Pro | Напредна AI Интелигентна Едукација" />
-        <meta name="twitter:description" content="Едукативна платформа без компромиси. Користи Gemini 3.1 Pro за Multimodal LaTeX Екстракција од видео и слика, Live MathKahoot натпревари, и Bloom's Smart Auto-Grader кој автоматски лоцира грешки во ракопис." />
-        <meta name="twitter:image" content="/og-image.jpg" />
-
-        {/* Advanced SEO: JSON-LD Structured Data for EdTech */}
-        <script type="application/ld+json">
-          {`
-            {
-              "@context": "https://schema.org",
-              "@type": "WebApplication",
-              "name": "MathDigitizer Pro",
-              "alternateName": "MathDigitizer",
-              "url": "https://mathdigitizer.pro",
-              "applicationCategory": "EducationalApplication",
-              "operatingSystem": "All",
-              "inLanguage": "mk",
-              "softwareVersion": "3.1",
-              "creator": {
-                "@type": "Person",
-                "name": "Игор Богданоски"
-              },
-              "offers": {
-                "@type": "Offer",
-                "price": "0.00",
-                "priceCurrency": "MKD",
-                "availability": "https://schema.org/InStock",
-                "category": "EdTech"
-              },
-              "description": "Платформа за автоматска AI екстракција на математика, Dugga онлајн испити и автоматско оценување.",
-              "featureList": [
-                "Multimodal LaTeX Екстракција",
-                "Smart Auto-Grader",
-                "Live MathKahoot",
-                "Bloom Taxonomy Analytics",
-                "NanoBanana Visualization"
-              ],
-              "aggregateRating": {
-                "@type": "AggregateRating",
-                "ratingValue": "4.9",
-                "bestRating": "5",
-                "worstRating": "1",
-                "ratingCount": "1250"
-              }
-            }
-          `}
-        </script>
-        <script type="application/ld+json">
-          {`
-            {
-              "@context": "https://schema.org",
-              "@type": "EducationalOrganization",
-              "name": "MathDigitizer Pro Education",
-              "url": "https://mathdigitizer.pro",
-              "logo": "https://mathdigitizer.pro/pwa-icon.svg",
-              "sameAs": []
-            }
-          `}
-        </script>
-      </Helmet>
+      <SEO
+        title="MathDigitizer Pro | Напредна едукација и математика"
+        description="Водечка AI едукативна платформа за математика на македонски јазик. Беспрекорна дигитализација, OCR екстракција и интерактивни натпревари."
+        keywords="математика, AI, автоматизирано оценување, генератор на задачи, OCR математика, едукација, македонски јазик, EdTech"
+        canonical="/"
+        type="website"
+        image="/pwa-icon.svg"
+        structuredData={[
+          {
+            '@context': 'https://schema.org',
+            '@type': 'WebApplication',
+            name: 'MathDigitizer Pro',
+            alternateName: 'MathDigitizer',
+            url: 'https://mathdigitizer.pro',
+            applicationCategory: 'EducationalApplication',
+            operatingSystem: 'All',
+            inLanguage: 'mk',
+            softwareVersion: '3.1',
+            creator: {
+              '@type': 'Person',
+              name: 'Игор Богданоски'
+            },
+            offers: {
+              '@type': 'Offer',
+              price: isPro ? '490.00' : '0.00',
+              priceCurrency: 'MKD',
+              availability: 'https://schema.org/InStock',
+              category: 'EdTech'
+            },
+            description: 'Платформа за автоматска AI екстракција на математика, онлајн испити и автоматско оценување.'
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'EducationalOrganization',
+            name: 'MathDigitizer Pro Education',
+            url: 'https://mathdigitizer.pro',
+            logo: 'https://mathdigitizer.pro/pwa-icon.svg',
+            sameAs: []
+          }
+        ]}
+      />
       
       {/* Advanced Hero Section (World-Class EdTech Landing) */}
-      <section className="relative overflow-hidden rounded-[2.5rem] bg-slate-900 dark:bg-slate-950 text-white shadow-[0_0_100px_rgba(37,99,235,0.2)] mx-4 lg:mx-8 xl:mx-12 mt-4 px-6 md:px-12 py-20 lg:py-40 flex flex-col items-center text-center transition-colors duration-500 border border-slate-800 dark:border-slate-800/80">
+      <section className="relative overflow-hidden rounded-[2.5rem] bg-slate-950 text-white shadow-[0_0_100px_rgba(37,99,235,0.18)] mx-4 lg:mx-8 xl:mx-12 mt-4 px-6 md:px-12 py-16 lg:py-24 transition-colors duration-500 border border-slate-800/80">
         
         {/* Deep Abstract Animated Grid */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20 hover:opacity-30 transition-opacity duration-1000"></div>
@@ -221,127 +186,209 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
           <Zap className="w-5 h-5 text-rose-400" />
         </motion.div>
 
-        <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col items-center">
-          <motion.div 
-             initial={{ opacity: 0, scale: 0.8 }}
-             animate={{ opacity: 1, scale: 1 }}
-             transition={{ duration: 0.8, type: "spring" }}
-             className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-slate-800/80 text-blue-300 text-xs sm:text-sm font-black mb-10 border border-blue-500/30 backdrop-blur-xl shadow-[0_0_30px_rgba(59,130,246,0.3)] tracking-widest uppercase"
-          >
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span className="bg-gradient-to-r from-blue-300 to-indigo-300 bg-clip-text text-transparent">Едукативна платформа од следната генерација</span>
-          </motion.div>
-          
-          <motion.h1 
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.8, ease: "easeOut" }}
-            className="text-6xl md:text-8xl lg:text-[7rem] font-black tracking-tighter mb-8 leading-[0.95]"
-          >
-            Еволуција на <br className="hidden md:block" />
-            <span className="relative inline-block mt-2">
-              <span className="absolute -inset-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 blur-2xl opacity-40"></span>
-              <span className="relative text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-cyan-300">
-                 математиката
-              </span>
-            </span> 
-          </motion.h1>
-          
-          <motion.div 
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.4, duration: 0.8 }}
-             className="text-lg md:text-2xl text-slate-300 max-w-3xl mb-14 leading-relaxed font-medium"
-          >
-            Ги спојуваме <strong className="text-white">Dugga испитните стандарди</strong>, <strong className="text-rose-300">Kahoot! гемификацијата</strong> и моќната <strong className="text-blue-300">Gemini 3.1 Pro AI екстракција</strong> во еден врвен систем.
-          </motion.div>
-          
-          <motion.div 
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.6, duration: 0.8 }}
-             className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto relative z-20"
-          >
-            {!user ? (
-              <Button 
-                size="lg" 
-                onClick={signInWithGoogle}
-                className="bg-white hover:bg-slate-100 text-slate-900 border-none text-lg h-16 px-10 rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_rgba(255,255,255,0.4)] group overflow-hidden relative transition-all duration-300"
-              >
-                <div className="absolute inset-0 bg-blue-100 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
-                <Sparkles className="w-6 h-6 mr-3 group-hover:animate-pulse relative z-10 text-blue-600" />
-                <span className="relative z-10 font-black">Регистрирај се Бесплатно</span>
-              </Button>
-            ) : (
-              <Button 
-                size="lg" 
-                onClick={() => navigate('/classrooms')}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white border-none text-lg h-16 px-10 rounded-2xl shadow-[0_0_40px_rgba(79,70,229,0.5)] hover:shadow-[0_0_60px_rgba(79,70,229,0.7)] group overflow-hidden relative transition-all duration-300"
-              >
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
-                <Factory className="w-6 h-6 mr-3 relative z-10" />
-                <span className="relative z-10 font-black">Оди во Контролниот Центар</span>
-              </Button>
-            )}
-            <Button 
-              size="lg" 
-              variant="outline"
-              onClick={() => setShowGuide(true)}
-              className="bg-slate-800/50 hover:bg-slate-700/50 text-white border-slate-600 text-lg h-16 px-10 rounded-2xl backdrop-blur-xl transition-all duration-300"
+        <div className="relative z-10 w-full max-w-7xl mx-auto grid lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] gap-12 items-center">
+          <div>
+            <motion.div 
+               initial={{ opacity: 0, scale: 0.8 }}
+               animate={{ opacity: 1, scale: 1 }}
+               transition={{ duration: 0.8, type: "spring" }}
+               className="inline-flex flex-wrap items-center gap-3 px-6 py-2.5 rounded-full bg-slate-800/90 text-blue-300 text-xs sm:text-sm font-black mb-10 border border-blue-500/40 backdrop-blur-xl shadow-[0_0_40px_rgba(59,130,246,0.4)] tracking-widest uppercase ring-1 ring-blue-400/20"
             >
-              <FileText className="w-6 h-6 mr-3" />
-              <span className="font-bold">Методологија</span>
-            </Button>
-          </motion.div>
-          
-          {/* Quick Kahoot Entry Component */}
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8, duration: 1 }}
-            className="mt-20 w-full max-w-xl mx-auto"
-          >
-             <div className="flex items-center justify-center gap-3 mb-4">
-               <div className="h-px w-10 bg-slate-700"></div>
-               <p className="text-xs font-black uppercase tracking-widest text-slate-400">Студентски Портал</p>
-               <div className="h-px w-10 bg-slate-700"></div>
-             </div>
-             <div className="bg-slate-800/40 p-3 rounded-[2rem] backdrop-blur-2xl border border-slate-700 shadow-2xl transition-all duration-500 focus-within:bg-slate-800/80 focus-within:border-indigo-500/50 focus-within:shadow-[0_0_40px_rgba(79,70,229,0.3)]">
-              <form onSubmit={handleJoinKahoot} className="flex gap-3">
-                <div className="relative flex-1">
-                   <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400" />
-                   <input 
-                     type="text" 
-                     value={kahootPin}
-                     onChange={(e) => setKahootPin(e.target.value)}
-                     placeholder="Внеси ПИН за Игра / Испит..." 
-                     className="w-full bg-slate-900/50 border border-slate-600/50 rounded-2xl pl-14 pr-6 h-16 text-white text-xl placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all font-mono font-black tracking-wider text-center"
-                   />
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 via-indigo-300 to-cyan-300 flex items-center justify-center text-slate-950 shadow-sm">
+                  <BrainCircuit className="w-4 h-4" />
                 </div>
-                <Button type="submit" className="bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-white rounded-2xl px-10 h-16 font-black text-xl shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300 hover:scale-105 active:scale-95">
-                  ВЛЕЗИ
+                <span className="bg-gradient-to-r from-blue-200 to-cyan-200 bg-clip-text text-transparent">MathDigitizer Pro</span>
+              </div>
+              <span className="text-slate-600 hidden sm:inline">|</span>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                <span className="text-emerald-300 tracking-wide">Креирано од Игор Богданоски</span>
+              </div>
+            </motion.div>
+
+            <motion.h1 
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.8, ease: "easeOut" }}
+              className="text-5xl md:text-7xl lg:text-[5.6rem] font-black tracking-tight mb-6 leading-[0.92] text-left"
+            >
+              Помалку хаос.
+              <br />
+              <span className="relative inline-block mt-2">
+                <span className="absolute -inset-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 blur-2xl opacity-35"></span>
+                <span className="relative text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-indigo-200 to-cyan-200">
+                  Повеќе математика.
+                </span>
+              </span>
+            </motion.h1>
+
+            <motion.p 
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ delay: 0.35, duration: 0.8 }}
+               className="text-lg md:text-2xl text-slate-300 max-w-3xl mb-8 leading-relaxed font-medium text-left"
+            >
+              MathDigitizer е teacher-first AI платформа што спојува <strong className="text-white">екстракција</strong>, <strong className="text-white">педагошка аналитика</strong> и <strong className="text-white">готови classroom workflows</strong> во еден систем што реално штеди време.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45, duration: 0.8 }}
+              className="grid gap-3 mb-8"
+            >
+              {HOME_VALUE_POINTS.map((point) => (
+                <div key={point} className="flex items-start gap-3 text-left">
+                  <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
+                  <span className="text-slate-200 text-base md:text-lg">{point}</span>
+                </div>
+              ))}
+            </motion.div>
+
+            <motion.div 
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ delay: 0.55, duration: 0.8 }}
+               className="flex flex-col sm:flex-row gap-4 relative z-20 mb-5"
+            >
+              {!user ? (
+                <Button 
+                  size="lg" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    signInWithGoogle();
+                  }}
+                  className="bg-white hover:bg-slate-100 text-slate-900 border-none text-lg h-16 px-10 rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.18)] hover:shadow-[0_0_60px_rgba(255,255,255,0.28)] group overflow-hidden relative transition-all duration-300"
+                >
+                  <div className="absolute inset-0 bg-blue-100 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+                  <Sparkles className="w-6 h-6 mr-3 group-hover:animate-pulse relative z-10 text-blue-600" />
+                  <span className="relative z-10 font-black">Регистрирај се бесплатно</span>
                 </Button>
-              </form>
+              ) : (
+                <Button 
+                  size="lg" 
+                  onClick={() => navigate('/classrooms')}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white border-none text-lg h-16 px-10 rounded-2xl shadow-[0_0_40px_rgba(79,70,229,0.4)] hover:shadow-[0_0_60px_rgba(79,70,229,0.55)] group overflow-hidden relative transition-all duration-300"
+                >
+                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+                  <Factory className="w-6 h-6 mr-3 relative z-10" />
+                  <span className="relative z-10 font-black">Отвори го контролниот центар</span>
+                </Button>
+              )}
+              <Button 
+                size="lg"
+                variant="outline"
+                onClick={() => navigate('/pricing')}
+                className="bg-slate-800/50 hover:bg-slate-700/60 text-white border-slate-600 text-lg h-16 px-10 rounded-2xl backdrop-blur-xl transition-all duration-300"
+              >
+                <Zap className="w-6 h-6 mr-3" />
+                <span className="font-bold">Види Pro цена</span>
+              </Button>
+            </motion.div>
+
+            <button
+              type="button"
+              onClick={() => setShowGuide(true)}
+              className="inline-flex items-center gap-2 text-sm font-bold text-slate-300 hover:text-white transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+              Погледни ја методологијата зад платформата
+            </button>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.75, duration: 1 }}
+              className="mt-10 w-full max-w-2xl"
+            >
+              <div className="flex items-center gap-3 mb-4 text-left">
+                <div className="h-px w-10 bg-slate-700"></div>
+                <p className="text-xs font-black uppercase tracking-widest text-slate-400">Student Quick Entry</p>
+              </div>
+              <div className="bg-slate-800/45 p-3 rounded-[2rem] backdrop-blur-2xl border border-slate-700 shadow-2xl transition-all duration-500 focus-within:bg-slate-800/80 focus-within:border-indigo-500/50 focus-within:shadow-[0_0_40px_rgba(79,70,229,0.3)]">
+                <form onSubmit={handleJoinKahoot} className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1">
+                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400" />
+                    <input 
+                      type="text" 
+                      value={kahootPin}
+                      onChange={(e) => setKahootPin(e.target.value)}
+                      placeholder="Внеси ПИН за игра или испит" 
+                      className="w-full bg-slate-900/50 border border-slate-600/50 rounded-2xl pl-14 pr-6 h-16 text-white text-lg placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all font-mono font-black tracking-wider sm:text-center"
+                    />
+                  </div>
+                  <Button type="submit" className="bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-white rounded-2xl px-10 h-16 font-black text-lg shadow-[0_0_30px_rgba(16,185,129,0.35)] transition-all duration-300 hover:scale-[1.02] active:scale-95">
+                    ВЛЕЗИ
+                  </Button>
+                </form>
+              </div>
+            </motion.div>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.35, duration: 0.9 }}
+            className="relative"
+          >
+            <div className="rounded-[2rem] border border-white/10 bg-white/8 backdrop-blur-2xl p-6 md:p-7 shadow-[0_30px_100px_rgba(15,23,42,0.45)]">
+              <div className="flex items-center justify-between gap-4 mb-6">
+                <div>
+                  <div className="text-xs font-black uppercase tracking-[0.24em] text-blue-200/80 mb-2">Teacher cockpit</div>
+                  <div className="text-2xl font-black text-white">Еден систем за цел workflow</div>
+                </div>
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-400 via-indigo-300 to-cyan-300 flex items-center justify-center text-slate-950 shadow-lg">
+                  <Cpu className="w-7 h-7" />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {HOME_WORKFLOW_STEPS.map((step, index) => (
+                  <div key={step.title} className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm font-black text-cyan-200">0{index + 1}</div>
+                      <div className="text-lg font-black text-white">{step.title}</div>
+                    </div>
+                    <div className="text-sm text-slate-300 leading-relaxed">{step.detail}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4 mt-5">
+                <div className="rounded-2xl bg-gradient-to-br from-indigo-500/20 to-blue-500/10 border border-indigo-300/20 p-4">
+                  <div className="text-xs uppercase tracking-[0.22em] font-black text-indigo-200 mb-2">Founding price</div>
+                  <div className="text-3xl font-black text-white">490 MKD</div>
+                  <div className="text-sm text-slate-300 mt-1">месечно за Pro Teacher</div>
+                </div>
+                <div className="rounded-2xl bg-white/6 border border-white/10 p-4">
+                  <div className="text-xs uppercase tracking-[0.22em] font-black text-cyan-200 mb-2">Payments</div>
+                  <div className="text-lg font-black text-white">PayPal + Банка</div>
+                  <div className="text-sm text-slate-300 mt-1">локално practical checkout додека bank stack се комплетира</div>
+                </div>
+              </div>
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Social Proof / Stats Tape (Updated) */}
-      <div className="border-y border-slate-200 dark:border-slate-800/60 bg-white dark:bg-slate-900/50 py-6 transition-colors duration-500 shadow-sm overflow-hidden relative">
-         <div className="absolute inset-0 bg-gradient-to-r from-white via-transparent to-white dark:from-slate-900 dark:via-transparent dark:to-slate-900 z-10 w-full pointer-events-none"></div>
-         <div className="max-w-7xl mx-auto px-6 flex justify-center items-center gap-10 md:gap-16 text-slate-500 dark:text-slate-400 font-bold text-sm md:text-lg animate-[pulse_4s_ease-in-out_infinite]">
-            <div className="flex items-center gap-3 shrink-0"><CheckCircle className="w-6 h-6 text-emerald-500"/> Dugga Enterprise Испити</div>
-            <div className="flex items-center gap-3 shrink-0"><Cpu className="w-6 h-6 text-blue-500"/> Gemini 3.1 Pro Engine</div>
-            <div className="flex items-center gap-3 shrink-0"><Play className="w-6 h-6 text-rose-500"/> MathKahoot Интеракција</div>
-            <div className="flex items-center gap-3 shrink-0"><ShieldCheck className="w-6 h-6 text-indigo-500"/> SRS Адаптивни Тестови</div>
-         </div>
-      </div>
+      {/* Social Proof / Value Signals */}
+      <section className="max-w-7xl mx-auto px-6 -mt-2">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {HOME_SIGNAL_CARDS.map((card) => (
+            <div key={card.title} className="rounded-[1.75rem] border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/60 p-6 shadow-sm backdrop-blur-xl">
+              <div className="text-xs font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 mb-3">{card.title}</div>
+              <div className="text-3xl font-black text-slate-900 dark:text-white mb-2">{card.value}</div>
+              <div className="text-sm text-slate-600 dark:text-slate-300">{card.detail}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* Advanced Bento Grid Features */}
       <section className="max-w-[85rem] mx-auto px-6 py-20">
-        <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white mb-6 text-center tracking-tighter">Напреден Едукативен Екосистем</h2>
-        <p className="text-slate-500 dark:text-slate-400 text-center mb-16 text-lg max-w-2xl mx-auto font-medium">Конструиран за десеткратно зголемување на продуктивноста на наставникот и ангажманот на ученикот.</p>
+        <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white mb-6 text-center tracking-tighter">Изграден за реален училиштен workflow</h2>
+        <p className="text-slate-500 dark:text-slate-400 text-center mb-16 text-lg max-w-3xl mx-auto font-medium">Наместо да продава десетици неповрзани AI функции, Home сега јасно покажува како платформата води од извор до анализа, материјали и live classroom delivery.</p>
         
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
           {/* Main Focus: Live Kahoot Mode (Spans 12 cols) */}
@@ -468,15 +515,26 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
       {/* Modern High-End Footer Teaser for Pricing */}
       <section className="max-w-4xl mx-auto px-6 text-center pt-8 border-t border-slate-200 dark:border-slate-800/50 pb-12">
          <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight transition-colors duration-300">Подготвени да ја трансформирате едукацијата?</h2>
-         <p className="text-slate-500 dark:text-slate-400 font-medium mb-8 transition-colors duration-300">Платформата е целосно бесплатна за едукатори во бета тестирање.</p>
+        <p className="text-slate-500 dark:text-slate-400 font-medium mb-8 transition-colors duration-300">Core користењето останува достапно, а Pro е наменет за наставници што сакаат побрз, посигурен и посериозен workflow.</p>
          {!user ? (
             <Button onClick={signInWithGoogle} className="bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 text-white h-14 px-8 rounded-2xl font-bold font-sans shadow-xl transition-all duration-300">
                Започнете Сега
             </Button>
          ) : (
-            <Button onClick={() => navigate('/extract')} className="bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-500 dark:text-white text-white h-14 px-8 rounded-2xl font-bold font-sans shadow-xl transition-all duration-300">
-               Кон Библиотеката
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+            <Button onClick={() => navigate('/library')} className="bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-500 dark:text-white text-white h-14 px-8 rounded-2xl font-bold font-sans shadow-xl transition-all duration-300">
+                Кон Библиотеката
+              </Button>
+              {!isPro && (
+                <Button
+                  onClick={handleUpgradeToPro}
+                  variant="outline"
+                  className="h-14 px-8 rounded-2xl font-bold font-sans border-amber-300 text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:border-amber-400/40 dark:hover:bg-amber-500/10"
+                >
+                  Отклучи Pro (Checkout)
+                </Button>
+              )}
+            </div>
          )}
       </section>
       
@@ -489,7 +547,9 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
             </div>
             <span className="font-bold text-slate-700 dark:text-slate-300">MathDigitizer <span className="text-blue-500">Pro</span></span>
           </div>
-          <div className="text-sm text-slate-500 dark:text-slate-400">
+          <div className="text-sm text-slate-500 dark:text-slate-400 text-center">
+            Креирано од <span className="font-semibold text-slate-700 dark:text-slate-300">Игор Богданоски</span>
+            <span className="mx-2 opacity-40">·</span>
             © {new Date().getFullYear()} Сите права задржани. Развиено за македонското образование.
           </div>
         </div>
@@ -512,6 +572,8 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
                 </h2>
                 <button 
                   onClick={() => setShowGuide(false)}
+                  aria-label="Затвори модал"
+                  title="Затвори"
                   className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 >
                   <X className="w-5 h-5" />

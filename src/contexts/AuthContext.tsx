@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, onAuthStateChanged } from 'firebase/auth';
+import { User, onAuthStateChanged, getRedirectResult } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { UserProfile } from '../lib/schema';
+import { captureError } from '../lib/observability';
 
 interface AuthContextType {
   user: User | null;
@@ -26,6 +27,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Check for redirect result first
+    getRedirectResult(auth).catch((error) => {
+      console.error("Redirect error", error);
+      if (error.code === 'auth/unauthorized-domain') {
+        alert("Грешка: Доменот не е дозволен во Firebase.\nВе молиме додадете го овој домен (vercel.app) во Firebase Console -> Authentication -> Settings -> Authorized Domains.");
+      }
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -37,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUserProfile(null);
           }
         } catch (error) {
-          console.error("Error fetching user profile:", error);
+          captureError(error, { name: 'auth.fetch-user-profile', path: '/auth', details: { uid: currentUser.uid } });
         }
       } else {
         setUserProfile(null);

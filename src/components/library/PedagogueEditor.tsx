@@ -12,8 +12,11 @@ import { Input } from '../ui/Input';
 import { Card, CardContent } from '../ui/Card';
 import { MathRenderer } from '../MathRenderer';
 import { useLibraryStore } from '../../store/useLibraryStore';
-import { GoogleGenAI, Type } from "@google/genai";
+import { Type } from "@google/genai";
 import { VoiceInputButton } from '../VoiceInputButton';
+import { ai } from '../../lib/gemini';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 export const PedagogueEditor: React.FC = () => {
   const { editingTask, setEditingTask, tasks, setTasks, onTaskUpdated } = useLibraryStore();
@@ -41,8 +44,6 @@ export const PedagogueEditor: React.FC = () => {
     // If we have an ID, it's a library task, so we should update Firestore
     if (localTask.id) {
       try {
-        const { doc, updateDoc } = await import('firebase/firestore');
-        const { db } = await import('../../lib/firebase');
         const taskRef = doc(db, 'tasks', localTask.id);
         const { id, ...dataToSave } = localTask;
         await updateDoc(taskRef, dataToSave as any);
@@ -120,7 +121,6 @@ export const PedagogueEditor: React.FC = () => {
   const handleAIAction = async (action: 'refine_rigor' | 'modernize_context' | 'generate_socratic' | 'generate_modeling') => {
     setIsAILoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       // Construct prompt based on action
       let prompt = "";
       if (action === 'refine_rigor') {
@@ -396,6 +396,8 @@ export const PedagogueEditor: React.FC = () => {
                         <select 
                           value={localTask.difficulty}
                           onChange={(e) => updateField('difficulty', e.target.value)}
+                          title="Difficulty"
+                          aria-label="Difficulty"
                           className="w-full h-12 bg-slate-900 border border-white/5 rounded-xl text-slate-300 px-4 outline-none focus:border-indigo-500"
                         >
                           <option value="easy">Easy</option>
@@ -408,6 +410,8 @@ export const PedagogueEditor: React.FC = () => {
                         <select 
                           value={localTask.type}
                           onChange={(e) => updateField('type', e.target.value)}
+                          title="Instructional type"
+                          aria-label="Instructional type"
                           className="w-full h-12 bg-slate-900 border border-white/5 rounded-xl text-slate-300 px-4 outline-none focus:border-indigo-500"
                         >
                           <option value="task">Problem Solving</option>
@@ -422,6 +426,8 @@ export const PedagogueEditor: React.FC = () => {
                         <select 
                           value={localTask.bloom_taxonomy || ''}
                           onChange={(e) => updateField('bloom_taxonomy', e.target.value || undefined)}
+                          title="Bloom taxonomy"
+                          aria-label="Bloom taxonomy"
                           className="w-full h-12 bg-slate-900 border border-white/5 rounded-xl text-slate-300 px-4 outline-none focus:border-purple-500"
                         >
                           <option value="">Неодредено</option>
@@ -479,6 +485,9 @@ export const PedagogueEditor: React.FC = () => {
                                 id={`step-textarea-${i}`}
                                 value={step}
                                 onChange={(e) => updateStep(i, e.target.value)}
+                                title={`Solution step ${i + 1}`}
+                                aria-label={`Solution step ${i + 1}`}
+                                placeholder="Опиши го чекорот..."
                                 className="w-full bg-slate-900 border border-white/5 rounded-xl p-3 text-slate-300 text-sm focus:border-indigo-500 outline-none min-h-[80px] resize-none pr-10"
                               />
                               <VoiceInputButton 
@@ -517,7 +526,7 @@ export const PedagogueEditor: React.FC = () => {
                         {localTask.tags?.map(tag => (
                           <span key={tag} className="flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-lg text-xs font-bold">
                             #{tag}
-                            <button onClick={() => removeTag(tag)} className="hover:text-white"><X className="w-3 h-3" /></button>
+                            <button onClick={() => removeTag(tag)} aria-label={`Избриши таг ${tag}`} title={`Избриши таг ${tag}`} className="hover:text-white"><X className="w-3 h-3" /></button>
                           </span>
                         ))}
                       </div>

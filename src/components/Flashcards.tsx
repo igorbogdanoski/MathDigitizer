@@ -597,8 +597,8 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
             </div>
             <div className="flex gap-1 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-indigo-500 rounded-full transition-all duration-300"
-                style={{ width: `${(currentIndex / studyCards.length) * 100}%` }}
+                className="h-full bg-indigo-500 rounded-full transition-all duration-300 [width:var(--progress-width)]"
+                style={{ '--progress-width': `${(currentIndex / studyCards.length) * 100}%` } as React.CSSProperties}
               />
             </div>
           </div>
@@ -768,6 +768,8 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
                           <div className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] uppercase font-bold px-2 py-1 rounded">Q&A</div>
                           <button 
                             onClick={() => card.id && handleDeleteFlashcard(card.id)}
+                            aria-label="Избриши картичка"
+                            title="Избриши картичка"
                             className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -807,7 +809,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
                   <Plus className="w-6 h-6 text-indigo-600" />
                   Креирај Картичка
                 </h2>
-                <button onClick={() => setShowAddModal(false)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full bg-white dark:bg-slate-800 shadow-sm">
+                <button onClick={() => setShowAddModal(false)} aria-label="Затвори" title="Затвори" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full bg-white dark:bg-slate-800 shadow-sm">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -941,7 +943,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
                   <Sparkles className="w-6 h-6 text-purple-600" />
                   AI Генератор
                 </h2>
-                <button onClick={() => setShowAIModal(false)} disabled={isGenerating} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full bg-white dark:bg-slate-800 shadow-sm">
+                <button onClick={() => setShowAIModal(false)} disabled={isGenerating} aria-label="Затвори" title="Затвори" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full bg-white dark:bg-slate-800 shadow-sm">
                   <X className="w-5 h-5" />
                 </button>
               </div>

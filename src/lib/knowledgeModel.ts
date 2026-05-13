@@ -1,5 +1,8 @@
 import { Type } from "@google/genai";
-import { ai } from "./gemini";
+import { ai, generateTaskEmbedding } from "./gemini";
+import { MathTask } from "./schema";
+import { buildPromptEnvelope, buildRagTaskContext, PromptStrategy } from "./promptEngineering";
+import { buildRagContextFromLibrary } from "./ragContext";
 
 export interface KnowledgeModelResponse {
   problem_text: string;
@@ -22,20 +25,64 @@ export interface KnowledgeModelResponse {
   };
 }
 
-export async function generateHybridMathSolution(problemText: string): Promise<KnowledgeModelResponse> {
-  const prompt = `Ти си Водечки Софтверски Архитект и Едукативен Технолог (EdTech Expert), со експертиза за математика на македонски јазик. Твојата мисија е да генерираш "Хибриден Модел на Знаење" базиран на "Tree-of-Thoughts" и "Chain-of-Thought" (ToT + CoT) напреден промптинг.
+export interface KnowledgeModelOptions {
+  strategy?: PromptStrategy;
+  retrievalTasks?: MathTask[];
+}
 
-ЦЕЛ: Да се реши следната задача/проблем на најдобар можен педагошки начин.
-ЗАДАЧА: ${problemText}
+export async function generateHybridMathSolution(
+  problemText: string,
+  options: KnowledgeModelOptions = {}
+): Promise<KnowledgeModelResponse> {
+  const strategy = options.strategy ?? 'hybrid';
 
-СЛЕДИ ГО ОВОЈ ПРОТОКОЛ:
-1. **Tree-of-Thoughts (ToT) Системски Дизајн**: Евалуирај 3 различни патишта (paths) за решавање на овој математички проблем. Опиши ги накратко.
-2. **Евалуација**: Критички спореди ги трите патишта и одбери го најдобриот баланс помеѓу педагошка јасност и математичка точност.
-3. **Chain-of-Thought (CoT) Логика**: Откако ќе го избереш најдобриот пат, разбиј го процесот на решавање на микро-чекори со детално методолошко објаснување.
-4. **Детекција на Анатомски Грешки (Misconception Analysis)**: Системот мора да ги предвиди 3-те најчести погрешни чекори што ги прават учениците за оваа задача и како наставникот треба да реагира на нив.
-5. **Македонски Јазик & LaTeX**: Користи стручен македонски јазик и Zero-Error LaTeX стандард (inline $...$ и display $$...$$). На пример "$x^2$".
+  let ragContext = 'RAG КОНТЕКСТ: Нема релевантни задачи од библиотеката за ова барање.';
+  if (options.retrievalTasks && options.retrievalTasks.length > 0) {
+    const rag = await buildRagContextFromLibrary({
+      query: problemText,
+      tasks: options.retrievalTasks,
+      embedQuery: generateTaskEmbedding,
+      maxItems: 4,
+      similarityThreshold: 0.33
+    });
+    ragContext = `${buildRagTaskContext(rag.selectedTasks)}\nРЕЖИМ НА RETRIEVAL: ${rag.retrievalMode}`;
+  }
 
-ВРАТИ ГО РЕЗУЛТАТОТ СТРОГО КАКО JSON ОБЈЕКТ кој се совпаѓа со дефинираната структура.`;
+  const prompt = buildPromptEnvelope({
+    role: 'Ти си Водечки Софтверски Архитект и Едукативен Технолог (EdTech Expert), со експертиза за математика на македонски јазик.',
+    mission: 'Генерирај "Хибриден Модел на Знаење" за решавање на математички проблем со силна педагогија и математичка точност.',
+    strategy,
+    pedagogyPriority: 'scaffolded',
+    ragContext,
+    userInput: problemText,
+    hardRules: [
+      'Евалуирај 3 различни патишта и избери најдобар според педагошка јасност и точност.',
+      'Разложи го избраниот пат во микро-чекори со јасно методолошко објаснување.',
+      'Детектирај најмалку 3 чести мисконцепции и предложи teacher reaction за секоја.',
+      'Користи стручен македонски јазик и Zero-Error LaTeX ($...$ и $$...$$).',
+      'Врати исклучиво валиден JSON без markdown блокови.'
+    ],
+    outputContract: `{
+  "problem_text": "string",
+  "tree_of_thoughts": {
+    "path_1": "string",
+    "path_2": "string",
+    "path_3": "string",
+    "evaluation": "string",
+    "chosen_path": "string"
+  },
+  "chain_of_thought_explanation": "string",
+  "solution_steps": ["string"],
+  "misconceptions": [{ "mistake": "string", "teacher_reaction": "string" }],
+  "metadata": {
+    "tags": ["string"],
+    "difficulty": "easy|medium|hard",
+    "dok_level": 1,
+    "grade_level": "string",
+    "curriculum_topic": "string"
+  }
+}`
+  });
 
   try {
     const response = await ai.models.generateContent({

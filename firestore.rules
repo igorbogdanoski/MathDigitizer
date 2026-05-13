@@ -34,6 +34,11 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    function isTeacher() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+
     function isDocOwner() {
       return isAuthenticated() && request.auth.uid == resource.data.author_uid;
     }
@@ -136,31 +141,107 @@ service cloud.firestore {
              data.test is bool;
     }
 
+    function isValidSchoolInquiry(data) {
+      let allowedFields = ['contact_name', 'school_name', 'email', 'seat_count', 'message', 'requester_uid', 'billing_period_interest', 'plan_context', 'created_at', 'status'];
+
+      return data.keys().hasOnly(allowedFields) &&
+             validStringLength('contact_name', 1, 120) &&
+             validStringLength('school_name', 1, 160) &&
+             validStringLength('email', 3, 160) &&
+             data.email.matches('^.+@.+\\..+$') &&
+             (!('seat_count' in data) || (data.seat_count is string && data.seat_count.size() <= 40)) &&
+             (!('message' in data) || (data.message is string && data.message.size() <= 3000)) &&
+             (!('requester_uid' in data) || data.requester_uid == null || (data.requester_uid is string && data.requester_uid.size() < 50)) &&
+             data.billing_period_interest in ['monthly', 'annual'] &&
+             validStringLength('plan_context', 1, 120) &&
+             isValidDateString(data.created_at) &&
+             data.status == 'new';
+    }
+
+    function isValidPaymentReceipt(data) {
+      let allowedFields = ['payer_name', 'payer_email', 'payment_channel', 'reference_code', 'note', 'amount_label', 'billing_period_interest', 'plan_context', 'requester_uid', 'created_at', 'status', 'reviewed_by', 'reviewed_at', 'review_note'];
+
+      return data.keys().hasOnly(allowedFields) &&
+             validStringLength('payer_name', 1, 120) &&
+             validStringLength('payer_email', 3, 160) &&
+             data.payer_email.matches('^.+@.+\\..+$') &&
+             data.payment_channel in ['bank', 'paypal'] &&
+             validStringLength('reference_code', 1, 160) &&
+             (!('note' in data) || (data.note is string && data.note.size() <= 3000)) &&
+             validStringLength('amount_label', 1, 120) &&
+             data.billing_period_interest in ['monthly', 'annual'] &&
+             validStringLength('plan_context', 1, 120) &&
+             data.requester_uid is string &&
+             request.auth != null &&
+             data.requester_uid == request.auth.uid &&
+             isValidDateString(data.created_at) &&
+             data.status == 'pending' &&
+             !('reviewed_by' in data) &&
+             !('reviewed_at' in data) &&
+             !('review_note' in data);
+    }
+
+    function isValidPaymentReceiptUpdate() {
+      return request.resource.data.keys().hasOnly(['payer_name', 'payer_email', 'payment_channel', 'reference_code', 'note', 'amount_label', 'billing_period_interest', 'plan_context', 'requester_uid', 'created_at', 'status', 'reviewed_by', 'reviewed_at', 'review_note']) &&
+             request.resource.data.payer_name == resource.data.payer_name &&
+             request.resource.data.payer_email == resource.data.payer_email &&
+             request.resource.data.payment_channel == resource.data.payment_channel &&
+             request.resource.data.reference_code == resource.data.reference_code &&
+             request.resource.data.note == resource.data.note &&
+             request.resource.data.amount_label == resource.data.amount_label &&
+             request.resource.data.billing_period_interest == resource.data.billing_period_interest &&
+             request.resource.data.plan_context == resource.data.plan_context &&
+             request.resource.data.requester_uid == resource.data.requester_uid &&
+             request.resource.data.created_at == resource.data.created_at &&
+             request.resource.data.status in ['pending', 'reviewed', 'approved', 'rejected'] &&
+             request.resource.data.reviewed_by is string &&
+             request.resource.data.reviewed_by == request.auth.uid &&
+             isValidDateString(request.resource.data.reviewed_at) &&
+             (!('review_note' in request.resource.data) || (request.resource.data.review_note is string && request.resource.data.review_note.size() <= 2000));
+    }
+
+    function isValidSalesOpsAlertState(data) {
+      let allowedFields = ['dashboard_id', 'acknowledged_signature', 'acknowledged_by', 'acknowledged_at', 'updated_at'];
+
+      return data.keys().hasOnly(allowedFields) &&
+             data.dashboard_id == 'school_inquiries' &&
+             (
+               !('acknowledged_signature' in data) ||
+               data.acknowledged_signature == null ||
+               (data.acknowledged_signature is string && data.acknowledged_signature.size() <= 2000)
+             ) &&
+             (
+               !('acknowledged_by' in data) ||
+               data.acknowledged_by == null ||
+               (data.acknowledged_by is string && data.acknowledged_by.size() > 0 && data.acknowledged_by.size() < 50)
+             ) &&
+             (
+               !('acknowledged_at' in data) ||
+               data.acknowledged_at == null ||
+               isValidDateString(data.acknowledged_at)
+             ) &&
+             isValidDateString(data.updated_at);
+    }
+
+    function canTeacherActivateProOnUser() {
+      return isTeacher() &&
+             request.resource.data.keys().hasOnly(['uid', 'email', 'displayName', 'role', 'createdAt', 'isPro']) &&
+             request.resource.data.uid == resource.data.uid &&
+             request.resource.data.email == resource.data.email &&
+             request.resource.data.displayName == resource.data.displayName &&
+             request.resource.data.role == resource.data.role &&
+             request.resource.data.createdAt == resource.data.createdAt &&
+             request.resource.data.isPro == true;
+    }
+
     match /user_stats/{userId} {
       allow read: if isAuthenticated();
-      
-      allow create: if isAuthenticated() && 
-                    request.resource.data.uid == request.auth.uid &&
-                    userId == request.auth.uid;
-                    
-      allow update: if isAuthenticated() && 
-                    isOwner(userId) &&
-                    (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['uid']));
+      allow write: if isAuthenticated() && userId == request.auth.uid;
     }
 
     match /users/{userId} {
       allow read: if isAuthenticated();
-      
-      allow create: if isAuthenticated() && 
-                    isValidUserProfile(request.resource.data) && 
-                    request.resource.data.uid == request.auth.uid &&
-                    userId == request.auth.uid;
-                    
-      allow update: if isAuthenticated() && 
-                    isOwner(userId) &&
-                    isValidUserProfile(request.resource.data) && 
-                    request.resource.data.uid == resource.data.uid &&
-                    areImmutableFieldsUnchanged(['createdAt', 'role']); // Prevent role escalation
+      allow write: if isAuthenticated() && userId == request.auth.uid;
     }
 
     match /tasks/{taskId} {
@@ -236,29 +317,33 @@ service cloud.firestore {
     match /flashcards/{cardId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
+      // Scope mutations to the owning user only
+      allow update: if isAuthenticated() && resource.data.user_uid == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.user_uid == request.auth.uid;
     }
 
     match /graded_submissions/{subId} {
-      allow read: if isAuthenticated();
+      // Read scoped to the submitting teacher only
+      allow read: if isAuthenticated() && resource.data.teacher_uid == request.auth.uid;
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.teacher_uid == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.teacher_uid == request.auth.uid;
     }
 
     match /live_sessions/{pin} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
+      // Only teachers can clean up live sessions
+      allow delete: if isTeacher();
     }
 
     match /whiteboard_sessions/{sessionId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
+      // Scope deletion to the session author only
+      allow delete: if isAuthenticated() && resource.data.authorId == request.auth.uid;
     }
 
     match /assignments/{assignmentId} {
@@ -273,6 +358,27 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.studentId == request.auth.uid;
       allow update: if isAuthenticated() && resource.data.studentId == request.auth.uid;
       allow delete: if isAuthenticated() && resource.data.studentId == request.auth.uid;
+    }
+
+    match /school_inquiries/{inquiryId} {
+      allow create: if isValidSchoolInquiry(request.resource.data);
+      allow read, update: if isTeacher();
+      allow delete: if false;
+    }
+
+    match /payment_receipts/{receiptId} {
+      allow create: if isValidPaymentReceipt(request.resource.data);
+      allow read: if isTeacher();
+      allow update: if isTeacher() && isValidPaymentReceiptUpdate();
+      allow delete: if false;
+    }
+
+    match /sales_ops_alert_state/{stateId} {
+      allow read: if isTeacher();
+      allow create, update: if isTeacher() &&
+                            stateId == 'school_inquiries' &&
+                            isValidSalesOpsAlertState(request.resource.data);
+      allow delete: if false;
     }
 
     match /_system_integrity_test/{testId} {
