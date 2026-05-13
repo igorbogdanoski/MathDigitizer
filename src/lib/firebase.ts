@@ -1,9 +1,14 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithRedirect, signOut } from 'firebase/auth';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  signOut,
+} from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
-// Initialize Firebase SDK
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
@@ -56,21 +61,50 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
+const POPUP_FALLBACK_CODES = new Set([
+  'auth/popup-blocked',
+  'auth/popup-closed-by-user',
+  'auth/cancelled-popup-request',
+  'auth/operation-not-supported-in-this-environment',
+]);
+
 export const signInWithGoogle = async () => {
+  googleProvider.setCustomParameters({
+    prompt: 'select_account',
+  });
+
   try {
-    googleProvider.setCustomParameters({
-      prompt: 'select_account'
-    });
-    const result = await signInWithRedirect(auth, googleProvider);
-    return result;
+    return await signInWithPopup(auth, googleProvider);
   } catch (error: any) {
-    console.error("Error signing in with Google", error);
-    if (error.code === 'auth/popup-blocked') {
-      alert("Прелистувачот го блокираше прозорецот за најава.\nВе молиме кликнете на иконата за поп-ап блокерот во горниот десен агол (во адресната лента) и изберете 'Always allow pop-ups for this site'.");
-    } else if (error.code === 'auth/unauthorized-domain') {
-      alert("Грешка: Доменот не е дозволен во Firebase.\nВе молиме додадете го овој домен (vercel.app) во Firebase.");
+    const code: string | undefined = error?.code;
+
+    if (code && POPUP_FALLBACK_CODES.has(code)) {
+      try {
+        return await signInWithRedirect(auth, googleProvider);
+      } catch (redirectError: any) {
+        console.error('Error signing in with Google (redirect fallback)', redirectError);
+        if (redirectError?.code === 'auth/unauthorized-domain') {
+          alert(
+            "Грешка: Доменот не е дозволен во Firebase.\n" +
+            "Додадете го овој домен во Firebase Console -> Authentication -> Settings -> Authorized Domains."
+          );
+        } else {
+          alert("Грешка при најава: " + (redirectError?.message || "Непозната грешка."));
+        }
+        throw redirectError;
+      }
+    }
+
+    console.error('Error signing in with Google', error);
+    if (code === 'auth/unauthorized-domain') {
+      alert(
+        "Грешка: Доменот не е дозволен во Firebase.\n" +
+        "Додадете го овој домен во Firebase Console -> Authentication -> Settings -> Authorized Domains."
+      );
+    } else if (code === 'auth/network-request-failed') {
+      alert("Мрежна грешка при најава. Проверете ја интернет конекцијата и обидете се повторно.");
     } else {
-      alert("Грешка при најава: " + (error.message || "Непозната грешка."));
+      alert("Грешка при најава: " + (error?.message || "Непозната грешка."));
     }
     throw error;
   }
