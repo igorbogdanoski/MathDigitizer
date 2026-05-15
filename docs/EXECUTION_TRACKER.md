@@ -209,3 +209,185 @@ Use this tracker daily. Keep entries short, factual, and measurable.
 
 - Keep decision history explicit.
 - If a day slips, document root cause and recovery plan for next day.
+
+---
+
+# Post-Stabilization Action Plan — SaaS + SEO
+
+Sprint window: 2026-05-16 to 2026-06-13 (4 weeks)
+Owner: Engineering (solo)
+Payment rails: PayPal + Bank transfer (IBAN/SWIFT). Stripe deferred.
+
+---
+
+## PHASE A — SEO Quick Wins (Week 1, Days 1-3)
+
+Low-effort, high-impact. All client-side. No architecture change.
+
+### A1. Fix broken meta and canonical
+- Update `index.html`:
+  - `og:url` and `twitter:url` -> `https://mathdigitizer.vercel.app/` (or production domain when bound)
+  - Add `<link rel="canonical" href="https://mathdigitizer.vercel.app/" />`
+  - Add `<meta name="theme-color" content="#4f46e5" />`
+- Acceptance: `curl https://mathdigitizer.vercel.app/ | grep og:url` returns correct URL.
+
+### A2. Generate proper Open Graph image
+- Create `public/og-image.png` (1200x630, PNG, < 300 KB).
+  - Brand: MathDigitizer Pro logo + tagline "AI Edukacija na makedonski"
+  - Generate with `mcp__zen-cli__generate_image` (16:9 aspect).
+- Update `index.html` `og:image` to `/og-image.png` (absolute: `https://mathdigitizer.vercel.app/og-image.png`).
+- Validate via https://www.opengraph.xyz/
+
+### A3. Regenerate sitemap.xml
+- Replace empty `public/sitemap.xml` with live entries:
+  - `/`, `/pricing`, `/library`, `/smart-ocr`, `/extract`, `/curriculum`, `/live-board`, `/blog/*` (when added)
+- Add `<lastmod>` from current date, `<changefreq>weekly</changefreq>`, `<priority>` per route.
+- Add script `scripts/generate-sitemap.mjs` that reads `src/lib/seo.ts` (only routes with `noindex !== true`) and writes XML.
+- Wire into `npm run build` as prebuild step.
+- Fix `public/robots.txt` Sitemap line to `https://mathdigitizer.vercel.app/sitemap.xml`.
+
+### A4. JSON-LD structured data
+- Add to `index.html` `<head>`:
+  - `EducationalOrganization` (name, url, logo, sameAs social)
+  - `SoftwareApplication` (name, applicationCategory: EducationalApplication, operatingSystem: Web, offers)
+  - `Person` author (Igor Bogdanoski)
+- Validate via https://search.google.com/test/rich-results
+
+### A5. Submit to Google Search Console
+- Verify ownership via `<meta name="google-site-verification">` in `index.html`
+- Submit sitemap.
+- Monitor index coverage weekly.
+
+**Phase A gate**: Lighthouse SEO score >= 95 on `/` and `/pricing`. Real Google indexation visible in 7-14 days.
+
+---
+
+## PHASE B — SEO Foundation (Week 2)
+
+### B1. Pre-rendering for public routes
+- Install `vite-plugin-prerender-spa` or migrate to `vite-react-ssg`.
+- Pre-render at build time: `/`, `/pricing`, `/library` (SEO entry pages).
+- Verify rendered HTML contains visible content (no empty `<div id="root">`).
+
+### B2. Per-route SEO test extension
+- Extend `seo.test.ts`: every public route must have non-empty `title`, `description >= 80 chars`, valid `canonical`, `og:image`.
+- Add to `quality:gates`.
+
+### B3. Content layer (the real SEO leverage)
+- Create `/blog` route + `BlogPost` component reading from Firestore `blog_posts` collection.
+- Seed 5 long-form posts (1500+ words) on Macedonian math search terms:
+  - "Kako se reshava kvadratna ravenka — celosen vodich so primeri"
+  - "Trigonometrija za 7mo oddelenie — formula i vezhbi"
+  - "OCR za matematichki zadachi — kako AI gi chita rakopisi"
+  - "Bloom taksonomijata vo matematichkoto obrazovanie"
+  - "GeoGebra vs MathLive — koja alatka e podobra za nastavnici"
+- Each post: H1, H2/H3 hierarchy, internal links to `/library`, `/pricing`.
+
+### B4. Internal linking + breadcrumbs
+- Add breadcrumb component to all public routes (with `BreadcrumbList` JSON-LD).
+- Cross-link pricing <-> library <-> blog from footer.
+
+**Phase B gate**: 5 blog posts indexed, 3 ranking on page 2 for target keywords (check via Search Console).
+
+---
+
+## PHASE C — Monetization without Stripe (Weeks 2-3)
+
+Goal: accept first paying teacher within 14 days using PayPal + Bank transfer.
+
+### C1. Pricing page activation
+- `Pricing.tsx` already exists. Update plan tiers:
+  - **Free**: 10 OCR/month, 50 tasks max, basic AI tutor
+  - **Teacher** (€9/mo or €90/year): unlimited OCR, unlimited tasks, AI grader, classrooms
+  - **Skola** (€49/mo or €490/year): up to 10 teacher seats, school analytics, priority support
+  - **Enterprise** (custom): contact form
+- Each "Plati" button opens modal with PayPal + Bank transfer instructions.
+
+### C2. PayPal integration (no SDK required for v1)
+- Create one PayPal Business account.
+- Add "PayPal.Me" links per plan: `paypal.me/mathdigitizer/9EUR`, `paypal.me/mathdigitizer/90EUR`.
+- After payment, user uploads receipt screenshot in modal -> stored in `payment_receipts` (Firestore + Storage).
+- Manual approval by you sets `userProfile.plan = 'teacher'` and `plan_expires_at`.
+- Build admin page `/admin/payments`: list pending receipts, approve/reject button.
+
+### C3. Bank transfer flow
+- Modal shows: IBAN, SWIFT, beneficiary name, reference field (= user UID + plan code).
+- User pastes bank confirmation in textarea -> Firestore `payment_receipts` with `method: 'bank'`.
+- Same admin approval flow as PayPal.
+
+### C4. Plan enforcement
+- Add `usePlan()` hook reading `userProfile.plan` and `plan_expires_at`.
+- Gate features:
+  - OCR uploads: count via `user_stats.ocr_count_month` -> if free and >= 10 -> show upgrade modal.
+  - Task creation: same pattern.
+  - AI grader / classrooms: render `<UpgradeWall plan="teacher" />` if not entitled.
+- Reset monthly counters via Cloud Scheduler -> Cloud Function (or manual cron via `npm run reset-counters`).
+
+### C5. Email receipts + invoicing
+- Use `EmailJS` or `Resend` (free tier 3k/month) to send PDF invoice on plan activation.
+- PDF generated client-side via `jsPDF` with brand header + IBAN footer + VAT line ("Не сум во ДДВ систем" or actual VAT ID).
+
+### C6. Refund + cancellation policy
+- Static page `/legal/refund-policy` (Macedonian + English).
+- Static page `/legal/terms` and `/legal/privacy` (GDPR-compliant template).
+
+**Phase C gate**: First real payment received and plan activated.
+
+---
+
+## PHASE D — SaaS Foundation (Week 4 + ongoing)
+
+### D1. Automated daily backup
+- GitHub Action runs `npm run backup` daily, uploads to private GitHub Release as artifact (or to a B2/S3 bucket).
+- Retention: 30 days rolling.
+- Acceptance: 7 consecutive days of backup artifacts visible.
+
+### D2. Observability to real service
+- Pick **PostHog** (free tier 1M events/mo) for product analytics + session replay.
+- Pick **Sentry** (free tier 5k errors/mo) for error tracking.
+- Wire `lib/observability.ts` to both.
+- Acceptance: real session replay visible after 1 day of traffic.
+
+### D3. Usage metering for Gemini
+- Wrap every Gemini call with `meterGeminiCall(userId, model, tokens)`.
+- Write to `user_stats.gemini_usage_month`.
+- Daily aggregator computes cost per user; alert if any user > €5/month (likely abuse).
+- Hard cap: free user 50 calls/day, teacher 500/day, school 2000/day.
+
+### D4. Email capture + drip campaign
+- Add newsletter modal on `/` (delayed 30s, dismissible).
+- Send to MailerLite or Buttondown (free up to 1k subs).
+- 5-email drip: welcome, OCR demo, AI grader demo, pricing, case study.
+
+### D5. Referral loop
+- Each user gets `referralCode` in profile.
+- `/?ref=CODE` URL stamps cookie + on signup writes `referredBy`.
+- Referrer gets +1 month free per converted paid referral.
+
+### D6. Public roadmap + changelog
+- `/roadmap` page reading from `roadmap` Firestore collection.
+- `/changelog` page reading from `changelog` collection (auto-populated from git tags via Action).
+
+**Phase D gate**: 50 active users, 5 paying customers, < 0.5% error rate, daily backups verified.
+
+---
+
+## Risk Register (post-stabilization)
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| Manual payment approval bottleneck | High | Medium | Move to Stripe Checkout when EU bank account allows it |
+| Gemini cost overrun from abuse | Medium | High | Hard daily caps + budget alert in Google Cloud (set €100/mo) |
+| AI Studio overwrites despite guards | Medium | High | CI guard + branch protection now active; monitor weekly |
+| GDPR complaint from EU teacher | Low | High | Privacy policy + data export endpoint by Phase D |
+| SEO indexation slow (3+ months) | High | Medium | Phase B content + backlinks from MK education forums |
+
+---
+
+## Weekly Review Cadence
+
+Every Sunday 21:00:
+1. Update Phase X status (DONE / IN-PROGRESS / BLOCKED).
+2. Record metrics: signups, paying users, MRR (EUR), Gemini cost (EUR), Sentry errors, top SEO query.
+3. Pick top 3 tasks for next week.
+4. If any phase gate failed -> root cause + recovery plan.
