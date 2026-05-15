@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, Bug, Inbox } from 'lucide-react';
+import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, Bug, Inbox, Settings as SettingsIcon, Check } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccessibility } from '../contexts/AccessibilityContext';
@@ -167,61 +167,120 @@ export const Layout: React.FC = () => {
             </div>
           </nav>
 
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <button 
-              onClick={toggleDyslexiaMode} 
-              className={`p-2 rounded-full transition-colors shadow-sm border ${dyslexiaMode ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100 dark:bg-slate-800/80 dark:border-slate-700 dark:text-slate-400'}`}
-              title="Дислексија Фонт"
-            >
-              <Type className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={toggleDyscalculiaMode} 
-              className={`p-2 rounded-full transition-colors shadow-sm border ${dyscalculiaMode ? 'bg-rose-100 border-rose-300 text-rose-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100 dark:bg-slate-800/80 dark:border-slate-700 dark:text-slate-400'}`}
-              title="Дискалкулија Мод"
-            >
-              <Palette className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={toggleTheme} 
-              className="p-2 rounded-full hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors bg-white shadow-sm border border-slate-200 dark:border-slate-700"
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Quick theme toggle (always visible, instant feedback) */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
               title={isDarkMode ? "Светла тема" : "Темна тема"}
+              aria-label="Toggle theme"
             >
               {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            
+
+            {/* Accessibility settings dropdown */}
+            <div className="relative group z-[100]">
+              <button
+                className={`p-2 rounded-full transition-colors ${(dyslexiaMode || dyscalculiaMode) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                title="Пристапност"
+                aria-label="Accessibility settings"
+              >
+                <SettingsIcon className="w-4 h-4" />
+              </button>
+              <div className="absolute top-10 right-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 min-w-[260px]">
+                <div className="w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2">
+                  <div className="px-4 py-2 text-[10px] font-bold tracking-widest uppercase text-slate-400">Пристапност</div>
+                  <button
+                    onClick={toggleDyslexiaMode}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                  >
+                    <span className="flex items-center gap-3">
+                      <Type className="w-4 h-4 opacity-70" />
+                      Дислексија фонт
+                    </span>
+                    {dyslexiaMode && <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
+                  </button>
+                  <button
+                    onClick={toggleDyscalculiaMode}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                  >
+                    <span className="flex items-center gap-3">
+                      <Palette className="w-4 h-4 opacity-70" />
+                      Дискалкулија мод
+                    </span>
+                    {dyscalculiaMode && <Check className="w-4 h-4 text-rose-600 dark:text-rose-400" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block mx-1"></div>
 
             {user ? (
-              <div className="flex items-center gap-3">
-                <div className="hidden md:flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 pl-1.5 pr-3 py-1 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">
+              <div className="relative group z-[100]">
+                <button
+                  className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  title={user.email ?? ''}
+                  aria-label="Account menu"
+                >
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt="Profile" className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+                    <img src={user.photoURL} alt="Profile" className="w-7 h-7 rounded-full ring-2 ring-white dark:ring-slate-700 shadow-sm" referrerPolicy="no-referrer" />
                   ) : (
-                    <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-bold">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-sm">
                       {user.email?.charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <span className="text-xs font-medium text-slate-600 dark:text-slate-300 truncate max-w-[120px]">
-                    {user.displayName || user.email?.split('@')[0]}
-                  </span>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
+                </button>
+
+                <div className="absolute top-12 right-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 min-w-[280px]">
+                  <div className="w-72 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3">
+                      {user.photoURL ? (
+                        <img src={user.photoURL} alt="Profile" className="w-10 h-10 rounded-full" referrerPolicy="no-referrer" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center text-base font-bold">
+                          {user.email?.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                          {user.displayName || user.email?.split('@')[0]}
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                          {user.email}
+                        </div>
+                        {userProfile?.role && (
+                          <span className={`inline-block mt-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${userProfile.role === 'teacher' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'}`}>
+                            {userProfile.role === 'teacher' ? 'Наставник' : 'Ученик'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="py-1">
+                      <Link
+                        to="/dashboard"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                      >
+                        <Trophy className="w-4 h-4 opacity-70" />
+                        Профил
+                      </Link>
+                      <button
+                        onClick={() => logOut()}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Одјави се
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => logOut()} 
-                  className="text-slate-600 dark:text-slate-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 px-2 sm:px-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm"
-                  title="Одјави се"
-                >
-                  <LogOut className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Одјави се</span>
-                </Button>
               </div>
             ) : (
-              <Button 
-                variant="default" 
-                size="sm" 
-                onClick={signInWithGoogle} 
+              <Button
+                variant="default"
+                size="sm"
+                onClick={signInWithGoogle}
                 className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-500/20"
               >
                 <LogIn className="w-4 h-4 sm:mr-2" />

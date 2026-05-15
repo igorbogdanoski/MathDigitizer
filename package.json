@@ -15,7 +15,11 @@
     "quality:bundle": "node scripts/check-bundle-budget.mjs",
     "quality:routes": "node scripts/check-route-budgets.mjs",
     "quality:governance": "node scripts/check-governance.mjs",
-    "quality:gates": "node scripts/run-quality-gates.mjs"
+    "quality:gates": "node scripts/run-quality-gates.mjs",
+    "migrate:dry": "node scripts/migrate-from-ai-studio.mjs --dry-run",
+    "migrate": "node scripts/migrate-from-ai-studio.mjs",
+    "backup": "node scripts/backup-firestore.mjs",
+    "backup:old": "node scripts/backup-firestore.mjs --old"
   },
   "dependencies": {
     "@google/genai": "^1.50.1",
@@ -72,6 +76,7 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@opentelemetry/api": "^1.9.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/canvas-confetti": "^1.9.0",
@@ -82,6 +87,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.5.0",
+    "firebase-admin": "^13.10.0",
     "jsdom": "^29.0.2",
     "tailwindcss": "^4.2.4",
     "tsx": "^4.21.0",
