@@ -1,0 +1,115 @@
+name: Guard Critical Files
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify vercel.json exists with auth handler rewrite
+        shell: bash
+        run: |
+          if [ ! -f vercel.json ]; then
+            echo "::error file=vercel.json::vercel.json is MISSING. This file proxies /__/auth/* to Firebase. Without it, login breaks on production due to third-party cookie blocking."
+            exit 1
+          fi
+          if ! grep -q '/__/auth/' vercel.json; then
+            echo "::error file=vercel.json::vercel.json no longer contains /__/auth/ rewrite. Login will break on production."
+            exit 1
+          fi
+          if ! grep -q 'mathdigitizer-pro.firebaseapp.com' vercel.json; then
+            echo "::error file=vercel.json::vercel.json must rewrite to mathdigitizer-pro.firebaseapp.com"
+            exit 1
+          fi
+          echo "OK: vercel.json has required rewrites"
+
+      - name: Verify firebase-applet-config.json points to vercel.app authDomain
+        shell: bash
+        run: |
+          if [ ! -f firebase-applet-config.json ]; then
+            echo "::error file=firebase-applet-config.json::firebase-applet-config.json is MISSING."
+            exit 1
+          fi
+          if ! grep -q '"authDomain": "mathdigitizer.vercel.app"' firebase-applet-config.json; then
+            echo "::error file=firebase-applet-config.json::authDomain must be mathdigitizer.vercel.app (not the default firebaseapp.com) to keep Google login working in normal browsers."
+            exit 1
+          fi
+          if ! grep -q '"projectId": "mathdigitizer-pro"' firebase-applet-config.json; then
+            echo "::error file=firebase-applet-config.json::projectId must be mathdigitizer-pro (the project containing the migrated tasks)."
+            exit 1
+          fi
+          echo "OK: firebase-applet-config.json points to correct project and authDomain"
+
+      - name: Verify vite.config.ts excludes /__/ from PWA navigation fallback
+        shell: bash
+        run: |
+          if [ ! -f vite.config.ts ]; then
+            echo "::error file=vite.config.ts::vite.config.ts is MISSING."
+            exit 1
+          fi
+          if ! grep -q 'navigateFallbackDenylist' vite.config.ts; then
+            echo "::error file=vite.config.ts::PWA navigateFallbackDenylist is missing. Service worker will hijack /__/auth/* and break login."
+            exit 1
+          fi
+          if ! grep -E 'navigateFallbackDenylist.*__' vite.config.ts > /dev/null; then
+            echo "::error file=vite.config.ts::navigateFallbackDenylist must include /^\\/__\\// so the service worker does not intercept Firebase auth paths."
+            exit 1
+          fi
+          echo "OK: vite.config.ts excludes /__/ from PWA navigation fallback"
+
+      - name: Verify firebase.ts uses signInWithPopup as primary
+        shell: bash
+        run: |
+          if [ ! -f src/lib/firebase.ts ]; then
+            echo "::error file=src/lib/firebase.ts::src/lib/firebase.ts is MISSING."
+            exit 1
+          fi
+          if ! grep -q 'signInWithPopup' src/lib/firebase.ts; then
+            echo "::error file=src/lib/firebase.ts::signInWithPopup must be the primary sign-in method. Pure signInWithRedirect is broken on Vercel."
+            exit 1
+          fi
+          if ! grep -q 'signInWithGoogle' src/lib/firebase.ts; then
+            echo "::error file=src/lib/firebase.ts::signInWithGoogle export is missing."
+            exit 1
+          fi
+          echo "OK: firebase.ts uses signInWithPopup"
+
+      - name: Verify migration scripts are intact
+        shell: bash
+        run: |
+          for f in scripts/migrate-from-ai-studio.mjs scripts/backup-firestore.mjs; do
+            if [ ! -f "$f" ]; then
+              echo "::error file=$f::$f is MISSING. Required for Firestore data ops."
+              exit 1
+            fi
+          done
+          echo "OK: migration scripts present"
+
+      - name: Verify .gitignore protects service account keys
+        shell: bash
+        run: |
+          if ! grep -q 'serviceAccount-' .gitignore; then
+            echo "::error file=.gitignore::.gitignore must ignore serviceAccount-*.json so secrets cannot be committed."
+            exit 1
+          fi
+          if ! grep -q 'scripts/secrets/' .gitignore; then
+            echo "::error file=.gitignore::scripts/secrets/ must be in .gitignore."
+            exit 1
+          fi
+          echo "OK: .gitignore protects secrets"
+
+      - name: Final summary
+        if: success()
+        run: |
+          echo "All critical-file guards passed."
+          echo "Login auth chain, PWA, migration tooling, and secret hygiene are intact."

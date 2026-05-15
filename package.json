@@ -19,7 +19,8 @@
     "migrate:dry": "node scripts/migrate-from-ai-studio.mjs --dry-run",
     "migrate": "node scripts/migrate-from-ai-studio.mjs",
     "backup": "node scripts/backup-firestore.mjs",
-    "backup:old": "node scripts/backup-firestore.mjs --old"
+    "backup:old": "node scripts/backup-firestore.mjs --old",
+    "promote": "node scripts/promote-to-production.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.50.1",

@@ -1,0 +1,14 @@
+* @igorbogdanoski
+
+# Critical files require explicit owner review.
+# AI Studio auto-pushes will not satisfy this if branch protection
+# "Require review from Code Owners" is enabled on main.
+/vercel.json                              @igorbogdanoski
+/firebase-applet-config.json              @igorbogdanoski
+/vite.config.ts                           @igorbogdanoski
+/src/lib/firebase.ts                      @igorbogdanoski
+/src/contexts/AuthContext.tsx             @igorbogdanoski
+/firestore.rules                          @igorbogdanoski
+/.github/                                 @igorbogdanoski
+/scripts/migrate-from-ai-studio.mjs       @igorbogdanoski
+/scripts/backup-firestore.mjs             @igorbogdanoski
