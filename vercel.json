@@ -7,6 +7,10 @@
     {
       "source": "/__/firebase/init.json",
       "destination": "https://mathdigitizer-pro.firebaseapp.com/__/firebase/init.json"
+    },
+    {
+      "source": "/((?!__/|api/|assets/|.*\\..*).*)",
+      "destination": "/index.html"
     }
   ]
 }
