@@ -41,8 +41,8 @@ function buildDefaultStructuredData(pathname: string): Array<Record<string, unkn
       inLanguage: 'mk',
       offers: {
         '@type': 'Offer',
-        price: '29.99',
-        priceCurrency: 'EUR',
+        price: '490.00',
+        priceCurrency: 'MKD',
         availability: 'https://schema.org/InStock'
       }
     }
@@ -60,15 +60,17 @@ function buildPricingStructuredData(): Array<Record<string, unknown>> {
         {
           '@type': 'Offer',
           name: 'Pro Teacher Monthly',
-          priceCurrency: 'EUR',
-          price: '29.99',
+          priceCurrency: 'MKD',
+          price: '490.00',
+          eligibleDuration: 'P1M',
           category: 'subscription'
         },
         {
           '@type': 'Offer',
           name: 'Pro Teacher Annual',
-          priceCurrency: 'EUR',
-          price: '299.99',
+          priceCurrency: 'MKD',
+          price: '4900.00',
+          eligibleDuration: 'P1Y',
           category: 'subscription'
         }
       ]
