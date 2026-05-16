@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../../lib/firebase';
+import { db, auth } from '../../lib/firebase';
+import { signInAnonymously } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { SummativeExam as SummativeExamType, SummativeAttempt } from '../../lib/schema';
 import { MathRenderer } from '../MathRenderer';
@@ -29,13 +30,13 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Basic guest uid logic for anonymous student testing
-    let strUid = localStorage.getItem('dugga_guest_uid');
-    if (!strUid) {
-      strUid = 'dugga_' + Math.random().toString(36).substring(2, 15);
-      localStorage.setItem('dugga_guest_uid', strUid);
-    }
-    setStudentUid(strUid);
+    // Use Firebase anonymous auth so student_uid is a real Firebase UID
+    // tied to this device. Replaces the insecure localStorage guest UID.
+    const getFirebaseUid = async (): Promise<string> => {
+      if (auth.currentUser) return auth.currentUser.uid;
+      const cred = await signInAnonymously(auth);
+      return cred.user.uid;
+    };
 
     // Auto-load saved answers
     const savedAnswers = localStorage.getItem(`dugga_answers_${examId}`);
@@ -49,13 +50,16 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
 
     const fetchExam = async () => {
       try {
+        const uid = await getFirebaseUid();
+        setStudentUid(uid);
+
         const docRef = doc(db, 'summative_exams', examId);
         const snap = await getDoc(docRef);
         if (snap.exists()) {
           setExam(snap.data() as SummativeExamType);
-          
+
           // Check if already submitted
-          const attemptRef = doc(db, 'summative_attempts', `${examId}_${strUid}`);
+          const attemptRef = doc(db, 'summative_attempts', `${examId}_${uid}`);
           const attemptSnap = await getDoc(attemptRef);
           if (attemptSnap.exists()) {
              setIsSubmitted(true);
