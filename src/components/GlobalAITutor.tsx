@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { BrainCircuit, X, MessageCircle, Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
-import { MathRenderer } from './MathRenderer';
-import { ai } from '../lib/gemini';
+import { BrainCircuit, X, Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
+
+const LazyMathRenderer = lazy(() => import('./MathRenderer').then(m => ({ default: m.MathRenderer })));
 
 export const GlobalAITutor: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,6 +26,7 @@ export const GlobalAITutor: React.FC = () => {
   const initChat = async () => {
     setIsLoading(true);
     try {
+      const { ai } = await import('../lib/gemini');
       const session = await ai.chats.create({
         model: 'gemini-3.1-pro-preview',
         config: {
@@ -134,7 +135,9 @@ export const GlobalAITutor: React.FC = () => {
                     {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                   </div>
                   <div className={`max-w-[80%] rounded-2xl p-4 text-sm leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-sm' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-sm'}`}>
-                    <MathRenderer content={msg.text} />
+                    <Suspense fallback={<span>{msg.text}</span>}>
+                      <LazyMathRenderer content={msg.text} />
+                    </Suspense>
                   </div>
                 </div>
               ))}
