@@ -8,6 +8,7 @@ import { SEO } from './SEO';
 import { Button } from './ui/Button';
 import { BillingPeriod, getManualPaymentDetails, getProPricingPlans, getUpgradeOptions, UpgradeChannel } from '../lib/saas';
 import { sendReceiptNotification } from '../lib/emailService';
+import { trackPricingView, trackReceiptSubmitted } from '../lib/analytics';
 
 function buildReferenceCode(uid: string | undefined, period: BillingPeriod): string {
   if (!uid) return '';
@@ -37,6 +38,8 @@ export const Pricing: React.FC = () => {
     referenceCode: buildReferenceCode(user?.uid, 'annual'),
     note: '',
   });
+
+  useEffect(() => { trackPricingView(); }, []);
 
   useEffect(() => {
     if (!receiptRefManuallyEdited) {
@@ -213,6 +216,7 @@ export const Pricing: React.FC = () => {
         plan: selectedPlan.label,
         amount: `${formatPrice(selectedPlan.priceMkd)} ${selectedPlan.billingLabel}`,
       }).catch(() => {});
+      trackReceiptSubmitted(billingPeriod);
 
       setReceiptForm({
         payerName: '',

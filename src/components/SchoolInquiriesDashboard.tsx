@@ -3,6 +3,7 @@ import { collection, doc, onSnapshot, orderBy, query, setDoc, updateDoc, where }
 import { AlertTriangle, CheckCircle2, Clock3, Download, FileText, Mail, School, Search, Users } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { sendProActivationEmail } from '../lib/emailService';
+import { trackProActivated } from '../lib/analytics';
 import { SEO } from './SEO';
 import { useToast } from '../contexts/ToastContext';
 import { Button } from './ui/Button';
@@ -812,6 +813,7 @@ export const SchoolInquiriesDashboard: React.FC = () => {
           plan: receipt.plan_context ?? '',
           amount: receipt.amount_label ?? '',
         }).catch(() => {});
+        trackProActivated(receipt.plan_context ?? 'unknown');
       }
 
       showToast('Receipt status е ажуриран.', 'success');
