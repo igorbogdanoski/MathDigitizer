@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
+// katex.min.css loaded from CDN in index.html — avoids bundling CSS into JS chunks
 import { Copy, Check, Info, Loader2, X } from 'lucide-react';
 import { explainFormula } from '../lib/gemini';
 import { VisualMathCanvas } from './VisualMathCanvas';

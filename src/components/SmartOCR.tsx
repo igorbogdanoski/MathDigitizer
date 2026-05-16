@@ -1,8 +1,8 @@
 import React, { lazy, Suspense, useState, useRef, useEffect } from 'react';
-import { 
-  Upload, Image as ImageIcon, Copy, Check, Loader2, RefreshCw, Download, 
+import {
+  Upload, Image as ImageIcon, Copy, Check, Loader2, RefreshCw, Download,
   FileText, Code, Save, ScanLine, PenTool, Crop, AlertTriangle, Quote, Zap,
-  Activity
+  Activity, Images, ClipboardPaste
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { extractMathTasksFromImage, extractMathTasksFromPdf, enrichTaskPedagogy } from '../lib/gemini';
@@ -38,6 +38,11 @@ export const SmartOCR: React.FC = () => {
   const [isCopied, setIsCopied] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('code');
+
+  // Batch State
+  const [batchTasks, setBatchTasks] = useState<MathTask[]>([]);
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null);
+  const [batchCopied, setBatchCopied] = useState<number | null>(null);
   
   // Advanced OCR Settings
   const [targetLanguage, setTargetLanguage] = useState<'auto' | 'mk' | 'en' | 'ru' | 'tr'>('mk');
@@ -112,59 +117,114 @@ export const SmartOCR: React.FC = () => {
     }
   }, [activeTab]);
 
-  // Handle paste events
+  // Handle paste events — Ctrl+V image from clipboard (screenshot, copy from browser, etc.)
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;
       if (!items) return;
-
+      const imageFiles: File[] = [];
       for (let i = 0; i < items.length; i++) {
-        const itemType = items[i].type;
-        if (itemType.indexOf('image') !== -1 || itemType === 'application/pdf' || itemType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-          const file = items[i].getAsFile();
-          if (file) processFile(file);
-          break;
+        const it = items[i];
+        if (it.type.startsWith('image/') || it.type === 'application/pdf') {
+          const file = it.getAsFile();
+          if (file) imageFiles.push(file);
         }
       }
+      if (imageFiles.length > 0) processFiles(imageFiles);
     };
-
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, []);
+  }, [targetLanguage, enableLogicalReconstruction, ocrModel]); // deps so closure stays fresh
 
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  // Single-file path (PDF, DOCX, or one image) — preserves existing UX
   const processFile = (file: File) => {
     const isDocx = file.name.endsWith('.docx') || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    
     if (!file.type.startsWith('image/') && file.type !== 'application/pdf' && !isDocx) {
       showToast('Ве молиме прикачете слика (JPG, PNG), PDF или Word (.docx) документ.', 'error');
       return;
     }
-
     setMimeType(file.type || (isDocx ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : ''));
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = event => {
       const base64Data = event.target?.result as string;
-      if (file.type.startsWith('image/')) {
-        setImage(base64Data);
-      } else {
-        setImage(null);
-      }
-      
-      scanImage(base64Data, file.type || (isDocx ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : ''));
+      setImage(file.type.startsWith('image/') ? base64Data : null);
+      scanImage(base64Data, file.type || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     };
     reader.readAsDataURL(file);
   };
 
+  // Multi-file batch path — processes images sequentially, shows live progress
+  const processFiles = async (files: File[] | FileList) => {
+    const arr = Array.from(files).filter(
+      f => f.type.startsWith('image/') || f.type === 'application/pdf'
+    );
+    if (arr.length === 0) return;
+    if (arr.length === 1) { processFile(arr[0]); return; }
+
+    // BATCH MODE
+    setIsScanning(true);
+    setBatchTasks([]);
+    setBatchProgress({ done: 0, total: arr.length });
+    setExtractedTask(null);
+    setLatexCode('');
+    setImage(null);
+
+    const all: MathTask[] = [];
+    for (const file of arr) {
+      try {
+        const dataUrl = await readFileAsDataUrl(file);
+        const base64 = dataUrl.split(',')[1];
+        const result = await extractMathTasksFromImage(base64, file.type, targetLanguage, enableLogicalReconstruction, ocrModel);
+        if (result?.length) { all.push(...result); setBatchTasks([...all]); }
+      } catch (err) {
+        console.error('Batch OCR error:', file.name, err);
+      }
+      setBatchProgress(prev => prev ? { ...prev, done: prev.done + 1 } : null);
+    }
+
+    setIsScanning(false);
+    setBatchProgress(null);
+    if (all.length > 0) showToast(`Batch: ${all.length} задачи извлечени од ${arr.length} слики`, 'success');
+    else showToast('Не се пронајдени задачи во ниту една слика.', 'error');
+  };
+
+  const handleSaveAll = async () => {
+    if (!auth.currentUser || batchTasks.length === 0) return;
+    setIsSaving(true);
+    try {
+      await Promise.all(
+        batchTasks.map(t =>
+          addDoc(collection(db, 'tasks'), {
+            ...t,
+            author_uid: auth.currentUser!.uid,
+            created_at: new Date().toISOString()
+          })
+        )
+      );
+      showToast(`${batchTasks.length} задачи зачувани во Библиотеката!`, 'success');
+    } catch {
+      showToast('Грешка при зачувување.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) processFile(file);
+    if (e.target.files && e.target.files.length > 0) processFiles(e.target.files);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const file = e.dataTransfer.files?.[0];
-    if (file) processFile(file);
+    if (e.dataTransfer.files.length > 0) processFiles(e.dataTransfer.files);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -456,19 +516,37 @@ export const SmartOCR: React.FC = () => {
           
           <div className="flex-1 p-6 relative overflow-hidden flex flex-col">
             {activeTab === 'upload' ? (
-              !image ? (
-                <div 
+              batchProgress !== null ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-6 bg-slate-50 dark:bg-slate-900/50 rounded-xl border-2 border-dashed border-indigo-200 dark:border-indigo-800 p-8">
+                  <div className="w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
+                    <Images className="w-8 h-8 text-indigo-500 animate-pulse" />
+                  </div>
+                  <div className="w-full max-w-xs text-center">
+                    <p className="font-bold text-slate-800 dark:text-slate-200 mb-1">Batch OCR во тек...</p>
+                    <p className="text-sm text-slate-500 mb-4">{batchProgress.done} / {batchProgress.total} слики обработени</p>
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+                      <div
+                        className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.round((batchProgress.done / batchProgress.total) * 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2">{Math.round((batchProgress.done / batchProgress.total) * 100)}%</p>
+                  </div>
+                </div>
+              ) : !image ? (
+                <div
                   ref={dropZoneRef}
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
                   onClick={() => fileInputRef.current?.click()}
                   className="flex-1 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900/50 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-all hover:border-indigo-400 group relative"
                 >
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    accept="image/*,application/pdf" 
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*,application/pdf"
+                    multiple
                     onChange={handleFileSelect}
                     title="Прикачи слика или PDF"
                     aria-label="Прикачи слика или PDF"
@@ -479,8 +557,11 @@ export const SmartOCR: React.FC = () => {
                   <p className="text-lg text-slate-700 dark:text-slate-300 font-medium mb-2">
                     Повлечете слика/PDF или залепете (CTRL+V)
                   </p>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-slate-500 mb-1">
                     Поддржани формати: JPG, PNG, PDF
+                  </p>
+                  <p className="text-xs text-indigo-500 flex items-center gap-1">
+                    <Images className="w-3.5 h-3.5" /> Изберете повеќе датотеки истовремено за batch обработка
                   </p>
                 </div>
               ) : (
@@ -627,7 +708,56 @@ export const SmartOCR: React.FC = () => {
             )}
             
             <div className="flex-1 p-6 overflow-y-auto">
-              {!latexCode && !isScanning ? (
+              {batchTasks.length > 0 && !latexCode ? (
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Images className="w-5 h-5 text-indigo-500" />
+                      <span className="font-bold text-slate-800 dark:text-slate-200">Batch резултати: {batchTasks.length} задачи</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveAll}
+                      disabled={isSaving}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                      Зачувај ги сите
+                    </Button>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    {batchTasks.map((t, i) => (
+                      <div key={i} className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex flex-col gap-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="font-semibold text-sm text-slate-800 dark:text-slate-200 line-clamp-2 flex-1">{t.title}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const text = t.latex_formulas?.length
+                                ? t.latex_formulas.map(f => `$$${f}$$`).join('\n\n')
+                                : t.original_text;
+                              navigator.clipboard.writeText(text);
+                              setBatchCopied(i);
+                              setTimeout(() => setBatchCopied(null), 2000);
+                            }}
+                            className={`p-1.5 rounded-md transition-colors flex-shrink-0 ${batchCopied === i ? 'text-emerald-500 bg-emerald-50' : 'text-slate-400 hover:text-emerald-500 hover:bg-emerald-50'}`}
+                            title="Копирај LaTeX"
+                          >
+                            {batchCopied === i ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${t.difficulty === 'easy' ? 'bg-green-100 text-green-700' : t.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{t.difficulty}</span>
+                          {t.tags?.slice(0, 2).map((tag, ti) => (
+                            <span key={ti} className="text-[9px] font-medium uppercase tracking-wider bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">{tag}</span>
+                          ))}
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{t.original_text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : !latexCode && !isScanning ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400">
                   <FileText className="w-16 h-16 mb-4 opacity-20" />
                   <p>Дигитализираниот текст ќе се појави овде</p>
