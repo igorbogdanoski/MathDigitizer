@@ -26,4 +26,4 @@ Disallow: /play
 Disallow: /exam/
 Disallow: /pedagogue/
 
-Sitemap: https://mathdigitizer.pro/sitemap.xml
+Sitemap: https://ai.mismath.net/sitemap.xml
