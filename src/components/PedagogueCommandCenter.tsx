@@ -1,29 +1,28 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  X, Maximize2, Minimize2, Cpu, Zap, Brain, Activity, 
+import {
+  X, Maximize2, Minimize2, Cpu, Zap, Brain, Activity,
   Network, Target, MessageSquare, BookOpen, Layers,
   Compass, ShieldCheck, Microscope, Database, Sparkles,
   ChevronRight, ChevronLeft, Terminal, Play, Save, Share2
 } from 'lucide-react';
-import * as d3 from 'd3';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { MathTask } from '../lib/schema';
 import { Button } from './ui/Button';
 import { Card, CardContent } from './ui/Card';
-import { MathRenderer } from './MathRenderer';
-import { Type } from "@google/genai";
-import { ai } from '../lib/gemini';
 
-interface Node extends d3.SimulationNodeDatum {
+const LazyMathRenderer = lazy(() => import('./MathRenderer').then(m => ({ default: m.MathRenderer })));
+
+interface Node {
   id: string;
   title: string;
   type: 'task' | 'concept' | 'resource';
+  x?: number; y?: number; fx?: number | null; fy?: number | null; vx?: number; vy?: number; index?: number;
 }
 
-interface Link extends d3.SimulationLinkDatum<Node> {
-  source: string;
-  target: string;
+interface Link {
+  source: string | Node;
+  target: string | Node;
   value: number;
 }
 
@@ -56,13 +55,13 @@ export const PedagogueCommandCenter: React.FC = () => {
     }
   }, [activeTab, isCommandCenterOpen, selectedTaskId]);
 
-  const renderKnowledgeMap = () => {
+  const renderKnowledgeMap = async () => {
     if (!svgRef.current || !selectedTask) return;
+    const d3 = await import('d3');
 
     const width = svgRef.current.clientWidth;
     const height = svgRef.current.clientHeight;
 
-    // Clear previous
     d3.select(svgRef.current).selectAll("*").remove();
 
     const nodes: Node[] = [
@@ -154,6 +153,7 @@ export const PedagogueCommandCenter: React.FC = () => {
     if (!selectedTask) return;
     setIsAnalyzing(true);
     try {
+      const [{ ai }, { Type }] = await Promise.all([import('../lib/gemini'), import('@google/genai')]);
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `Analyze this math task and provide a cognitive fingerprint (scores 0-100):
@@ -541,7 +541,9 @@ export const PedagogueCommandCenter: React.FC = () => {
                 </div>
 
                 <div className="p-4 bg-slate-950/50 rounded-2xl border border-slate-800">
-                  <MathRenderer content={selectedTask.original_text} />
+                  <Suspense fallback={<span className="text-slate-400 text-xs">Loading...</span>}>
+                    <LazyMathRenderer content={selectedTask.original_text} />
+                  </Suspense>
                 </div>
 
                 <div className="space-y-4">
