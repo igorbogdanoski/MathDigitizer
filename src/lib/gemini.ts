@@ -1180,6 +1180,7 @@ export async function generateCurriculumTasks(
   }
 }
 
+
 // Transcript-first pipeline: Gemini Flash reads the YouTube URL directly as a video file.
 // This is cheaper than visual frame analysis and works for long videos because the model
 // extracts audio/captions rather than sampling frames.
@@ -1197,7 +1198,11 @@ async function fetchYoutubeTranscriptViaGemini(
     contents: [
       { fileData: { fileUri: url } },
       {
-        text: `Extract the COMPLETE verbatim transcript of this YouTube video with timestamps in [MM:SS] format before each spoken segment.${timeFilter}\nReturn ONLY the raw transcript text — no commentary, no headers, no JSON. Start with the first timestamp.`,
+        text: `Extract the COMPLETE verbatim transcript of this YouTube video with timestamps in [MM:SS] format before each spoken segment.${timeFilter}
+Rules:
+- PRESERVE the EXACT original spoken language of the video. If it is English → return English. Turkish → Turkish. Russian → Russian. Arabic → Arabic. Do NOT translate under any circumstances.
+- Include ALL spoken words, including mathematical terms, formulas, and numbers exactly as spoken.
+- Return ONLY the raw transcript text. No commentary, no headers, no JSON. Start directly with the first timestamp.`,
       },
     ],
   });
@@ -1294,17 +1299,16 @@ ${videoContext}
 ==================
 
 СТРАТЕГИЈА ЗА МАКСИМАЛНА ПРЕЦИЗНОСТ И АВТОМАТСКО ПРЕПОЗНАВАЊЕ НА ЈАЗИК (Chain-of-Thought):
-1. **Автоматска Детекција на Јазик**: Изворот најчесто ќе биде на еден од 4-те јазици: Македонски, Руски, Турски или Англиски. Првиот чекор ти е да го ПРЕПОЗНАЕШ оригиналот. Запиши ја ознаката ('mk', 'ru', 'tr', 'en') во \`detected_language\`.
-2. **Автентична Екстракција**: Екстракцијата во \`original_text\` и \`solution_steps\` мора да се задржи на тој идентичен детектиран јазик за автентичност со видеото (освен ако е надвор од тие 4 јазици, тогаш преведи на 'mk').
+1. **Автоматска Детекција на Јазик**: Детектирај го јазикот на транскриптот. Поддржани ISO кодови: 'mk' (македонски), 'en' (англиски), 'ru' (руски), 'tr' (турски), 'ar' (арапски), 'de', 'fr', 'es', 'al' (Albanian) — или кој и да е друг ISO 639-1 код. Запиши го во \`detected_language\`.
+2. **Автентична Екстракција (КРИТИЧНО)**: \`original_text\`, \`title\` и \`solution_steps\` МОРА да останат на **ОРИГИНАЛНИОТ детектиран јазик** на видеото. НЕ ПРЕВЕДУВАЈ ниту еден збор. Ако видеото е на англиски — пишувај на англиски. Ако е на руски — пишувај на руски. Ако е на турски — пишувај на турски. Исклучок: само ако јазикот е нераспознатлив, тогаш преведи на 'mk'.
 3. **Теорија вс. Задачи (КРИТИЧНО)**: Видеата често почнуваат со теоретски вовед (дефиниции, формули, правила). ИЗВЛЕЧИ ЈА ТЕОРИЈАТА како посебен објект со \`type: "theory"\`. Задачите извлечи ги како \`type: "task"\`. Ова е многу важно за градење на лекции. За теорија, во "solution_steps" напиши ги клучните поенти или изведувања.
-4. **Стандарди за Форматирање**: Користи релевантни математички стандарди (пр. децимална запирка за Македонски).
-5. **ZERO-ERROR LaTeX**: СИТЕ МАТЕМАТИЧКИ СИМБОЛИ, БРОЕВИ, РАВЕНКИ И ФОРМУЛИ МОРА ДА БИДАТ СТРОГО ВО LaTeX ФОРМАТ ВО original_text И ВО solution_steps! Користи $...$ за inline математика (пр. Нека е $x=5$) и $$...$$ за математика во нов ред. ОВА Е НАЈСТРОГОТО ПРАВИЛО!
+4. **Стандарди за Форматирање**: Користи релевантни математички стандарди за детектираниот јазик (пр. децимална запирка за македонски/руски, децимална точка за англиски).
+5. **ZERO-ERROR LaTeX**: СИТЕ МАТЕМАТИЧКИ СИМБОЛИ, БРОЕВИ, РАВЕНКИ И ФОРМУЛИ МОРА ДА БИДАТ СТРОГО ВО LaTeX ФОРМАТ ВО original_text И ВО solution_steps! Користи $...$ за inline математика (пр. Let $x=5$) и $$...$$ за математика во нов ред. ОВА Е НАЈСТРОГОТО ПРАВИЛО!
 6. **Илустрации и Графици**: Формирај \`illustration_prompt\` за стварни/животни објекти. Формирај \`math_graphic_config\` (JSON објект) за геометрија и координатни системи.
 
-ПРАВИЛА ЗА ЈАЗИК И НАСТАВНА ПРОГРАМА:
-- "original_text", "title" и "solution_steps" треба да бидат на детектираниот јазик, граматички обработени за да изгледаат како професионален учебник.
-- ЗАДОЛЖИТЕЛНО (КРИТИЧНО): Во полето \`grade_level\` обиди се најпрецизно да го одредиш одделението според македонските програми на МОН/БРО (пр: "7-мо одделение", "I година средно").
-- ЗАДОЛЖИТЕЛНО: Во полето \`curriculum_topic\` смести ја точната тема според наставната програма (пр: "Плоштина на многуаголници", "Линеарни равенки").
+ПРАВИЛА ЗА НАСТАВНА ПРОГРАМА:
+- ЗАДОЛЖИТЕЛНО: Во \`grade_level\` одреди го нивото кориснтејќи ја нотацијата на земјата/јазикот: за 'mk' → "7-мо одделение"; за 'en' → "Grade 7" / "Year 9" / "AP Calculus"; за 'ru' → "7-й класс"; за 'tr' → "7. sınıf". Ако не можеш точно — напиши ниво (пр. "Middle School", "High School").
+- ЗАДОЛЖИТЕЛНО: Во \`curriculum_topic\` смести ја темата на ОРИГИНАЛНИОТ јазик на видеото (пр. за англиски "Linear Equations", за руски "Линейные уравнения", за турски "Doğrusal Denklemler").
 
 ${instructions ? `\nСПЕЦИФИЧНИ ИНСТРУКЦИИ ЗА ИЗВЛЕКУВАЊЕ:\n${instructions}\n` : ""}
 Врати JSON објект со следната структура која симулира NotebookLM (прво длабинска анализа, па потоа теорија и задачи).`;
