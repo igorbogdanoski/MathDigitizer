@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MathTask } from '../../lib/schema';
 import { Card, CardContent } from '../ui/Card';
-import { GripVertical, Check, Trash2, Edit3 } from 'lucide-react';
+import { GripVertical, Check, Trash2, Edit3, Copy } from 'lucide-react';
 
 import { MathRenderer } from '../MathRenderer';
 
@@ -40,6 +40,18 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onDrop,
   renderDetailContent
 }) => {
+  const [latexCopied, setLatexCopied] = useState(false);
+
+  const handleCopyLatex = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = task.latex_formulas?.length
+      ? task.latex_formulas.map(f => `$$${f}$$`).join('\n\n')
+      : task.original_text;
+    navigator.clipboard.writeText(text);
+    setLatexCopied(true);
+    setTimeout(() => setLatexCopied(false), 2000);
+  };
+
   return (
     <Card 
       draggable
@@ -100,7 +112,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           </div>
         </div>
         <div className="flex gap-1">
-          <button 
+          <button
+            onClick={handleCopyLatex}
+            className={`p-1.5 rounded-md transition-colors flex-shrink-0 ${latexCopied ? 'text-emerald-500 bg-emerald-50' : 'text-slate-400 hover:text-emerald-500 hover:bg-emerald-50'}`}
+            title="Копирај LaTeX"
+          >
+            {latexCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+          </button>
+          <button
             data-testid={`task-edit-${taskId}`}
             onClick={onEdit}
             className="p-1.5 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-md transition-colors flex-shrink-0"
@@ -108,7 +127,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           >
             <Edit3 className="w-4 h-4" />
           </button>
-          <button 
+          <button
             data-testid={`task-delete-${taskId}`}
             onClick={onDelete}
             className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors flex-shrink-0"

@@ -1025,11 +1025,27 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                     <span className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${task.type === 'theory' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'}`}>
                       <BookOpen className="w-3 h-3" /> {task.type}
                     </span>
-                    {task.source_timestamp && (
-                      <span className="bg-amber-100 flex items-center gap-1 text-amber-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full cursor-help" title="Проценето време во видеото">
-                        <Clock className="w-3 h-3" /> {task.source_timestamp}
-                      </span>
-                    )}
+                    {task.source_timestamp && (() => {
+                      const isYT = task.source_url?.includes('youtube.com') || task.source_url?.includes('youtu.be');
+                      const m = task.source_timestamp.match(/(\d+):(\d+)(?::(\d+))?/);
+                      if (isYT && m && task.source_url) {
+                        const secs = m[3] ? +m[1]*3600 + +m[2]*60 + +m[3] : +m[1]*60 + +m[2];
+                        const deepLink = task.source_url.includes('?') ? `${task.source_url}&t=${secs}` : `${task.source_url}?t=${secs}`;
+                        return (
+                          <a href={deepLink} target="_blank" rel="noopener noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            title={`Отвори YouTube на ${task.source_timestamp}`}
+                            className="bg-amber-100 flex items-center gap-1 text-amber-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full hover:bg-amber-200 transition-colors">
+                            <Clock className="w-3 h-3" /> {task.source_timestamp} ↗
+                          </a>
+                        );
+                      }
+                      return (
+                        <span className="bg-amber-100 flex items-center gap-1 text-amber-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full cursor-help" title="Проценето време во видеото">
+                          <Clock className="w-3 h-3" /> {task.source_timestamp}
+                        </span>
+                      );
+                    })()}
                     {task.pedagogical_insights?.quality_score && (
                       <div className="flex items-center gap-1.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm ring-1 ring-emerald-500/10">
                         <Zap className="w-3 h-3" /> 
