@@ -93,7 +93,7 @@ export const BlogArticle: React.FC<BlogArticleProps> = ({
 
         {/* Article body */}
         <div className="max-w-3xl mx-auto px-4 py-12">
-          <div className="prose prose-slate dark:prose-invert prose-headings:font-bold prose-h2:text-2xl prose-h3:text-xl prose-p:leading-relaxed prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-li:text-slate-700 dark:prose-li:text-slate-300 prose-strong:text-slate-900 dark:prose-strong:text-white max-w-none">
+          <div className="[&>h2]:text-2xl [&>h2]:font-bold [&>h2]:text-slate-900 dark:[&>h2]:text-white [&>h2]:mt-10 [&>h2]:mb-4 [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:text-slate-800 dark:[&>h3]:text-slate-100 [&>h3]:mt-8 [&>h3]:mb-3 [&>p]:text-slate-700 dark:[&>p]:text-slate-300 [&>p]:leading-relaxed [&>p]:mb-5 [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:mb-5 [&>ul>li]:text-slate-700 dark:[&>ul>li]:text-slate-300 [&>ul>li]:mb-1.5 [&>ul>li]:leading-relaxed [&_strong]:font-semibold [&_strong]:text-slate-900 dark:[&_strong]:text-white [&_code]:font-mono [&_code]:text-sm [&_code]:bg-slate-100 dark:[&_code]:bg-slate-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_em]:italic [&_a]:text-indigo-600 [&_a]:underline">
             {children}
           </div>
 
