@@ -22,7 +22,10 @@ export function isOnTrial(profile: UserProfile | null | undefined): boolean {
   return trialDaysRemaining(profile) > 0;
 }
 
+const ADMIN_EMAIL = (import.meta as any)?.env?.VITE_ADMIN_EMAIL as string | undefined;
+
 export function hasProAccess(profile: UserProfile | null | undefined): boolean {
+  if (ADMIN_EMAIL && profile?.email === ADMIN_EMAIL) return true;
   return Boolean(profile?.isPro) || isOnTrial(profile);
 }
 
