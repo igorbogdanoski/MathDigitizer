@@ -43,7 +43,7 @@ function createBrowserProxyClient() {
 try {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  cachedApiKey = process.env.GEMINI_API_KEY;
+  cachedApiKey = process.env.GEMINI_API_KEY ?? import.meta.env?.VITE_GEMINI_API_KEY;
 } catch (e) {}
 
 const initAiPromise = (async () => {
