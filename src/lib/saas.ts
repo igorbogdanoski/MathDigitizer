@@ -9,8 +9,21 @@ export const PREMIUM_FEATURES = {
 export type PremiumFeature = typeof PREMIUM_FEATURES[keyof typeof PREMIUM_FEATURES];
 export type BillingPeriod = 'monthly' | 'annual';
 
+const TRIAL_DAYS = 7;
+
+export function trialDaysRemaining(profile: UserProfile | null | undefined): number {
+  if (!profile?.trialStartedAt || profile.isPro) return 0;
+  const started = new Date(profile.trialStartedAt).getTime();
+  const elapsed = Math.floor((Date.now() - started) / 86_400_000);
+  return Math.max(0, TRIAL_DAYS - elapsed);
+}
+
+export function isOnTrial(profile: UserProfile | null | undefined): boolean {
+  return trialDaysRemaining(profile) > 0;
+}
+
 export function hasProAccess(profile: UserProfile | null | undefined): boolean {
-  return Boolean(profile?.isPro);
+  return Boolean(profile?.isPro) || isOnTrial(profile);
 }
 
 function readCheckoutLink(envKey: string): string | null {

@@ -23,6 +23,7 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ user, onComplete }
         email: user.email || 'no-email@example.com',
         displayName: user.displayName || 'Корисник',
         role: role,
+        trialStartedAt: new Date().toISOString(),
         createdAt: new Date().toISOString()
       };
 

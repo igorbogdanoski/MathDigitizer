@@ -43,6 +43,7 @@ export interface UserProfile {
   displayName: string;
   role: 'teacher' | 'student';
   isPro?: boolean;
+  trialStartedAt?: string;
   createdAt: string;
 }
 
