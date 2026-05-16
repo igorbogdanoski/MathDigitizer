@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import { signInWithGoogle, logOut } from '../lib/firebase';
 import { RoleSelection } from './RoleSelection';
+import { OnboardingWizard } from './OnboardingWizard';
 import { GlobalAITutor } from './GlobalAITutor';
 import { SEO } from './SEO';
 import { getRouteSeo } from '../lib/seo';
@@ -18,6 +19,7 @@ export const Layout: React.FC = () => {
   const location = useLocation();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const routeSeo = getRouteSeo(location.pathname);
 
   useEffect(() => {
@@ -27,6 +29,12 @@ export const Layout: React.FC = () => {
       document.documentElement.classList.add('dark');
     }
   }, []);
+
+  useEffect(() => {
+    if (userProfile && !localStorage.getItem('onboarding_complete')) {
+      setShowOnboarding(true);
+    }
+  }, [userProfile]);
 
   const toggleTheme = () => {
     setIsDarkMode(prev => {
@@ -382,6 +390,17 @@ export const Layout: React.FC = () => {
       
       {/* Global AI Pedagogical Assistant (only for logged in users) */}
       {userProfile && <GlobalAITutor />}
+
+      {/* Onboarding wizard — shown only on first login */}
+      {showOnboarding && userProfile && (
+        <OnboardingWizard
+          userName={userProfile.displayName?.split(' ')[0] ?? 'Наставник'}
+          onComplete={() => {
+            localStorage.setItem('onboarding_complete', 'true');
+            setShowOnboarding(false);
+          }}
+        />
+      )}
     </div>
   );
 };
