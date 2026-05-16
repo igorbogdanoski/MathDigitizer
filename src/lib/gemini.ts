@@ -1180,6 +1180,33 @@ export async function generateCurriculumTasks(
   }
 }
 
+// Transcript-first pipeline: Gemini Flash reads the YouTube URL directly as a video file.
+// This is cheaper than visual frame analysis and works for long videos because the model
+// extracts audio/captions rather than sampling frames.
+async function fetchYoutubeTranscriptViaGemini(
+  url: string,
+  timeRange?: { start: string; end: string }
+): Promise<string> {
+  const timeFilter =
+    timeRange?.start || timeRange?.end
+      ? `\nFocus ONLY on the segment from ${timeRange?.start ?? 'the start'} to ${timeRange?.end ?? 'the end'}.`
+      : '';
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.0-flash',
+    contents: [
+      { fileData: { fileUri: url } },
+      {
+        text: `Extract the COMPLETE verbatim transcript of this YouTube video with timestamps in [MM:SS] format before each spoken segment.${timeFilter}\nReturn ONLY the raw transcript text — no commentary, no headers, no JSON. Start with the first timestamp.`,
+      },
+    ],
+  });
+
+  const transcript = response.text?.trim() ?? '';
+  if (transcript.length < 50) throw new Error('Empty or missing transcript');
+  return transcript;
+}
+
 export async function extractMathTasksFromUrl(url: string, model: string = "gemini-3.1-pro-preview", timeRange?: {start: string, end: string}, manualTranscript?: string, instructions?: string): Promise<MathTask[]> {
   let timeContext = "";
   if (timeRange && (timeRange.start || timeRange.end)) {
@@ -1188,14 +1215,25 @@ export async function extractMathTasksFromUrl(url: string, model: string = "gemi
 
   // ЧЕКОР 1: Прибирање фактографски контекст (Транскрипт)
   let videoContext = manualTranscript || "";
-  
+
   if (!videoContext) {
      const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
      const isVimeo = url.includes('vimeo.com');
-     if (!isVimeo) {
+     if (isYoutube) {
+       // Transcript-first approach: pass the YouTube URL directly to Gemini Flash.
+       // Faster and cheaper than the /api/youtube/transcript backend endpoint (unavailable
+       // on static hosting) and more reliable than Gemini Search for long or unlisted videos.
        try {
-         console.log(isYoutube ? "Обид за извлекување преку интерниот Youtube API..." : "Обид за извлекување преку Web Scraper API...");
-         const apiEndpoint = isYoutube ? `/api/youtube/transcript?url=${encodeURIComponent(url)}` : `/api/scrape?url=${encodeURIComponent(url)}`;
+         console.log("Transcript-first: Gemini Flash директно чита YouTube транскриптот...");
+         videoContext = await fetchYoutubeTranscriptViaGemini(url, timeRange);
+         console.log(`Транскрипт добиен: ${videoContext.length} карактери`);
+       } catch (e) {
+         console.warn("Gemini транскрипт не успеа, паѓаме на Gemini Search:", e);
+       }
+     } else if (!isVimeo) {
+       try {
+         console.log("Обид за извлекување преку Web Scraper API...");
+         const apiEndpoint = `/api/scrape?url=${encodeURIComponent(url)}`;
          const res = await fetch(apiEndpoint);
          if (res.ok) {
            const text = await res.text();
