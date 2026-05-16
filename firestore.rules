@@ -47,10 +47,6 @@ service cloud.firestore {
       return !('author_uid' in request.resource.data) || request.resource.data.author_uid == resource.data.author_uid;
     }
 
-    function hasRequiredFields(fields) {
-      return request.resource.data.keys().hasAll(fields);
-    }
-
     function validStringLength(field, minLen, maxLen) {
       return request.resource.data[field] is string &&
         request.resource.data[field].size() >= minLen &&
