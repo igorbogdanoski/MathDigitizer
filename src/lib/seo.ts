@@ -21,29 +21,54 @@ function buildDefaultStructuredData(pathname: string): Array<Record<string, unkn
       '@type': 'Organization',
       name: SITE_NAME,
       url: SITE_URL,
-      logo: absoluteUrl('/pwa-icon.svg'),
-      sameAs: []
+      logo: {
+        '@type': 'ImageObject',
+        url: absoluteUrl('/pwa-icon.svg'),
+        width: 512,
+        height: 512
+      },
+      email: 'igor.bogdanoski@mismath.net',
+      contactPoint: {
+        '@type': 'ContactPoint',
+        email: 'igor.bogdanoski@mismath.net',
+        contactType: 'customer support',
+        availableLanguage: ['Macedonian', 'English']
+      }
     },
     {
       '@context': 'https://schema.org',
       '@type': 'WebSite',
       name: SITE_NAME,
       url: SITE_URL,
-      inLanguage: 'mk'
+      inLanguage: 'mk',
+      description: 'AI едукативна платформа за математика на македонски јазик — OCR екстракција, автоматско оценување и интерактивни алатки за наставници.'
     },
     {
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
       name: SITE_NAME,
+      description: 'Водечка AI едукативна платформа за математика на македонски јазик. Дигитализација од YouTube и слики, OCR екстракција, автоматско AI оценување и интерактивни математички алатки за наставници.',
       applicationCategory: 'EducationalApplication',
       operatingSystem: 'Web',
       url: absoluteUrl(pathname || '/'),
       inLanguage: 'mk',
+      screenshot: {
+        '@type': 'ImageObject',
+        url: absoluteUrl('/og-image.png'),
+        width: 1200,
+        height: 630
+      },
+      author: {
+        '@type': 'Organization',
+        name: SITE_NAME,
+        url: SITE_URL
+      },
       offers: {
         '@type': 'Offer',
         price: '490.00',
         priceCurrency: 'MKD',
-        availability: 'https://schema.org/InStock'
+        availability: 'https://schema.org/InStock',
+        url: absoluteUrl('/pricing')
       }
     }
   ];
@@ -55,23 +80,38 @@ function buildPricingStructuredData(): Array<Record<string, unknown>> {
     {
       '@context': 'https://schema.org',
       '@type': 'OfferCatalog',
-      name: 'Teacher SaaS Pricing',
+      name: 'MathDigitizer Pro — Teacher Pricing Plans',
+      url: absoluteUrl('/pricing'),
       itemListElement: [
         {
           '@type': 'Offer',
           name: 'Pro Teacher Monthly',
+          description: 'Месечен Pro план за индивидуални наставници — флексибилен влезен праг.',
           priceCurrency: 'MKD',
           price: '490.00',
+          availability: 'https://schema.org/InStock',
+          url: absoluteUrl('/pricing'),
           eligibleDuration: 'P1M',
-          category: 'subscription'
+          seller: {
+            '@type': 'Organization',
+            name: SITE_NAME,
+            url: SITE_URL
+          }
         },
         {
           '@type': 'Offer',
           name: 'Pro Teacher Annual',
+          description: 'Годишен Pro план — најдобра вредност, заштеда од речиси 2 месеци.',
           priceCurrency: 'MKD',
           price: '4900.00',
+          availability: 'https://schema.org/InStock',
+          url: absoluteUrl('/pricing'),
           eligibleDuration: 'P1Y',
-          category: 'subscription'
+          seller: {
+            '@type': 'Organization',
+            name: SITE_NAME,
+            url: SITE_URL
+          }
         }
       ]
     }
