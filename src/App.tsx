@@ -38,6 +38,9 @@ const VirtualWhiteboardPage = lazy(() => import('./components/live/VirtualWhiteb
 const AIPedagogyCritique = lazy(() => import('./components/AIPedagogyCritique').then((m) => ({ default: m.AIPedagogyCritique })));
 const Pricing = lazy(() => import('./components/Pricing').then((m) => ({ default: m.Pricing })));
 const SchoolInquiriesDashboard = lazy(() => import('./components/SchoolInquiriesDashboard').then((m) => ({ default: m.SchoolInquiriesDashboard })));
+const BlogOcrMath = lazy(() => import('./components/blog/BlogOcrMath').then((m) => ({ default: m.BlogOcrMath })));
+const BlogLatexExtraction = lazy(() => import('./components/blog/BlogLatexExtraction').then((m) => ({ default: m.BlogLatexExtraction })));
+const BlogLiveMathKahoot = lazy(() => import('./components/blog/BlogLiveMathKahoot').then((m) => ({ default: m.BlogLiveMathKahoot })));
 
 const RouteFallback = () => (
   <div className="min-h-[40vh] flex items-center justify-center text-slate-500 text-sm">Loading...</div>
@@ -197,6 +200,11 @@ const AppRoutes = () => {
         <Route path="/play" element={<GamePlayerWrapper />} />
         <Route path="/exam/:examId" element={<SummativeExamWrapper />} />
         <Route path="/pricing" element={<Pricing />} />
+
+        {/* Public blog posts — no auth required */}
+        <Route path="/blog/ocr-matematika" element={<BlogOcrMath />} />
+        <Route path="/blog/latex-ekstrakcija" element={<BlogLatexExtraction />} />
+        <Route path="/blog/live-mathkahoot" element={<BlogLiveMathKahoot />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
