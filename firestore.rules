@@ -30,10 +30,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
     function isTeacher() {
       return isAuthenticated() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
@@ -242,7 +238,14 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && userId == request.auth.uid;
+      // User can create/update their own profile only if the data is structurally valid
+      allow create: if isAuthenticated() && userId == request.auth.uid &&
+                    isValidUserProfile(request.resource.data);
+      // Self-update (valid profile shape) OR teacher activating Pro on a student
+      allow update: if (isAuthenticated() && userId == request.auth.uid &&
+                        isValidUserProfile(request.resource.data)) ||
+                    canTeacherActivateProOnUser();
+      allow delete: if false;
     }
 
     match /tasks/{taskId} {
