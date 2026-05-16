@@ -1,12 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { addDoc, collection } from 'firebase/firestore';
-import { ArrowRight, Check, CheckCircle2, Copy, GraduationCap, Landmark, Sparkles, ShieldCheck, BrainCircuit } from 'lucide-react';
+import { ArrowRight, Check, CheckCircle2, Copy, GraduationCap, Landmark, Sparkles, ShieldCheck, BrainCircuit, Hash } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { db, signInWithGoogle } from '../lib/firebase';
 import { SEO } from './SEO';
 import { Button } from './ui/Button';
 import { BillingPeriod, getManualPaymentDetails, getProPricingPlans, getUpgradeOptions, UpgradeChannel } from '../lib/saas';
+
+function buildReferenceCode(uid: string | undefined, period: BillingPeriod): string {
+  if (!uid) return '';
+  return `${uid.slice(0, 8).toUpperCase()}-PRO-${period === 'annual' ? 'ANN' : 'MON'}`;
+}
 
 export const Pricing: React.FC = () => {
   const { user } = useAuth();
@@ -16,6 +21,7 @@ export const Pricing: React.FC = () => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false);
   const [isSubmittingReceipt, setIsSubmittingReceipt] = useState(false);
+  const [receiptRefManuallyEdited, setReceiptRefManuallyEdited] = useState(false);
   const [schoolInquiry, setSchoolInquiry] = useState({
     contactName: '',
     schoolName: '',
@@ -27,9 +33,18 @@ export const Pricing: React.FC = () => {
     payerName: '',
     payerEmail: user?.email ?? '',
     paymentChannel: 'bank' as 'bank' | 'paypal',
-    referenceCode: '',
+    referenceCode: buildReferenceCode(user?.uid, 'annual'),
     note: '',
   });
+
+  useEffect(() => {
+    if (!receiptRefManuallyEdited) {
+      setReceiptForm((current) => ({
+        ...current,
+        referenceCode: buildReferenceCode(user?.uid, billingPeriod),
+      }));
+    }
+  }, [user?.uid, billingPeriod, receiptRefManuallyEdited]);
   const checkoutOptions = getUpgradeOptions();
   const pricingPlans = getProPricingPlans();
   const selectedPlan = pricingPlans.find((plan) => plan.period === billingPeriod) ?? pricingPlans[0];
@@ -107,6 +122,7 @@ export const Pricing: React.FC = () => {
   };
 
   const handleReceiptFormChange = (field: keyof typeof receiptForm, value: string) => {
+    if (field === 'referenceCode') setReceiptRefManuallyEdited(true);
     setReceiptForm((current) => ({ ...current, [field]: value }));
   };
 
@@ -377,6 +393,31 @@ export const Pricing: React.FC = () => {
 
           <div className="mt-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 p-4 space-y-3 text-sm text-slate-700 dark:text-slate-200">
             <div className="font-bold text-slate-900 dark:text-white">Рачни податоци за Pro Teacher уплата</div>
+
+            {user && (
+              <div className="rounded-lg border border-indigo-200 dark:border-indigo-700/60 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-2.5">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 mb-1.5">
+                  <Hash className="w-3.5 h-3.5" />
+                  Ваша референца за уплата
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <code className="text-base font-black text-indigo-900 dark:text-indigo-100 tracking-widest">
+                    {buildReferenceCode(user.uid, billingPeriod)}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy('Референца', buildReferenceCode(user.uid, billingPeriod))}
+                    className="inline-flex items-center gap-1 rounded-md border border-indigo-200 dark:border-indigo-700 px-2.5 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors"
+                    title="Копирај референца"
+                  >
+                    {copiedField === 'Референца' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedField === 'Референца' ? 'Копирано' : 'Copy'}
+                  </button>
+                </div>
+                <p className="text-[11px] text-indigo-600 dark:text-indigo-400 mt-1.5">Задолжително напишете ја оваа референца при банкарска уплата или PayPal порака.</p>
+              </div>
+            )}
+
             {[
               { label: 'PayPal email', value: manualPaymentDetails.paypalEmail },
               { label: 'Банка', value: manualPaymentDetails.bankName },

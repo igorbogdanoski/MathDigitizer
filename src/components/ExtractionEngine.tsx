@@ -13,6 +13,8 @@ import { extractMathTasksFromUrl, generateImage, generateMathGraphicConfig, adva
 import { exportToJson, exportToLatex, exportToMarkdown, exportToTxt } from '../lib/export';
 import { useAuth } from '../contexts/AuthContext';
 import { useGamification } from '../contexts/GamificationContext';
+import { hasProAccess } from '../lib/saas';
+import { ProFeatureGate } from './ProFeatureGate';
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useLibraryStore } from '../store/useLibraryStore';
@@ -28,9 +30,13 @@ interface ExtractionEngineProps {
   setActiveTutorTask: (task: MathTask) => void;
 }
 
+const FREE_EXTRACTION_LIMIT = 2;
+
 export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTutorTask }) => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
+  const isPro = hasProAccess(userProfile);
   const { awardXP, updateQuestProgress } = useGamification();
+  const [sessionExtractionCount, setSessionExtractionCount] = useState(0);
   const { setEditingTask, setOnTaskUpdated } = useLibraryStore();
   const navigate = useNavigate();
   
@@ -191,7 +197,9 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
 
   const handleExtract = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (!isPro && sessionExtractionCount >= FREE_EXTRACTION_LIMIT) return;
+
     if (sourceType === 'url' && !url.trim()) return;
     if (sourceType === 'text' && !textInput.trim()) return;
     if (sourceType === 'file' && !fileData) return;
@@ -254,6 +262,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
       setProgress(100);
       setStatusText('Екстракцијата е успешна! Зачувување во Библиотека...');
       setTasks(extractedTasks);
+      setSessionExtractionCount((n) => n + 1);
       
       // Auto-save logic
       if (user && extractedTasks.length > 0) {
@@ -388,12 +397,29 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
         </div>
       </div>
 
-      {engineMode === 'kahoot' ? (
+      {!isPro && sessionExtractionCount >= FREE_EXTRACTION_LIMIT ? (
+        <div className="py-8">
+          <ProFeatureGate
+            featureName="Unlimited AI Extraction"
+            description={`Го достигнавте бесплатниот лимит од ${FREE_EXTRACTION_LIMIT} екстракции за оваа сесија. Надградете на Pro Teacher за неограничени екстракции, приоритетни AI генерации и пристап до сите напредни алатки.`}
+          />
+        </div>
+      ) : engineMode === 'kahoot' ? (
         <KahootMaker />
       ) : engineMode === 'makedotest' ? (
         <MakedoTestGenerator tasks={tasks} />
       ) : (
         <>
+          {!isPro && sessionExtractionCount > 0 && (
+            <div className="rounded-2xl border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20 px-5 py-3 flex items-center justify-between gap-4 text-sm">
+              <span className="text-amber-800 dark:text-amber-200 font-medium">
+                Бесплатен тир: {sessionExtractionCount}/{FREE_EXTRACTION_LIMIT} екстракции искористени оваа сесија.
+              </span>
+              <a href="/pricing" className="text-amber-700 dark:text-amber-300 font-bold underline underline-offset-2 whitespace-nowrap">
+                Надгради на Pro →
+              </a>
+            </div>
+          )}
           {/* Premium Hero Section for URL Extractor */}
           <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-indigo-900 rounded-[2rem] overflow-hidden shadow-2xl border border-indigo-500/20">
         <div className="px-6 py-12 md:py-16 relative">

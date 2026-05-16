@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { collection, doc, onSnapshot, orderBy, query, setDoc, updateDoc, where } from 'firebase/firestore';
-import { AlertTriangle, CheckCircle2, Clock3, Download, Mail, School, Search, Users } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Clock3, Download, FileText, Mail, School, Search, Users } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { SEO } from './SEO';
 import { useToast } from '../contexts/ToastContext';
@@ -682,6 +682,96 @@ export const SchoolInquiriesDashboard: React.FC = () => {
     return receiptCounters.pending / approvedBase;
   }, [receiptCounters]);
 
+  const handleDownloadInvoice = (receipt: PaymentReceipt) => {
+    const invoiceNumber = `MD-${receipt.id.slice(0, 8).toUpperCase()}`;
+    const issueDate = new Date(receipt.reviewed_at ?? receipt.created_at).toLocaleDateString('mk-MK');
+    const html = `<!DOCTYPE html>
+<html lang="mk">
+<head>
+<meta charset="UTF-8"/>
+<title>Фактура ${invoiceNumber}</title>
+<style>
+  body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 40px; color: #0f172a; background: #fff; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #4f46e5; padding-bottom: 24px; margin-bottom: 32px; }
+  .brand { font-size: 28px; font-weight: 900; color: #4f46e5; }
+  .brand-sub { font-size: 13px; color: #64748b; margin-top: 4px; }
+  .invoice-meta { text-align: right; }
+  .invoice-meta h1 { font-size: 22px; font-weight: 900; color: #1e293b; margin: 0 0 8px; }
+  .invoice-meta p { margin: 2px 0; font-size: 13px; color: #475569; }
+  .status-badge { display: inline-block; background: #dcfce7; color: #166534; border-radius: 20px; padding: 4px 14px; font-size: 12px; font-weight: 700; margin-top: 8px; }
+  section { margin-bottom: 28px; }
+  h2 { font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 12px; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .info-item label { display: block; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .info-item span { font-size: 14px; font-weight: 600; color: #1e293b; }
+  .amount-box { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px 24px; }
+  .amount-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+  .amount-row:last-child { border-bottom: none; font-size: 18px; font-weight: 900; color: #4f46e5; }
+  .amount-row:last-child .label { color: #1e293b; font-weight: 700; }
+  .footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center; }
+  @media print { body { padding: 20px; } }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="brand">MathDigitizer Pro</div>
+      <div class="brand-sub">mathdigitizer.pro · igor.bogdanoski@mismath.net</div>
+      <div class="brand-sub">Игор Богданоски · NLB Bank · IBAN MK07210501596102457 · SWIFT TUTNMK22</div>
+    </div>
+    <div class="invoice-meta">
+      <h1>ФАКТУРА / INVOICE</h1>
+      <p><strong>Број:</strong> ${invoiceNumber}</p>
+      <p><strong>Датум:</strong> ${issueDate}</p>
+      <p><strong>Референца:</strong> ${receipt.reference_code}</p>
+      <div class="status-badge">ПЛАТЕНО</div>
+    </div>
+  </div>
+
+  <section>
+    <h2>Податоци за купувачот</h2>
+    <div class="info-grid">
+      <div class="info-item"><label>Ime i prezime</label><span>${receipt.payer_name}</span></div>
+      <div class="info-item"><label>Email</label><span>${receipt.payer_email}</span></div>
+      <div class="info-item"><label>Канал на уплата</label><span>${receipt.payment_channel === 'bank' ? 'Банкарска трансакција' : 'PayPal'}</span></div>
+      <div class="info-item"><label>Референца</label><span>${receipt.reference_code}</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Опис на услугата</h2>
+    <div class="amount-box">
+      <div class="amount-row">
+        <span class="label">Производ</span>
+        <span>${receipt.plan_context}</span>
+      </div>
+      <div class="amount-row">
+        <span class="label">Период</span>
+        <span>${receipt.billing_period_interest === 'annual' ? 'Годишна претплата' : 'Месечна претплата'}</span>
+      </div>
+      ${receipt.review_note ? `<div class="amount-row"><span class="label">Забелешка</span><span>${receipt.review_note}</span></div>` : ''}
+      <div class="amount-row">
+        <span class="label">Вкупно за плаќање</span>
+        <span>${receipt.amount_label}</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    Фактурата е генерирана автоматски при одобрување на уплатата · MathDigitizer Pro © ${new Date().getFullYear()}
+  </div>
+
+  <script>window.onload = function() { window.print(); }</script>
+</body>
+</html>`;
+
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+    }
+  };
+
   const handleUpdateStatus = async (inquiryId: string, nextStatus: InquiryStatus) => {
     setSavingId(inquiryId);
     try {
@@ -1183,6 +1273,18 @@ export const SchoolInquiriesDashboard: React.FC = () => {
                       {receiptStatusLabel(statusOption)}
                     </Button>
                   ))}
+
+                  {(receipt.status === 'approved' || receipt.status === 'reviewed') && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleDownloadInvoice(receipt)}
+                      className="w-full h-10 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Фактура PDF
+                    </Button>
+                  )}
                 </div>
               </div>
 
