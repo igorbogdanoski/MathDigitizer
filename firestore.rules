@@ -125,14 +125,15 @@ service cloud.firestore {
     }
 
     function isValidUserProfile(data) {
-      let allowedFields = ['uid', 'email', 'displayName', 'role', 'createdAt', 'isPro'];
+      let allowedFields = ['uid', 'email', 'displayName', 'role', 'createdAt', 'isPro', 'trialStartedAt'];
       return hasOnlyAllowedFields(allowedFields) &&
              data.uid is string && data.uid.size() > 0 && data.uid.size() < 50 &&
              data.email is string && data.email.size() > 0 && data.email.size() < 100 &&
              data.displayName is string && data.displayName.size() > 0 && data.displayName.size() < 100 &&
              data.role in ['teacher', 'student'] &&
              isValidDateString(data.createdAt) &&
-             (!('isPro' in data) || data.isPro is bool);
+             (!('isPro' in data) || data.isPro is bool) &&
+             (!('trialStartedAt' in data) || isValidDateString(data.trialStartedAt));
     }
 
     function isValidIntegrityCheck(data) {
@@ -287,15 +288,30 @@ service cloud.firestore {
     }
 
     match /summative_attempts/{attemptId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      // Students read their own attempt; teachers read all (for dashboard query)
+      allow read: if isAuthenticated() && (
+        resource.data.student_uid == request.auth.uid || isTeacher()
+      );
+      // Student can only submit under their own Firebase UID (anonymous auth enforced client-side)
+      allow create: if isAuthenticated() &&
+        request.resource.data.student_uid == request.auth.uid;
+      // Only the owning teacher can update (to write score); only the score field
+      allow update: if isTeacher() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score']);
+      allow delete: if false;
     }
 
     match /task_attempts/{attemptId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      // Scoped to the authenticated student who owns the attempt
+      allow read: if isAuthenticated() && (
+        resource.data.user_id == request.auth.uid || isTeacher()
+      );
+      allow create: if isAuthenticated() &&
+        request.resource.data.user_id == request.auth.uid;
+      allow update: if isAuthenticated() &&
+        resource.data.user_id == request.auth.uid;
+      allow delete: if isAuthenticated() &&
+        resource.data.user_id == request.auth.uid;
     }
 
     match /classrooms/{classroomId} {
