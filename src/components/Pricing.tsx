@@ -7,6 +7,7 @@ import { db, signInWithGoogle } from '../lib/firebase';
 import { SEO } from './SEO';
 import { Button } from './ui/Button';
 import { BillingPeriod, getManualPaymentDetails, getProPricingPlans, getUpgradeOptions, UpgradeChannel } from '../lib/saas';
+import { sendReceiptNotification } from '../lib/emailService';
 
 function buildReferenceCode(uid: string | undefined, period: BillingPeriod): string {
   if (!uid) return '';
@@ -204,6 +205,14 @@ export const Pricing: React.FC = () => {
         created_at: new Date().toISOString(),
         status: 'pending',
       });
+
+      sendReceiptNotification({
+        teacher_name: trimmedName,
+        teacher_email: trimmedEmail,
+        reference_code: trimmedReference,
+        plan: selectedPlan.label,
+        amount: `${formatPrice(selectedPlan.priceMkd)} ${selectedPlan.billingLabel}`,
+      }).catch(() => {});
 
       setReceiptForm({
         payerName: '',

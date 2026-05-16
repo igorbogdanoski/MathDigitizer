@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { collection, doc, onSnapshot, orderBy, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { AlertTriangle, CheckCircle2, Clock3, Download, FileText, Mail, School, Search, Users } from 'lucide-react';
 import { db } from '../lib/firebase';
+import { sendProActivationEmail } from '../lib/emailService';
 import { SEO } from './SEO';
 import { useToast } from '../contexts/ToastContext';
 import { Button } from './ui/Button';
@@ -804,6 +805,13 @@ export const SchoolInquiriesDashboard: React.FC = () => {
 
       if (nextStatus === 'approved' && receipt.requester_uid) {
         await updateDoc(doc(db, 'users', receipt.requester_uid), { isPro: true });
+        sendProActivationEmail({
+          teacher_name: receipt.payer_name,
+          teacher_email: receipt.payer_email,
+          reference_code: receipt.reference_code,
+          plan: receipt.plan_context ?? '',
+          amount: receipt.amount_label ?? '',
+        }).catch(() => {});
       }
 
       showToast('Receipt status е ажуриран.', 'success');
