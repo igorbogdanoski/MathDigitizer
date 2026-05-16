@@ -20,7 +20,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { ai } from '../lib/gemini';
+import { generateInterventionPlan } from '../lib/gemini';
 import { hasProAccess } from '../lib/saas';
 import { ProFeatureGate } from './ProFeatureGate';
 
@@ -230,16 +230,8 @@ export const AnalyticsDashboard: React.FC = () => {
 4. 2 Специфични задачи насочени кон ZPD (со латекс \`$inline$\` и \`$$display$$\`).
 ВРАТИ САМО МАРКДАУН, БЕЗ ВОВЕД.`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: prompt,
-        config: { 
-          systemInstruction: 'Ти си врвен македонски методолог и дидактичар по математика, експерт во теоријата на Свелер за когнитивно оптоварување и рамката на Килпатрик.',
-          temperature: 0.7 
-        }
-      });
-      
-      setInterventionPlan(response.text || "Не успеав да генерирам план.");
+      const text = await generateInterventionPlan(prompt);
+      setInterventionPlan(text);
     } catch (e) {
       console.error(e);
       alert("Грешка при генерирање интервенција.");

@@ -8,7 +8,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { motion, AnimatePresence } from 'motion/react';
-import { ai } from '../lib/gemini';
+import { checkGeminiHealth } from '../lib/gemini';
 
 interface HealthStatus {
   service: string;
@@ -71,11 +71,8 @@ export const SystemIntegrityCheck: React.FC = () => {
     const aiStart = performance.now();
     try {
       updateStatus('Gemini AI API', 'testing', 'Повик кон Gemini 3 Flash...');
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: 'reply with only the word OK'
-      });
-      if (response.text?.includes('OK')) {
+      const ok = await checkGeminiHealth();
+      if (ok) {
         updateStatus('Gemini AI API', 'ok', 'AI Моделот е достапен', Math.round(performance.now() - aiStart));
       } else {
         updateStatus('Gemini AI API', 'error', 'Неочекуван одговор од моделот');

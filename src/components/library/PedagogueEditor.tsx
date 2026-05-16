@@ -12,9 +12,8 @@ import { Input } from '../ui/Input';
 import { Card, CardContent } from '../ui/Card';
 import { MathRenderer } from '../MathRenderer';
 import { useLibraryStore } from '../../store/useLibraryStore';
-import { Type } from "@google/genai";
 import { VoiceInputButton } from '../VoiceInputButton';
-import { ai } from '../../lib/gemini';
+import { enhancePedagogueTask } from '../../lib/gemini';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
@@ -154,25 +153,7 @@ export const PedagogueEditor: React.FC = () => {
         `;
       }
 
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash-latest",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              new_text: { type: Type.STRING },
-              socratic_questions: { type: Type.ARRAY, items: { type: Type.STRING } },
-              modeling_scenario: { type: Type.STRING },
-              dok_suggestion: { type: Type.NUMBER },
-              teaching_strategy: { type: Type.STRING }
-            }
-          }
-        }
-      });
-      
-      const result = JSON.parse(response.text || "{}");
+      const result = await enhancePedagogueTask(prompt);
       if (result.new_text) updateField('original_text', result.new_text);
       if (result.socratic_questions) {
         updateInsightField('socratic_questions', result.socratic_questions);

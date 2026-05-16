@@ -4,8 +4,7 @@ import { Button } from './ui/Button';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { useToast } from '../contexts/ToastContext';
-import { ai } from '../lib/gemini';
-import { Type } from '@google/genai';
+import { generateCurriculumModule } from '../lib/gemini';
 import { useAuth } from '../contexts/AuthContext';
 import { hasProAccess } from '../lib/saas';
 import { ProFeatureGate } from './ProFeatureGate';
@@ -51,36 +50,7 @@ export const CurriculumFactory = () => {
 - lessons: Низа од објекти (title, theory_summary, class_tasks (низа стрингови), homework_tasks (низа стрингови), exit_ticket (стринг)).
 Обезбеди 2 до 3 детални лекции.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              module_title: { type: Type.STRING },
-              lessons: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    title: { type: Type.STRING },
-                    theory_summary: { type: Type.STRING },
-                    class_tasks: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    homework_tasks: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    exit_ticket: { type: Type.STRING },
-                  },
-                  required: ["title", "theory_summary", "class_tasks", "homework_tasks", "exit_ticket"]
-                }
-              }
-            },
-            required: ["module_title", "lessons"]
-          }
-        }
-      });
-
-      const data = JSON.parse(response.text || '{}');
+      const data = await generateCurriculumModule(prompt);
       setCurriculum(data);
       showToast('Курикулумот е успешно генериран!', 'success');
       

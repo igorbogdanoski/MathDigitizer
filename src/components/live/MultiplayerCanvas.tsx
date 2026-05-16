@@ -7,7 +7,7 @@ import { MathRenderer } from '../MathRenderer';
 import { motion } from 'motion/react';
 import { db, auth } from '../../lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
-import { ai } from '../../lib/gemini';
+import { recognizeHandwrittenMath } from '../../lib/gemini';
 
 interface Point {
   x: number;
@@ -171,20 +171,7 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
       const dataUrl = stageRef.current.toDataURL({ pixelRatio: 1 });
       const base64Data = dataUrl.split(',')[1];
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: [
-           "Tease out ONLY the LaTeX formula from the handwriting on this whiteboard image. Do NOT include markdown backticks like ```latex . Return just the plain string.",
-           {
-              inlineData: {
-                data: base64Data,
-                mimeType: "image/png"
-              }
-           }
-        ]
-      });
-
-      const latexContent = response.text?.trim() || "";
+      const latexContent = await recognizeHandwrittenMath(base64Data);
       if (latexContent) {
          const newBox: LatexBox = {
            id: Math.random().toString(36).substr(2, 9),
