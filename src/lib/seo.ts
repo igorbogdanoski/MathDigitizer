@@ -7,7 +7,7 @@ export interface RouteSeoConfig {
   structuredData?: Record<string, unknown> | Array<Record<string, unknown>>;
 }
 
-const SITE_URL = 'https://ai.mismath.net';
+const SITE_URL = 'https://math.mismath.net';
 const SITE_NAME = 'MathDigitizer Pro';
 
 function absoluteUrl(path: string): string {

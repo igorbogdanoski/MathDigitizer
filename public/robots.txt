@@ -26,4 +26,4 @@ Disallow: /play
 Disallow: /exam/
 Disallow: /pedagogue/
 
-Sitemap: https://ai.mismath.net/sitemap.xml
+Sitemap: https://math.mismath.net/sitemap.xml
