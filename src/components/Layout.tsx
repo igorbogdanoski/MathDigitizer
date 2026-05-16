@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, Bug, Inbox, Settings as SettingsIcon, Check } from 'lucide-react';
+import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, Bug, Inbox, Settings as SettingsIcon, Check, Sparkles } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccessibility } from '../contexts/AccessibilityContext';
@@ -10,6 +10,7 @@ import { OnboardingWizard } from './OnboardingWizard';
 import { GlobalAITutor } from './GlobalAITutor';
 import { SEO } from './SEO';
 import { getRouteSeo } from '../lib/seo';
+import { isOnTrial, trialDaysRemaining } from '../lib/saas';
 
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -89,6 +90,16 @@ export const Layout: React.FC = () => {
         noindex={routeSeo.noindex}
         structuredData={routeSeo.structuredData}
       />
+      {isOnTrial(userProfile) && (
+        <div className="bg-indigo-600 text-white text-sm text-center py-2 px-4 flex items-center justify-center gap-2">
+          <Sparkles className="w-4 h-4 shrink-0" />
+          <span>
+            Користиш Pro Trial — уште <strong>{trialDaysRemaining(userProfile)} {trialDaysRemaining(userProfile) === 1 ? 'ден' : 'дена'}</strong> бесплатно.
+          </span>
+          <Link to="/pricing" className="underline font-semibold ml-1 hover:text-indigo-200">Надгради</Link>
+        </div>
+      )}
+
       <header className="sticky top-0 z-50 transition-colors duration-300 border-b border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           
