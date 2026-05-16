@@ -371,6 +371,37 @@ const routeEntries: Array<{ match: RegExp; seo: RouteSeoConfig }> = [
       structuredData: buildDefaultStructuredData('/adaptive-test'),
     },
   },
+  // Public blog posts — SEO indexed
+  {
+    match: /^\/blog\/ocr-matematika$/,
+    seo: {
+      title: 'Како да дигитализирате математички задачи со AI',
+      description: 'Практичен водич за наставници: претворете ракописни задачи, фотографии и PDF документи во дигитален LaTeX формат за секунди со AI OCR.',
+      keywords: 'OCR математика, дигитализација математички задачи, AI OCR наставници, LaTeX конвертор, математика македонија',
+      canonical: '/blog/ocr-matematika',
+      structuredData: buildDefaultStructuredData('/blog/ocr-matematika'),
+    },
+  },
+  {
+    match: /^\/blog\/latex-ekstrakcija$/,
+    seo: {
+      title: 'LaTeX екстракција од YouTube видеа — автоматска дигитализација',
+      description: 'Научете како да извлечете LaTeX формули и математички задачи директно од YouTube образовни видеа со еден клик. Без рачно препишување.',
+      keywords: 'LaTeX екстракција, YouTube математика, LaTeX генератор македонија, математика видеа, автоматска дигитализација LaTeX',
+      canonical: '/blog/latex-ekstrakcija',
+      structuredData: buildDefaultStructuredData('/blog/latex-ekstrakcija'),
+    },
+  },
+  {
+    match: /^\/blog\/live-mathkahoot$/,
+    seo: {
+      title: 'Live математички натпревари во училница',
+      description: 'Организирајте интерактивни live математички квизови за ученици во реално време — без потреба за посебна апликација.',
+      keywords: 'математички квиз, live натпревар ученици, Math Kahoot македонија, интерактивна настава математика, live classroom математика',
+      canonical: '/blog/live-mathkahoot',
+      structuredData: buildDefaultStructuredData('/blog/live-mathkahoot'),
+    },
+  },
 ];
 
 export function getRouteSeo(pathname: string): RouteSeoConfig {
