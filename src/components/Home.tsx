@@ -120,12 +120,11 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
   return (
     <div className="space-y-16 pb-16 animate-in fade-in duration-700 min-h-screen font-sans bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 transition-colors duration-300">
       <SEO
-        title="MathDigitizer Pro | Напредна едукација и математика"
+        title="Напредна AI едукација на македонски јазик"
         description="Водечка AI едукативна платформа за математика на македонски јазик. Беспрекорна дигитализација, OCR екстракција и интерактивни натпревари."
         keywords="математика, AI, автоматизирано оценување, генератор на задачи, OCR математика, едукација, македонски јазик, EdTech"
         canonical="/"
         type="website"
-        image="/pwa-icon.svg"
         structuredData={[
           {
             '@context': 'https://schema.org',

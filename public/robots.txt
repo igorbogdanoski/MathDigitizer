@@ -1,9 +1,29 @@
 User-agent: *
 Allow: /
+Allow: /pricing
 
-# Block private/live exam paths
+# Protected app routes — require auth, never crawlable
+Disallow: /extract
+Disallow: /smart-ocr
+Disallow: /library
+Disallow: /dashboard
+Disallow: /analytics
+Disallow: /curriculum
+Disallow: /classrooms
+Disallow: /factory
+Disallow: /mass-factory
+Disallow: /todo
+Disallow: /flashcards
+Disallow: /adaptive-test
+Disallow: /smart-grader
+Disallow: /exams-grading
+Disallow: /ai-pedagogy
+Disallow: /school-inquiries
+Disallow: /students/
+Disallow: /live-board
 Disallow: /live/
 Disallow: /play
 Disallow: /exam/
+Disallow: /pedagogue/
 
 Sitemap: https://mathdigitizer.pro/sitemap.xml
