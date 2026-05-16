@@ -2188,3 +2188,117 @@ export async function generateHoaxProof(): Promise<any> {
     throw error;
   }
 }
+
+// ===== Named domain wrappers — replaces direct ai.* access in components =====
+
+export async function generateInterventionPlan(prompt: string): Promise<string> {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.1-pro-preview',
+      contents: prompt,
+      config: {
+        systemInstruction: 'Ти си врвен македонски методолог и дидактичар по математика, експерт во теоријата на Свелер за когнитивно оптоварување и рамката на Килпатрик.',
+        temperature: 0.7,
+      },
+    });
+    return response.text || 'Не успеав да генерирам план.';
+  } catch (error) {
+    handleGeminiError(error);
+  }
+}
+
+export async function generateCurriculumModule(prompt: string): Promise<any> {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.1-pro-preview',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            module_title: { type: Type.STRING },
+            lessons: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING },
+                  theory_summary: { type: Type.STRING },
+                  class_tasks: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  homework_tasks: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  exit_ticket: { type: Type.STRING },
+                },
+                required: ['title', 'theory_summary', 'class_tasks', 'homework_tasks', 'exit_ticket'],
+              },
+            },
+          },
+          required: ['module_title', 'lessons'],
+        },
+      },
+    });
+    return JSON.parse(response.text || '{}');
+  } catch (error) {
+    handleGeminiError(error);
+  }
+}
+
+export interface PedagogueEnhancement {
+  new_text?: string;
+  socratic_questions?: string[];
+  modeling_scenario?: string;
+  dok_suggestion?: number;
+  teaching_strategy?: string;
+}
+
+export async function enhancePedagogueTask(prompt: string): Promise<PedagogueEnhancement> {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-1.5-flash-latest',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            new_text: { type: Type.STRING },
+            socratic_questions: { type: Type.ARRAY, items: { type: Type.STRING } },
+            modeling_scenario: { type: Type.STRING },
+            dok_suggestion: { type: Type.NUMBER },
+            teaching_strategy: { type: Type.STRING },
+          },
+        },
+      },
+    });
+    return JSON.parse(response.text || '{}');
+  } catch (error) {
+    handleGeminiError(error);
+  }
+}
+
+export async function recognizeHandwrittenMath(base64Png: string): Promise<string> {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.1-pro-preview',
+      contents: [
+        'Tease out ONLY the LaTeX formula from the handwriting on this whiteboard image. Do NOT include markdown backticks like ```latex . Return just the plain string.',
+        { inlineData: { data: base64Png, mimeType: 'image/png' } },
+      ],
+    });
+    return response.text?.trim() || '';
+  } catch (error) {
+    handleGeminiError(error);
+  }
+}
+
+export async function checkGeminiHealth(): Promise<boolean> {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: 'reply with only the word OK',
+    });
+    return Boolean(response.text?.includes('OK'));
+  } catch {
+    return false;
+  }
+}
