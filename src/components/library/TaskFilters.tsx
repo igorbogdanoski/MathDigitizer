@@ -20,6 +20,7 @@ interface TaskFiltersProps {
   selectedForTest: Set<string>;
   setSelectedForTest: (val: Set<string>) => void;
   setShowTestGenerator: (val: boolean) => void;
+  setShowWorksheetModal: (val: boolean) => void;
   handleExportCSV: () => void;
 }
 
@@ -31,6 +32,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   selectedForTest,
   setSelectedForTest,
   setShowTestGenerator,
+  setShowWorksheetModal,
   handleExportCSV
 }) => {
   const {
@@ -272,7 +274,16 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                     <FileText className="w-4 h-4 mr-2" />
                     Генерирај Тест ({selectedForTest.size})
                   </Button>
-                  
+
+                  <Button
+                    variant="default"
+                    onClick={() => setShowWorksheetModal(true)}
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    Работен Лист ({selectedForTest.size})
+                  </Button>
+
                   <Button
                     variant="default"
                     onClick={() => document.dispatchEvent(new CustomEvent('open-lesson-plan-modal'))}

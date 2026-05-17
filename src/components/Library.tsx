@@ -30,6 +30,7 @@ import { Skeleton } from './ui/Skeleton';
 
 import { useRealtimeTasks } from '../hooks/useRealtimeTasks';
 import { useToast } from '../contexts/ToastContext';
+import { WorksheetModal } from './library/WorksheetModal';
 
 export const Library: React.FC = () => {
   const store = useLibraryStore();
@@ -43,6 +44,7 @@ export const Library: React.FC = () => {
   const [showManipulativesModal, setShowManipulativesModal] = useState(false);
   const [manipulativeType, setManipulativeType] = useState<'algebra-tiles' | 'geogebra-3d'>('algebra-tiles');
   const [isGeneratingKahoot, setIsGeneratingKahoot] = useState(false);
+  const [showWorksheetModal, setShowWorksheetModal] = useState(false);
 
   useEffect(() => {
     const handleOpenModal = () => setShowCreateModal(true);
@@ -285,6 +287,7 @@ export const Library: React.FC = () => {
         selectedForTest={store.selectedForTest}
         setSelectedForTest={store.setSelectedForTest}
         setShowTestGenerator={store.setShowTestGenerator}
+        setShowWorksheetModal={setShowWorksheetModal}
         handleExportCSV={handleExportCSV}
       />
 
@@ -546,9 +549,17 @@ export const Library: React.FC = () => {
 
       {/* Lesson Plan Generator Modal */}
       {showLessonPlanModal && (
-        <LessonPlanGenerator 
+        <LessonPlanGenerator
           selectedTasks={getSelectedTasks()}
           onClose={() => setShowLessonPlanModal(false)}
+        />
+      )}
+
+      {/* Worksheet Builder Modal */}
+      {showWorksheetModal && (
+        <WorksheetModal
+          tasks={getSelectedTasks()}
+          onClose={() => setShowWorksheetModal(false)}
         />
       )}
     </div>
