@@ -130,8 +130,8 @@ export const Library: React.FC = () => {
     };
   }, [store.selectedForTest]);
 
-  // Use the new real-time hook
-  useRealtimeTasks();
+  // Use the real-time paginated hook
+  const { fetchNextPage, hasNextPage, isFetchingNextPage } = useRealtimeTasks();
 
   const getSelectedTasks = () => {
     return store.tasks.filter(t => t.id && store.selectedForTest.has(t.id));
@@ -328,6 +328,22 @@ export const Library: React.FC = () => {
                   </div>
                 );
               })}
+
+              {hasNextPage && (
+                <div className="pt-2 pb-4 flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className="w-full max-w-xs border-dashed border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                  >
+                    {isFetchingNextPage
+                      ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Вчитување...</>
+                      : <><ChevronDown className="w-4 h-4 mr-2" /> Завчитај повеќе задачи</>
+                    }
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
