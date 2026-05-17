@@ -25,6 +25,7 @@ const SmartGrader = lazy(() => import('./components/SmartGrader').then((m) => ({
 const PedagogueCommandCenter = lazy(() => import('./components/PedagogueCommandCenter').then((m) => ({ default: m.PedagogueCommandCenter })));
 const PedagogueEditor = lazy(() => import('./components/library/PedagogueEditor').then((m) => ({ default: m.PedagogueEditor })));
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 const ReloadPrompt = lazy(() => import('./components/ReloadPrompt').then((m) => ({ default: m.ReloadPrompt })));
 import { MathTask } from './lib/schema';
 import { signInWithGoogle } from './lib/firebase';
@@ -257,19 +258,21 @@ const ObservabilityBridge = () => {
 
 export default function App() {
   return (
-    <HelmetProvider>
-      <ToastProvider>
-        <AccessibilityProvider>
-          <AuthProvider>
-            <GamificationProvider>
-              <Router>
-                <ObservabilityBridge />
-                <AppRoutes />
-              </Router>
-            </GamificationProvider>
-          </AuthProvider>
-        </AccessibilityProvider>
-      </ToastProvider>
-    </HelmetProvider>
+    <ErrorBoundary>
+      <HelmetProvider>
+        <ToastProvider>
+          <AccessibilityProvider>
+            <AuthProvider>
+              <GamificationProvider>
+                <Router>
+                  <ObservabilityBridge />
+                  <AppRoutes />
+                </Router>
+              </GamificationProvider>
+            </AuthProvider>
+          </AccessibilityProvider>
+        </ToastProvider>
+      </HelmetProvider>
+    </ErrorBoundary>
   );
 }

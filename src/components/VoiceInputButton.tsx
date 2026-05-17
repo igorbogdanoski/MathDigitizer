@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 import { Button } from './ui/Button';
+import { useToast } from '../contexts/ToastContext';
 
 interface VoiceInputButtonProps {
   onResult: (text: string) => void;
@@ -11,6 +12,7 @@ interface VoiceInputButtonProps {
 export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({ onResult, lang = 'mk-MK', className = '' }) => {
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     // @ts-ignore
@@ -46,7 +48,7 @@ export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({ onResult, la
 
   const toggleListening = () => {
     if (!recognitionRef.current) {
-      alert("Вашиот прелистувач не поддржува препознавање на глас.");
+      showToast("Вашиот прелистувач не поддржува препознавање на глас.", 'error');
       return;
     }
 

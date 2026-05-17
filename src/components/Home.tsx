@@ -6,6 +6,7 @@ import { generateSpeech } from '../lib/gemini';
 import { motion, AnimatePresence } from 'motion/react';
 import { MathRenderer } from './MathRenderer';
 import { SEO } from './SEO';
+import { useToast } from '../contexts/ToastContext';
 
 const MATH_QUOTES = [
   { text: "Математиката е азбуката со која Бог го напишал универзумот.", author: "Галилео Галилеј" },
@@ -51,6 +52,7 @@ import { hasProAccess } from '../lib/saas';
 export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
   const navigate = useNavigate();
   const { userProfile } = useAuth();
+  const { showToast } = useToast();
   const [quoteOfDay, setQuoteOfDay] = useState(MATH_QUOTES[0]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
@@ -102,7 +104,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
       setIsPlaying(true);
     } catch (error) {
       console.error("Failed to play audio:", error);
-      alert("Неуспешно генерирање на аудио. Обидете се повторно.");
+      showToast("Неуспешно генерирање на аудио. Обидете се повторно.", 'error');
     } finally {
       setIsGeneratingAudio(false);
     }
@@ -569,7 +571,8 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
                   <Info className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   Како функционира MathDigitizer Pro?
                 </h2>
-                <button 
+                <button
+                  type="button"
                   onClick={() => setShowGuide(false)}
                   aria-label="Затвори модал"
                   title="Затвори"

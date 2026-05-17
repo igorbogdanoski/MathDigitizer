@@ -29,9 +29,11 @@ import { useLibraryStore } from '../store/useLibraryStore';
 import { Skeleton } from './ui/Skeleton';
 
 import { useRealtimeTasks } from '../hooks/useRealtimeTasks';
+import { useToast } from '../contexts/ToastContext';
 
 export const Library: React.FC = () => {
   const store = useLibraryStore();
+  const { showToast } = useToast();
   const filters = useTaskFilters();
   const actions = useTaskActions();
   const { sortedAndFilteredTasks } = filters;
@@ -79,7 +81,7 @@ export const Library: React.FC = () => {
         window.open(`/live/${pin}/host`, '_blank');
       } catch (err) {
         console.error("Error creating live session:", err);
-        alert("Грешка при креирање на жива училница.");
+        showToast("Грешка при креирање на жива училница.", 'error');
       } finally {
         setIsGeneratingKahoot(false);
       }
@@ -109,7 +111,7 @@ export const Library: React.FC = () => {
           console.error("Грешка при зачувување на флешкарта:", e);
         }
       }
-      alert(`Успешно се генерирани ${created} флешкарти! Пренасочување...`);
+      showToast(`Успешно се генерирани ${created} флешкарти! Пренасочување...`, 'success');
       window.location.href = '/flashcards';
     };
     
@@ -343,8 +345,9 @@ export const Library: React.FC = () => {
                     <span className="font-semibold text-slate-800 text-lg">
                       {task.type === 'theory' ? `Теорија: ${task.title}` : task.title}
                     </span>
-                    <button 
-                      onClick={() => store.setSelectedTaskId(null)} 
+                    <button
+                      type="button"
+                      onClick={() => store.setSelectedTaskId(null)}
                       className="p-1 hover:bg-slate-200 rounded-full transition-colors"
                       title="Затвори"
                     >
@@ -376,7 +379,7 @@ export const Library: React.FC = () => {
           onComplete={(xp) => {
             // XP awarding logic is handled in App.tsx via a global function or similar
             // For now, we'll just alert or assume it's handled
-            alert(`Браво! Освоивте ${xp} XP за интерактивно решавање!`);
+            showToast(`Браво! Освоивте ${xp} XP за интерактивно решавање!`, 'success');
           }}
         />
       )}
@@ -407,7 +410,7 @@ export const Library: React.FC = () => {
                     <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px] sm:max-w-xs">{store.activeGraphTask.title}</p>
                   </div>
                 </div>
-                <button onClick={() => store.setActiveGraphTask(null)} title="Затвори график" aria-label="Затвори график" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                <button type="button" onClick={() => store.setActiveGraphTask(null)} title="Затвори график" aria-label="Затвори график" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -446,8 +449,9 @@ export const Library: React.FC = () => {
               className="relative max-w-5xl max-h-[90vh] w-full flex items-center justify-center"
               onClick={(e) => e.stopPropagation()}
             >
-              <button 
-                onClick={() => store.setZoomedImage(null)} 
+              <button
+                type="button"
+                onClick={() => store.setZoomedImage(null)}
                 title="Затвори слика"
                 aria-label="Затвори слика"
                 className="absolute -top-12 right-0 p-2 text-white hover:text-slate-300 transition-colors bg-slate-800/50 rounded-full"
@@ -492,7 +496,7 @@ export const Library: React.FC = () => {
                      </p>
                    </div>
                  </div>
-                 <button onClick={() => setShowManipulativesModal(false)} title="Затвори манипулативи" aria-label="Затвори манипулативи" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                 <button type="button" onClick={() => setShowManipulativesModal(false)} title="Затвори манипулативи" aria-label="Затвори манипулативи" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                    <X className="w-5 h-5" />
                  </button>
                </div>

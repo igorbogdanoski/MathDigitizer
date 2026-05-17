@@ -10,6 +10,7 @@ import { GenerationStyleToggle } from '../GenerationStyleToggle';
 import { generateTaskEmbedding } from '../../lib/gemini';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { useToast } from '../../contexts/ToastContext';
 
 interface TaskFiltersProps {
   filters: ReturnType<typeof useTaskFilters>;
@@ -54,6 +55,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
   const [isDokDropdownOpen, setIsDokDropdownOpen] = useState(false);
   const [isGradeDropdownOpen, setIsGradeDropdownOpen] = useState(false);
+  const { showToast } = useToast();
   const [isGeneratingEmbeddings, setIsGeneratingEmbeddings] = useState(false);
   
   const tagDropdownRef = useRef<HTMLDivElement>(null);
@@ -85,7 +87,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
       }
     }
     
-    alert(`Успешно генерирани ${successCount} од ${missingEmbeddingsCount} задачи.`);
+    showToast(`Успешно генерирани ${successCount} од ${missingEmbeddingsCount} задачи.`, 'success');
     setIsGeneratingEmbeddings(false);
   };
 
@@ -101,7 +103,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
       }
     }
     setSelectedForTest(new Set());
-    alert('Задачите се успешно избришани.');
+    showToast('Задачите се успешно избришани.', 'success');
   };
 
   useEffect(() => {
@@ -136,7 +138,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           setSemanticQueryEmbedding(emb);
        } catch (error) {
           console.error("Failed to fetch embedding", error);
-          alert("Неуспешно генерирање на семантички слика. Пробајте повторно.");
+          showToast("Неуспешно генерирање на семантички слика. Пробајте повторно.", 'error');
        } finally {
           setIsSemanticSearching(false);
        }

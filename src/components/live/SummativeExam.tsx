@@ -9,8 +9,10 @@ import { Loader2, CheckCircle, Save, Clock, HelpCircle, FileType2 } from 'lucide
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
+import { useToast } from '../../contexts/ToastContext';
 
 export const SummativeExam = ({ examId }: { examId: string }) => {
+  const { showToast } = useToast();
   const [exam, setExam] = useState<SummativeExamType | null>(null);
   const [studentName, setStudentName] = useState('');
   const [studentUid, setStudentUid] = useState('');
@@ -145,7 +147,7 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
         localStorage.removeItem(`dugga_answers_${examId}`);
      } catch (err) {
         console.error(err);
-        alert("Грешка при испраќање на одговорите. Проверете ја вашата интернет конекција.");
+        showToast("Грешка при испраќање на одговорите. Проверете ја вашата интернет конекција.", 'error');
      } finally {
         setIsSubmitting(false);
      }

@@ -5,6 +5,7 @@ import { Input } from './ui/Input';
 import { MathTask } from '../lib/schema';
 import { generateLessonPlan } from '../lib/gemini';
 import { exportLessonPlanToWord } from '../lib/export';
+import { useToast } from '../contexts/ToastContext';
 
 interface LessonPlanGeneratorProps {
   selectedTasks: MathTask[];
@@ -12,6 +13,7 @@ interface LessonPlanGeneratorProps {
 }
 
 export const LessonPlanGenerator: React.FC<LessonPlanGeneratorProps> = ({ selectedTasks, onClose }) => {
+  const { showToast } = useToast();
   const [topicName, setTopicName] = useState('Анализа на функции');
   const [gradeLevel, setGradeLevel] = useState('1 година');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -24,7 +26,7 @@ export const LessonPlanGenerator: React.FC<LessonPlanGeneratorProps> = ({ select
       setPlanData(data);
     } catch (error) {
        console.error(error);
-       alert("Грешка при генерирање на подготовката.");
+       showToast("Грешка при генерирање на подготовката.", 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -49,7 +51,7 @@ export const LessonPlanGenerator: React.FC<LessonPlanGeneratorProps> = ({ select
               <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Креирање план базиран на <span className="text-orange-600 font-bold">{selectedTasks.length}</span> избрани задачи според БРО</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-700 rounded-full shadow-sm hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 transition-colors">
+          <button type="button" onClick={onClose} aria-label="Затвори" title="Затвори" className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-700 rounded-full shadow-sm hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>

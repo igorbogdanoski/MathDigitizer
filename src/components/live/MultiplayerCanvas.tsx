@@ -8,6 +8,7 @@ import { motion } from 'motion/react';
 import { db, auth } from '../../lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { recognizeHandwrittenMath } from '../../lib/gemini';
+import { useToast } from '../../contexts/ToastContext';
 
 interface Point {
   x: number;
@@ -43,6 +44,7 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState<'pen' | 'eraser'>('pen');
   const [color, setColor] = useState('#4f46e5');
+  const { showToast } = useToast();
   const [isRecognizing, setIsRecognizing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -186,7 +188,7 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
       }
     } catch (e) {
       console.error("Failed to recognize ink:", e);
-      alert("Не успеавме да го препознаеме ракописот.");
+      showToast("Не успеавме да го препознаеме ракописот.", 'error');
     } finally {
       setIsRecognizing(false);
     }
@@ -223,7 +225,7 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
        pdf.save(`Сесија_${new Date().toLocaleDateString('mk-MK')}.pdf`);
      } catch (e) {
        console.error("PDF Export error:", e);
-       alert("Грешка при експортирање во PDF.");
+       showToast("Грешка при експортирање во PDF.", 'error');
      }
   };
 
@@ -238,7 +240,7 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
              latexBoxes,
              updatedAt: serverTimestamp()
           });
-          alert("Сесијата е успешно ажурирана!");
+          showToast("Сесијата е успешно ажурирана!", 'success');
        } else {
           // Create
           const docRef = await addDoc(collection(db, 'whiteboard_sessions'), {
@@ -251,11 +253,11 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
              updatedAt: serverTimestamp()
           });
           setSessionId(docRef.id);
-          alert("Сесијата е успешно зачувана трајно!");
+          showToast("Сесијата е успешно зачувана трајно!", 'success');
        }
      } catch (e) {
        console.error("Save error:", e);
-       alert("Грешка при зачувување на сесијата.");
+       showToast("Грешка при зачувување на сесијата.", 'error');
      } finally {
        setIsSaving(false);
      }
@@ -286,7 +288,8 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
                  { value: '#16a34a', className: 'bg-green-600', label: 'Зелена' },
                  { value: '#0f172a', className: 'bg-slate-900', label: 'Темна' }
                ].map((swatch) => (
-                 <button 
+                 <button
+                   type="button"
                    key={swatch.value}
                    onClick={() => { setColor(swatch.value); setTool('pen'); }}
                    aria-label={`Постави боја: ${swatch.label}`}

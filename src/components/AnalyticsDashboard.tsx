@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { GradedSubmission } from '../lib/schema';
 import { 
   Brain, TrendingUp, AlertTriangle, 
@@ -35,6 +36,7 @@ const MATH_STRANDS = [
 
 export const AnalyticsDashboard: React.FC = () => {
   const { user, userProfile } = useAuth();
+  const { showToast } = useToast();
   const [submissions, setSubmissions] = useState<GradedSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
@@ -234,7 +236,7 @@ export const AnalyticsDashboard: React.FC = () => {
       setInterventionPlan(text);
     } catch (e) {
       console.error(e);
-      alert("Грешка при генерирање интервенција.");
+      showToast("Грешка при генерирање интервенција.", 'error');
     } finally {
       setIsGeneratingPlan(false);
     }

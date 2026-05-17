@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { db } from '../../lib/firebase';
 import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '../../contexts/ToastContext';
 
 // Helper to calculate cosine similarity
 function cosineSimilarity(A: number[], B: number[]) {
@@ -37,6 +38,7 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
   const store = useLibraryStore();
   const actions = useTaskActions();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -573,7 +575,8 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
         {/* Instructor Scaffolding Section */}
         {((task.pedagogical_insights?.common_pitfalls.length || 0) > 0 || (task.pedagogical_insights?.socratic_questions.length || 0) > 0) && (
           <div className="bg-indigo-50/30 border border-indigo-100 rounded-2xl overflow-hidden mt-4">
-            <button 
+            <button
+              type="button"
               onClick={(e) => { e.stopPropagation(); togglePrompt(`scaffolding-${taskId}`); }}
               className="w-full flex items-center justify-between p-4 hover:bg-indigo-50/50 transition-colors"
             >
@@ -669,7 +672,8 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
 
         {task.illustration_prompt && (
           <div className="border border-slate-200 rounded-lg overflow-hidden">
-            <button 
+            <button
+              type="button"
               onClick={(e) => { e.stopPropagation(); togglePrompt(taskId); }}
               className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
             >
@@ -752,10 +756,10 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
                   <span className="text-xs font-mono font-bold text-slate-700 w-10 text-center">
                     {formatTime(store.practiceTimer[taskId] || 0)}
                   </span>
-                  <button onClick={(e) => { e.stopPropagation(); store.setTimerActive({ ...store.timerActive, [taskId]: !store.timerActive[taskId] }); }} className="text-slate-500 hover:text-blue-600">
+                  <button type="button" title="Паузирај/Продолжи тајмер" aria-label="Паузирај/Продолжи тајмер" onClick={(e) => { e.stopPropagation(); store.setTimerActive({ ...store.timerActive, [taskId]: !store.timerActive[taskId] }); }} className="text-slate-500 hover:text-blue-600">
                     {store.timerActive[taskId] ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                   </button>
-                  <button onClick={(e) => { e.stopPropagation(); store.setPracticeTimer({ ...store.practiceTimer, [taskId]: 0 }); }} className="text-slate-500 hover:text-blue-600">
+                  <button type="button" title="Ресетирај тајмер" aria-label="Ресетирај тајмер" onClick={(e) => { e.stopPropagation(); store.setPracticeTimer({ ...store.practiceTimer, [taskId]: 0 }); }} className="text-slate-500 hover:text-blue-600">
                     <RotateCcw className="w-3 h-3" />
                   </button>
                   <Button 
@@ -791,6 +795,7 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
             <div className="flex flex-wrap gap-2 mb-4">
               {task.solution_steps.map((_, stepIdx) => (
                 <button
+                  type="button"
                   key={stepIdx}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -817,15 +822,18 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
                 <div key={stepIdx} id={`step-${stepKey}`} className={`border rounded-lg overflow-hidden transition-all duration-300 ${isSelected ? 'border-blue-300 ring-2 ring-blue-100 bg-blue-50/30' : 'border-slate-100'}`}>
                   <div className="flex items-center w-full bg-slate-50 hover:bg-slate-100 transition-colors">
                     <div className="pl-3 py-2 flex items-center">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
+                        aria-label={`Избери чекор ${stepIdx + 1}`}
+                        title={`Избери чекор ${stepIdx + 1}`}
                         checked={isSelected || false}
                         onChange={(e) => { e.stopPropagation(); toggleStepSelection(taskId, stepIdx); }}
                         onClick={(e) => e.stopPropagation()}
                         className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                       />
                     </div>
-                    <button 
+                    <button
+                      type="button"
                       onClick={(e) => { e.stopPropagation(); toggleStep(stepKey); }}
                       className="flex-1 flex items-center justify-between p-2 pl-2"
                     >
@@ -877,7 +885,7 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
                       queryClient.invalidateQueries({ queryKey: ['tasks'] });
                     } catch (err) {
                       console.error("Грешка при додавање чекор:", err);
-                      alert("Настана грешка при зачувување на чекорот.");
+                      showToast("Настана грешка при зачувување на чекорот.", 'error');
                     }
                   }
                 }}
@@ -924,6 +932,7 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
                 <div key={fIdx} className="group relative bg-slate-50 border border-slate-200 p-3 rounded-lg shadow-sm hover:shadow-md transition-all flex items-center justify-center min-h-[60px] overflow-x-auto">
                   <MathRenderer content={`$$${formula}$$`} />
                   <button
+                    type="button"
                     onClick={(e) => { e.stopPropagation(); handleCopyFormula(formula); }}
                     className="absolute right-2 top-2 p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
                     title="Копирај формула"

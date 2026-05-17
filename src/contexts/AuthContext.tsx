@@ -4,6 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { UserProfile } from '../lib/schema';
 import { captureError } from '../lib/observability';
+import { useToast } from './ToastContext';
 
 interface AuthContextType {
   user: User | null;
@@ -22,6 +23,7 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { showToast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,7 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     getRedirectResult(auth).catch((error) => {
       console.error("Redirect error", error);
       if (error.code === 'auth/unauthorized-domain') {
-        alert("Грешка: Доменот не е дозволен во Firebase.\nВе молиме додадете го овој домен (vercel.app) во Firebase Console -> Authentication -> Settings -> Authorized Domains.");
+        showToast("Доменот не е дозволен во Firebase. Додадете го во Firebase Console → Authentication → Authorized Domains.", 'error');
       }
     });
 

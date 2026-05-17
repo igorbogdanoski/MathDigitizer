@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { VoiceInputButton } from '../VoiceInputButton';
+import { useToast } from '../../contexts/ToastContext';
 import { X, Save, Plus, Trash2, Loader2, BookOpen, Edit3 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -29,8 +30,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
   const [currentHint, setCurrentHint] = useState('');
   
   const [isSaving, setIsSaving] = useState(false);
-
-  // Focus lock implementation placeholder if needed
+  const { showToast } = useToast();
 
 
   const handleAddStep = () => {
@@ -142,7 +142,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
       onSuccess();
     } catch (error) {
       console.error('Error saving task:', error);
-      alert('Грешка при зачувување на задачата.');
+      showToast('Грешка при зачувување на задачата.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -160,7 +160,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
             {editTask ? <Edit3 className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
             <h2 className="text-lg font-bold">{editTask ? 'Уреди задача' : 'Рачно додавање задача'}</h2>
           </div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200 transition-colors">
+          <button type="button" aria-label="Затвори" title="Затвори" onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>

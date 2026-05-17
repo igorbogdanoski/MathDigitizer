@@ -84,29 +84,19 @@ export const signInWithGoogle = async () => {
       } catch (redirectError: any) {
         console.error('Error signing in with Google (redirect fallback)', redirectError);
         if (redirectError?.code === 'auth/unauthorized-domain') {
-          alert(
-            "Грешка: Доменот не е дозволен во Firebase.\n" +
-            "Додадете го овој домен во Firebase Console -> Authentication -> Settings -> Authorized Domains."
-          );
-        } else {
-          alert("Грешка при најава: " + (redirectError?.message || "Непозната грешка."));
+          throw new Error("Доменот не е дозволен во Firebase. Додадете го во Firebase Console → Authentication → Authorized Domains.");
         }
-        throw redirectError;
+        throw new Error("Грешка при најава: " + (redirectError?.message || "Непозната грешка."));
       }
     }
 
     console.error('Error signing in with Google', error);
     if (code === 'auth/unauthorized-domain') {
-      alert(
-        "Грешка: Доменот не е дозволен во Firebase.\n" +
-        "Додадете го овој домен во Firebase Console -> Authentication -> Settings -> Authorized Domains."
-      );
+      throw new Error("Доменот не е дозволен во Firebase. Додадете го во Firebase Console → Authentication → Authorized Domains.");
     } else if (code === 'auth/network-request-failed') {
-      alert("Мрежна грешка при најава. Проверете ја интернет конекцијата и обидете се повторно.");
-    } else {
-      alert("Грешка при најава: " + (error?.message || "Непозната грешка."));
+      throw new Error("Мрежна грешка при најава. Проверете ја интернет конекцијата и обидете се повторно.");
     }
-    throw error;
+    throw new Error("Грешка при најава: " + (error?.message || "Непозната грешка."));
   }
 };
 
