@@ -7,9 +7,11 @@ import { Button } from './ui/Button';
 import { Loader2, Users, Clock, AlertTriangle, CheckCircle, FileText, ChevronRight, Wand2 } from 'lucide-react';
 import { MathRenderer } from './MathRenderer';
 import { autoGradeSubmission } from '../lib/gemini';
+import { useToast } from '../contexts/ToastContext';
 
 export const TeacherExamsDashboard = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [exams, setExams] = useState<SummativeExam[]>([]);
   const [selectedExam, setSelectedExam] = useState<SummativeExam | null>(null);
   const [attempts, setAttempts] = useState<SummativeAttempt[]>([]);
@@ -65,7 +67,7 @@ export const TeacherExamsDashboard = () => {
        setIsGrading(null);
      } catch(e) {
        console.error(e);
-       alert("Грешка при зачувување на поените.");
+       showToast("Грешка при зачувување на поените.", 'error');
      }
   };
 
@@ -98,7 +100,7 @@ export const TeacherExamsDashboard = () => {
        const input = document.getElementById('final-score') as HTMLInputElement;
        if(input) input.value = totalRecommended.toString();
      } catch(e) {
-        alert("Грешка при AI оценувањето.");
+        showToast("Грешка при AI оценувањето.", 'error');
      } finally {
         setIsAIGrading(false);
      }
@@ -124,6 +126,8 @@ export const TeacherExamsDashboard = () => {
                  <select
                    value={gradeFilter}
                    onChange={(e) => setGradeFilter(e.target.value)}
+                   title="Филтрирај по одделение"
+                   aria-label="Филтрирај по одделение"
                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
                  >
                    <option value="all">Сите Одделенија</option>
@@ -139,7 +143,8 @@ export const TeacherExamsDashboard = () => {
                </div>
             )}
             {filteredExams.map(exam => (
-              <button 
+              <button
+                type="button"
                 key={exam.id}
                 onClick={() => loadAttempts(exam)}
                 className={`w-full text-left p-5 rounded-2xl border-2 transition-all ${selectedExam?.id === exam.id ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white hover:border-indigo-300'}`}

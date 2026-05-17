@@ -9,6 +9,7 @@ import { Flashcard } from '../lib/schema';
 import { motion, AnimatePresence } from 'motion/react';
 import { calculateSM2 } from '../lib/srsAlgorithm';
 import { generateFlashcards } from '../lib/gemini';
+import { useToast } from '../contexts/ToastContext';
 
 interface FlashcardsProps {
   onReviewComplete?: () => void;
@@ -17,6 +18,7 @@ interface FlashcardsProps {
 type StudyMode = 'library' | 'flashcards' | 'quiz' | 'match';
 
 export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
+  const { showToast } = useToast();
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -200,7 +202,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
   // Generate Quiz
   const startQuiz = () => {
     if (flashcards.length < 4) {
-      alert("Потребни се најмалку 4 картички за да креирате квиз!");
+      showToast("Потребни се најмалку 4 картички за да креирате квиз!", 'error');
       return;
     }
     
@@ -252,7 +254,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
   // Match Game Logic
   const startMatchGame = () => {
     if (flashcards.length < 4) {
-      alert("Потребни се најмалку 4 картички за да играте совпаѓање!");
+      showToast("Потребни се најмалку 4 картички за да играте совпаѓање!", 'error');
       return;
     }
     
@@ -347,10 +349,10 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
         setFlashcards(prev => [...newCards, ...prev]);
         setShowAIModal(false);
         setAiTopic('');
-        alert(`Успешно креирани ${created} картички со помош на AI!`);
+        showToast(`Успешно креирани ${created} картички со помош на AI!`, 'success');
       }
     } catch (e) {
-      alert("Настана грешка при генерирање картички. Обидете се повторно.");
+      showToast("Настана грешка при генерирање картички. Обидете се повторно.", 'error');
       console.error(e);
     } finally {
       setIsGenerating(false);
@@ -402,10 +404,11 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
         {(!isStudying && !showCompletion && activeTab !== 'quiz' && activeTab !== 'match') && (
           <div className="flex flex-wrap p-1 bg-slate-100 dark:bg-slate-800 rounded-xl max-w-fit">
             <button
+              type="button"
               onClick={() => setActiveTab('library')}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                activeTab === 'library' 
-                  ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-white shadow-sm' 
+                activeTab === 'library'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -413,11 +416,12 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
               Колекција ({flashcards.length})
             </button>
             <button
+              type="button"
               onClick={startStudySession}
               disabled={dueFlashcards.length === 0}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                dueFlashcards.length === 0 
-                  ? 'opacity-50 cursor-not-allowed text-slate-400' 
+                dueFlashcards.length === 0
+                  ? 'opacity-50 cursor-not-allowed text-slate-400'
                   : 'text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
               }`}
             >
@@ -425,11 +429,12 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
               Паметно Учење ({dueFlashcards.length})
             </button>
             <button
+              type="button"
               onClick={startQuiz}
               disabled={flashcards.length < 4}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                flashcards.length < 4 
-                  ? 'opacity-50 cursor-not-allowed text-slate-400' 
+                flashcards.length < 4
+                  ? 'opacity-50 cursor-not-allowed text-slate-400'
                   : 'text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'
               }`}
             >
@@ -437,11 +442,12 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
               Квиз Режим
             </button>
             <button
+              type="button"
               onClick={startMatchGame}
               disabled={flashcards.length < 4}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                flashcards.length < 4 
-                  ? 'opacity-50 cursor-not-allowed text-slate-400' 
+                flashcards.length < 4
+                  ? 'opacity-50 cursor-not-allowed text-slate-400'
                   : 'text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20'
               }`}
             >
@@ -538,6 +544,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
                 return (
                   <button
                     key={i}
+                    type="button"
                     onClick={() => handleQuizAnswer(option)}
                     disabled={!!selectedAnswer}
                     className={`relative p-5 rounded-xl border-2 text-left transition-all duration-200 text-slate-700 dark:text-slate-300 ${optionClasses}`}
@@ -658,7 +665,8 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 w-full sm:w-auto"
               >
-                <button 
+                <button
+                  type="button"
                   onClick={(e) => { e.stopPropagation(); handleReview(1); }}
                   className="flex-1 sm:flex-none flex flex-col items-center justify-center px-6 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors group"
                 >
@@ -666,7 +674,8 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
                   <span className="text-xs font-bold">Тешко (1)</span>
                 </button>
                 <div className="w-px h-10 bg-slate-100 dark:bg-slate-700 mx-2"></div>
-                <button 
+                <button
+                  type="button"
                   onClick={(e) => { e.stopPropagation(); handleReview(3); }}
                   className="flex-1 sm:flex-none flex flex-col items-center justify-center px-6 py-3 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 transition-colors group"
                 >
@@ -674,7 +683,8 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
                   <span className="text-xs font-bold">Добро (2)</span>
                 </button>
                 <div className="w-px h-10 bg-slate-100 dark:bg-slate-700 mx-2"></div>
-                <button 
+                <button
+                  type="button"
                   onClick={(e) => { e.stopPropagation(); handleReview(5); }}
                   className="flex-1 sm:flex-none flex flex-col items-center justify-center px-6 py-3 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600 transition-colors group"
                 >
@@ -766,7 +776,8 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
                       <CardContent className="p-6">
                         <div className="flex justify-between items-start mb-4">
                           <div className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] uppercase font-bold px-2 py-1 rounded">Q&A</div>
-                          <button 
+                          <button
+                            type="button"
                             onClick={() => card.id && handleDeleteFlashcard(card.id)}
                             aria-label="Избриши картичка"
                             title="Избриши картичка"
@@ -809,11 +820,11 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
                   <Plus className="w-6 h-6 text-indigo-600" />
                   Креирај Картичка
                 </h2>
-                <button onClick={() => setShowAddModal(false)} aria-label="Затвори" title="Затвори" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full bg-white dark:bg-slate-800 shadow-sm">
+                <button type="button" onClick={() => setShowAddModal(false)} aria-label="Затвори" title="Затвори" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full bg-white dark:bg-slate-800 shadow-sm">
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              
+
               <div className="p-6 sm:p-8 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Front Side */}
@@ -943,7 +954,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
                   <Sparkles className="w-6 h-6 text-purple-600" />
                   AI Генератор
                 </h2>
-                <button onClick={() => setShowAIModal(false)} disabled={isGenerating} aria-label="Затвори" title="Затвори" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full bg-white dark:bg-slate-800 shadow-sm">
+                <button type="button" onClick={() => setShowAIModal(false)} disabled={isGenerating} aria-label="Затвори" title="Затвори" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full bg-white dark:bg-slate-800 shadow-sm">
                   <X className="w-5 h-5" />
                 </button>
               </div>

@@ -5,6 +5,7 @@ import { CheckCircle2, Circle, Clock, Plus, Trash2, Calendar as CalendarIcon, Pl
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { generateSpeech } from '../lib/gemini';
+import { useToast } from '../contexts/ToastContext';
 
 interface Todo {
   id: string;
@@ -28,6 +29,7 @@ export const TodoList: React.FC<TodoListProps> = ({ user, onTaskComplete }) => {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!user) {
@@ -132,7 +134,7 @@ export const TodoList: React.FC<TodoListProps> = ({ user, onTaskComplete }) => {
       setPlayingId(todo.id);
     } catch (error) {
       console.error("Error playing audio:", error);
-      alert("Грешка при генерирање на аудио.");
+      showToast("Грешка при генерирање на аудио.", 'error');
     } finally {
       setIsGeneratingAudio(null);
     }
@@ -175,6 +177,8 @@ export const TodoList: React.FC<TodoListProps> = ({ user, onTaskComplete }) => {
               <CalendarIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="date"
+                title="Краен рок"
+                aria-label="Краен рок"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 className="pl-9 h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700"
@@ -203,7 +207,8 @@ export const TodoList: React.FC<TodoListProps> = ({ user, onTaskComplete }) => {
                 key={todo.id} 
                 className={`p-4 flex items-center gap-4 hover:bg-slate-50 transition-colors ${todo.completed ? 'opacity-60 bg-slate-50/50' : ''}`}
               >
-                <button 
+                <button
+                  type="button"
                   onClick={() => toggleComplete(todo)}
                   className="flex-shrink-0 focus:outline-none"
                 >
@@ -231,7 +236,8 @@ export const TodoList: React.FC<TodoListProps> = ({ user, onTaskComplete }) => {
                 </div>
                 
                 <div className="flex items-center gap-1">
-                  <button 
+                  <button
+                    type="button"
                     onClick={() => handlePlayAudio(todo)}
                     disabled={isGeneratingAudio === todo.id}
                     className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
@@ -245,7 +251,8 @@ export const TodoList: React.FC<TodoListProps> = ({ user, onTaskComplete }) => {
                       <Play className="w-4 h-4" />
                     )}
                   </button>
-                  <button 
+                  <button
+                    type="button"
                     onClick={() => deleteTodo(todo.id)}
                     className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                     title="Избриши"

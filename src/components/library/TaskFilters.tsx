@@ -10,6 +10,7 @@ import { GenerationStyleToggle } from '../GenerationStyleToggle';
 import { generateTaskEmbedding } from '../../lib/gemini';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { useToast } from '../../contexts/ToastContext';
 
 interface TaskFiltersProps {
   filters: ReturnType<typeof useTaskFilters>;
@@ -19,6 +20,7 @@ interface TaskFiltersProps {
   selectedForTest: Set<string>;
   setSelectedForTest: (val: Set<string>) => void;
   setShowTestGenerator: (val: boolean) => void;
+  setShowWorksheetModal: (val: boolean) => void;
   handleExportCSV: () => void;
 }
 
@@ -30,6 +32,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   selectedForTest,
   setSelectedForTest,
   setShowTestGenerator,
+  setShowWorksheetModal,
   handleExportCSV
 }) => {
   const {
@@ -54,6 +57,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
   const [isDokDropdownOpen, setIsDokDropdownOpen] = useState(false);
   const [isGradeDropdownOpen, setIsGradeDropdownOpen] = useState(false);
+  const { showToast } = useToast();
   const [isGeneratingEmbeddings, setIsGeneratingEmbeddings] = useState(false);
   
   const tagDropdownRef = useRef<HTMLDivElement>(null);
@@ -85,7 +89,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
       }
     }
     
-    alert(`Успешно генерирани ${successCount} од ${missingEmbeddingsCount} задачи.`);
+    showToast(`Успешно генерирани ${successCount} од ${missingEmbeddingsCount} задачи.`, 'success');
     setIsGeneratingEmbeddings(false);
   };
 
@@ -101,7 +105,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
       }
     }
     setSelectedForTest(new Set());
-    alert('Задачите се успешно избришани.');
+    showToast('Задачите се успешно избришани.', 'success');
   };
 
   useEffect(() => {
@@ -136,7 +140,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           setSemanticQueryEmbedding(emb);
        } catch (error) {
           console.error("Failed to fetch embedding", error);
-          alert("Неуспешно генерирање на семантички слика. Пробајте повторно.");
+          showToast("Неуспешно генерирање на семантички слика. Пробајте повторно.", 'error');
        } finally {
           setIsSemanticSearching(false);
        }
@@ -270,7 +274,16 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                     <FileText className="w-4 h-4 mr-2" />
                     Генерирај Тест ({selectedForTest.size})
                   </Button>
-                  
+
+                  <Button
+                    variant="default"
+                    onClick={() => setShowWorksheetModal(true)}
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    Работен Лист ({selectedForTest.size})
+                  </Button>
+
                   <Button
                     variant="default"
                     onClick={() => document.dispatchEvent(new CustomEvent('open-lesson-plan-modal'))}

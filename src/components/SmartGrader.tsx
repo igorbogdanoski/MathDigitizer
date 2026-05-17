@@ -11,12 +11,14 @@ import { useLibraryStore } from '../store/useLibraryStore';
 import { MathRenderer } from './MathRenderer';
 import { analyzeSolutionImage, generateTargetedPracticeTasks, analyzeBatchTestImage } from '../lib/gemini';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { addDoc, collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 export const SmartGrader: React.FC = () => {
   const { tasks } = useLibraryStore();
   const { user } = useAuth();
+  const { showToast } = useToast();
   
   const [gradingMode, setGradingMode] = useState<'single' | 'batch'>('single');
   const [selectedTask, setSelectedTask] = useState<MathTask | null>(null);
@@ -42,7 +44,7 @@ export const SmartGrader: React.FC = () => {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert("Сликата е премногу голема. Ве молиме прикачете слика помала од 5MB.");
+      showToast("Сликата е премногу голема. Ве молиме прикачете слика помала од 5MB.", 'error');
       return;
     }
 
@@ -80,7 +82,7 @@ export const SmartGrader: React.FC = () => {
       setPracticeTasks(prev => ({...prev, [index]: generated}));
     } catch (e) {
        console.error("Failed to generate practice", e);
-       alert("Настана грешка при генерирање на задачите.");
+       showToast("Настана грешка при генерирање на задачите.", 'error');
     } finally {
        setIsGeneratingPractice(false);
     }
@@ -91,7 +93,7 @@ export const SmartGrader: React.FC = () => {
     if (!selectedImage) return;
     
     if (!studentIdentifier.trim()) {
-       alert("Внесете име или идентификатор на ученикот за да се зачува аналитиката.");
+       showToast("Внесете име или идентификатор на ученикот за да се зачува аналитиката.", 'error');
        return;
     }
 
@@ -180,7 +182,7 @@ Feedback: ${doc.feedback_summary}`;
       
     } catch (error) {
       console.error("Grader Analysis Error:", error);
-      alert("Настана грешка при анализата. Обидете се повторно.");
+      showToast("Настана грешка при анализата. Обидете се повторно.", 'error');
     } finally {
       setIsAnalyzing(false);
     }

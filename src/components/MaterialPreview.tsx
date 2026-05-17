@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 
 interface MaterialPreviewProps {
   type: MaterialType;
@@ -26,11 +27,12 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
   const [isExporting, setIsExporting] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const printRef = useRef<HTMLDivElement>(null);
   
   const launchKahoot = async () => {
     if (!user) {
-      alert("Мора да сте најавени за да стартувате игра.");
+      showToast("Мора да сте најавени за да стартувате игра.", 'error');
       return;
     }
     const pin = Math.floor(100000 + Math.random() * 900000).toString();
@@ -47,7 +49,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
       navigate(`/live/${pin}/host`);
     } catch (e) {
       console.error(e);
-      alert("Грешка при стартување на сесијата.");
+      showToast("Грешка при стартување на сесијата.", 'error');
     }
   };
 
@@ -137,7 +139,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
       pdf.save(`MathDigitizer_${editedData.title || type}.pdf`);
     } catch (error) {
       console.error("Грешка при генерирање PDF:", error);
-      alert("Не успеав да го генерирам PDF документот. Ве молиме обидете се преку системскиот 'Print -> Save as PDF'.");
+      showToast("Не успеав да го генерирам PDF. Обидете се преку Print → Save as PDF.", 'error');
     } finally {
       setIsExporting(false);
     }

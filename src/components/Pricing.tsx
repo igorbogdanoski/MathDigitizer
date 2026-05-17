@@ -237,9 +237,9 @@ export const Pricing: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-10">
       <SEO
-        title="Pricing"
+        title="Ценовник и Планови"
         description="Изберете помеѓу месечен и годишен MathDigitizer Pro план, со school licensing опција и локални payment методи за Македонија."
-        keywords="pricing, saas, pro teacher, annual plan, school licensing, paypal, bank transfer, edtech"
+        keywords="ценовник, про наставник, годишен план, school licensing, paypal, банка, едукација, математика"
         canonical="/pricing"
         structuredData={[
           {

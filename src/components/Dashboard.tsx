@@ -556,7 +556,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
                   </div>
                   <Button 
                     className="w-full mt-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/50"
-                    onClick={() => alert("AI Tutor генерира адаптивна задача по Тригонометрија...")}
+                    onClick={() => showToast("AI Tutor генерира адаптивна задача по Тригонометрија...", 'info')}
                   >
                     <Brain className="w-4 h-4 mr-2" />
                     Генерирај Адаптивна Задача

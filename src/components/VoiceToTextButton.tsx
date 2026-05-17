@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 
 interface VoiceToTextButtonProps {
   onTranscript: (text: string) => void;
@@ -18,6 +19,7 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
 }) => {
   const [supported, setSupported] = useState(true);
   const recognitionRef = useRef<any>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -68,7 +70,7 @@ export const VoiceToTextButton: React.FC<VoiceToTextButtonProps> = ({
 
   const toggleListening = () => {
     if (!supported) {
-      alert("Препознавање на говор не е поддржано во овој прелистувач.");
+      showToast("Препознавање на говор не е поддржано во овој прелистувач.", 'error');
       return;
     }
 

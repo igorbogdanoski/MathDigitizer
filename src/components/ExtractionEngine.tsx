@@ -12,6 +12,7 @@ import { MathTask } from '../lib/schema';
 import { extractMathTasksFromUrl, generateImage, generateMathGraphicConfig, advancedMultimodalExtraction, enrichTaskPedagogy, generateTaskEmbedding } from '../lib/gemini';
 import { exportToJson, exportToLatex, exportToMarkdown, exportToTxt } from '../lib/export';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { useGamification } from '../contexts/GamificationContext';
 import { hasProAccess } from '../lib/saas';
 import { ProFeatureGate } from './ProFeatureGate';
@@ -34,6 +35,7 @@ const FREE_EXTRACTION_LIMIT = 2;
 
 export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTutorTask }) => {
   const { user, userProfile } = useAuth();
+  const { showToast } = useToast();
   const isPro = hasProAccess(userProfile);
   const { awardXP, updateQuestProgress } = useGamification();
   const [sessionExtractionCount, setSessionExtractionCount] = useState(0);
@@ -102,7 +104,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
       setTasks(prev => prev.map((t, i) => i === index ? { ...t, pedagogical_insights: insights } : t));
     } catch (error: any) {
       console.error("Грешка при збогатување:", error);
-      alert(error.message || "Настана грешка при збогатувањето");
+      showToast(error.message || "Настана грешка при збогатувањето", 'error');
     } finally {
       setIsEnriching(prev => ({ ...prev, [index]: false }));
     }
