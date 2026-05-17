@@ -82,6 +82,12 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 font-sans transition-colors duration-300 relative selection:bg-indigo-300/30">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white focus:rounded-lg focus:text-sm focus:font-semibold"
+      >
+        Прескокни на главна содржина
+      </a>
       <SEO
         title={routeSeo.title}
         description={routeSeo.description}
@@ -105,7 +111,9 @@ export const Layout: React.FC = () => {
           
           <div className="flex items-center gap-3">
             {/* Mobile Menu Button */}
-            <button 
+            <button
+              type="button"
+              aria-label={isMobileMenuOpen ? "Затвори мени" : "Отвори мени"}
               className="lg:hidden p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
@@ -381,7 +389,7 @@ export const Layout: React.FC = () => {
         </div>
       )}
 
-      <main className="flex-1 w-full max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 relative z-0 flex flex-col">
+      <main id="main-content" className="flex-1 w-full max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 relative z-0 flex flex-col">
         {user && !userProfile && !isLoading && (
           <RoleSelection user={user} onComplete={(profile) => setUserProfile(profile)} />
         )}
