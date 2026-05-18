@@ -50,9 +50,12 @@ jobs:
           print('\n'.join(lines))
           " > /tmp/sftp-batch.txt
 
-          sshpass -p "$FTP_PASSWORD" sftp \
+          export SSHPASS="$FTP_PASSWORD"
+          sshpass -e sftp \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
+            -o PubkeyAuthentication=no \
+            -o PreferredAuthentications=password \
             -P 65002 \
             -b /tmp/sftp-batch.txt \
             "$FTP_USERNAME@$FTP_SERVER"
