@@ -27,7 +27,7 @@ jobs:
         run: sudo apt-get install -y lftp
 
       - name: Deploy to Hostinger via SFTP
-        timeout-minutes: 8
+        timeout-minutes: 12
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
@@ -35,4 +35,4 @@ jobs:
           FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
         run: |
           lftp -u "$FTP_USERNAME","$FTP_PASSWORD" sftp://$FTP_SERVER:65002 \
-            -e "set sftp:auto-confirm yes; set net:timeout 20; set net:max-retries 1; set mirror:parallel-transfer-count 8; mirror -R --parallel=8 --no-perms --verbose ./dist/ /$FTP_SERVER_DIR; quit"
+            -e "set sftp:auto-confirm yes; set net:timeout 60; mirror -R --no-perms --verbose ./dist/ /$FTP_SERVER_DIR; quit"
