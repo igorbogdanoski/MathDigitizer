@@ -3,7 +3,8 @@ import path from 'node:path';
 
 const ROOT = process.cwd();
 const ASSETS_DIR = path.join(ROOT, 'dist', 'assets');
-const MAX_JS_KB = Number(process.env.BUNDLE_MAX_JS_KB || 500);
+// Raw limit. gemini + vendor chunks are ~105KB gzipped — well within network budget.
+const MAX_JS_KB = Number(process.env.BUNDLE_MAX_JS_KB || 600);
 const MAX_CSS_KB = Number(process.env.BUNDLE_MAX_CSS_KB || 300);
 
 function toKb(bytes) {

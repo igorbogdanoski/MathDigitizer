@@ -4,6 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { TaskDetailView } from './TaskDetailView';
 import { MathTask } from '../../lib/schema';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ToastProvider } from '../../contexts/ToastContext';
 
 const mockTask: MathTask = {
   id: 'test-id-1',
@@ -23,9 +24,11 @@ const queryClient = new QueryClient();
 describe('TaskDetailView Component', () => {
   it('renders task details correctly', () => {
     render(
-      <QueryClientProvider client={queryClient}>
-        <TaskDetailView task={mockTask} taskId="test-id-1" />
-      </QueryClientProvider>
+      <ToastProvider>
+        <QueryClientProvider client={queryClient}>
+          <TaskDetailView task={mockTask} taskId="test-id-1" />
+        </QueryClientProvider>
+      </ToastProvider>
     );
 
     expect(screen.getByText('Текст на задачата')).toBeInTheDocument();
@@ -36,3 +39,4 @@ describe('TaskDetailView Component', () => {
     expect(screen.getByText('Издвоени Формули')).toBeInTheDocument();
   });
 });
+
