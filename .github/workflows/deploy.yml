@@ -23,8 +23,8 @@ jobs:
         env:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
 
-      - name: Install sshpass
-        run: sudo apt-get install -y sshpass
+      - name: Install lftp
+        run: sudo apt-get install -y lftp
 
       - name: Deploy to Hostinger via SFTP
         timeout-minutes: 8
@@ -34,28 +34,34 @@ jobs:
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
           FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
         run: |
-          python3 -c "
-          import os
+          python3 - <<'PYEOF'
+          import os, subprocess, sys
+
+          server = os.environ['FTP_SERVER']
+          user   = os.environ['FTP_USERNAME']
+          pwd    = os.environ['FTP_PASSWORD']
           remote = os.environ['FTP_SERVER_DIR'].strip('/')
-          lines = []
+
+          cmds = [
+              'set sftp:auto-confirm yes',
+              'set net:timeout 60',
+              f'mkdir -p /{remote}',
+          ]
           for dirpath, dirs, files in os.walk('./dist'):
-              rel = os.path.relpath(dirpath, './dist')
+              rel  = os.path.relpath(dirpath, './dist')
               rdir = remote + ('/' + rel if rel != '.' else '')
-              lines.append(f'-mkdir /{rdir}')
+              if rel != '.':
+                  cmds.append(f'mkdir -p /{rdir}')
               for f in sorted(files):
                   lf = os.path.join(dirpath, f)
                   rf = '/' + rdir + '/' + f
-                  lines.append(f'put {lf} {rf}')
-          lines.append('quit')
-          print('\n'.join(lines))
-          " > /tmp/sftp-batch.txt
+                  print(f'  PUT {rf}', flush=True)
+                  cmds.append(f'put {lf} {rf}')
+          cmds.append('quit')
 
-          export SSHPASS="$FTP_PASSWORD"
-          sshpass -e sftp \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=/dev/null \
-            -o PubkeyAuthentication=no \
-            -o PreferredAuthentications=password \
-            -P 65002 \
-            -b /tmp/sftp-batch.txt \
-            "$FTP_USERNAME@$FTP_SERVER"
+          r = subprocess.run(
+              ['lftp', '-u', f'{user},{pwd}', f'sftp://{server}:65002',
+               '-e', '; '.join(cmds)]
+          )
+          sys.exit(r.returncode)
+          PYEOF
