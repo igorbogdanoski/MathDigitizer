@@ -23,16 +23,48 @@ jobs:
         env:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
 
-      - name: Install lftp
-        run: sudo apt-get install -y lftp
+      - name: Install paramiko
+        run: pip install paramiko
 
       - name: Deploy to Hostinger via SFTP
-        timeout-minutes: 12
+        timeout-minutes: 8
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
           FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
         run: |
-          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" sftp://$FTP_SERVER:65002 \
-            -e "set sftp:auto-confirm yes; set net:timeout 60; mirror -R --no-perms --verbose ./dist/ /$FTP_SERVER_DIR; quit"
+          python3 - <<'PYEOF'
+          import paramiko, os
+
+          host = os.environ['FTP_SERVER']
+          user = os.environ['FTP_USERNAME']
+          pwd  = os.environ['FTP_PASSWORD']
+          remote_root = '/' + os.environ['FTP_SERVER_DIR'].strip('/')
+
+          ssh = paramiko.SSHClient()
+          ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+          ssh.connect(host, port=65002, username=user, password=pwd, timeout=30)
+          sftp = ssh.open_sftp()
+
+          def ensure_dir(path):
+              try: sftp.mkdir(path)
+              except: pass
+
+          def upload(local, remote):
+              for name in sorted(os.listdir(local)):
+                  lp = os.path.join(local, name)
+                  rp = remote + '/' + name
+                  if os.path.isfile(lp):
+                      print(f'  PUT {rp}', flush=True)
+                      sftp.put(lp, rp)
+                  elif os.path.isdir(lp):
+                      ensure_dir(rp)
+                      upload(lp, rp)
+
+          ensure_dir(remote_root)
+          upload('./dist', remote_root)
+          sftp.close()
+          ssh.close()
+          print('Upload complete!')
+          PYEOF
