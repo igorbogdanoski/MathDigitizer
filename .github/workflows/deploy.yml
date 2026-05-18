@@ -23,15 +23,17 @@ jobs:
         env:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
 
-      - name: Install lftp
-        run: sudo apt-get install -y lftp
+      - name: Install sshpass
+        run: sudo apt-get install -y sshpass rsync
 
-      - name: Deploy to Hostinger via SFTP
+      - name: Deploy to Hostinger via rsync over SSH
+        timeout-minutes: 10
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
           FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
         run: |
-          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" sftp://$FTP_SERVER:65002 \
-            -e "set sftp:auto-confirm yes; set net:timeout 30; mirror -R --delete --verbose ./dist/ /$FTP_SERVER_DIR; quit"
+          sshpass -p "$FTP_PASSWORD" rsync -avz --delete \
+            -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 65002" \
+            ./dist/ "$FTP_USERNAME@$FTP_SERVER:/$FTP_SERVER_DIR"
