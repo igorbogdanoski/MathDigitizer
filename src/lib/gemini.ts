@@ -2,8 +2,29 @@ import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { MathTask } from "./schema";
 import { PromptStrategy, buildPromptEnvelope, buildRagTaskContext } from "./promptEngineering";
 import { buildRagContextFromLibrary } from "./ragContext";
+import { searchCurriculumKeyword, buildCurriculumChunkText, ALL_MK_CURRICULUM } from "./curriculumData";
 
-// Иницијализација на Gemini клиентот
+// ─── Curriculum RAG helper (synchronous — no extra API call) ─────────────────
+function buildCurriculumContextBlock(query: string, gradeHint?: string): string {
+  const topics = searchCurriculumKeyword(query + (gradeHint ? ` ${gradeHint}` : ''));
+  if (topics.length === 0) return '';
+
+  const lines = [
+    '╔══ ОФИЦИЈАЛНА НАСТАВНА ПРОГРАМА — БРО.ГОВ.МК ══╗',
+    'Задачата МОРА да биде усогласена со следните официјални исходи:',
+    '',
+  ];
+  topics.slice(0, 3).forEach(topic => {
+    const grade = ALL_MK_CURRICULUM.find(g => g.topics.some(t => t.id === topic.id));
+    if (!grade) return;
+    lines.push(buildCurriculumChunkText(grade, topic));
+    lines.push('');
+  });
+  lines.push('╚═════════════════════════════════════════════════╝');
+  return lines.join('\n');
+}
+
+// ─── Иницијализација на Gemini клиентот ──────────────────────────────────────
 let _aiInstance: any = null;
 let cachedApiKey: string | undefined = undefined;
 
@@ -117,7 +138,7 @@ function handleGeminiError(error: any): never {
 export async function generateTaskEmbedding(text: string): Promise<number[]> {
   try {
     const response = await ai.models.embedContent({
-      model: "gemini-embedding-2-preview",
+      model: "gemini-embedding-2",
       contents: text
     });
     
@@ -545,13 +566,20 @@ ${JSON.stringify(tasks.map(t => ({ title: t.title, text: t.original_text, topic:
 }
 
 export async function generateSimilarTask(originalTask: MathTask, style: 'traditional' | 'real-world' | 'modern' = 'traditional'): Promise<MathTask> {
-  const stylePrompt = 
+  const stylePrompt =
     style === 'modern' ? 'Користи модерен Gen-Z контекст (гејминг, социјални мрежи, криптовалути).' :
     style === 'real-world' ? 'Користи контекст од реалниот свет и секојдневниот живот (бизнис, готвење, патување).' :
     'Користи традиционален, академски наставен контекст.';
 
-  const prompt = `Врз основа на следната математичка задача, генерирај НОВА, СЛИЧНА задача која ги тестира истите концепти но со различни вредности или малку поинаков контекст.
+  const curriculumQuery = [
+    originalTask.curriculum_topic,
+    originalTask.grade_level,
+    ...(originalTask.tags ?? []),
+  ].filter(Boolean).join(' ');
+  const curriculumCtx = buildCurriculumContextBlock(curriculumQuery, originalTask.grade_level);
 
+  const prompt = `Врз основа на следната математичка задача, генерирај НОВА, СЛИЧНА задача која ги тестира истите концепти но со различни вредности или малку поинаков контекст.
+${curriculumCtx ? `\n${curriculumCtx}\n` : ''}
 СТИЛ: ${stylePrompt}
 
 ОРИГИНАЛНА ЗАДАЧА:
@@ -559,9 +587,10 @@ ${originalTask.original_text}
 
 ПРАВИЛА:
 1. Задачата мора да биде на истото ниво на тежина (${originalTask.difficulty}) и DoK ниво (${originalTask.dok_level}).
-2. Користи македонски јазик.
-3. Врати го резултатот СТРОГО како еден JSON објект кој ја следи истата структура како оригиналот.
-4. Осигурај се дека решението е математички точно.`;
+2. Задачата МОРА да биде усогласена со официјалните исходи на БРО наведени погоре.
+3. Користи македонски јазик.
+4. Врати го резултатот СТРОГО како еден JSON објект кој ја следи истата структура како оригиналот.
+5. Осигурај се дека решението е математички точно.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -1435,7 +1464,9 @@ export async function generateImage(prompt: string, gradeLevel?: string): Promis
 }
 
 export async function extractMathTasksFromImage(base64Image: string, mimeType: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, model: string = "gemini-3.1-pro-preview"): Promise<MathTask[]> {
+  const curriculumCtx = buildCurriculumContextBlock('математика македонски наставна програма');
   const prompt = `Ти си Врвен Светски Експерт за Дигитализација на Математика, "Advanced Vision OCR" и Едукативен Технолог (EdTech).
+${curriculumCtx ? `\n${curriculumCtx}\n` : ''}
 Твојата мисија е ПЕРФЕКТНО да ја анализираш сликата/документот и да ги извлечеш задачите, вклучувајќи ги и оние од ракописи или стари документи.
 
 СПЕЦИФИЧНИ ИНСТРУКЦИИ ЗА "ADVANCED VISION OCR":
@@ -2342,5 +2373,118 @@ export async function checkGeminiHealth(): Promise<boolean> {
     return Boolean(response.text?.includes('OK'));
   } catch {
     return false;
+  }
+}
+
+export interface GraphAnalysisQuestion {
+  question: string;
+  dok_level: number;
+  bloom_level: string;
+  answer_hint: string;
+}
+
+export interface GraphAnalysis {
+  graph_type: 'xy' | 'bar' | 'histogram' | 'scatter' | 'line' | 'polar' | 'unknown';
+  description: string;
+  x_axis_label: string;
+  y_axis_label: string;
+  x_range: [number, number];
+  y_range: [number, number];
+  detected_equation: string;
+  key_points: Array<{ x: number; y: number; label: string }>;
+  curriculum_topic: string;
+  grade_level: string;
+  generated_questions: GraphAnalysisQuestion[];
+  geogebra_commands: string[];
+}
+
+export async function analyzeGraphWithAI(
+  base64: string,
+  mimeType: string,
+  digitizedPoints?: Array<{ datasetName: string; x: number; y: number }>,
+  axisConfig?: {
+    x: { label: string; min: number; max: number; scale: 'linear' | 'log' };
+    y: { label: string; min: number; max: number; scale: 'linear' | 'log' };
+  }
+): Promise<GraphAnalysis> {
+  const pointsContext = digitizedPoints && digitizedPoints.length > 0
+    ? `\n\nДигитализирани точки од наставникот: ${JSON.stringify(digitizedPoints.slice(0, 30))}`
+    : '';
+  const axisContext = axisConfig
+    ? `\nОски: X (${axisConfig.x.label}, ${axisConfig.x.min}–${axisConfig.x.max}, ${axisConfig.x.scale}), Y (${axisConfig.y.label}, ${axisConfig.y.min}–${axisConfig.y.max}, ${axisConfig.y.scale})`
+    : '';
+
+  const prompt = `Ти си експерт по математичка педагогија за македонски наставници. Анализирај го графикот на сликата и врати детален педагошки извештај.${axisContext}${pointsContext}
+
+ЗАДАЧА:
+1. Идентификувај го типот на графикот (xy, bar, histogram, scatter, line, polar, unknown)
+2. Опиши го графикот на МАКЕДОНСКИ јазик (2-3 реченици, корисни за наставник)
+3. Детектирај ги осите, рангот и скалата
+4. Ако е видлива математичка функција, врати ја во LaTeX формат (detected_equation)
+5. Идентификувај клучни точки (пресечници, максимуми, минимуми, нули)
+6. Поврзи со македонски наставен план (curriculum_topic, grade_level: "6"-"12" или "1год"-"4год" за средно)
+7. Генерирај 4-6 педагошки прашања на МАКЕДОНСКИ со DoK нивоа и Bloom таксономија
+8. Генерирај GeoGebra команди за интерактивна реконструкција
+
+ВАЖНО: Сите прашања и описи мора да бидат на МАКЕДОНСКИ ЈАЗИК.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.1-pro-preview',
+      contents: [prompt, { inlineData: { data: base64, mimeType } }],
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            graph_type: { type: Type.STRING },
+            description: { type: Type.STRING },
+            x_axis_label: { type: Type.STRING },
+            y_axis_label: { type: Type.STRING },
+            x_range: { type: Type.ARRAY, items: { type: Type.NUMBER } },
+            y_range: { type: Type.ARRAY, items: { type: Type.NUMBER } },
+            detected_equation: { type: Type.STRING },
+            key_points: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  x: { type: Type.NUMBER },
+                  y: { type: Type.NUMBER },
+                  label: { type: Type.STRING },
+                },
+                required: ['x', 'y', 'label'],
+              },
+            },
+            curriculum_topic: { type: Type.STRING },
+            grade_level: { type: Type.STRING },
+            generated_questions: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  question: { type: Type.STRING },
+                  dok_level: { type: Type.NUMBER },
+                  bloom_level: { type: Type.STRING },
+                  answer_hint: { type: Type.STRING },
+                },
+                required: ['question', 'dok_level', 'bloom_level', 'answer_hint'],
+              },
+            },
+            geogebra_commands: { type: Type.ARRAY, items: { type: Type.STRING } },
+          },
+          required: [
+            'graph_type', 'description', 'x_axis_label', 'y_axis_label',
+            'x_range', 'y_range', 'detected_equation', 'key_points',
+            'curriculum_topic', 'grade_level', 'generated_questions', 'geogebra_commands',
+          ],
+        },
+      },
+    });
+
+    if (!response.text) throw new Error('Нема одговор од AI.');
+    return parseGeminiResponse(response.text) as GraphAnalysis;
+  } catch (error) {
+    handleGeminiError(error);
   }
 }

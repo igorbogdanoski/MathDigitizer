@@ -10,6 +10,8 @@ const Layout = lazy(() => import('./components/Layout').then((m) => ({ default: 
 const Home = lazy(() => import('./components/Home').then((m) => ({ default: m.Home })));
 const ExtractionEngine = lazy(() => import('./components/ExtractionEngine').then((m) => ({ default: m.ExtractionEngine })));
 const SmartOCR = lazy(() => import('./components/SmartOCR').then((m) => ({ default: m.SmartOCR })));
+const GraphDigitizer = lazy(() => import('./components/GraphDigitizer').then((m) => ({ default: m.GraphDigitizer })));
+const CurriculumAdmin = lazy(() => import('./components/CurriculumAdmin').then((m) => ({ default: m.CurriculumAdmin })));
 const Library = lazy(() => import('./components/Library').then((m) => ({ default: m.Library })));
 const MaterialsFactory = lazy(() => import('./components/MaterialsFactory'));
 const CurriculumFactory = lazy(() => import('./components/CurriculumFactory').then((m) => ({ default: m.CurriculumFactory })));
@@ -92,6 +94,12 @@ const AppRoutes = () => {
           <Route path="smart-ocr" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <SmartOCR />
+            </ProtectedRoute>
+          } />
+
+          <Route path="graph-digitizer" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <GraphDigitizer />
             </ProtectedRoute>
           } />
           
@@ -188,6 +196,12 @@ const AppRoutes = () => {
           <Route path="school-inquiries" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <SchoolInquiriesDashboard />
+            </ProtectedRoute>
+          } />
+
+          <Route path="curriculum-admin" element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <CurriculumAdmin />
             </ProtectedRoute>
           } />
         </Route>
