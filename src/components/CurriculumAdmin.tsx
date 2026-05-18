@@ -25,6 +25,7 @@ interface TrackStats {
   label: string;
   grades: number;
   topics: number;
+  richPct: number;
 }
 
 const TRACK_META: Record<string, string> = {
@@ -35,17 +36,24 @@ const TRACK_META: Record<string, string> = {
 };
 
 function buildTrackStats(): TrackStats[] {
-  const map: Record<string, { grades: Set<string>; topics: number }> = {};
+  const map: Record<string, { grades: Set<string>; topics: number; rich: number }> = {};
   for (const g of ALL_MK_CURRICULUM) {
-    if (!map[g.education_track]) map[g.education_track] = { grades: new Set(), topics: 0 };
+    if (!map[g.education_track]) map[g.education_track] = { grades: new Set(), topics: 0, rich: 0 };
     map[g.education_track].grades.add(g.grade);
     map[g.education_track].topics += g.topics.length;
+    for (const t of g.topics) {
+      const hasOutcomes = t.outcomes.length > 0;
+      const hasKeywords = t.keywords.length > 0;
+      const hasTasks = t.example_tasks.length > 0;
+      if (hasOutcomes && hasKeywords && hasTasks) map[g.education_track].rich++;
+    }
   }
   return Object.entries(map).map(([track, d]) => ({
     track,
     label: TRACK_META[track] ?? track,
     grades: d.grades.size,
     topics: d.topics,
+    richPct: d.topics > 0 ? Math.round((d.rich / d.topics) * 100) : 0,
   }));
 }
 
@@ -217,13 +225,11 @@ export const CurriculumAdmin: React.FC = () => {
                     <span>{ts.grades} одд/год.</span>
                     <span className="font-semibold text-indigo-600">{ts.topics} теми</span>
                     <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
-                      ts.track === 'secondary_vocational' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                      ts.track === 'secondary_math_info' ? 'bg-amber-100 text-amber-700' :
-                      'bg-emerald-100 text-emerald-700'
+                      ts.richPct >= 80 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                      ts.richPct >= 40 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                     }`}>
-                      {ts.track === 'secondary_vocational' ? '0% — недостасува' :
-                       ts.track === 'secondary_math_info' ? '~21% — делумно' :
-                       ts.track === 'primary' ? '~52% — добро' : '~67% — добро'}
+                      {ts.richPct}% — {ts.richPct >= 80 ? 'добро' : ts.richPct >= 40 ? 'делумно' : 'недостасува'}
                     </span>
                   </span>
                 </button>
@@ -240,10 +246,10 @@ export const CurriculumAdmin: React.FC = () => {
               </div>
             ))}
 
-            <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 text-xs text-blue-800 dark:text-blue-300">
-              <Info className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300">
+              <Check className="w-4 h-4 shrink-0 mt-0.5" />
               <span>
-                Стручното образование и делови на мат-инф недостасуваат. Изврши <strong>--pdf</strong> режимот на скриптата (кога ќе имаш serviceAccount.json) за пополнување од вистинските БРО PDFs.
+                Сите образовни типови се пополнети со официјални БРО наставни програми (bro.gov.mk). Темите со исходи, клучни зборови и примери задачи се целосно индексирани.
               </span>
             </div>
           </CardContent>
