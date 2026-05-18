@@ -381,7 +381,7 @@ export const GraphDigitizer: React.FC = () => {
               Graph Digitizer
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              Учитај график од учебник → калибрирај оски → извлечи координати → генерирај задачи со AI
+              Прикачи график од учебник → калибрирај оски → прочитај координати → генерирај задачи со AI
             </p>
           </div>
           {imageUrl && (
@@ -445,9 +445,9 @@ export const GraphDigitizer: React.FC = () => {
                     onDragOver={e => e.preventDefault()}
                   >
                     <Upload className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-                    <p className="font-semibold text-slate-700 dark:text-slate-300">Учитај график</p>
+                    <p className="font-semibold text-slate-700 dark:text-slate-300">Прикачи график</p>
                     <p className="text-xs text-slate-400 mt-1">JPG, PNG, SVG, BMP, WebP</p>
-                    <p className="text-xs text-slate-400">или влечи и пушти</p>
+                    <p className="text-xs text-slate-400">или повлечи и пусти</p>
                   </div>
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
                     onChange={e => { const f = e.target.files?.[0]; if (f) loadFile(f); }} />
@@ -803,7 +803,7 @@ export const GraphDigitizer: React.FC = () => {
             {!imageUrl ? (
               <div className="h-96 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl text-slate-400 gap-3">
                 <TrendingUp className="w-12 h-12 opacity-30" />
-                <p className="text-sm font-medium">Учитај слика за да почнеш</p>
+                <p className="text-sm font-medium">Прикачи слика за да почнеш</p>
               </div>
             ) : (
               <div className="space-y-2">

@@ -91,7 +91,7 @@ export const CurriculumTestGenerator: React.FC = () => {
         {/* Grade Select */}
         {activeCurriculum && (
           <div className="animate-in fade-in slide-in-from-top-2">
-            <label className="block text-sm font-bold text-slate-700 mb-2">Одделение / Разред</label>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Одделение / Година</label>
             <div className="flex flex-wrap gap-2">
               {activeCurriculum.grades.map((g) => (
                 <Button
