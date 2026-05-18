@@ -23,8 +23,8 @@ jobs:
         env:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
 
-      - name: Install paramiko
-        run: pip install paramiko
+      - name: Install sshpass
+        run: sudo apt-get install -y sshpass
 
       - name: Deploy to Hostinger via SFTP
         timeout-minutes: 8
@@ -34,37 +34,25 @@ jobs:
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
           FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
         run: |
-          python3 - <<'PYEOF'
-          import paramiko, os
+          python3 -c "
+          import os
+          remote = os.environ['FTP_SERVER_DIR'].strip('/')
+          lines = []
+          for dirpath, dirs, files in os.walk('./dist'):
+              rel = os.path.relpath(dirpath, './dist')
+              rdir = remote + ('/' + rel if rel != '.' else '')
+              lines.append(f'-mkdir /{rdir}')
+              for f in sorted(files):
+                  lf = os.path.join(dirpath, f)
+                  rf = '/' + rdir + '/' + f
+                  lines.append(f'put {lf} {rf}')
+          lines.append('quit')
+          print('\n'.join(lines))
+          " > /tmp/sftp-batch.txt
 
-          host = os.environ['FTP_SERVER']
-          user = os.environ['FTP_USERNAME']
-          pwd  = os.environ['FTP_PASSWORD']
-          remote_root = '/' + os.environ['FTP_SERVER_DIR'].strip('/')
-
-          ssh = paramiko.SSHClient()
-          ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-          ssh.connect(host, port=65002, username=user, password=pwd, timeout=30)
-          sftp = ssh.open_sftp()
-
-          def ensure_dir(path):
-              try: sftp.mkdir(path)
-              except: pass
-
-          def upload(local, remote):
-              for name in sorted(os.listdir(local)):
-                  lp = os.path.join(local, name)
-                  rp = remote + '/' + name
-                  if os.path.isfile(lp):
-                      print(f'  PUT {rp}', flush=True)
-                      sftp.put(lp, rp)
-                  elif os.path.isdir(lp):
-                      ensure_dir(rp)
-                      upload(lp, rp)
-
-          ensure_dir(remote_root)
-          upload('./dist', remote_root)
-          sftp.close()
-          ssh.close()
-          print('Upload complete!')
-          PYEOF
+          sshpass -p "$FTP_PASSWORD" sftp \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -P 65002 \
+            -b /tmp/sftp-batch.txt \
+            "$FTP_USERNAME@$FTP_SERVER"
