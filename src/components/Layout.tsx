@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, Bug, Inbox, Settings as SettingsIcon, Check, Sparkles } from 'lucide-react';
+import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, Bug, Inbox, Settings as SettingsIcon, Check, Sparkles, TrendingUp } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccessibility } from '../contexts/AccessibilityContext';
@@ -62,6 +62,7 @@ export const Layout: React.FC = () => {
 
   const toolItems = [
     { path: '/curriculum', icon: BookOpen, label: 'Државни Стандарди', show: userProfile?.role === 'teacher' },
+    { path: '/graph-digitizer', icon: TrendingUp, label: 'Graph Digitizer', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/smart-grader', icon: Brain, label: 'AI Градер', show: true },
     { path: '/analytics', icon: BrainCircuit, label: 'Аналитика', show: userProfile?.role === 'teacher' },
     { path: '/flashcards', icon: Brain, label: 'Флешкарти', show: !!userProfile },
@@ -70,6 +71,7 @@ export const Layout: React.FC = () => {
     { path: '/mass-factory', icon: Layers, label: 'PDF Фабрика', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/ai-pedagogy', icon: Bug, label: 'AI Педагогија', show: userProfile?.role === 'teacher' },
     { path: '/school-inquiries', icon: Inbox, label: 'School Leads', show: userProfile?.role === 'teacher' },
+    { path: '/curriculum-admin', icon: BookOpen, label: 'Curriculum БРО', show: userProfile?.role === 'teacher' },
     { path: '/live-board', icon: Monitor, label: 'В. Табла', show: true },
     { path: '/classrooms', icon: Users, label: 'Училници', show: !!userProfile },
     { path: '/exams-grading', icon: Trophy, label: 'Dugga', show: !userProfile || userProfile.role === 'teacher' },
@@ -161,7 +163,7 @@ export const Layout: React.FC = () => {
 
               {toolItems.length > 0 && (
                 <div className="relative group ml-1 z-[100]">
-                  <button className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors">
+                  <button type="button" className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors">
                     <MoreHorizontal className="w-4 h-4" />
                     <span>Алатки</span>
                     <ChevronDown className="w-3 h-3 opacity-50 group-hover:rotate-180 transition-transform duration-300" />
@@ -197,6 +199,7 @@ export const Layout: React.FC = () => {
           <div className="flex items-center gap-2 flex-shrink-0">
             {/* Quick theme toggle (always visible, instant feedback) */}
             <button
+              type="button"
               onClick={toggleTheme}
               className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
               title={isDarkMode ? "Светла тема" : "Темна тема"}
@@ -208,6 +211,7 @@ export const Layout: React.FC = () => {
             {/* Accessibility settings dropdown */}
             <div className="relative group z-[100]">
               <button
+                type="button"
                 className={`p-2 rounded-full transition-colors ${(dyslexiaMode || dyscalculiaMode) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                 title="Пристапност"
                 aria-label="Accessibility settings"
@@ -218,6 +222,7 @@ export const Layout: React.FC = () => {
                 <div className="w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2">
                   <div className="px-4 py-2 text-[10px] font-bold tracking-widest uppercase text-slate-400">Пристапност</div>
                   <button
+                    type="button"
                     onClick={toggleDyslexiaMode}
                     className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
                   >
@@ -228,6 +233,7 @@ export const Layout: React.FC = () => {
                     {dyslexiaMode && <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
                   </button>
                   <button
+                    type="button"
                     onClick={toggleDyscalculiaMode}
                     className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
                   >
@@ -246,6 +252,7 @@ export const Layout: React.FC = () => {
             {user ? (
               <div className="relative group z-[100]">
                 <button
+                  type="button"
                   className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   title={user.email ?? ''}
                   aria-label="Account menu"
@@ -293,6 +300,7 @@ export const Layout: React.FC = () => {
                         Профил
                       </Link>
                       <button
+                        type="button"
                         onClick={() => logOut()}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                       >
