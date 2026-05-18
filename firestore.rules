@@ -401,5 +401,13 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isValidIntegrityCheck(request.resource.data);
       allow read, delete: if isAuthenticated();
     }
+
+    match /curriculum_knowledge/{chunkId} {
+      // All authenticated users can read (RAG search in task generation)
+      allow read: if isAuthenticated();
+      // Only teachers can ingest / clear curriculum chunks
+      allow create, delete: if isTeacher();
+      allow update: if false;
+    }
   }
 }
