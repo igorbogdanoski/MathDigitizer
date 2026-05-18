@@ -34,11 +34,5 @@ jobs:
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
           FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
         run: |
-          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" sftp://$FTP_SERVER:65002 <<EOF
-          set sftp:auto-confirm yes
-          set net:timeout 20
-          set net:max-retries 2
-          set mirror:parallel-transfer-count 8
-          mirror -R --parallel=8 --no-perms --verbose ./dist/ /$FTP_SERVER_DIR
-          quit
-          EOF
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" sftp://$FTP_SERVER:65002 \
+            -e "set sftp:auto-confirm yes; set net:timeout 20; set net:max-retries 1; set mirror:parallel-transfer-count 8; mirror -R --parallel=8 --no-perms --verbose ./dist/ /$FTP_SERVER_DIR; quit"
