@@ -34,6 +34,7 @@ jobs:
           protocol: ftp
           port: 21
           dangerous-clean-slate: false
+          state-name: .ftp-deploy-sync-state-v2.json
           exclude: |
             **/.git*
             **/.git*/**
