@@ -23,6 +23,9 @@ jobs:
         env:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
 
+      - name: Install lftp
+        run: sudo apt-get install -y lftp
+
       - name: Deploy to Hostinger via lftp FTP
         env:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
@@ -30,13 +33,11 @@ jobs:
           FTP_HOST: ${{ secrets.FTP_SERVER }}
           FTP_DIR: ${{ secrets.FTP_SERVER_DIR }}
         run: |
-          lftp << EOF
+          lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST" << EOF
           set ftp:ssl-allow no
           set net:timeout 60
           set net:max-retries 3
-          open ftp://${FTP_HOST}
-          user ${FTP_USER} ${FTP_PASS}
-          mirror --reverse --delete --verbose --transfer-all dist/ ${FTP_DIR}
+          mirror --reverse --delete --verbose --transfer-all dist/ $FTP_DIR
           bye
           EOF
 
@@ -47,11 +48,9 @@ jobs:
           FTP_HOST: ${{ secrets.FTP_SERVER }}
           FTP_DIR: ${{ secrets.FTP_SERVER_DIR }}
         run: |
-          lftp << EOF
+          lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST" << EOF
           set ftp:ssl-allow no
-          open ftp://${FTP_HOST}
-          user ${FTP_USER} ${FTP_PASS}
-          cd ${FTP_DIR}
+          cd $FTP_DIR
           chmod 755 .
           glob chmod 755 */
           glob chmod 644 *.html *.json *.xml *.txt *.svg *.png *.ico *.webmanifest *.js
@@ -66,6 +65,6 @@ jobs:
           sleep 5
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://math.mismath.net/)
           SIZE=$(curl -s https://math.mismath.net/ | wc -c)
-          echo "Live site HTTP status: $STATUS, index.html size: $SIZE bytes"
-          LM=$(curl -sI https://math.mismath.net/ | grep -i last-modified)
-          echo "Last-Modified: $LM"
+          LM=$(curl -sI https://math.mismath.net/ | grep -i "last-modified")
+          echo "HTTP status: $STATUS | index.html size: $SIZE bytes"
+          echo "$LM"
