@@ -23,18 +23,49 @@ jobs:
         env:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
 
-      - name: Deploy to Hostinger via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./dist/
-          server-dir: ${{ secrets.FTP_SERVER_DIR }}
-          protocol: ftp
-          port: 21
-          dangerous-clean-slate: true
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
+      - name: Deploy to Hostinger via lftp FTP
+        env:
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          FTP_HOST: ${{ secrets.FTP_SERVER }}
+          FTP_DIR: ${{ secrets.FTP_SERVER_DIR }}
+        run: |
+          lftp << EOF
+          set ftp:ssl-allow no
+          set net:timeout 60
+          set net:max-retries 3
+          open ftp://${FTP_HOST}
+          user ${FTP_USER} ${FTP_PASS}
+          mirror --reverse --delete --verbose --transfer-all dist/ ${FTP_DIR}
+          bye
+          EOF
+
+      - name: Fix file permissions via FTP
+        env:
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          FTP_HOST: ${{ secrets.FTP_SERVER }}
+          FTP_DIR: ${{ secrets.FTP_SERVER_DIR }}
+        run: |
+          lftp << EOF
+          set ftp:ssl-allow no
+          open ftp://${FTP_HOST}
+          user ${FTP_USER} ${FTP_PASS}
+          cd ${FTP_DIR}
+          chmod 755 .
+          glob chmod 755 */
+          glob chmod 644 *.html *.json *.xml *.txt *.svg *.png *.ico *.webmanifest *.js
+          glob chmod 644 .htaccess
+          cd assets
+          glob chmod 644 *.js *.css *.png *.svg *.ico *.woff *.woff2
+          bye
+          EOF
+
+      - name: Verify deployment
+        run: |
+          sleep 5
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://math.mismath.net/)
+          SIZE=$(curl -s https://math.mismath.net/ | wc -c)
+          echo "Live site HTTP status: $STATUS, index.html size: $SIZE bytes"
+          LM=$(curl -sI https://math.mismath.net/ | grep -i last-modified)
+          echo "Last-Modified: $LM"
