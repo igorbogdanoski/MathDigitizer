@@ -67,6 +67,15 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
   const [endTime, setEndTime] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [customInstructions, setCustomInstructions] = useState('');
+  const [outputLanguage, setOutputLanguage] = useState('mk');
+
+  const OUTPUT_LANGUAGES: { value: string; label: string; instruction: string }[] = [
+    { value: 'mk', label: '🇲🇰 Македонски', instruction: 'Output the extracted content entirely in Macedonian language (Македонски).' },
+    { value: 'en', label: '🇬🇧 English',    instruction: 'Output the extracted content entirely in English language.' },
+    { value: 'sq', label: '🇦🇱 Shqip',      instruction: 'Output the extracted content entirely in Albanian language (Shqip).' },
+    { value: 'tr', label: '🇹🇷 Türkçe',     instruction: 'Output the extracted content entirely in Turkish language (Türkçe).' },
+    { value: 'ru', label: '🇷🇺 Русский',    instruction: 'Output the extracted content entirely in Russian language (Русский).' },
+  ];
 
   React.useEffect(() => {
     setOnTaskUpdated((updatedTask: MathTask) => {
@@ -237,6 +246,8 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
           case 3: textInstructions += " Извлечи го материјалот и нужно додади свои слични примери за да се разјасни концептот(Examples)."; break;
           case 4: textInstructions += " Направи само кратко резиме и најважни клучни точки/задачи(Summary)."; break;
         }
+        const langEntry = OUTPUT_LANGUAGES.find(l => l.value === outputLanguage);
+        if (langEntry) textInstructions += ` ${langEntry.instruction}`;
 
         for (let i = 0; i < urls.length; i++) {
             setStatusText(`Процесирање на линк ${i + 1} од ${urls.length}...`);
@@ -258,6 +269,8 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
           case 4: textInstructions += " Направи само кратко резиме и најважни клучни точки/задачи(Summary)."; break;
         }
 
+        const langEntryMM = OUTPUT_LANGUAGES.find(l => l.value === outputLanguage);
+        if (langEntryMM) textInstructions += ` ${langEntryMM.instruction}`;
         extractedTasks = await advancedMultimodalExtraction(sourcePayload, model, textInstructions);
       }
 
@@ -577,7 +590,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                 )}
 
                 <div className="flex justify-between items-center mt-2 px-2">
-                   <div className="flex items-center gap-3">
+                   <div className="flex items-center gap-3 flex-wrap">
                     <select
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
@@ -589,6 +602,21 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                       <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (World-Class)</option>
                       <option value="gemini-3-flash-preview">Gemini 3 Flash (Fast)</option>
                     </select>
+                    <div className="flex items-center gap-1.5">
+                      <Globe className="w-4 h-4 text-indigo-300 shrink-0" />
+                      <select
+                        value={outputLanguage}
+                        onChange={(e) => setOutputLanguage(e.target.value)}
+                        disabled={isLoading}
+                        title="Јазик на излезот"
+                        aria-label="Јазик на излезот"
+                        className="h-10 px-3 rounded-xl bg-white/10 border border-white/20 text-indigo-50 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 [&>option]:text-slate-800 backdrop-blur-sm cursor-pointer hover:bg-white/20 transition-colors"
+                      >
+                        {OUTPUT_LANGUAGES.map(l => (
+                          <option key={l.value} value={l.value}>{l.label}</option>
+                        ))}
+                      </select>
+                    </div>
                    </div>
 
                    <Button 

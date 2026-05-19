@@ -1,3 +1,5 @@
+import type { CurriculumGrade } from '../src/lib/curriculumData';
+
 const PRIMARY_GRADES: CurriculumGrade[] = [
   {
     grade: '1', level_label: 'I одделение', education_track: 'primary', hours_per_week: 5,
