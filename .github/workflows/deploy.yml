@@ -37,7 +37,9 @@ jobs:
           set ftp:ssl-allow no
           set net:timeout 60
           set net:max-retries 3
-          mirror --reverse --delete --verbose --transfer-all dist/ $FTP_DIR
+          cd $FTP_DIR
+          lcd $GITHUB_WORKSPACE/dist
+          mirror --reverse --delete --verbose --transfer-all . .
           bye
           EOF
 
