@@ -26,7 +26,7 @@ jobs:
       - name: Install lftp
         run: sudo apt-get install -y lftp
 
-      - name: Deploy to Hostinger via lftp FTP
+      - name: Delete remote files before fresh upload
         env:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
           FTP_PASS: ${{ secrets.FTP_PASSWORD }}
@@ -35,13 +35,45 @@ jobs:
         run: |
           lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST" << EOF
           set ftp:ssl-allow no
-          set net:timeout 60
-          set net:max-retries 3
+          set ftp:use-mlsd no
+          set ftp:use-mdtm no
+          set ftp:set-permissions no
+          set net:timeout 30
+          set net:max-retries 2
           cd $FTP_DIR
-          lcd $GITHUB_WORKSPACE/dist
-          mirror --reverse --delete --verbose --transfer-all . .
+          glob -a rm -r *
           bye
           EOF
+
+      - name: Upload fresh files via lftp put (no mirror scan)
+        timeout-minutes: 15
+        env:
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          FTP_HOST: ${{ secrets.FTP_SERVER }}
+          FTP_DIR: ${{ secrets.FTP_SERVER_DIR }}
+        run: |
+          cd $GITHUB_WORKSPACE/dist
+
+          # Build lftp script: mkdir subdirs, then put every file
+          {
+            echo "set ftp:ssl-allow no"
+            echo "set ftp:use-mlsd no"
+            echo "set ftp:use-mdtm no"
+            echo "set ftp:set-permissions no"
+            echo "set net:timeout 60"
+            echo "set net:max-retries 3"
+            echo "cd $FTP_DIR"
+            # Create subdirectories first
+            find . -mindepth 1 -type d | sed 's|^\./||' | sort | while read -r d; do
+              echo "mkdir -p \"$d\""
+            done
+            # Upload every file
+            find . -type f | sed 's|^\./||' | while read -r f; do
+              echo "put \"$GITHUB_WORKSPACE/dist/$f\" -o \"$f\""
+            done
+            echo "bye"
+          } | lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST"
 
       - name: Fix file permissions via FTP
         env:
