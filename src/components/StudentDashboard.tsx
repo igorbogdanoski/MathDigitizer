@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'motion/react';
-import { collection, getDocs, query, where, orderBy, limit, getDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit, getDoc, doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Classroom, Assignment, MathTask, StudentProgress, TaskAttempt, UserStats } from '../lib/schema';
@@ -61,11 +61,7 @@ export const StudentDashboard: React.FC = () => {
         setTasks(taskMap);
       }
 
-      // 4. StudentProgress for this student
-      const progressSnap = await getDocs(
-        query(collection(db, 'student_progress'), where('studentId', '==', user.uid))
-      );
-      setStudentProgress(progressSnap.docs.map(d => ({ id: d.id, ...d.data() } as StudentProgress)));
+      // 4. StudentProgress — handled by onSnapshot below, skip here
 
       // 5. Completed task_attempts (last 20)
       try {
@@ -99,13 +95,17 @@ export const StudentDashboard: React.FC = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const refreshProgress = useCallback(async () => {
+  // Real-time listener for student_progress
+  useEffect(() => {
     if (!user) return;
-    const snap = await getDocs(
-      query(collection(db, 'student_progress'), where('studentId', '==', user.uid))
+    const unsub = onSnapshot(
+      query(collection(db, 'student_progress'), where('studentId', '==', user.uid)),
+      snap => setStudentProgress(snap.docs.map(d => ({ id: d.id, ...d.data() } as StudentProgress)))
     );
-    setStudentProgress(snap.docs.map(d => ({ id: d.id, ...d.data() } as StudentProgress)));
+    return unsub;
   }, [user]);
+
+  const refreshProgress = useCallback(() => {}, []);
 
   const completedTaskIdSet = useMemo(
     () => new Set(studentProgress.filter(p => p.status === 'completed').map(p => p.taskId)),
@@ -157,7 +157,12 @@ export const StudentDashboard: React.FC = () => {
 
         {/* Header stats */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
-          <h1 className="text-2xl font-black text-slate-800">Добредојде назад! 👋</h1>
+          <div className="flex items-center gap-3">
+            {user?.photoURL && (
+              <img src={user.photoURL} alt="Профил" className="w-10 h-10 rounded-full border-2 border-indigo-200 shrink-0" referrerPolicy="no-referrer" />
+            )}
+            <h1 className="text-2xl font-black text-slate-800">Добредојде назад! 👋</h1>
+          </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-indigo-50 rounded-2xl p-4 border border-indigo-100 text-center">
               <Zap className="w-5 h-5 text-indigo-500 mx-auto mb-1" />
@@ -251,7 +256,7 @@ export const StudentDashboard: React.FC = () => {
                 <p className="text-xs text-slate-500 font-medium mt-1">Просечни грешки</p>
               </div>
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-center">
-                <p className="text-lg font-black text-slate-700 truncate">{favTopic ?? '—'}</p>
+                <p className="text-sm font-bold text-slate-700 leading-tight line-clamp-2" title={favTopic ?? ''}>{favTopic ?? '—'}</p>
                 <p className="text-xs text-slate-500 font-medium mt-1">Омилена тема</p>
               </div>
             </div>

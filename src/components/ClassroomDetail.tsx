@@ -32,6 +32,7 @@ export const ClassroomDetail: React.FC = () => {
 
   // Solve modal state (students)
   const [activeSolveTask, setActiveSolveTask] = useState<{ task: MathTask; assignmentId: string } | null>(null);
+  const [assignmentTaskPicker, setAssignmentTaskPicker] = useState<{ assignment: Assignment; tasks: MathTask[] } | null>(null);
 
   // Modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -130,11 +131,17 @@ export const ClassroomDetail: React.FC = () => {
 
   const handleStudentSolve = async (assignment: Assignment) => {
     if (!assignment.taskIds?.length) return;
-    const taskId = assignment.taskIds[0];
-    const taskSnap = await getDoc(doc(db, 'tasks', taskId));
-    if (!taskSnap.exists()) return;
-    const task = { id: taskSnap.id, ...taskSnap.data() } as MathTask;
-    setActiveSolveTask({ task, assignmentId: assignment.id! });
+    const fetched: MathTask[] = [];
+    for (const tid of assignment.taskIds.slice(0, 10)) {
+      const snap = await getDoc(doc(db, 'tasks', tid));
+      if (snap.exists()) fetched.push({ id: snap.id, ...snap.data() } as MathTask);
+    }
+    if (fetched.length === 0) return;
+    if (fetched.length === 1) {
+      setActiveSolveTask({ task: fetched[0], assignmentId: assignment.id! });
+    } else {
+      setAssignmentTaskPicker({ assignment, tasks: fetched });
+    }
   };
 
   if (isLoading) {
@@ -577,6 +584,45 @@ export const ClassroomDetail: React.FC = () => {
           onClose={() => setActiveSolveTask(null)}
           onComplete={() => setActiveSolveTask(null)}
         />
+      )}
+
+      {assignmentTaskPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-slate-800">{assignmentTaskPicker.assignment.title}</h3>
+                <p className="text-xs text-slate-400 mt-0.5">{assignmentTaskPicker.tasks.length} задачи — избери која сакаш да ја решиш</p>
+              </div>
+              <button type="button" title="Затвори" aria-label="Затвори" onClick={() => setAssignmentTaskPicker(null)} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
+              {assignmentTaskPicker.tasks.map((task, i) => (
+                <button
+                  type="button"
+                  key={task.id}
+                  className="w-full text-left flex items-center justify-between gap-3 p-3 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+                  onClick={() => {
+                    setAssignmentTaskPicker(null);
+                    setActiveSolveTask({ task, assignmentId: assignmentTaskPicker.assignment.id! });
+                  }}
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-700 truncate">{task.title || `Задача ${i + 1}`}</p>
+                    {task.difficulty && (
+                      <span className={`text-xs font-medium ${task.difficulty === 'easy' ? 'text-green-600' : task.difficulty === 'medium' ? 'text-yellow-600' : 'text-red-600'}`}>
+                        {task.difficulty === 'easy' ? 'Лесна' : task.difficulty === 'medium' ? 'Средна' : 'Тешка'}
+                      </span>
+                    )}
+                  </div>
+                  <BookOpen className="w-4 h-4 text-indigo-400 shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
