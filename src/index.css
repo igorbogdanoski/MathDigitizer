@@ -169,6 +169,24 @@ body.dyscalculia-mode .katex .mop {
     display: none !important;
   }
 
+  /* MakedoTestViewer print styles */
+  .printable-tasks-container .bg-slate-900 {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .printable-tasks-container .bg-slate-900 * {
+    color: black !important;
+  }
+  .printable-tasks-container .bg-emerald-50 {
+    display: none !important;
+  }
+  .printable-tasks-container {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
   .katex-display {
     border: none !important;
     background: transparent !important;
