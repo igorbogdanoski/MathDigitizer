@@ -286,9 +286,8 @@ export const SchoolInquiriesDashboard: React.FC = () => {
   }, [showToast]);
 
   useEffect(() => {
-    // Filter server-side to avoid full student_progress collection scan
     const telemetryQuery = query(
-      collection(db, 'student_progress'),
+      collection(db, 'ui_events'),
       where('eventType', '==', 'billing_cta_click'),
       orderBy('createdAt', 'desc')
     );

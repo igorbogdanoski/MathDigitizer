@@ -375,6 +375,12 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && resource.data.studentId == request.auth.uid;
     }
 
+    match /ui_events/{eventId} {
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow read: if isTeacher();
+      allow update, delete: if false;
+    }
+
     match /school_inquiries/{inquiryId} {
       allow create: if isValidSchoolInquiry(request.resource.data);
       allow read, update: if isTeacher();

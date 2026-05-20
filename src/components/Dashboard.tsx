@@ -292,8 +292,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
     if (!currentUser) return;
 
     try {
-      await addDoc(collection(db, 'student_progress'), {
-        studentId: currentUser.uid,
+      await addDoc(collection(db, 'ui_events'), {
+        uid: currentUser.uid,
         eventType: 'billing_cta_click',
         source: 'dashboard_billing_health',
         currentBillingBadge: billingHealthBadge.label,

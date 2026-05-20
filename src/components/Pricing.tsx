@@ -81,8 +81,8 @@ export const Pricing: React.FC = () => {
 
     // Track billing CTA click for funnel telemetry (mirrors Dashboard tracking)
     try {
-      await addDoc(collection(db, 'student_progress'), {
-        studentId: user.uid,
+      await addDoc(collection(db, 'ui_events'), {
+        uid: user.uid,
         eventType: 'billing_cta_click',
         source: 'pricing_page_checkout',
         channel: selectedOption.channel,
