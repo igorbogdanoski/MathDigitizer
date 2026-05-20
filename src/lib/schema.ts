@@ -75,14 +75,15 @@ export interface TaskAttempt {
 }
 
 export interface PedagogicalInsight {
-  common_pitfalls: string[]; // List of student pitfalls/red flags
-  socratic_questions: string[]; // List of leading questions for teachers
-  modern_context_suggestion?: string; // a suggestion for a modern rewrite
-  modeling_scenario?: string; // a real-life mathematical modeling scenario
-  teaching_strategy?: string; // "Visual area model", "Substitution method", etc.
-  prerequisites?: string[]; // ["Properties of powers", "Basic distribution"]
-  differentiated_learning?: { support: string; extension: string }; // Adaptations for struggling and advanced learners
-  quality_score?: number; // Score from 1-100 indicating extraction quality
+  common_pitfalls: string[];
+  socratic_questions: string[];
+  modern_context_suggestion?: string;
+  modeling_scenario?: string;
+  teaching_strategy?: string;
+  prerequisites?: string[];
+  hints?: string[];
+  differentiated_learning?: { support: string; extension: string };
+  quality_score?: number;
 }
 
 export interface MathTask {

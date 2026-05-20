@@ -40,6 +40,15 @@ export const VisualMathCanvas = ({ jsonConfig }: { jsonConfig: any }) => {
   const viewport = config.viewport || { xMin: -10, xMax: 10, yMin: -10, yMax: 10 };
   const grid = config.grid;
   const elements = Array.isArray(config.elements) ? config.elements : [];
+
+  if (elements.length === 0) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center gap-3 p-8 bg-slate-900 rounded-2xl border border-slate-700 text-slate-400 min-h-[180px]">
+        <span className="text-3xl">📐</span>
+        <p className="text-sm font-medium text-center">Нема елементи за приказ.<br/>Кликни „Регенерирај Графика" за нов обид.</p>
+      </div>
+    );
+  }
   const W = Math.max((viewport.xMax - viewport.xMin) || 20, 1);
   const H = Math.max((viewport.yMax - viewport.yMin) || 20, 1);
   

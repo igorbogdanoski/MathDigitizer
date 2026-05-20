@@ -101,6 +101,19 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
     }
   };
 
+  const hasValidMathConfig = (config: any): boolean => {
+    if (!config) return false;
+    const obj = typeof config === 'string'
+      ? (() => { try { return JSON.parse(config); } catch { return null; } })()
+      : config;
+    return Array.isArray(obj?.elements) && obj.elements.length > 0;
+  };
+
+  const mathGraphicPrompt = (task: MathTask): string => {
+    const clean = (task.original_text || '').replace(/\$+/g, ' ').substring(0, 350);
+    return `Math geometry/function diagram for: "${task.title}". Topic: ${task.curriculum_topic || ''}. Problem: ${clean}`;
+  };
+
   const isYoutube = url.toLowerCase().includes('youtube.com') || url.toLowerCase().includes('youtu.be') || url.toLowerCase().includes('vimeo.com');
 
   const handleEnrich = async (index: number) => {
@@ -246,12 +259,9 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
           case 3: textInstructions += " Извлечи го материјалот и нужно додади свои слични примери за да се разјасни концептот(Examples)."; break;
           case 4: textInstructions += " Направи само кратко резиме и најважни клучни точки/задачи(Summary)."; break;
         }
-        const langEntry = OUTPUT_LANGUAGES.find(l => l.value === outputLanguage);
-        if (langEntry) textInstructions += ` ${langEntry.instruction}`;
-
         for (let i = 0; i < urls.length; i++) {
             setStatusText(`Процесирање на линк ${i + 1} од ${urls.length}...`);
-            const singleTasks = await extractMathTasksFromUrl(urls[i], model, timeRange, urls.length === 1 ? manualTranscript : '', textInstructions);
+            const singleTasks = await extractMathTasksFromUrl(urls[i], model, timeRange, urls.length === 1 ? manualTranscript : '', textInstructions, outputLanguage);
             extractedTasks = [...extractedTasks, ...singleTasks];
             setProgress(Math.max(10, Math.min(90, Math.floor(((i + 1) / urls.length) * 100))));
         }
@@ -1335,6 +1345,41 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                               <p>{task.pedagogical_insights.teaching_strategy}</p>
                             </div>
                           )}
+                          {task.pedagogical_insights.hints && task.pedagogical_insights.hints.length > 0 && (
+                            <div>
+                              <strong className="text-emerald-900 block mb-1">Прогресивни Hint-ови:</strong>
+                              <ol className="list-none pl-0 space-y-1.5">
+                                {task.pedagogical_insights.hints.map((h, hIdx) => (
+                                  <li key={hIdx} className="flex gap-2 items-start">
+                                    <span className="shrink-0 w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold flex items-center justify-center mt-0.5">{hIdx + 1}</span>
+                                    <span>{h}</span>
+                                  </li>
+                                ))}
+                              </ol>
+                            </div>
+                          )}
+                          {task.pedagogical_insights.modern_context_suggestion && (
+                            <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100">
+                              <strong className="text-indigo-900 block mb-1 text-xs uppercase tracking-wider">Gen-Z Контекст:</strong>
+                              <p className="italic text-indigo-800">{task.pedagogical_insights.modern_context_suggestion}</p>
+                            </div>
+                          )}
+                          {task.pedagogical_insights.differentiated_learning && (
+                            <div className="grid grid-cols-2 gap-3">
+                              {task.pedagogical_insights.differentiated_learning.support && (
+                                <div className="bg-green-50 rounded-xl p-3 border border-green-100">
+                                  <strong className="text-green-900 block mb-1 text-xs uppercase tracking-wider">Поддршка:</strong>
+                                  <p className="text-green-800 text-sm">{task.pedagogical_insights.differentiated_learning.support}</p>
+                                </div>
+                              )}
+                              {task.pedagogical_insights.differentiated_learning.extension && (
+                                <div className="bg-purple-50 rounded-xl p-3 border border-purple-100">
+                                  <strong className="text-purple-900 block mb-1 text-xs uppercase tracking-wider">Проширување:</strong>
+                                  <p className="text-purple-800 text-sm">{task.pedagogical_insights.differentiated_learning.extension}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -1360,23 +1405,20 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                   
                   {/* NanoBanana Visualizer AI Box inside the card */}
                   <div className="bg-slate-50/50 lg:w-96 border-t lg:border-t-0 lg:border-l border-slate-100 p-8 flex flex-col items-center flex-grow relative overflow-hidden h-full">
-                    {task.math_graphic_config ? (
+                    {hasValidMathConfig(task.math_graphic_config) ? (
                       <div className="w-full h-full text-center space-y-6 z-10 flex flex-col justify-center">
                         <VisualMathCanvas jsonConfig={task.math_graphic_config} />
-                        {task.illustration_prompt && (
-                             <Button 
-                               variant="outline" 
+                        <Button
+                               variant="outline"
                                className="w-full text-indigo-700 border-indigo-200 hover:bg-indigo-50 h-10 font-bold rounded-xl"
                                onClick={() => {
-                                  // Trigger regen
-                                  handleGenerateGraphics(task.illustration_prompt || `Math diagram for: ${task.title}`, index);
+                                  handleGenerateGraphics(mathGraphicPrompt(task), index);
                                }}
                                disabled={isGeneratingImage[index]}
                              >
                                {isGeneratingImage[index] ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Wand2 className="w-4 h-4 mr-2" />}
                                Регенерирај Графика
                              </Button>
-                        )}
                       </div>
                     ) : (
                       <div className="text-center z-10 space-y-5 w-full m-auto">
@@ -1388,8 +1430,8 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                           <p className="text-xs text-slate-500 px-2 leading-relaxed">Генерирајте инстантен векторски геометриски графикон базиран на AI промпт.</p>
                         </div>
                         
-                        <Button 
-                          onClick={() => handleGenerateGraphics(task.illustration_prompt || `Math diagram for: ${task.title}`, index)}
+                        <Button
+                          onClick={() => handleGenerateGraphics(mathGraphicPrompt(task), index)}
                           disabled={isGeneratingImage[index]}
                           variant="default"
                           className="w-full bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 shadow-md text-white border-0 h-12 font-bold rounded-xl"

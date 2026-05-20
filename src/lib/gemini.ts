@@ -341,7 +341,7 @@ ${tasks.map((t, i) => `Задача ${i+1}:\nТекст: ${t.original_text}\nР�
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: instructions,
       config: {
         responseMimeType: "application/json",
@@ -394,7 +394,7 @@ export async function generateSpeech(text: string): Promise<string> {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
+      model: "gemini-3.5-flash-preview-tts",
       contents: [{ parts: [{ text: transliteratedText }] }],
       config: {
         responseModalities: [Modality.AUDIO],
@@ -457,7 +457,7 @@ export async function generateInterventionTasks(
 
   try {
     const result = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -541,7 +541,7 @@ ${JSON.stringify(tasks.map(t => ({ title: t.title, text: t.original_text, topic:
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -594,7 +594,7 @@ ${originalTask.original_text}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -627,26 +627,54 @@ ${originalTask.original_text}
 }
 
 export async function enrichTaskPedagogy(task: MathTask, model: string = "gemini-3.1-pro-preview"): Promise<any> {
-  const prompt = `Ти си "Pedagogical Content Architect" од светска класа. Твоја задача е да земеш извлечена математичка задача и да ја збогатиш со врвни педагошки сознанија кои се срцето на нашата апликација.
+  const lang = task.detected_language || 'mk';
+  const langName: Record<string, string> = {
+    mk: 'Macedonian (Кирилица — ЗАДОЛЖИТЕЛНО)',
+    en: 'English',
+    ru: 'Russian (Кирилица)',
+    tr: 'Turkish',
+    sq: 'Albanian',
+    ar: 'Arabic',
+  };
+  const outputLang = langName[lang] || 'Macedonian';
 
-МАТЕМАТИЧКА ЗАДАЧА:
-Текст: ${task.original_text}
-Решение: ${task.solution_steps.join('\n')}
-Тема: ${task.curriculum_topic}
-Тежина: ${task.difficulty}
+  const prompt = `You are a world-class "Pedagogical Content Architect" specializing in mathematics education. Your mission: enrich the following math task with deep pedagogical insights that transform it into a complete teaching resource.
 
-ТВОЈА МИСИЈА:
-1. **Misconception Guard**: Идентификувај најмалку 3 вообичаени мисконцепции или места каде учениците грешат (common_pitfalls).
-2. **Socratic Scaffolding**: Генерирај 3 моќни Сократови прашања кои наставникот може да ги постави за да го води ученикот (socratic_questions).
-3. **Teaching Strategy**: Опиши ја најдобрата наставна стратегија за оваа задача (пр. визуелизација, користење на модел на плоштина, метод на замена).
-4. **Prerequisites**: Наведи ги точно потребните предзнаења за оваа задача.
-5. **Real-world Modeling**: Опиши детален сценарио од реалниот живот каде оваа математика се применува (modeling_scenario).
-6. **Modern Context**: Предложи како задачата би се напишала во модерен Gen-Z контекст (modern_context_suggestion).
-7. **Differentiated Learning**: Обезбеди \`differentiated_learning\` објект со пристап за потпора (\`support\` - за спори ученици) и за проширување (\`extension\` - за напредни).
+OUTPUT LANGUAGE: Write ALL text fields in ${outputLang}. LaTeX formulas ($...$, $$...$$) must remain unchanged.
 
-ВАЖНО: ПИШУВАЈ СТРОГО НА МАКЕДОНСКА КИРИЛИЦА. НЕ КОРИСТИ ЛАТИНИЦА ОСВЕН ЗА МАТЕМАТИЧКИ СИМБОЛИ, ПРОГРАМСКИ КОД И ENGLISH PROMPTS ЗА СЛИКИ. \`modern_context_suggestion\` МОРА ДА БИДЕ НА МАКЕДОНСКА КИРИЛИЦА.
+MATH TASK:
+Title: ${task.title}
+Topic: ${task.curriculum_topic || 'Unknown'}
+Grade: ${task.grade_level || 'Unknown'}
+Difficulty: ${task.difficulty || 'medium'}
+DoK Level: ${task.dok_level || 2}
+Problem: ${task.original_text}
+Solution Steps:
+${(task.solution_steps || []).map((s, i) => `${i + 1}. ${s}`).join('\n')}
 
-Врати СТРОГО JSON објект (PedagogicalInsight).`;
+YOUR 9-POINT MISSION:
+
+1. **Misconception Guard** (≥3 items): List the most common student errors and misconceptions for this SPECIFIC problem — not generic math errors. Include WHY students make each mistake (cognitive root cause).
+
+2. **Socratic Scaffolding** (3-4 questions): Generate powerful Socratic questions a teacher asks WITHOUT revealing the answer. Questions must be context-specific (reference actual numbers/shapes from the problem). Sequence: from observation → pattern recognition → abstraction.
+
+3. **Teaching Strategy**: Describe the optimal instructional sequence for this specific task. Name the pedagogical method (e.g., Concrete-Representational-Abstract, Inquiry-Based, Think-Aloud). Explain HOW to introduce it step by step in a lesson.
+
+4. **Prerequisites** (≥3): List the exact prior knowledge nodes a student must have mastered. Be specific (not "algebra" but "solving two-step linear equations with one variable").
+
+5. **Real-World Modeling Scenario**: Write a detailed, narrative scenario from everyday life (business, engineering, biology, sports, cooking, technology) where this EXACT math concept is applied. Include specific numbers that match the problem's difficulty.
+
+6. **Modern Gen-Z Context**: Rewrite the problem context for modern students — social media metrics, gaming, streaming, e-commerce, environmental issues. Keep the same mathematical structure, only change the narrative wrapper.
+
+7. **Differentiated Learning**:
+   - \`support\` (Tier 2/3): How to scaffold this for struggling students — simpler numbers, visual aids, broken-down sub-steps, manipulatives.
+   - \`extension\` (Gifted/Advanced): How to extend this problem — generalization, proof, reverse-engineering, multi-representation.
+
+8. **Progressive Hints** (3 hints): Write 3 hints of increasing specificity. Hint 1 is conceptual (points to the right idea), Hint 2 is procedural (gives the first move), Hint 3 is near-solution (gives most of the structure without the final answer).
+
+9. **Quality Score** (1-100): Evaluate this task on: mathematical rigor (25pts), pedagogical clarity (25pts), cognitive challenge appropriate to grade (25pts), real-world connection (25pts). Return the SUM as quality_score.
+
+Return STRICTLY a JSON object with all fields populated.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -663,7 +691,8 @@ export async function enrichTaskPedagogy(task: MathTask, model: string = "gemini
             prerequisites: { type: Type.ARRAY, items: { type: Type.STRING } },
             modeling_scenario: { type: Type.STRING },
             modern_context_suggestion: { type: Type.STRING },
-            quality_score: { type: Type.NUMBER },
+            hints: { type: Type.ARRAY, items: { type: Type.STRING } },
+            quality_score: { type: Type.NUMBER, description: "1-100 composite score across rigor, clarity, challenge, real-world connection" },
             differentiated_learning: {
               type: Type.OBJECT,
               properties: {
@@ -673,7 +702,7 @@ export async function enrichTaskPedagogy(task: MathTask, model: string = "gemini
               required: ["support", "extension"]
             }
           },
-          required: ["common_pitfalls", "socratic_questions", "teaching_strategy", "prerequisites", "modeling_scenario", "quality_score", "differentiated_learning"]
+          required: ["common_pitfalls", "socratic_questions", "teaching_strategy", "prerequisites", "modeling_scenario", "modern_context_suggestion", "hints", "quality_score", "differentiated_learning"]
         }
       }
     });
@@ -787,7 +816,7 @@ ${originalTask.original_text}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -901,7 +930,7 @@ ${JSON.stringify(tasks.map(t => ({ title: t.title, text: t.original_text, tags: 
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -952,7 +981,7 @@ export async function generateEducationalMaterial(tasks: MathTask[], type: Mater
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -992,11 +1021,11 @@ export async function autoGradeSubmission(
   "score": <број>, 
   "feedback": "<охрабрувачки осврт на трудот, македонски>", 
   "error_detected": "<опционално, специфичната грешка>", 
-  "socratic_hint": "<опционално, прашање за насочување>" 
+  "socratic_hint": "<опционално, прашање за насочување>"
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -1223,7 +1252,7 @@ async function fetchYoutubeTranscriptViaGemini(
       : '';
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-3.5-flash',
     contents: [
       { fileData: { fileUri: url } },
       {
@@ -1241,7 +1270,7 @@ Rules:
   return transcript;
 }
 
-export async function extractMathTasksFromUrl(url: string, model: string = "gemini-3.1-pro-preview", timeRange?: {start: string, end: string}, manualTranscript?: string, instructions?: string): Promise<MathTask[]> {
+export async function extractMathTasksFromUrl(url: string, model: string = "gemini-3.1-pro-preview", timeRange?: {start: string, end: string}, manualTranscript?: string, instructions?: string, outputLanguage?: string): Promise<MathTask[]> {
   let timeContext = "";
   if (timeRange && (timeRange.start || timeRange.end)) {
     timeContext = `\nВНИМАНИЕ: Фокусирај се ИСКЛУЧИВО на делот од видеото/содржината од ${timeRange.start || 'почеток'} до ${timeRange.end || 'крај'}. Игнорирај го останатиот дел.`;
@@ -1329,7 +1358,9 @@ ${videoContext}
 
 СТРАТЕГИЈА ЗА МАКСИМАЛНА ПРЕЦИЗНОСТ И АВТОМАТСКО ПРЕПОЗНАВАЊЕ НА ЈАЗИК (Chain-of-Thought):
 1. **Автоматска Детекција на Јазик**: Детектирај го јазикот на транскриптот. Поддржани ISO кодови: 'mk' (македонски), 'en' (англиски), 'ru' (руски), 'tr' (турски), 'ar' (арапски), 'de', 'fr', 'es', 'al' (Albanian) — или кој и да е друг ISO 639-1 код. Запиши го во \`detected_language\`.
-2. **Автентична Екстракција (КРИТИЧНО)**: \`original_text\`, \`title\` и \`solution_steps\` МОРА да останат на **ОРИГИНАЛНИОТ детектиран јазик** на видеото. НЕ ПРЕВЕДУВАЈ ниту еден збор. Ако видеото е на англиски — пишувај на англиски. Ако е на руски — пишувај на руски. Ако е на турски — пишувај на турски. Исклучок: само ако јазикот е нераспознатлив, тогаш преведи на 'mk'.
+2. **Јазик на излезот (КРИТИЧНО)**: ${outputLanguage && outputLanguage !== 'auto'
+  ? `Корисникот ПОБАРАЛ излез на јазик: '${outputLanguage}'. ПРЕВЕДИ го целиот \`original_text\`, \`title\`, \`solution_steps\` и \`curriculum_topic\` на тој јазик. Зачувај ги LaTeX формулите непроменети ($...$ и $$...$$). Математичкиот контекст и педагошката точност се приоритет над буквалниот превод.`
+  : `Задржи го ОРИГИНАЛНИОТ детектиран јазик на видеото во \`original_text\`, \`title\` и \`solution_steps\`. НЕ ПРЕВЕДУВАЈ. Исклучок: само ако јазикот е нераспознатлив, тогаш преведи на 'mk'.`}
 3. **Теорија вс. Задачи (КРИТИЧНО)**: Видеата често почнуваат со теоретски вовед (дефиниции, формули, правила). ИЗВЛЕЧИ ЈА ТЕОРИЈАТА како посебен објект со \`type: "theory"\`. Задачите извлечи ги како \`type: "task"\`. Ова е многу важно за градење на лекции. За теорија, во "solution_steps" напиши ги клучните поенти или изведувања.
 4. **Стандарди за Форматирање**: Користи релевантни математички стандарди за детектираниот јазик (пр. децимална запирка за македонски/руски, децимална точка за англиски).
 5. **ZERO-ERROR LaTeX**: СИТЕ МАТЕМАТИЧКИ СИМБОЛИ, БРОЕВИ, РАВЕНКИ И ФОРМУЛИ МОРА ДА БИДАТ СТРОГО ВО LaTeX ФОРМАТ ВО original_text И ВО solution_steps! Користи $...$ за inline математика (пр. Let $x=5$) и $$...$$ за математика во нов ред. ОВА Е НАЈСТРОГОТО ПРАВИЛО!
@@ -1395,27 +1426,34 @@ ${instructions ? `\nСПЕЦИФИЧНИ ИНСТРУКЦИИ ЗА ИЗВЛЕК�
 }
 
 export async function generateMathGraphicConfig(prompt: string): Promise<string> {
-  const systemInstruction = `Ти си Експерт по Математички Визуелизации (GeoGebra / TikZ / JSXGraph). Твоја задача е да конвертираш математички или геометриски промпт во валидна JSON конфигурација за MathPlotConfig.
-Строги правила за JSON форматот:
+  const systemInstruction = `You are an expert Math Visualization Engineer. Convert the math/geometry description into a precise JSON config for SVG rendering.
+
+STRICT JSON FORMAT:
 {
   "viewport": { "xMin": -10, "xMax": 10, "yMin": -10, "yMax": 10 },
   "grid": { "stepX": 1, "stepY": 1, "showAxes": true },
   "elements": [
-    { "type": "point", "x": 0, "y": 0, "label": "A", "color": "#ef4444" },
-    { "type": "segment", "x1": -5, "y1": -5, "x2": 5, "y2": 5, "color": "#3b82f6" },
-    { "type": "circle", "cx": 0, "cy": 0, "r": 5, "fill": "rgba(0,0,0,0)", "stroke": "#10b981" },
-    { "type": "angle", "cx": 0, "cy": 0, "r": 2, "startAngle": 0, "endAngle": 45, "label": "α" },
-    { "type": "polygon", "points": [{"x":0,"y":0}, {"x":5,"y":0}, {"x":0,"y":5}], "fill": "rgba(234,179,8,0.2)" },
-    { "type": "function-path", "points": [{"x":-5,"y":25}, {"x":0,"y":0}, {"x":5,"y":25}] }
+    { "type": "point", "x": 2, "y": 3, "label": "A", "color": "#ef4444" },
+    { "type": "segment", "x1": 0, "y1": 0, "x2": 4, "y2": 4, "color": "#3b82f6", "label": "AB" },
+    { "type": "circle", "cx": 0, "cy": 0, "r": 3, "fill": "rgba(16,185,129,0.1)", "stroke": "#10b981" },
+    { "type": "angle", "cx": 0, "cy": 0, "r": 1.5, "startAngle": 0, "endAngle": 60, "label": "60°", "wedge": false },
+    { "type": "polygon", "points": [{"x":0,"y":0},{"x":4,"y":0},{"x":2,"y":3}], "fill": "rgba(234,179,8,0.15)", "stroke": "#eab308" },
+    { "type": "function-path", "points": [{"x":-3,"y":9},{"x":-2,"y":4},{"x":-1,"y":1},{"x":0,"y":0},{"x":1,"y":1},{"x":2,"y":4},{"x":3,"y":9}], "color": "#8b5cf6" },
+    { "type": "text", "x": 2, "y": 5, "text": "Label", "color": "#94a3b8" }
   ]
 }
-Оптимизирај го viewport-от да ги собере сите елементи.
-Фокусирај се на математичката точност и апсолутните пропорции (како AutoCAD или GeoGebra).
-Врати само валиден JSON. Без \`\`\`json\`\`\` макроа.`;
+
+RULES:
+1. For function-path: compute AT LEAST 30 evenly-spaced (x, y) points across the domain for smooth curves. Clamp y to ±2× the viewport height.
+2. For lines (y=mx+b): use function-path with 2 endpoint points, or a segment from left to right viewport boundary.
+3. viewport must tightly fit all elements — do not use default ±10 if elements are in ±3 range.
+4. ALWAYS include at least one element. NEVER return { "elements": [] }.
+5. Use bright distinct colors. Label key points.
+6. Return ONLY valid JSON. No markdown code fences.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         systemInstruction,
@@ -1436,7 +1474,7 @@ export async function generateImage(prompt: string, gradeLevel?: string): Promis
     const styleModifier = `Style: Modern, colorful, and engaging educational vector illustration. White background, crisp lines, perfect composition. No mathematical symbols or text in the image.`;
     
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-image",
+      model: "gemini-3.5-flash-image",
       contents: {
         parts: [
           {
@@ -1565,7 +1603,7 @@ ${userStep}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -1612,7 +1650,7 @@ ${ALGEBRA_TILES_INSTRUCTION}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
     });
 
@@ -1638,7 +1676,7 @@ export async function modernizeTaskContext(task: MathTask): Promise<MathTask> {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -1686,7 +1724,7 @@ ${task.pedagogical_insights?.teaching_strategy}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -1748,7 +1786,7 @@ ${task.pedagogical_insights?.prerequisites?.join(', ')}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2011,7 +2049,7 @@ ${originalTask.original_text}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2094,7 +2132,7 @@ ${tasks.map((t, idx) => `[Задача ${idx+1}]\nНаслов: ${t.title}\nТе
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -2127,7 +2165,7 @@ export async function generateFlashcards(topic: string, count: number = 5): Prom
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2175,7 +2213,7 @@ export async function generateFlawedMathProblem(topic: string, difficulty: strin
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2209,7 +2247,7 @@ export async function generateTwoCritiques(topic: string): Promise<any> {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2245,7 +2283,7 @@ export async function generateHoaxProof(): Promise<any> {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: "gemini-3.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2267,7 +2305,7 @@ export async function generateHoaxProof(): Promise<any> {
 export async function generateInterventionPlan(prompt: string): Promise<string> {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
+      model: 'gemini-3.5-flash',
       contents: prompt,
       config: {
         systemInstruction: 'Ти си врвен македонски методолог и дидактичар по математика, експерт во теоријата на Свелер за когнитивно оптоварување и рамката на Килпатрик.',
@@ -2283,7 +2321,7 @@ export async function generateInterventionPlan(prompt: string): Promise<string> 
 export async function generateCurriculumModule(prompt: string): Promise<any> {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
+      model: 'gemini-3.5-flash',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -2324,11 +2362,13 @@ export interface PedagogueEnhancement {
   teaching_strategy?: string;
 }
 
-export async function enhancePedagogueTask(prompt: string): Promise<PedagogueEnhancement> {
+export async function enhancePedagogueTask(prompt: string, language: string = 'mk'): Promise<PedagogueEnhancement> {
+  const langNames: Record<string, string> = { mk: 'Macedonian (Кирилица)', en: 'English', ru: 'Russian', tr: 'Turkish', sq: 'Albanian' };
+  const fullPrompt = `${prompt}\n\nIMPORTANT: Write ALL output text in ${langNames[language] || 'Macedonian'}. Keep LaTeX formulas ($...$, $$...$$) unchanged.`;
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash-latest',
-      contents: prompt,
+      model: 'gemini-3.5-flash',
+      contents: fullPrompt,
       config: {
         responseMimeType: 'application/json',
         responseSchema: {
