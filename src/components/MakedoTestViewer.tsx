@@ -146,7 +146,7 @@ export const MakedoTestViewer: React.FC<MakedoTestViewerProps> = ({ test: initia
   };
 
   return (
-    <div className="bg-white max-w-5xl mx-auto rounded-xl shadow-md overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700 font-sans relative">
+    <div className="printable-tasks-container bg-white max-w-5xl mx-auto rounded-xl shadow-md overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700 font-sans relative">
       {/* Exam Link Modal / Banner */}
       {examLink && (
         <div className="bg-emerald-50 border-b border-emerald-200 p-4 flex flex-col md:flex-row items-center justify-between gap-4">

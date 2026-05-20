@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Trophy, Star, Zap, Target, Award, TrendingUp, Users, Loader2, ChevronRight, Medal, Brain, PieChart as PieChartIcon, CheckCircle2, Circle, Activity, Paintbrush, ScanLine, Library as LibraryIcon, Wand2, Layers, AlertTriangle, Info } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Button } from './ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { db, auth } from '../lib/firebase';
@@ -185,6 +185,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
     return <TeacherDashboard userProfile={userProfile} />;
   }
 
+  if (userProfile?.role === 'student') {
+    return <Navigate to="/student-dashboard" replace />;
+  }
+
   if (!stats) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-slate-800 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
@@ -288,8 +292,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
     if (!currentUser) return;
 
     try {
-      await addDoc(collection(db, 'student_progress'), {
-        studentId: currentUser.uid,
+      await addDoc(collection(db, 'ui_events'), {
+        uid: currentUser.uid,
         eventType: 'billing_cta_click',
         source: 'dashboard_billing_health',
         currentBillingBadge: billingHealthBadge.label,

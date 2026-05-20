@@ -88,7 +88,7 @@ export function GeoGebraViewer({ commands, onClose, inline = false }: GeoGebraVi
             }
 
             var params = {
-                "appName": "geometry", 
+                "appName": "classic",
                 "width": ${inline ? 'window.innerWidth - 20' : 'window.innerWidth'}, 
                 "height": ${inline ? 'window.innerHeight - 20' : 'window.innerHeight'}, 
                 "showToolBar": true, 

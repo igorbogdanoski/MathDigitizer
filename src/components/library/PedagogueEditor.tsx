@@ -153,7 +153,7 @@ export const PedagogueEditor: React.FC = () => {
         `;
       }
 
-      const result = await enhancePedagogueTask(prompt);
+      const result = await enhancePedagogueTask(prompt, localTask.detected_language || 'mk');
       if (result.new_text) updateField('original_text', result.new_text);
       if (result.socratic_questions) {
         updateInsightField('socratic_questions', result.socratic_questions);

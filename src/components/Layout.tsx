@@ -57,7 +57,8 @@ export const Layout: React.FC = () => {
     { path: '/smart-ocr', icon: ScanLine, label: 'Smart OCR', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/extract', icon: Wand2, label: 'Екстракција', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/library', icon: LibraryIcon, label: 'Библиотека', show: true },
-    { path: '/dashboard', icon: Trophy, label: 'Профил', show: !!userProfile },
+    { path: '/student-dashboard', icon: BookOpen, label: 'Мои Задачи', show: userProfile?.role === 'student' },
+    { path: '/dashboard', icon: Trophy, label: 'Профил', show: !!userProfile && userProfile.role !== 'student' },
   ].filter(item => item.show);
 
   const toolItems = [

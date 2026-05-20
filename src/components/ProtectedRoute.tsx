@@ -27,8 +27,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
   }
 
   if (allowedRoles && userProfile && !allowedRoles.includes(userProfile.role)) {
-    // Redirect to dashboard if user role is not allowed for this route
-    return <Navigate to="/dashboard" replace />;
+    const fallback = userProfile.role === 'student' ? '/student-dashboard' : '/dashboard';
+    return <Navigate to={fallback} replace />;
   }
 
   return <>{children}</>;

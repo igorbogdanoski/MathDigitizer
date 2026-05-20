@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { TaskSolveModal } from './student/TaskSolveModal';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Classroom, Assignment, UserProfile, MathTask } from '../lib/schema';
@@ -28,6 +29,10 @@ export const ClassroomDetail: React.FC = () => {
   const [students, setStudents] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'assignments' | 'canvas' | 'telemetry' | 'live'>('telemetry'); // Default to telemetry for the wow factor
+
+  // Solve modal state (students)
+  const [activeSolveTask, setActiveSolveTask] = useState<{ task: MathTask; assignmentId: string } | null>(null);
+  const [assignmentTaskPicker, setAssignmentTaskPicker] = useState<{ assignment: Assignment; tasks: MathTask[] } | null>(null);
 
   // Modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -122,6 +127,21 @@ export const ClassroomDetail: React.FC = () => {
       newSelected.add(taskId);
     }
     setSelectedTaskIds(newSelected);
+  };
+
+  const handleStudentSolve = async (assignment: Assignment) => {
+    if (!assignment.taskIds?.length) return;
+    const fetched: MathTask[] = [];
+    for (const tid of assignment.taskIds.slice(0, 10)) {
+      const snap = await getDoc(doc(db, 'tasks', tid));
+      if (snap.exists()) fetched.push({ id: snap.id, ...snap.data() } as MathTask);
+    }
+    if (fetched.length === 0) return;
+    if (fetched.length === 1) {
+      setActiveSolveTask({ task: fetched[0], assignmentId: assignment.id! });
+    } else {
+      setAssignmentTaskPicker({ assignment, tasks: fetched });
+    }
   };
 
   if (isLoading) {
@@ -384,9 +404,19 @@ export const ClassroomDetail: React.FC = () => {
                       <span>{assignment.taskIds.length} прашања</span>
                     </div>
                   </div>
-                  <Button variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/30">
-                    {userProfile?.role === 'teacher' ? 'Прегледај резултати' : 'Реши'}
-                  </Button>
+                  {userProfile?.role === 'teacher' ? (
+                    <Button variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/30">
+                      Прегледај резултати
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
+                      onClick={() => handleStudentSolve(assignment)}
+                    >
+                      Реши
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -543,6 +573,53 @@ export const ClassroomDetail: React.FC = () => {
                 {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                 Додели Задача
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {activeSolveTask && (
+        <TaskSolveModal
+          task={activeSolveTask.task}
+          assignmentId={activeSolveTask.assignmentId}
+          onClose={() => setActiveSolveTask(null)}
+          onComplete={() => setActiveSolveTask(null)}
+        />
+      )}
+
+      {assignmentTaskPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-slate-800">{assignmentTaskPicker.assignment.title}</h3>
+                <p className="text-xs text-slate-400 mt-0.5">{assignmentTaskPicker.tasks.length} задачи — избери која сакаш да ја решиш</p>
+              </div>
+              <button type="button" title="Затвори" aria-label="Затвори" onClick={() => setAssignmentTaskPicker(null)} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
+              {assignmentTaskPicker.tasks.map((task, i) => (
+                <button
+                  type="button"
+                  key={task.id}
+                  className="w-full text-left flex items-center justify-between gap-3 p-3 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+                  onClick={() => {
+                    setAssignmentTaskPicker(null);
+                    setActiveSolveTask({ task, assignmentId: assignmentTaskPicker.assignment.id! });
+                  }}
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-700 truncate">{task.title || `Задача ${i + 1}`}</p>
+                    {task.difficulty && (
+                      <span className={`text-xs font-medium ${task.difficulty === 'easy' ? 'text-green-600' : task.difficulty === 'medium' ? 'text-yellow-600' : 'text-red-600'}`}>
+                        {task.difficulty === 'easy' ? 'Лесна' : task.difficulty === 'medium' ? 'Средна' : 'Тешка'}
+                      </span>
+                    )}
+                  </div>
+                  <BookOpen className="w-4 h-4 text-indigo-400 shrink-0" />
+                </button>
+              ))}
             </div>
           </div>
         </div>
