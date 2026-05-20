@@ -5,6 +5,9 @@ RewriteEngine On
 RewriteCond %{HTTPS} off
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+# Assets folder: never redirect to index.html (return real 404 for missing chunks)
+RewriteRule ^assets/ - [L]
+
 # Serve existing files and directories directly
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

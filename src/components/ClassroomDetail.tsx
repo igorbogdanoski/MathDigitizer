@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { TaskSolveModal } from './student/TaskSolveModal';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Classroom, Assignment, UserProfile, MathTask } from '../lib/schema';
@@ -28,6 +29,9 @@ export const ClassroomDetail: React.FC = () => {
   const [students, setStudents] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'assignments' | 'canvas' | 'telemetry' | 'live'>('telemetry'); // Default to telemetry for the wow factor
+
+  // Solve modal state (students)
+  const [activeSolveTask, setActiveSolveTask] = useState<{ task: MathTask; assignmentId: string } | null>(null);
 
   // Modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -122,6 +126,15 @@ export const ClassroomDetail: React.FC = () => {
       newSelected.add(taskId);
     }
     setSelectedTaskIds(newSelected);
+  };
+
+  const handleStudentSolve = async (assignment: Assignment) => {
+    if (!assignment.taskIds?.length) return;
+    const taskId = assignment.taskIds[0];
+    const taskSnap = await getDoc(doc(db, 'tasks', taskId));
+    if (!taskSnap.exists()) return;
+    const task = { id: taskSnap.id, ...taskSnap.data() } as MathTask;
+    setActiveSolveTask({ task, assignmentId: assignment.id! });
   };
 
   if (isLoading) {
@@ -384,9 +397,19 @@ export const ClassroomDetail: React.FC = () => {
                       <span>{assignment.taskIds.length} прашања</span>
                     </div>
                   </div>
-                  <Button variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/30">
-                    {userProfile?.role === 'teacher' ? 'Прегледај резултати' : 'Реши'}
-                  </Button>
+                  {userProfile?.role === 'teacher' ? (
+                    <Button variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/30">
+                      Прегледај резултати
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
+                      onClick={() => handleStudentSolve(assignment)}
+                    >
+                      Реши
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -546,6 +569,14 @@ export const ClassroomDetail: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+      {activeSolveTask && (
+        <TaskSolveModal
+          task={activeSolveTask.task}
+          assignmentId={activeSolveTask.assignmentId}
+          onClose={() => setActiveSolveTask(null)}
+          onComplete={() => setActiveSolveTask(null)}
+        />
       )}
     </div>
   );

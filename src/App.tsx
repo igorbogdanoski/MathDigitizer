@@ -32,6 +32,7 @@ const ReloadPrompt = lazy(() => import('./components/ReloadPrompt').then((m) => 
 import { MathTask } from './lib/schema';
 import { signInWithGoogle } from './lib/firebase';
 const StudentTelemetryView = lazy(() => import('./components/StudentTelemetryView').then((m) => ({ default: m.StudentTelemetryView })));
+const StudentDashboard = lazy(() => import('./components/StudentDashboard').then((m) => ({ default: m.StudentDashboard })));
 const GameHost = lazy(() => import('./components/live/GameHost').then((m) => ({ default: m.GameHost })));
 const GamePlayer = lazy(() => import('./components/live/GamePlayer').then((m) => ({ default: m.GamePlayer })));
 const SummativeExam = lazy(() => import('./components/live/SummativeExam').then((m) => ({ default: m.SummativeExam })));
@@ -180,7 +181,13 @@ const AppRoutes = () => {
               <Dashboard userProfile={userProfile} />
             </ProtectedRoute>
           } />
-          
+
+          <Route path="student-dashboard" element={
+            <ProtectedRoute allowedRoles={['student']}>
+              <StudentDashboard />
+            </ProtectedRoute>
+          } />
+
           <Route path="students/:studentId" element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <StudentTelemetryView />

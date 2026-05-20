@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Trophy, Star, Zap, Target, Award, TrendingUp, Users, Loader2, ChevronRight, Medal, Brain, PieChart as PieChartIcon, CheckCircle2, Circle, Activity, Paintbrush, ScanLine, Library as LibraryIcon, Wand2, Layers, AlertTriangle, Info } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Button } from './ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { db, auth } from '../lib/firebase';
@@ -183,6 +183,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
   // Render Teacher Dashboard if the user is a teacher
   if (userProfile?.role === 'teacher') {
     return <TeacherDashboard userProfile={userProfile} />;
+  }
+
+  if (userProfile?.role === 'student') {
+    return <Navigate to="/student-dashboard" replace />;
   }
 
   if (!stats) {
