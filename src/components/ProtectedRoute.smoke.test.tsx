@@ -41,7 +41,7 @@ describe('ProtectedRoute smoke', () => {
     expect(screen.getByText('Home page')).toBeInTheDocument();
   });
 
-  it('blocks route when role is not allowed', () => {
+  it('blocks route when role is not allowed — student goes to /student-dashboard', () => {
     mockUseAuth.mockReturnValue({
       user: { uid: 'u1' },
       userProfile: { role: 'student' },
@@ -51,12 +51,38 @@ describe('ProtectedRoute smoke', () => {
     render(
       <MemoryRouter initialEntries={['/teacher-only']}>
         <Routes>
-          <Route path="/dashboard" element={<div>Dashboard page</div>} />
+          <Route path="/student-dashboard" element={<div>Student dashboard page</div>} />
           <Route
             path="/teacher-only"
             element={
               <ProtectedRoute allowedRoles={['teacher']}>
                 <div>Teacher page</div>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Student dashboard page')).toBeInTheDocument();
+  });
+
+  it('blocks route when role is not allowed — teacher goes to /dashboard', () => {
+    mockUseAuth.mockReturnValue({
+      user: { uid: 'u1' },
+      userProfile: { role: 'teacher' },
+      isLoading: false,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/student-only']}>
+        <Routes>
+          <Route path="/dashboard" element={<div>Dashboard page</div>} />
+          <Route
+            path="/student-only"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <div>Student page</div>
               </ProtectedRoute>
             }
           />
