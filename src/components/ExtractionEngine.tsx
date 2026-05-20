@@ -122,7 +122,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
 
     setIsEnriching(prev => ({ ...prev, [index]: true }));
     try {
-      const insights = await enrichTaskPedagogy(task, model);
+      const insights = await enrichTaskPedagogy(task, model, outputLanguage !== 'auto' ? outputLanguage : undefined);
       setTasks(prev => prev.map((t, i) => i === index ? { ...t, pedagogical_insights: insights } : t));
     } catch (error: any) {
       console.error("Грешка при збогатување:", error);

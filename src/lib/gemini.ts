@@ -626,8 +626,8 @@ ${originalTask.original_text}
   }
 }
 
-export async function enrichTaskPedagogy(task: MathTask, model: string = "gemini-3.1-pro-preview"): Promise<any> {
-  const lang = task.detected_language || 'mk';
+export async function enrichTaskPedagogy(task: MathTask, model: string = "gemini-3.1-pro-preview", outputLanguageOverride?: string): Promise<any> {
+  const lang = outputLanguageOverride || task.detected_language || 'mk';
   const langName: Record<string, string> = {
     mk: 'Macedonian (Кирилица — ЗАДОЛЖИТЕЛНО)',
     en: 'English',
@@ -1368,7 +1368,7 @@ ${videoContext}
 
 ПРАВИЛА ЗА НАСТАВНА ПРОГРАМА:
 - ЗАДОЛЖИТЕЛНО: Во \`grade_level\` одреди го нивото кориснтејќи ја нотацијата на земјата/јазикот: за 'mk' → "7-мо одделение"; за 'en' → "Grade 7" / "Year 9" / "AP Calculus"; за 'ru' → "7-й класс"; за 'tr' → "7. sınıf". Ако не можеш точно — напиши ниво (пр. "Middle School", "High School").
-- ЗАДОЛЖИТЕЛНО: Во \`curriculum_topic\` смести ја темата на ОРИГИНАЛНИОТ јазик на видеото (пр. за англиски "Linear Equations", за руски "Линейные уравнения", за турски "Doğrusal Denklemler").
+- ЗАДОЛЖИТЕЛНО: Во \`curriculum_topic\` смести ја темата на ИЗЛЕЗНИОТ јазик (оној бараниот од корисникот, наведен погоре). Ако корисникот бара македонски → "Линеарни равенки", за англиски → "Linear Equations", за турски → "Doğrusal Denklemler".
 
 ${instructions ? `\nСПЕЦИФИЧНИ ИНСТРУКЦИИ ЗА ИЗВЛЕКУВАЊЕ:\n${instructions}\n` : ""}
 Врати JSON објект со следната структура која симулира NotebookLM (прво длабинска анализа, па потоа теорија и задачи).`;
