@@ -804,7 +804,17 @@ export const SchoolInquiriesDashboard: React.FC = () => {
       });
 
       if (nextStatus === 'approved' && receipt.requester_uid) {
-        await updateDoc(doc(db, 'users', receipt.requester_uid), { isPro: true });
+        const proStartedAt = new Date().toISOString();
+        const proEndsAt = receipt.billing_period_interest === 'annual'
+          ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+          : new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString();
+
+        await updateDoc(doc(db, 'users', receipt.requester_uid), {
+          isPro: true,
+          proStartedAt,
+          proEndsAt,
+          paymentChannel: receipt.payment_channel,
+        });
         sendProActivationEmail({
           teacher_name: receipt.payer_name,
           teacher_email: receipt.payer_email,

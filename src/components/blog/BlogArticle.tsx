@@ -19,6 +19,15 @@ export const BlogArticle: React.FC<BlogArticleProps> = ({
   slug, title, description, keywords, date, readMinutes, children, ctaLabel, ctaHref
 }) => {
   const url = `https://math.mismath.net/blog/${slug}`;
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'MathDigitizer Pro', item: 'https://math.mismath.net/' },
+      { '@type': 'ListItem', position: 2, name: 'Блог', item: 'https://math.mismath.net/blog' },
+      { '@type': 'ListItem', position: 3, name: title, item: url },
+    ],
+  };
   const articleSchema = {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -57,7 +66,7 @@ export const BlogArticle: React.FC<BlogArticleProps> = ({
         keywords={keywords}
         canonical={`/blog/${slug}`}
         type="article"
-        structuredData={articleSchema}
+        structuredData={[breadcrumbSchema, articleSchema]}
       />
 
       <div className="min-h-screen bg-white dark:bg-slate-950">

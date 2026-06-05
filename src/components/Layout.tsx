@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, Bug, Inbox, Settings as SettingsIcon, Check, Sparkles, TrendingUp } from 'lucide-react';
+import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, Bug, Inbox, Settings as SettingsIcon, Check, Sparkles, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccessibility } from '../contexts/AccessibilityContext';
@@ -10,7 +10,8 @@ import { OnboardingWizard } from './OnboardingWizard';
 import { GlobalAITutor } from './GlobalAITutor';
 import { SEO } from './SEO';
 import { getRouteSeo } from '../lib/seo';
-import { isOnTrial, trialDaysRemaining } from '../lib/saas';
+import { isOnTrial, trialDaysRemaining, hasProAccess } from '../lib/saas';
+import { trackTrialExpired, trackTrialUrgency } from '../lib/analytics';
 
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -21,6 +22,7 @@ export const Layout: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [trialExpiredDismissed, setTrialExpiredDismissed] = useState(false);
   const routeSeo = getRouteSeo(location.pathname);
 
   useEffect(() => {
@@ -99,15 +101,67 @@ export const Layout: React.FC = () => {
         noindex={routeSeo.noindex}
         structuredData={routeSeo.structuredData}
       />
-      {isOnTrial(userProfile) && (
-        <div className="bg-indigo-600 text-white text-sm text-center py-2 px-4 flex items-center justify-center gap-2">
-          <Sparkles className="w-4 h-4 shrink-0" />
-          <span>
-            Користиш Pro Trial — уште <strong>{trialDaysRemaining(userProfile)} {trialDaysRemaining(userProfile) === 1 ? 'ден' : 'дена'}</strong> бесплатно.
-          </span>
-          <Link to="/pricing" className="underline font-semibold ml-1 hover:text-indigo-200">Надгради</Link>
-        </div>
-      )}
+      {(() => {
+        if (!userProfile || hasProAccess(userProfile) || !userProfile.trialStartedAt) return null;
+
+        const daysLeft = trialDaysRemaining(userProfile);
+        const isExpired = daysLeft === 0;
+
+        if (isExpired) {
+          if (trialExpiredDismissed) return null;
+          // Fire analytics once — safe because identityUser already called in AuthContext
+          void (typeof trackTrialExpired === 'function' && trackTrialExpired());
+          return (
+            <div className="bg-rose-600 text-white text-sm py-2.5 px-4 flex items-center justify-center gap-3">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span className="font-semibold">Твојот Pro Trial истече.</span>
+              <span className="hidden sm:inline text-rose-100">Надгради сега за да го задржиш пристапот до Pro функции.</span>
+              <Link to="/pricing" className="bg-white text-rose-700 font-black px-3 py-0.5 rounded-lg text-xs hover:bg-rose-50 transition-colors ml-1">
+                Надгради
+              </Link>
+              <button
+                type="button"
+                onClick={() => setTrialExpiredDismissed(true)}
+                className="ml-auto p-1 rounded hover:bg-rose-500 transition-colors"
+                aria-label="Затвори"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          );
+        }
+
+        // Active trial — urgency escalation
+        if (daysLeft <= 2) {
+          void (typeof trackTrialUrgency === 'function' && trackTrialUrgency(daysLeft));
+        }
+        const isUrgent = daysLeft <= 2;
+        const isCritical = daysLeft === 1;
+
+        return (
+          <div className={`text-white text-sm text-center py-2 px-4 flex items-center justify-center gap-2 transition-colors ${
+            isCritical ? 'bg-rose-600' : isUrgent ? 'bg-amber-500' : 'bg-indigo-600'
+          }`}>
+            {isCritical ? <AlertTriangle className="w-4 h-4 shrink-0" /> : <Sparkles className="w-4 h-4 shrink-0" />}
+            <span>
+              {isCritical
+                ? <>Последен ден! Твојот Pro Trial истекува <strong>денес</strong>.</>
+                : isUrgent
+                ? <>Само уште <strong>{daysLeft} {daysLeft === 1 ? 'ден' : 'дена'}</strong> Pro Trial. Не изгуби пристап!</>
+                : <>Користиш Pro Trial — уште <strong>{daysLeft} {daysLeft === 1 ? 'ден' : 'дена'}</strong> бесплатно.</>
+              }
+            </span>
+            <Link
+              to="/pricing"
+              className={`underline font-semibold ml-1 transition-colors ${
+                isCritical ? 'hover:text-rose-200' : isUrgent ? 'hover:text-amber-200' : 'hover:text-indigo-200'
+              }`}
+            >
+              Надгради
+            </Link>
+          </div>
+        );
+      })()}
 
       <header className="sticky top-0 z-50 transition-colors duration-300 border-b border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">

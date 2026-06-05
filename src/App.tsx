@@ -111,19 +111,34 @@ const AppRoutes = () => {
           } />
 
           <Route path="analytics" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute
+              allowedRoles={['teacher']}
+              requirePro
+              proFeatureName="Напредна Аналитика"
+              proFeatureDescription="Педагошката аналитика со DOK телеметрија, Knowledge Gap дијагностика и интервенции е достапна само за Pro Teacher. Надгради за комплетен увид во напредокот на учениците."
+            >
               <AnalyticsDashboard />
             </ProtectedRoute>
           } />
           
           <Route path="ai-pedagogy" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute
+              allowedRoles={['teacher']}
+              requirePro
+              proFeatureName="AI Педагогија"
+              proFeatureDescription="Сократски прашања, диференцирани стратегии и педагошки критики базирани на Bloom's Taxonomy се Pro-ексклузивни функции."
+            >
               <AIPedagogyCritique />
             </ProtectedRoute>
           } />
           
           <Route path="curriculum" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute
+              allowedRoles={['teacher']}
+              requirePro
+              proFeatureName="Државни Стандарди — Curriculum"
+              proFeatureDescription="Пристапот до националните наставни програми (БРО стандарди) и генерирањето задачи по теми е Pro-ексклузивна функција."
+            >
               <CurriculumTestGenerator />
             </ProtectedRoute>
           } />
@@ -141,7 +156,12 @@ const AppRoutes = () => {
           } />
           
           <Route path="mass-factory" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute
+              allowedRoles={['teacher']}
+              requirePro
+              proFeatureName="PDF Фабрика (Batch)"
+              proFeatureDescription="Масовното генерирање на работни листови и Curriculum Factory за batch uploads е достапно само за Pro Teacher корисници."
+            >
               <CurriculumFactory />
             </ProtectedRoute>
           } />
