@@ -44,6 +44,9 @@ export interface UserProfile {
   role: 'teacher' | 'student';
   isPro?: boolean;
   trialStartedAt?: string;
+  proStartedAt?: string;       // ISO — when isPro was first set to true
+  proEndsAt?: string;          // ISO — reserved for future subscription expiry
+  paymentChannel?: 'bank' | 'paypal' | 'stripe';
   createdAt: string;
 }
 

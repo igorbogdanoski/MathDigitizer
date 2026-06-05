@@ -4,6 +4,21 @@ function g(...args: any[]) {
   if (typeof gtag === 'function') gtag(...args);
 }
 
+/** Call once after login + profile load. Enables user-scoped reports in GA4. */
+export function identifyUser(uid: string, role: 'teacher' | 'student', isPro: boolean) {
+  g('set', { user_id: uid });
+  g('set', 'user_properties', {
+    user_role: role,
+    is_pro: isPro ? 'yes' : 'no',
+  });
+}
+
+/** Call on sign-out to detach the user_id from subsequent hits. */
+export function clearUserIdentity() {
+  g('set', { user_id: undefined });
+  g('set', 'user_properties', { user_role: undefined, is_pro: undefined });
+}
+
 export function trackPricingView() {
   g('event', 'pricing_view', { event_category: 'conversion_funnel' });
 }
@@ -18,4 +33,12 @@ export function trackProActivated(plan: string) {
 
 export function trackExtraction(source_type: string) {
   g('event', 'extraction_used', { event_category: 'engagement', source_type });
+}
+
+export function trackTrialExpired() {
+  g('event', 'trial_expired', { event_category: 'conversion_funnel' });
+}
+
+export function trackTrialUrgency(days_left: number) {
+  g('event', 'trial_urgency_shown', { event_category: 'conversion_funnel', days_left });
 }

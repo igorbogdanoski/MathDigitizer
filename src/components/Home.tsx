@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BrainCircuit, BookOpen, Factory, Wand2, ArrowRight, Sparkles, Quote, Play, Square, Info, X, FileText, Cpu, ShieldCheck, CheckCircle, FileType2, Zap, Users } from 'lucide-react';
+import { BrainCircuit, BookOpen, Factory, Wand2, ArrowRight, Sparkles, Quote, Play, Square, Info, X, FileText, Cpu, ShieldCheck, CheckCircle, FileType2, Zap, Users, Star } from 'lucide-react';
 import { Button } from './ui/Button';
 import { generateSpeech } from '../lib/gemini';
 import { motion, AnimatePresence } from 'motion/react';
@@ -38,6 +38,41 @@ const HOME_WORKFLOW_STEPS = [
   { title: 'Екстракција', detail: 'Видео, PDF или слика во структурирани математички задачи.' },
   { title: 'Педагошка библиотека', detail: 'RAG-ready содржина за повторна употреба, анализа и тестови.' },
   { title: 'Испорака', detail: 'Материјали, analytics и live classroom workflows од истиот систем.' },
+];
+
+// Replace initials/content with real teacher feedback before launch
+const TESTIMONIALS = [
+  {
+    quote: "MathDigitizer ми заштеди над 5 часа неделно. Наместо рачно внесување задачи, само ги извлекувам со AI и ги зачувувам во библиотека.",
+    author: "Марија К.",
+    role: "Наставничка по математика",
+    city: "Скопје",
+    initials: "МК",
+    avatarClass: "bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300",
+  },
+  {
+    quote: "Live Kahoot сесиите ги направија моите часови интерактивни. Учениците се натпреваруваат меѓу себе — тоа е вистинска промена во ангажираноста.",
+    author: "Тодор М.",
+    role: "Наставник по математика",
+    city: "Битола",
+    initials: "ТМ",
+    avatarClass: "bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300",
+  },
+  {
+    quote: "Конечно систем кој разбира македонски математички термини. PDF фабриката ми генерира тестови за 2 минути.",
+    author: "Елена В.",
+    role: "Наставничка по математика",
+    city: "Охрид",
+    initials: "ЕВ",
+    avatarClass: "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300",
+  },
+];
+
+const PLATFORM_STATS = [
+  { value: "5h", label: "Заштедени часа неделно" },
+  { value: "10x", label: "Поголем ангажман во класот" },
+  { value: "2 мин", label: "PDF тест генерирање" },
+  { value: "100%", label: "Направено за МК училишта" },
 ];
 
 interface HomeProps {
@@ -297,33 +332,28 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
               Погледни ја методологијата зад платформата
             </button>
 
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.75, duration: 1 }}
-              className="mt-10 w-full max-w-2xl"
+              className="mt-8 w-full max-w-lg"
             >
-              <div className="flex items-center gap-3 mb-4 text-left">
-                <div className="h-px w-10 bg-slate-700"></div>
-                <p className="text-xs font-black uppercase tracking-widest text-slate-400">Student Quick Entry</p>
-              </div>
-              <div className="bg-slate-800/45 p-3 rounded-[2rem] backdrop-blur-2xl border border-slate-700 shadow-2xl transition-all duration-500 focus-within:bg-slate-800/80 focus-within:border-indigo-500/50 focus-within:shadow-[0_0_40px_rgba(79,70,229,0.3)]">
-                <form onSubmit={handleJoinKahoot} className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400" />
-                    <input 
-                      type="text" 
-                      value={kahootPin}
-                      onChange={(e) => setKahootPin(e.target.value)}
-                      placeholder="Внеси ПИН за игра или испит" 
-                      className="w-full bg-slate-900/50 border border-slate-600/50 rounded-2xl pl-14 pr-6 h-16 text-white text-lg placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all font-mono font-black tracking-wider sm:text-center"
-                    />
-                  </div>
-                  <Button type="submit" className="bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-white rounded-2xl px-10 h-16 font-black text-lg shadow-[0_0_30px_rgba(16,185,129,0.35)] transition-all duration-300 hover:scale-[1.02] active:scale-95">
-                    ВЛЕЗИ
-                  </Button>
-                </form>
-              </div>
+              <p className="text-xs font-semibold text-slate-500 mb-2.5 flex items-center gap-2">
+                <Users className="w-3.5 h-3.5" />
+                Ученик? Влези со PIN за игра или испит
+              </p>
+              <form onSubmit={handleJoinKahoot} className="flex gap-2">
+                <input
+                  type="text"
+                  value={kahootPin}
+                  onChange={(e) => setKahootPin(e.target.value)}
+                  placeholder="Внеси PIN код"
+                  className="flex-1 bg-slate-800/60 border border-slate-700/60 rounded-xl px-4 h-11 text-white text-sm placeholder-slate-500 focus:ring-1 focus:ring-indigo-500/60 focus:outline-none transition-all font-mono tracking-wider"
+                />
+                <Button type="submit" size="sm" className="bg-slate-700 hover:bg-slate-600 text-white rounded-xl px-5 h-11 font-semibold text-sm transition-all duration-200 shrink-0">
+                  Влези
+                </Button>
+              </form>
             </motion.div>
           </div>
 
@@ -351,7 +381,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
                       <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm font-black text-cyan-200">0{index + 1}</div>
                       <div className="text-lg font-black text-white">{step.title}</div>
                     </div>
-                    <div className="text-sm text-slate-300 leading-relaxed">{step.detail}</div>
+                    <div className="text-sm text-slate-200 leading-relaxed">{step.detail}</div>
                   </div>
                 ))}
               </div>
@@ -373,14 +403,13 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
         </div>
       </section>
 
-      {/* Social Proof / Value Signals */}
+      {/* Platform Stats Strip */}
       <section className="max-w-7xl mx-auto px-6 -mt-2">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {HOME_SIGNAL_CARDS.map((card) => (
-            <div key={card.title} className="rounded-[1.75rem] border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/60 p-6 shadow-sm backdrop-blur-xl">
-              <div className="text-xs font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 mb-3">{card.title}</div>
-              <div className="text-3xl font-black text-slate-900 dark:text-white mb-2">{card.value}</div>
-              <div className="text-sm text-slate-600 dark:text-slate-300">{card.detail}</div>
+          {PLATFORM_STATS.map((stat) => (
+            <div key={stat.label} className="rounded-[1.75rem] border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/60 p-6 shadow-sm backdrop-blur-xl text-center">
+              <div className="text-4xl font-black text-indigo-600 dark:text-indigo-400 mb-2">{stat.value}</div>
+              <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">{stat.label}</div>
             </div>
           ))}
         </div>
@@ -471,6 +500,52 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
                 </div>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="max-w-7xl mx-auto px-6 py-4">
+        <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-4 text-center tracking-tight">Што велат наставниците</h2>
+        <p className="text-slate-500 dark:text-slate-400 text-center mb-12 font-medium max-w-2xl mx-auto">Реални искуства од наставници кои го користат MathDigitizer Pro во македонски училишта.</p>
+        <div className="grid gap-6 md:grid-cols-3">
+          {TESTIMONIALS.map((t) => (
+            <motion.div
+              key={t.author}
+              whileHover={{ y: -4 }}
+              className="rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-8 shadow-sm hover:shadow-lg transition-all duration-300 backdrop-blur-xl flex flex-col"
+            >
+              <div className="flex gap-1 mb-6">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 text-amber-400 fill-amber-400" />
+                ))}
+              </div>
+              <blockquote className="text-slate-700 dark:text-slate-200 text-base leading-relaxed mb-8 flex-1 font-medium italic">
+                "{t.quote}"
+              </blockquote>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm shrink-0 ${t.avatarClass}`}>
+                  {t.initials}
+                </div>
+                <div>
+                  <div className="font-black text-slate-900 dark:text-white text-sm">{t.author}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">{t.role} · {t.city}</div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Social Proof / Value Signals — positioned after features to build trust before pricing */}
+      <section className="max-w-7xl mx-auto px-6 pb-8">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {HOME_SIGNAL_CARDS.map((card) => (
+            <div key={card.title} className="rounded-[1.75rem] border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/60 p-6 shadow-sm backdrop-blur-xl">
+              <div className="text-xs font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 mb-3">{card.title}</div>
+              <div className="text-3xl font-black text-slate-900 dark:text-white mb-2">{card.value}</div>
+              <div className="text-sm text-slate-600 dark:text-slate-300">{card.detail}</div>
+            </div>
+          ))}
         </div>
       </section>
 

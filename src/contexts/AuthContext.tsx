@@ -4,6 +4,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { UserProfile } from '../lib/schema';
 import { captureError } from '../lib/observability';
+import { identifyUser, clearUserIdentity } from '../lib/analytics';
+import { hasProAccess } from '../lib/saas';
 import { useToast } from './ToastContext';
 
 interface AuthContextType {
@@ -43,7 +45,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
           if (userDoc.exists()) {
-            setUserProfile(userDoc.data() as UserProfile);
+            const profile = userDoc.data() as UserProfile;
+            setUserProfile(profile);
+            identifyUser(currentUser.uid, profile.role, hasProAccess(profile));
           } else {
             setUserProfile(null);
           }
@@ -52,6 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } else {
         setUserProfile(null);
+        clearUserIdentity();
       }
       setIsLoading(false);
     });
