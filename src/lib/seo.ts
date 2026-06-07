@@ -211,7 +211,7 @@ const routeEntries: Array<{ match: RegExp; seo: RouteSeoConfig }> = [
     seo: {
       title: 'Pricing',
       description: 'Изберете помеѓу месечен и годишен Pro Teacher план, со school licensing и локални payment опции.',
-      keywords: 'pricing, saas, pro teacher, annual plan, school licensing, paypal, bank transfer',
+      keywords: 'pricing, saas, pro teacher, annual plan, school licensing, банка, bank transfer, македонија',
       canonical: '/pricing',
       structuredData: buildPricingStructuredData(),
     },

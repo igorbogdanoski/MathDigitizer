@@ -239,7 +239,7 @@ export const Pricing: React.FC = () => {
       <SEO
         title="Ценовник и Планови"
         description="Изберете помеѓу месечен и годишен MathDigitizer Pro план, со school licensing опција и локални payment методи за Македонија."
-        keywords="ценовник, про наставник, годишен план, school licensing, paypal, банка, едукација, математика"
+        keywords="ценовник, про наставник, годишен план, school licensing, директна банка, едукација, математика, македонија"
         canonical="/pricing"
         structuredData={[
           {
