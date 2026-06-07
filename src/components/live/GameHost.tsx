@@ -8,6 +8,7 @@ import { Button } from '../ui/Button';
 import { motion, AnimatePresence } from 'motion/react';
 import { Users, Play, SkipForward, BarChart, Trophy, LogOut, CheckCircle2, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import { playSound } from '../../lib/sound';
 
 export const GameHost = ({ sessionPin }: { sessionPin: string }) => {
@@ -122,10 +123,24 @@ export const GameHost = ({ sessionPin }: { sessionPin: string }) => {
              {session.quiz_data.title}
            </h1>
 
-           <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-10 mt-8">
-             <p className="text-slate-400 font-bold uppercase tracking-widest mb-4">Game PIN (Се приклучуваат на {window.location.host}/play)</p>
-             <div className="text-8xl font-black tracking-widest text-indigo-400 [text-shadow:_0_0_30px_rgb(99_102_241_/_40%)]">
-               {session.id}
+           <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-10 mt-8 flex flex-col md:flex-row items-center gap-10">
+             <div className="flex-1 text-center">
+               <p className="text-slate-400 font-bold uppercase tracking-widest mb-4">Game PIN (Се приклучуваат на {window.location.host}/play)</p>
+               <div className="text-7xl md:text-8xl font-black tracking-widest text-indigo-400 [text-shadow:_0_0_30px_rgb(99_102_241_/_40%)]">
+                 {session.id}
+               </div>
+             </div>
+             <div className="flex flex-col items-center gap-3 shrink-0">
+               <div className="p-3 bg-white rounded-2xl shadow-lg">
+                 <QRCodeSVG
+                   value={`${window.location.origin}/play?pin=${session.id}`}
+                   size={140}
+                   bgColor="#ffffff"
+                   fgColor="#1e1b4b"
+                   level="M"
+                 />
+               </div>
+               <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Скенирај за да се приклучиш</p>
              </div>
            </div>
 

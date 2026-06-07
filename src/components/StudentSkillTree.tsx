@@ -151,7 +151,7 @@ export const StudentSkillTree: React.FC<{ currentXP: number }> = ({ currentXP })
                             </span>
                          </div>
                       </div>
-                      <button onClick={() => setSelectedNode(null)} className="text-slate-500 hover:text-white transition-colors bg-white/5 p-2 rounded-full">
+                      <button onClick={() => setSelectedNode(null)} aria-label="Затвори" className="text-slate-500 hover:text-white transition-colors bg-white/5 p-2 rounded-full">
                          <X className="w-5 h-5" />
                       </button>
                    </div>

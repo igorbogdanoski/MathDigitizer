@@ -77,7 +77,7 @@ export const TestGenerator: React.FC<TestGeneratorProps> = ({ selectedTasks: ini
               <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Селектирани задачи: <span className="text-purple-600 font-bold">{selectedTasks.length}</span></p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-700 rounded-full shadow-sm hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 transition-colors">
+          <button onClick={onClose} aria-label="Затвори генератор" className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-700 rounded-full shadow-sm hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>

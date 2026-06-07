@@ -54,11 +54,12 @@ export function GeoGebraViewer({ commands, onClose, inline = false }: GeoGebraVi
           <span className="font-bold text-sm">GeoGebra е активна</span>
           <span className="text-xs text-slate-400">Кликни за да се вратиш</span>
         </div>
-        <button 
-          onClick={(e) => { 
-            e.stopPropagation(); 
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
             if (onClose) onClose();
-          }} 
+          }}
+          aria-label="Затвори GeoGebra"
           className="ml-2 p-2 hover:bg-white/10 rounded-full transition-colors"
         >
           <X className="w-4 h-4 text-slate-400 hover:text-white" />
@@ -139,10 +140,10 @@ export function GeoGebraViewer({ commands, onClose, inline = false }: GeoGebraVi
   const renderToolbar = () => (
     <div className="flex flex-wrap items-center gap-3 p-2 bg-slate-100 border-b border-slate-200 shrink-0">
       <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200">
-          <button onClick={() => setTool('move')} className={`p-1.5 rounded-md transition-colors ${tool === 'move' ? 'bg-slate-100 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Селектирај">
+          <button onClick={() => setTool('move')} aria-label="Селектирај" className={`p-1.5 rounded-md transition-colors ${tool === 'move' ? 'bg-slate-100 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Селектирај">
             <MousePointer2 className="w-4 h-4" />
           </button>
-          <button onClick={() => setTool('pen')} className={`p-1.5 rounded-md transition-colors ${tool === 'pen' ? 'bg-slate-100 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Цртање со рака">
+          <button onClick={() => setTool('pen')} aria-label="Цртање со рака" className={`p-1.5 rounded-md transition-colors ${tool === 'pen' ? 'bg-slate-100 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Цртање со рака">
             <PenTool className="w-4 h-4" />
           </button>
       </div>
@@ -207,12 +208,12 @@ export function GeoGebraViewer({ commands, onClose, inline = false }: GeoGebraVi
           <span className="font-bold font-display tracking-tight text-slate-100">MathDigitizer Pro <span className="text-slate-500 mx-2">|</span> GeoGebra Интерактивно Платно</span>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setIsMinimized(true)} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-800 rounded-lg transition-colors text-slate-300 hover:text-white" title="Минимизирај">
+          <button onClick={() => setIsMinimized(true)} aria-label="Минимизирај" className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-800 rounded-lg transition-colors text-slate-300 hover:text-white" title="Минимизирај">
             <Minimize2 className="w-4 h-4" />
             <span className="text-xs font-bold uppercase tracking-wider">Минимизирај</span>
           </button>
           <div className="w-px h-4 bg-slate-700 mx-1"></div>
-          <button onClick={onClose} className="p-2 hover:bg-rose-500/20 rounded-lg transition-colors text-slate-300 hover:text-rose-400" title="Затвори целосно">
+          <button onClick={onClose} aria-label="Затвори целосно" className="p-2 hover:bg-rose-500/20 rounded-lg transition-colors text-slate-300 hover:text-rose-400" title="Затвори целосно">
             <X className="w-5 h-5" />
           </button>
         </div>

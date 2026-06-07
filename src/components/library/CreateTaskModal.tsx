@@ -243,7 +243,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
                   {tags.map(tag => (
                     <span key={tag} className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded text-sm">
                       {tag}
-                      <button type="button" onClick={() => handleRemoveTag(tag)} className="text-blue-400 hover:text-blue-600"><X className="w-3 h-3" /></button>
+                      <button type="button" onClick={() => handleRemoveTag(tag)} aria-label={`Отстрани маркер ${tag}`} className="text-blue-400 hover:text-blue-600"><X className="w-3 h-3" /></button>
                     </span>
                   ))}
                 </div>
@@ -303,7 +303,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
                   {hints.map((hint, idx) => (
                     <div key={idx} className="flex justify-between items-center bg-amber-50 text-amber-800 p-2 rounded text-sm">
                       <span>{idx + 1}. {hint}</span>
-                      <button type="button" onClick={() => handleRemoveHint(idx)} className="text-amber-500 hover:text-amber-700"><X className="w-4 h-4" /></button>
+                      <button type="button" onClick={() => handleRemoveHint(idx)} aria-label={`Отстрани совет ${idx + 1}`} className="text-amber-500 hover:text-amber-700"><X className="w-4 h-4" /></button>
                     </div>
                   ))}
                 </div>

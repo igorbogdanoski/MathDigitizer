@@ -34,6 +34,7 @@ export const KnowledgeModelModal: React.FC<Props> = ({ task, onClose }) => {
           <div className="absolute top-4 right-4 z-10 flex gap-2">
             <button
               onClick={onClose}
+              aria-label="Затвори"
               className="p-2 bg-white/10 hover:bg-white/20 backdrop-blur text-white rounded-full transition-colors"
             >
               <X className="w-5 h-5" />
