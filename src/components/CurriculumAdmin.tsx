@@ -160,7 +160,7 @@ export const CurriculumAdmin: React.FC = () => {
                 <Database className="w-4 h-4 text-indigo-500" />
                 Состојба на Firestore
               </div>
-              <button onClick={refreshCount} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-colors">
+              <button onClick={refreshCount} aria-label="Освежи статистики" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-colors">
                 <RefreshCw className="w-4 h-4" />
               </button>
             </div>

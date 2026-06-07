@@ -255,7 +255,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
               <p className="text-xs text-slate-500 dark:text-slate-400">Решавај чекор-по-чекор со AI верификација</p>
             </div>
           </div>
-          <button onClick={handleManualClose} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+          <button onClick={handleManualClose} aria-label="Затвори решавач" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
             <X className="w-6 h-6" />
           </button>
         </div>

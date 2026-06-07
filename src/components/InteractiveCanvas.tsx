@@ -230,23 +230,23 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
         
         {/* Tools */}
         <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
-          <button onClick={() => setTool('select')} className={`p-1.5 rounded-md transition-colors ${tool === 'select' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Селектирај">
+          <button onClick={() => setTool('select')} aria-label="Селектирај" className={`p-1.5 rounded-md transition-colors ${tool === 'select' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Селектирај">
             <MousePointer2 className="w-4 h-4" />
           </button>
-          <button onClick={() => setTool('pen')} className={`p-1.5 rounded-md transition-colors ${tool === 'pen' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Пенкало">
+          <button onClick={() => setTool('pen')} aria-label="Пенкало" className={`p-1.5 rounded-md transition-colors ${tool === 'pen' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Пенкало">
             <PenTool className="w-4 h-4" />
           </button>
-          <button onClick={() => setTool('eraser')} className={`p-1.5 rounded-md transition-colors ${tool === 'eraser' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Бришач">
+          <button onClick={() => setTool('eraser')} aria-label="Бришач" className={`p-1.5 rounded-md transition-colors ${tool === 'eraser' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Бришач">
             <Eraser className="w-4 h-4" />
           </button>
           <div className="w-px h-4 bg-slate-300 dark:bg-slate-600 mx-1"></div>
-          <button onClick={() => setTool('rect')} className={`p-1.5 rounded-md transition-colors ${tool === 'rect' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Правоаголник">
+          <button onClick={() => setTool('rect')} aria-label="Правоаголник" className={`p-1.5 rounded-md transition-colors ${tool === 'rect' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Правоаголник">
             <Square className="w-4 h-4" />
           </button>
-          <button onClick={() => setTool('circle')} className={`p-1.5 rounded-md transition-colors ${tool === 'circle' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Круг">
+          <button onClick={() => setTool('circle')} aria-label="Круг" className={`p-1.5 rounded-md transition-colors ${tool === 'circle' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Круг">
             <CircleIcon className="w-4 h-4" />
           </button>
-          <button onClick={() => setTool('arrow')} className={`p-1.5 rounded-md transition-colors ${tool === 'arrow' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Стрелка">
+          <button onClick={() => setTool('arrow')} aria-label="Стрелка" className={`p-1.5 rounded-md transition-colors ${tool === 'arrow' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Стрелка">
             <MoveRight className="w-4 h-4" />
           </button>
         </div>
@@ -258,6 +258,7 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
               <button
                 key={c}
                 onClick={() => setColor(c)}
+                aria-label={`Боја: ${c}`}
                 className={`w-6 h-6 rounded-full border-2 transition-transform ${color === c ? 'scale-110 border-slate-400' : 'border-transparent hover:scale-110'}`}
                 style={{ backgroundColor: c }}
                 title="Боја"

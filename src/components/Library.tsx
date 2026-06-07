@@ -298,10 +298,26 @@ export const Library: React.FC = () => {
           className={`flex-1 w-full max-h-[calc(100vh-12rem)] overflow-y-auto pr-2 ${store.selectedTaskId ? 'lg:w-1/3 lg:flex-none' : ''}`}
         >
           {sortedAndFilteredTasks.length === 0 ? (
-            <div className="text-center py-12 text-slate-500 bg-white rounded-xl border border-slate-200 border-dashed">
-              <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-20" />
-              <p>Не се пронајдени задачи кои одговараат на пребарувањето.</p>
-            </div>
+            store.tasks.length === 0 ? (
+              <div className="text-center py-16 px-6 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+                <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center mx-auto mb-5">
+                  <BookOpen className="w-8 h-8 text-indigo-400" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Библиотеката е празна</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-xs mx-auto">Извлечи задачи од YouTube видео, PDF или слика за да ја пополниш библиотеката.</p>
+                <a
+                  href="/extract"
+                  className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors"
+                >
+                  Оди на Екстракција →
+                </a>
+              </div>
+            ) : (
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 border-dashed">
+                <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                <p className="text-sm">Нема задачи кои одговараат на пребарувањето.</p>
+              </div>
+            )
           ) : (
             <div className="space-y-4">
               {sortedAndFilteredTasks.map((task, index) => {

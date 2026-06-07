@@ -30,8 +30,8 @@ const HOME_VALUE_POINTS = [
 const HOME_SIGNAL_CARDS = [
   { title: 'Teacher-first SaaS', value: '490 MKD', detail: 'месечно за Pro Teacher' },
   { title: 'Годишна вредност', value: '4,900 MKD', detail: 'најдобра опција за цела година' },
-  { title: 'School rollout', value: 'По договор', detail: 'invoice, банка и onboarding' },
-  { title: 'Локални плаќања', value: 'PayPal + Банка', detail: 'без чекање на Stripe setup' },
+  { title: 'School rollout', value: 'По договор', detail: 'фактура, банка и onboarding' },
+  { title: 'Локални плаќања', value: 'Директна банка', detail: 'уплата + потврда за рачна активација' },
 ];
 
 const HOME_WORKFLOW_STEPS = [
@@ -403,8 +403,8 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
                 </div>
                 <div className="rounded-2xl bg-white/6 border border-white/10 p-4">
                   <div className="text-xs uppercase tracking-[0.22em] font-black text-cyan-200 mb-2">Payments</div>
-                  <div className="text-lg font-black text-white">PayPal + Банка</div>
-                  <div className="text-sm text-slate-300 mt-1">локално practical checkout додека bank stack се комплетира</div>
+                  <div className="text-lg font-black text-white">Директна банка</div>
+                  <div className="text-sm text-slate-300 mt-1">уплата + потврда → рачна активација</div>
                 </div>
               </div>
             </div>
@@ -422,6 +422,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
             </div>
           ))}
         </div>
+        <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-3">* Проценки базирани на beta период со реални наставници</p>
       </section>
 
       {/* Advanced Bento Grid Features */}
@@ -709,6 +710,33 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Sticky bottom CTA — only for non-logged-in visitors, dismissible */}
+      {!user && (
+        <motion.div
+          initial={{ y: 80, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 2.5, duration: 0.5, ease: 'easeOut' }}
+          className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between gap-4 px-5 py-3.5 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800 shadow-[0_-4px_30px_rgba(79,70,229,0.25)] sm:px-8"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <p className="text-sm text-slate-200 font-medium truncate">
+              <span className="text-white font-bold">Бесплатна регистрација</span> — пробај ги сите core функции веднаш.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            onClick={signInWithGoogle}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl px-5 shrink-0 h-9"
+          >
+            Започни
+            <ArrowRight className="w-4 h-4 ml-1.5" />
+          </Button>
+        </motion.div>
+      )}
     </div>
   );
 };
