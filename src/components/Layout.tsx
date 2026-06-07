@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, Bug, Inbox, Settings as SettingsIcon, Check, Sparkles, TrendingUp, AlertTriangle } from 'lucide-react';
+import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, GraduationCap, Inbox, Settings as SettingsIcon, Check, Sparkles, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccessibility } from '../contexts/AccessibilityContext';
@@ -72,7 +72,7 @@ export const Layout: React.FC = () => {
     { path: '/adaptive-test', icon: Zap, label: 'Адаптивен Тест', show: userProfile?.role === 'student' },
     { path: '/factory', icon: Factory, label: 'Фабрика', show: !userProfile || userProfile.role === 'teacher' },
     { path: '/mass-factory', icon: Layers, label: 'PDF Фабрика', show: !userProfile || userProfile.role === 'teacher' },
-    { path: '/ai-pedagogy', icon: Bug, label: 'AI Педагогија', show: userProfile?.role === 'teacher' },
+    { path: '/ai-pedagogy', icon: GraduationCap, label: 'AI Педагогија', show: userProfile?.role === 'teacher' },
     { path: '/school-inquiries', icon: Inbox, label: 'School Leads', show: userProfile?.role === 'teacher' },
     { path: '/curriculum-admin', icon: BookOpen, label: 'Curriculum БРО', show: userProfile?.role === 'teacher' },
     { path: '/live-board', icon: Monitor, label: 'В. Табла', show: true },

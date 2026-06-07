@@ -63,7 +63,7 @@ export const Pricing: React.FC = () => {
     availability: 'https://schema.org/InStock',
     category: plan.period === 'annual' ? 'AnnualSubscription' : 'MonthlySubscription',
     eligibleDuration: plan.period === 'annual' ? 'P1Y' : 'P1M',
-    url: 'https://mathdigitizer.pro/pricing',
+    url: 'https://math.mismath.net/pricing',
     name: plan.label,
   }));
 
@@ -269,7 +269,7 @@ export const Pricing: React.FC = () => {
               priceCurrency: 'MKD',
               availability: 'https://schema.org/InStock',
               description: manualPaymentDetails.schoolPlanLabel,
-              url: 'https://mathdigitizer.pro/pricing',
+              url: 'https://math.mismath.net/pricing',
             },
           }
         ]}

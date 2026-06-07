@@ -332,7 +332,6 @@ export const StudentTelemetryView: React.FC = () => {
                      );
                      
                      // Optionally redirect to intervention or show in UI
-                     console.log("Интервенција:", tasks);
                      setInterventionTasks(tasks);
                    } catch (e) {
                      console.error(e);

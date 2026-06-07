@@ -1287,15 +1287,12 @@ export async function extractMathTasksFromUrl(url: string, model: string = "gemi
        // Faster and cheaper than the /api/youtube/transcript backend endpoint (unavailable
        // on static hosting) and more reliable than Gemini Search for long or unlisted videos.
        try {
-         console.log("Transcript-first: Gemini Flash директно чита YouTube транскриптот...");
          videoContext = await fetchYoutubeTranscriptViaGemini(url, timeRange);
-         console.log(`Транскрипт добиен: ${videoContext.length} карактери`);
        } catch (e) {
          console.warn("Gemini транскрипт не успеа, паѓаме на Gemini Search:", e);
        }
      } else if (!isVimeo) {
        try {
-         console.log("Обид за извлекување преку Web Scraper API...");
          const apiEndpoint = `/api/scrape?url=${encodeURIComponent(url)}`;
          const res = await fetch(apiEndpoint);
          if (res.ok) {
