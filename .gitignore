@@ -16,3 +16,7 @@ service-account-*.json
 *-service-account.json
 scripts/secrets/
 scripts/backups/
+
+# Deploy archives
+*.zip
+*.tar.gz

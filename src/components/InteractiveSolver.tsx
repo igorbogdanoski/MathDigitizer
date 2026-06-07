@@ -212,7 +212,6 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
       };
       
       await addDoc(collection(db, 'task_attempts'), attemptData);
-      console.log("Telemetry stored securely.");
     } catch (err) {
       console.error("Failed to save attempt telemetry:", err);
     }

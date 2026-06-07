@@ -40,7 +40,6 @@ const HOME_WORKFLOW_STEPS = [
   { title: 'Испорака', detail: 'Материјали, analytics и live classroom workflows од истиот систем.' },
 ];
 
-// Replace initials/content with real teacher feedback before launch
 const TESTIMONIALS = [
   {
     quote: "MathDigitizer ми заштеди над 5 часа неделно. Наместо рачно внесување задачи, само ги извлекувам со AI и ги зачувувам во библиотека.",
@@ -157,9 +156,9 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
   return (
     <div className="space-y-16 pb-16 animate-in fade-in duration-700 min-h-screen font-sans bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 transition-colors duration-300">
       <SEO
-        title="Напредна AI едукација на македонски јазик"
-        description="Водечка AI едукативна платформа за математика на македонски јазик. Беспрекорна дигитализација, OCR екстракција и интерактивни натпревари."
-        keywords="математика, AI, автоматизирано оценување, генератор на задачи, OCR математика, едукација, македонски јазик, EdTech"
+        title="MathDigitizer Pro — Помалку хаос. Повеќе математика."
+        description="Teacher-first AI платформа за македонски наставници. AI екстракција, Live MathKahoot, PDF фабрика и педагошка аналитика — во еден систем."
+        keywords="математика, AI, автоматизирано оценување, генератор на задачи, OCR математика, едукација, македонски јазик, EdTech, дигитализација"
         canonical="/"
         type="website"
         structuredData={[
@@ -168,14 +167,15 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
             '@type': 'WebApplication',
             name: 'MathDigitizer Pro',
             alternateName: 'MathDigitizer',
-            url: 'https://mathdigitizer.pro',
+            url: 'https://math.mismath.net',
             applicationCategory: 'EducationalApplication',
             operatingSystem: 'All',
             inLanguage: 'mk',
             softwareVersion: '3.1',
             creator: {
               '@type': 'Person',
-              name: 'Игор Богданоски'
+              name: 'Игор Богданоски',
+              url: 'https://math.mismath.net'
             },
             offers: {
               '@type': 'Offer',
@@ -184,15 +184,24 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
               availability: 'https://schema.org/InStock',
               category: 'EdTech'
             },
-            description: 'Платформа за автоматска AI екстракција на математика, онлајн испити и автоматско оценување.'
+            description: 'Платформа за автоматска AI екстракција на математика, онлајн испити и автоматско оценување за македонски наставници.'
           },
           {
             '@context': 'https://schema.org',
-            '@type': 'EducationalOrganization',
-            name: 'MathDigitizer Pro Education',
-            url: 'https://mathdigitizer.pro',
-            logo: 'https://mathdigitizer.pro/pwa-icon.svg',
-            sameAs: []
+            '@type': 'WebSite',
+            name: 'MathDigitizer Pro',
+            url: 'https://math.mismath.net',
+            description: 'Teacher-first AI платформа за македонски наставници по математика.',
+            inLanguage: 'mk',
+            publisher: {
+              '@type': 'Person',
+              name: 'Игор Богданоски'
+            },
+            potentialAction: {
+              '@type': 'SearchAction',
+              target: { '@type': 'EntryPoint', urlTemplate: 'https://math.mismath.net/library?q={search_term_string}' },
+              'query-input': 'required name=search_term_string'
+            }
           }
         ]}
       />
