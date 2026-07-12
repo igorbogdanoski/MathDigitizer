@@ -1,20 +1,7 @@
 import { useMemo } from 'react';
 import { useLibraryStore } from '../store/useLibraryStore';
+import { cosineSimilarity } from '../lib/ragContext';
 import Fuse from 'fuse.js';
-
-// Cosine similarity function
-function cosineSimilarity(A: number[], B: number[]) {
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < A.length; i++) {
-    dotProduct += A[i] * B[i];
-    normA += A[i] * A[i];
-    normB += B[i] * B[i];
-  }
-  if (normA === 0 || normB === 0) return 0;
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-}
 
 export function useTaskFilters() {
   const store = useLibraryStore();
