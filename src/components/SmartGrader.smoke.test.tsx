@@ -11,9 +11,11 @@ const TASKS: MathTask[] = [
     title: 'Квадратна равенка',
     original_text: 'Реши ја равенката x^2 - 5x + 6 = 0',
     solution_steps: [],
+    latex_formulas: [],
+    source_url: '',
     difficulty: 'medium',
     tags: [],
-  } as MathTask,
+  },
 ];
 
 vi.mock('../store/useLibraryStore', () => ({
