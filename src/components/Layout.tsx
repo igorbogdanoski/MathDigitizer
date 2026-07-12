@@ -150,7 +150,14 @@ export const Layout: React.FC = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 font-sans transition-colors duration-300 relative selection:bg-indigo-300/30">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 font-sans transition-colors duration-300 relative selection:bg-indigo-300/30">
+      {/* Ambient dark-mode glow — shared across every route so individual
+          pages don't need to each reimplement the Home-hero aesthetic. */}
+      <div className="hidden dark:block fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/4 w-[36rem] h-[36rem] bg-blue-600/10 rounded-full blur-[140px]" />
+        <div className="absolute top-1/3 -right-40 w-[30rem] h-[30rem] bg-indigo-600/10 rounded-full blur-[140px]" />
+        <div className="absolute -bottom-40 left-1/3 w-[28rem] h-[28rem] bg-cyan-500/5 rounded-full blur-[140px]" />
+      </div>
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white focus:rounded-lg focus:text-sm focus:font-semibold"

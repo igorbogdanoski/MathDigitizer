@@ -249,7 +249,7 @@ export const Library: React.FC = () => {
     return (
       <div className="flex flex-col h-[calc(100vh-120px)] space-y-4 animate-in fade-in duration-500">
         {/* Toolbar Skeleton */}
-        <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200">
+        <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-white/10">
           <div className="flex gap-4 w-full max-w-2xl">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-32 shrink-0" />
@@ -260,9 +260,9 @@ export const Library: React.FC = () => {
             <Skeleton className="h-10 w-10 rounded-lg" />
           </div>
         </div>
-        
+
         {/* List Skeleton */}
-        <div className="flex-1 bg-white rounded-xl border border-slate-200 p-4 space-y-4">
+        <div className="flex-1 bg-white dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-white/10 p-4 space-y-4">
           {[...Array(5)].map((_, i) => (
             <Skeleton key={i} className="w-full h-32 rounded-xl" />
           ))}
@@ -382,18 +382,18 @@ export const Library: React.FC = () => {
               if (!task) return null;
               const index = sortedAndFilteredTasks.indexOf(task);
               return (
-                <Card className="overflow-hidden border-slate-200 shadow-lg">
-                  <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                    <span className="font-semibold text-slate-800 text-lg">
+                <Card className="overflow-hidden border-slate-200 dark:border-white/10 dark:bg-slate-900/60 dark:backdrop-blur-xl shadow-lg">
+                  <div className="bg-slate-50 dark:bg-white/5 px-6 py-4 border-b border-slate-200 dark:border-white/10 flex justify-between items-center">
+                    <span className="font-semibold text-slate-800 dark:text-slate-100 text-lg">
                       {task.type === 'theory' ? `Теорија: ${task.title}` : task.title}
                     </span>
                     <button
                       type="button"
                       onClick={() => store.setSelectedTaskId(null)}
-                      className="p-1 hover:bg-slate-200 rounded-full transition-colors"
+                      className="p-1 hover:bg-slate-200 dark:hover:bg-white/10 rounded-full transition-colors"
                       title="Затвори"
                     >
-                      <X className="w-5 h-5 text-slate-500" />
+                      <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                     </button>
                   </div>
                   <CardContent className="p-6 max-h-[calc(100vh-12rem)] overflow-y-auto">
