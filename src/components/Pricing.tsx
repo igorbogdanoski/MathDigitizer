@@ -289,7 +289,7 @@ export const Pricing: React.FC = () => {
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-8 shadow-sm">
+          <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl p-8 shadow-sm">
             <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6">Што добивате со Pro Teacher</h2>
             <div className="space-y-4">
               {[
@@ -306,17 +306,17 @@ export const Pricing: React.FC = () => {
             </div>
 
             <div className="grid gap-4 md:grid-cols-3 mt-8">
-              <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-5">
+              <div className="rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-5">
                 <div className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">Резултат</div>
                 <div className="text-lg font-black text-slate-900 dark:text-white">Помалку рачна подготовка</div>
                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Фокус на време-заштеда, не на бескрајна листа од функции.</p>
               </div>
-              <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-5">
+              <div className="rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-5">
                 <div className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">Вредност</div>
                 <div className="text-lg font-black text-slate-900 dark:text-white">Еден наставник = една лиценца</div>
                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Најлесен модел за стартен производ и најјасен за купување.</p>
               </div>
-              <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-5">
+              <div className="rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-5">
                 <div className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">Доверба</div>
                 <div className="text-lg font-black text-slate-900 dark:text-white">Локални начини на плаќање</div>
                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">PayPal, директна банка и подоцна Stripe кога ќе биде целосно активен.</p>
@@ -325,18 +325,18 @@ export const Pricing: React.FC = () => {
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
+            <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl p-6 shadow-sm">
               <div className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">Бесплатно</div>
               <div className="text-2xl font-black text-slate-900 dark:text-white mb-2">0 МКД</div>
               <p className="text-sm text-slate-600 dark:text-slate-300">Основно користење, добро за проба и прв чекор во апликацијата.</p>
             </div>
-            <div className="rounded-3xl border-2 border-indigo-500 bg-white dark:bg-slate-800 p-6 shadow-lg relative">
+            <div className="rounded-3xl border-2 border-indigo-500 dark:border-indigo-400 bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl p-6 shadow-lg dark:shadow-indigo-500/10 relative">
               <div className="absolute -top-3 left-6 rounded-full bg-indigo-600 text-white px-3 py-1 text-xs font-bold uppercase tracking-widest">Препорачано</div>
               <div className="text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-300 mb-3">Pro Наставник</div>
               <div className="text-2xl font-black text-slate-900 dark:text-white mb-2">490 МКД / месечно</div>
               <p className="text-sm text-slate-600 dark:text-slate-300">Најдобар стартен план за индивидуални наставници.</p>
             </div>
-            <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
+            <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl p-6 shadow-sm">
               <div className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">Школски план</div>
               <div className="text-2xl font-black text-slate-900 dark:text-white mb-2">По договор</div>
               <p className="text-sm text-slate-600 dark:text-slate-300">За училишта, фактурирање, банкарски трансфер и onboarding по институција.</p>
@@ -345,17 +345,17 @@ export const Pricing: React.FC = () => {
         </div>
 
         <div className="rounded-3xl border border-indigo-200 dark:border-indigo-700/40 bg-indigo-50 dark:bg-indigo-900/20 p-8 shadow-lg">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-700/40 text-indigo-700 dark:text-indigo-200 text-xs font-bold uppercase tracking-widest mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-widest mb-4">
             <Sparkles className="w-4 h-4" /> {selectedPlan.featured ? 'Најдобра вредност' : 'Pro'}
           </div>
 
-          <div className="grid grid-cols-2 gap-2 rounded-2xl bg-white/70 dark:bg-slate-900/40 p-2 border border-indigo-100 dark:border-indigo-800/60 mb-6">
+          <div className="grid grid-cols-2 gap-2 rounded-2xl bg-white/70 dark:bg-white/5 p-2 border border-indigo-100 dark:border-indigo-800/60 mb-6">
             {pricingPlans.map((plan) => (
               <button
                 key={plan.period}
                 type="button"
                 onClick={() => setBillingPeriod(plan.period)}
-                className={`rounded-xl px-4 py-3 text-sm font-bold transition-colors ${billingPeriod === plan.period ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                className={`rounded-xl px-4 py-3 text-sm font-bold transition-colors ${billingPeriod === plan.period ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5'}`}
                 title={plan.description}
               >
                 {plan.period === 'monthly' ? 'Месечно' : 'Годишно'}
@@ -369,7 +369,7 @@ export const Pricing: React.FC = () => {
           <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">{selectedPlan.description}</p>
 
           {selectedPlan.savingsLabel && selectedPlan.savingsAmountMkd ? (
-            <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 dark:border-emerald-800/60 dark:bg-emerald-900/30 dark:text-emerald-200">
+            <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300">
               {selectedPlan.savingsLabel} · заштедуваш {formatPrice(selectedPlan.savingsAmountMkd)} годишно.
             </div>
           ) : null}
@@ -380,7 +380,7 @@ export const Pricing: React.FC = () => {
             </Button>
           ) : null}
 
-          <div className="w-full mb-4 flex items-start gap-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-900/40 px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
+          <div className="w-full mb-4 flex items-start gap-2.5 rounded-xl bg-slate-100/80 dark:bg-white/5 px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
             <ShieldCheck className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
             <span>
               Плаќање преку PayPal или директен банкарски трансфер (инструкции подолу). По прикачување потврда за уплата, Pro пристапот се активира рачно — обично во рок од неколку часа.
@@ -394,7 +394,7 @@ export const Pricing: React.FC = () => {
                 onClick={() => handleStartCheckout(option.channel)}
                 disabled={isRedirecting}
                 variant="outline"
-                className="w-full h-11 font-semibold"
+                className="w-full h-11 font-semibold dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/5"
                 title={option.description}
               >
                 {option.label}
@@ -407,7 +407,7 @@ export const Pricing: React.FC = () => {
             <div className="flex items-center gap-2"><BrainCircuit className="w-4 h-4" /> Целта е јасна вредност за наставникот, а не сложен ценовник</div>
           </div>
 
-          <div className="mt-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 p-4 space-y-3 text-sm text-slate-700 dark:text-slate-200">
+          <div className="mt-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 p-4 space-y-3 text-sm text-slate-700 dark:text-slate-200">
             <div className="font-bold text-slate-900 dark:text-white">Рачни податоци за Pro Teacher уплата</div>
 
             {user && (
@@ -441,7 +441,7 @@ export const Pricing: React.FC = () => {
               { label: 'IBAN', value: manualPaymentDetails.bankIban },
               { label: 'SWIFT/BIC', value: manualPaymentDetails.bankSwift },
             ].map((item) => (
-              <div key={item.label} className="flex items-center justify-between gap-3 rounded-lg bg-white/80 dark:bg-slate-950/30 px-3 py-2 border border-slate-200/70 dark:border-slate-700/70">
+              <div key={item.label} className="flex items-center justify-between gap-3 rounded-lg bg-white/80 dark:bg-white/5 px-3 py-2 border border-slate-200/70 dark:border-white/10">
                 <div>
                   <span className="font-semibold">{item.label}:</span>{' '}
                   <span>{item.value ?? 'Ќе биде додадено наскоро'}</span>
@@ -449,7 +449,7 @@ export const Pricing: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleCopy(item.label, item.value)}
-                  className="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-white/10 px-2.5 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                   title={`Копирај ${item.label}`}
                 >
                   {copiedField === item.label ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -460,7 +460,7 @@ export const Pricing: React.FC = () => {
             <div><span className="font-semibold">Износ:</span> {formatPrice(selectedPlan.priceMkd)} {selectedPlan.billingLabel}</div>
           </div>
 
-          <form onSubmit={handleReceiptSubmit} className="mt-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/40 p-4 space-y-3 text-sm">
+          <form onSubmit={handleReceiptSubmit} className="mt-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5 p-4 space-y-3 text-sm">
             <div className="font-bold text-slate-900 dark:text-white">Испрати доказ за уплата</div>
             <label className="block space-y-1 text-slate-700 dark:text-slate-200">
               <span className="font-semibold">Име на уплатувач</span>
@@ -468,7 +468,7 @@ export const Pricing: React.FC = () => {
                 type="text"
                 value={receiptForm.payerName}
                 onChange={(event) => handleReceiptFormChange('payerName', event.target.value)}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2.5 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="Име и презиме"
               />
             </label>
@@ -478,7 +478,7 @@ export const Pricing: React.FC = () => {
                 type="email"
                 value={receiptForm.payerEmail}
                 onChange={(event) => handleReceiptFormChange('payerEmail', event.target.value)}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2.5 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="you@email.com"
               />
             </label>
@@ -487,7 +487,7 @@ export const Pricing: React.FC = () => {
               <select
                 value={receiptForm.paymentChannel}
                 onChange={(event) => handleReceiptFormChange('paymentChannel', event.target.value as 'bank' | 'paypal')}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2.5 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-indigo-500"
                 title="Избери канал на уплата"
               >
                 <option value="bank">Банкарска трансакција</option>
@@ -500,7 +500,7 @@ export const Pricing: React.FC = () => {
                 type="text"
                 value={receiptForm.referenceCode}
                 onChange={(event) => handleReceiptFormChange('referenceCode', event.target.value)}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2.5 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="Пр. TRX-2026-001"
               />
             </label>
@@ -509,7 +509,7 @@ export const Pricing: React.FC = () => {
               <textarea
                 value={receiptForm.note}
                 onChange={(event) => handleReceiptFormChange('note', event.target.value)}
-                className="w-full min-h-20 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full min-h-20 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2.5 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="Дополнителни детали за уплатата"
               />
             </label>
@@ -521,7 +521,7 @@ export const Pricing: React.FC = () => {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-8 shadow-sm">
+        <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl p-8 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
             <Landmark className="w-6 h-6 text-indigo-600 dark:text-indigo-300" />
             <h2 className="text-2xl font-black text-slate-900 dark:text-white">School / Institution Plan</h2>
@@ -539,7 +539,7 @@ export const Pricing: React.FC = () => {
           ) : null}
           <div className="mt-4 text-sm text-slate-500 dark:text-slate-400">Статус: {manualPaymentDetails.schoolPlanLabel}</div>
 
-          <form onSubmit={handleSchoolInquirySubmit} className="mt-6 space-y-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-5">
+          <form onSubmit={handleSchoolInquirySubmit} className="mt-6 space-y-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-5">
             <div className="text-sm font-bold text-slate-900 dark:text-white">Испрати school inquiry</div>
             <div className="grid gap-4 md:grid-cols-2">
               <label className="space-y-1 text-sm text-slate-700 dark:text-slate-200">
@@ -548,7 +548,7 @@ export const Pricing: React.FC = () => {
                   type="text"
                   value={schoolInquiry.contactName}
                   onChange={(event) => handleSchoolInquiryChange('contactName', event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Име и презиме"
                 />
               </label>
@@ -558,7 +558,7 @@ export const Pricing: React.FC = () => {
                   type="text"
                   value={schoolInquiry.schoolName}
                   onChange={(event) => handleSchoolInquiryChange('schoolName', event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Име на институција"
                 />
               </label>
@@ -568,7 +568,7 @@ export const Pricing: React.FC = () => {
                   type="email"
                   value={schoolInquiry.email}
                   onChange={(event) => handleSchoolInquiryChange('email', event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="contact@school.edu.mk"
                 />
               </label>
@@ -578,7 +578,7 @@ export const Pricing: React.FC = () => {
                   type="text"
                   value={schoolInquiry.seatCount}
                   onChange={(event) => handleSchoolInquiryChange('seatCount', event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Пр. 12"
                 />
               </label>
@@ -588,7 +588,7 @@ export const Pricing: React.FC = () => {
               <textarea
                 value={schoolInquiry.message}
                 onChange={(event) => handleSchoolInquiryChange('message', event.target.value)}
-                className="w-full min-h-28 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full min-h-28 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-4 py-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="Кажи ни што ви треба: onboarding, фактура, број на одделенија, рокови..."
               />
             </label>
@@ -598,21 +598,21 @@ export const Pricing: React.FC = () => {
           </form>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-8 shadow-sm">
+        <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl p-8 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
             <GraduationCap className="w-6 h-6 text-indigo-600 dark:text-indigo-300" />
             <h2 className="text-2xl font-black text-slate-900 dark:text-white">Како да почнеш</h2>
           </div>
           <div className="space-y-4 text-sm text-slate-700 dark:text-slate-200">
-            <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-4">
+            <div className="rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-4">
               <div className="font-bold text-slate-900 dark:text-white mb-1">1. Почни бесплатно</div>
               <div>Тестирај core workflow и види дали реално ти штеди време во подготовка.</div>
             </div>
-            <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-4">
+            <div className="rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-4">
               <div className="font-bold text-slate-900 dark:text-white mb-1">2. Премини на Pro Teacher</div>
               <div>Кога ќе почувствуваш вредност, избери месечно или годишно и задржи едноставен billing модел.</div>
             </div>
-            <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-4">
+            <div className="rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-4">
               <div className="font-bold text-slate-900 dark:text-white mb-1">3. Потоа school rollout</div>
               <div>За институции оди со manual sales и фактура, не со комплициран self-serve model прерано.</div>
             </div>

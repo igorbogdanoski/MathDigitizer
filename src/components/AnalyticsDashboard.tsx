@@ -42,6 +42,18 @@ export const AnalyticsDashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
 
+  // Dark mode detection: theme is toggled via a `dark` class on <html> (see Layout.tsx),
+  // not just OS preference, so we track it with a MutationObserver.
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
   // Intervention Plan
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [interventionPlan, setInterventionPlan] = useState<string | null>(null);
@@ -320,12 +332,12 @@ export const AnalyticsDashboard: React.FC = () => {
   if (submissions.length === 0) {
     return (
       <div className="p-12 text-center max-w-2xl mx-auto mt-20">
-        <div className="w-24 h-24 bg-slate-900 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl border border-slate-800">
+        <div className="w-24 h-24 bg-slate-900 rounded-5xl flex items-center justify-center mx-auto mb-8 shadow-2xl border border-slate-800">
           <Activity className="w-10 h-10 text-indigo-400 animate-pulse" />
         </div>
-        <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Отсуство на емпириски податоци</h2>
-        <p className="text-slate-500 text-lg">
-          Центарот за математичка педагогија изискува првично уфрлање на евалуации преку <span className="font-bold text-indigo-600">Smart Grader</span> модулот за да конструира когнитив профили на учениците.
+        <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">Отсуство на емпириски податоци</h2>
+        <p className="text-slate-500 dark:text-slate-400 text-lg">
+          Центарот за математичка педагогија изискува првично уфрлање на евалуации преку <span className="font-bold text-indigo-600 dark:text-indigo-400">Smart Grader</span> модулот за да конструира когнитив профили на учениците.
         </p>
       </div>
     );
@@ -334,7 +346,7 @@ export const AnalyticsDashboard: React.FC = () => {
   return (
     <div className="max-w-[1400px] mx-auto space-y-6 pb-20">
       {/* Header Panel */}
-      <div className="bg-slate-950 text-white rounded-[2rem] p-8 md:p-12 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 border border-slate-800 shadow-2xl">
+      <div className="bg-slate-950 text-white rounded-5xl p-8 md:p-12 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 border border-slate-800 shadow-2xl">
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:40px_40px]" />
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-mono uppercase tracking-[0.2em] mb-6 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
@@ -349,7 +361,7 @@ export const AnalyticsDashboard: React.FC = () => {
           </p>
         </div>
         
-        <div className="relative z-10 hidden lg:flex items-center gap-6 p-6 bg-slate-900/50 rounded-[2rem] border border-slate-800 backdrop-blur-xl shadow-xl">
+        <div className="relative z-10 hidden lg:flex items-center gap-6 p-6 bg-slate-900/50 rounded-5xl border border-slate-800 backdrop-blur-xl shadow-xl">
            <div className="text-center px-4 border-r border-slate-800">
              <div className="text-5xl font-black text-indigo-400 font-mono tracking-tighter">{studentStats.length}</div>
              <div className="text-[10px] text-slate-500 uppercase tracking-widest mt-2 font-bold">Следени Субјекти</div>
@@ -363,7 +375,7 @@ export const AnalyticsDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
         {/* Global Class Leaderboard Graph */}
-        <div className="xl:col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] overflow-hidden shadow-sm p-8">
+        <div className="xl:col-span-2 bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-5xl overflow-hidden shadow-sm p-8">
           <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <div>
               <h3 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
@@ -375,11 +387,11 @@ export const AnalyticsDashboard: React.FC = () => {
               </p>
             </div>
             <div className="flex gap-2">
-               <span className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600">
+               <span className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10">
                   <span className="w-3 h-3 rounded-full bg-indigo-500 block"></span>
                   Просек (0-100)
                </span>
-               <span className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600">
+               <span className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10">
                   <span className="w-3 h-3 rounded-full bg-emerald-400 block"></span>
                   Вкупни Евалуации
                </span>
@@ -395,16 +407,16 @@ export const AnalyticsDashboard: React.FC = () => {
                     <stop offset="95%" stopColor="#818cf8" stopOpacity={0.4}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="id" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 800 }} dy={10} />
-                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 800 }} domain={[0, 100]} dx={-10} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#334155' : '#e2e8f0'} />
+                <XAxis dataKey="id" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: isDark ? '#94a3b8' : '#64748b', fontWeight: 800 }} dy={10} />
+                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: isDark ? '#94a3b8' : '#64748b', fontWeight: 800 }} domain={[0, 100]} dx={-10} />
                 <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#10b981', fontWeight: 800 }} dx={10} />
-                <RechartsTooltip 
+                <RechartsTooltip
                   cursor={{ fill: 'rgba(99, 102, 241, 0.05)' }}
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50 p-4 rounded-2xl shadow-xl">
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 p-4 rounded-2xl shadow-xl">
                            <div className="font-black text-lg text-slate-800 dark:text-white mb-2">{label}</div>
                            <div className="flex flex-col gap-2">
                              {payload.map((entry: any, index: number) => (
@@ -415,7 +427,7 @@ export const AnalyticsDashboard: React.FC = () => {
                                </div>
                              ))}
                            </div>
-                           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-400 dark:text-slate-500 flex items-center justify-between">
+                           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-white/10 text-xs font-bold text-slate-400 dark:text-slate-500 flex items-center justify-between">
                              <span>Cognitive ZPD Target:</span>
                              <span className="text-indigo-500 dark:text-indigo-400 font-mono bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md">
                                {payload[0] && payload[0].payload ? Math.min(100, Math.round(payload[0].payload.averageScore + (100 - payload[0].payload.averageScore) * 0.3)) : 0}
@@ -428,20 +440,20 @@ export const AnalyticsDashboard: React.FC = () => {
                   }}
                 />
                 <Bar yAxisId="left" dataKey="averageScore" name="Просек" fill="url(#colorScore)" radius={[6, 6, 0, 0]} maxBarSize={60} />
-                <Line yAxisId="right" type="monotone" dataKey={(d) => d.submissions.length} name="Евалуации" stroke="#10b981" strokeWidth={3} dot={{ r: 5, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+                <Line yAxisId="right" type="monotone" dataKey={(d) => d.submissions.length} name="Евалуации" stroke="#10b981" strokeWidth={3} dot={{ r: 5, fill: '#10b981', strokeWidth: 2, stroke: isDark ? '#0f172a' : '#fff' }} activeDot={{ r: 8 }} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Sidebar: Student Mastery List */}
-        <div className="xl:col-span-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] overflow-hidden shadow-sm flex flex-col xl:h-[800px] xl:sticky xl:top-6">
-          <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex flex-col gap-2 shrink-0">
+        <div className="xl:col-span-1 bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-5xl overflow-hidden shadow-sm flex flex-col xl:h-[800px] xl:sticky xl:top-6">
+          <div className="p-6 border-b border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-white/5 flex flex-col gap-2 shrink-0">
             <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm uppercase tracking-widest flex items-center gap-2">
-              <Users className="w-4 h-4 text-indigo-500" /> 
+              <Users className="w-4 h-4 text-indigo-500" />
               Когнитивни Профили
             </h3>
-            <p className="text-xs text-slate-500">Селектирајте субјект за длабинска анализа</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Селектирајте субјект за длабинска анализа</p>
           </div>
           <div className="overflow-y-auto flex-1 p-4 space-y-3 custom-scrollbar">
             {studentStats.map((student) => {
@@ -451,9 +463,9 @@ export const AnalyticsDashboard: React.FC = () => {
                   key={student.id}
                   onClick={() => setSelectedStudent(student.id)}
                   className={`w-full flex items-center justify-between p-4 rounded-2xl text-left transition-all duration-300 ${
-                    isSelected 
-                      ? 'bg-slate-900 shadow-xl shadow-slate-900/20 ring-1 ring-slate-800 scale-[1.02]' 
-                      : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                    isSelected
+                      ? 'bg-slate-900 shadow-xl shadow-slate-900/20 ring-1 ring-slate-800 scale-[1.02]'
+                      : 'hover:bg-slate-50 dark:hover:bg-white/5 bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
                   }`}
                 >
                   <div>
@@ -467,9 +479,9 @@ export const AnalyticsDashboard: React.FC = () => {
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg shadow-sm ${
                     isSelected
                       ? 'bg-slate-800 border border-slate-700 text-white'
-                      : student.averageScore >= 80 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                        student.averageScore >= 50 ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                        'bg-rose-50 text-rose-600 border border-rose-100'
+                      : student.averageScore >= 80 ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/20' :
+                        student.averageScore >= 50 ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-100 dark:border-amber-500/20' :
+                        'bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-300 border border-rose-100 dark:border-rose-500/20'
                   }`}>
                     {student.averageScore}
                   </div>
@@ -486,10 +498,10 @@ export const AnalyticsDashboard: React.FC = () => {
             {/* Vitals Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Momentum Card */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm rounded-[2rem] overflow-hidden">
+              <Card className="bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl border-slate-200 dark:border-white/10 shadow-sm rounded-5xl overflow-hidden">
                 <CardContent className="p-8">
                   <div className="flex items-center justify-between mb-6">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border shadow-inner ${activeStudentAdvancedStats?.velocity && activeStudentAdvancedStats.velocity >= 0 ? 'bg-emerald-50 text-emerald-500 border-emerald-100 dark:bg-emerald-900/30' : 'bg-rose-50 text-rose-500 border-rose-100 dark:bg-rose-900/30'}`}>
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border shadow-inner ${activeStudentAdvancedStats?.velocity && activeStudentAdvancedStats.velocity >= 0 ? 'bg-emerald-50 text-emerald-500 border-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/20' : 'bg-rose-50 text-rose-500 border-rose-100 dark:bg-rose-500/15 dark:text-rose-400 dark:border-rose-500/20'}`}>
                       {activeStudentAdvancedStats?.velocity && activeStudentAdvancedStats.velocity >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
                     </div>
                   </div>
@@ -498,13 +510,13 @@ export const AnalyticsDashboard: React.FC = () => {
                     <div className="text-5xl font-black text-slate-800 dark:text-white flex items-baseline gap-1 font-mono tracking-tighter">
                       {activeStudentAdvancedStats && activeStudentAdvancedStats.velocity > 0 ? '+' : ''}{activeStudentAdvancedStats?.velocity || 0}
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-4 bg-slate-50 dark:bg-slate-700 inline-flex px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-600">Делта од почетна точка</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-4 bg-slate-50 dark:bg-white/5 inline-flex px-3 py-1.5 rounded-lg border border-slate-100 dark:border-white/10">Делта од почетна точка</p>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Metacognitive Status Card */}
-              <Card className={`border shadow-sm rounded-[2rem] transition-colors relative overflow-hidden ${activeStudentAdvancedStats?.isStruggling ? 'bg-rose-950 border-rose-900' : 'bg-slate-900 border-slate-800'}`}>
+              <Card className={`border shadow-sm rounded-5xl transition-colors relative overflow-hidden ${activeStudentAdvancedStats?.isStruggling ? 'bg-rose-950 border-rose-900' : 'bg-slate-900 border-slate-800'}`}>
                 <div className="absolute top-0 right-0 p-8 opacity-5">
                    <AlertTriangle className="w-48 h-48" />
                 </div>
@@ -530,9 +542,9 @@ export const AnalyticsDashboard: React.FC = () => {
             </div>
 
             {/* Interactive ZPD Calculator */}
-            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm rounded-[2rem] overflow-hidden">
+            <Card className="bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl border-slate-200 dark:border-white/10 shadow-sm rounded-5xl overflow-hidden">
               <CardContent className="p-8 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-                <div className="space-y-8 pr-0 md:pr-10 md:border-r border-slate-100 dark:border-slate-700">
+                <div className="space-y-8 pr-0 md:pr-10 md:border-r border-slate-100 dark:border-white/10">
                   <h3 className="font-black text-slate-800 dark:text-slate-100 text-xl flex items-center gap-3">
                     <Calculator className="w-6 h-6 text-indigo-500" />
                     Интерактивен ZPD Калкулатор
@@ -547,7 +559,7 @@ export const AnalyticsDashboard: React.FC = () => {
                         type="range" min="0" max="100" value={zpdAvg} 
                         onChange={(e) => setZpdAvg(parseInt(e.target.value))}
                         title="Тековен просек"
-                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-indigo-600"
+                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-white/10 accent-indigo-600"
                       />
                     </div>
                     
@@ -559,11 +571,11 @@ export const AnalyticsDashboard: React.FC = () => {
                         type="range" min="-50" max="50" value={zpdVel} 
                         onChange={(e) => setZpdVel(parseInt(e.target.value))}
                         title="Напредок и моментум"
-                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-emerald-500"
+                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-white/10 accent-emerald-500"
                       />
                     </div>
-                    
-                    <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50">
+
+                    <div className="p-4 bg-indigo-50 dark:bg-indigo-500/15 rounded-2xl border border-indigo-100 dark:border-indigo-500/20">
                        <p className="text-xs text-indigo-800 dark:text-indigo-300 font-medium">
                          Променете ги вредностите за да симулирате различни сценарија и да ги проверите препорачаните педагошки чекори за вашата наредна интервенција.
                        </p>
@@ -574,19 +586,19 @@ export const AnalyticsDashboard: React.FC = () => {
                 <div className="flex flex-col h-full justify-center">
                   <h4 className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Целен Капацитет (ZPD)</h4>
                   <div className="text-6xl font-black text-slate-800 dark:text-slate-100 flex items-baseline gap-2 tracking-tighter mb-6">
-                    {calculatedZPD}<span className="text-3xl text-slate-300 dark:text-slate-600 font-medium">%</span>
+                    {calculatedZPD}<span className="text-3xl text-slate-300 dark:text-slate-500 font-medium">%</span>
                   </div>
-                  
+
                   <h4 className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Предложени следни чекори</h4>
-                  <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800 w-full mb-4">
+                  <div className="bg-slate-50 dark:bg-white/5 rounded-2xl p-5 border border-slate-100 dark:border-white/10 w-full mb-4">
                     <p className="text-sm text-slate-700 dark:text-slate-300 font-bold leading-relaxed space-y-2">
                        {zpdNextSteps}
                     </p>
                   </div>
-                  <Button 
+                  <Button
                     onClick={() => { setZpdAvg(activeStudentData?.averageScore || 50); setZpdVel(activeStudentAdvancedStats?.velocity || 0); }}
-                    variant="outline" 
-                    className="self-start text-xs rounded-xl h-8 px-4"
+                    variant="outline"
+                    className="self-start text-xs rounded-xl h-8 px-4 dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/5"
                   >
                     Врати на реални податоци
                   </Button>
@@ -595,7 +607,7 @@ export const AnalyticsDashboard: React.FC = () => {
             </Card>
 
             {/* Pedagogue Architect Control */}
-            <div className="bg-indigo-600 rounded-[2rem] p-8 md:p-12 text-white grid grid-cols-1 md:grid-cols-2 gap-12 items-center shadow-xl shadow-indigo-600/20 relative overflow-hidden border border-indigo-500/50">
+            <div className="bg-indigo-600 rounded-5xl p-8 md:p-12 text-white grid grid-cols-1 md:grid-cols-2 gap-12 items-center shadow-xl shadow-indigo-600/20 relative overflow-hidden border border-indigo-500/50">
               <div className="absolute right-0 top-0 w-2/3 h-full bg-gradient-to-l from-indigo-500 to-transparent z-0 pointer-events-none" />
               <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500 opacity-30 rounded-full blur-3xl" />
               
@@ -621,7 +633,7 @@ export const AnalyticsDashboard: React.FC = () => {
                 </Button>
               </div>
               <div className="relative z-10 flex items-center justify-center">
-                 <div className="w-full max-w-[320px] aspect-square relative bg-indigo-900/60 rounded-[2.5rem] border border-indigo-400/30 shadow-2xl backdrop-blur-xl p-8">
+                 <div className="w-full max-w-[320px] aspect-square relative bg-indigo-900/60 rounded-6xl border border-indigo-400/30 shadow-2xl backdrop-blur-xl p-8">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart cx="50%" cy="50%" outerRadius="75%" data={proficiencyData}>
                         <PolarGrid stroke="rgba(255,255,255,0.15)" strokeDasharray="3 3" />
@@ -638,7 +650,7 @@ export const AnalyticsDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
               {/* Longitudinal Concept vs Procedure */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm rounded-[2rem] col-span-1 md:col-span-2">
+              <Card className="bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl border-slate-200 dark:border-white/10 shadow-sm rounded-5xl col-span-1 md:col-span-2">
                 <CardContent className="p-8 md:p-10">
                   <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg mb-8 flex items-center gap-3 uppercase tracking-widest text-sm">
                     <TrendingUp className="w-6 h-6 text-indigo-500" /> 
@@ -657,18 +669,19 @@ export const AnalyticsDashboard: React.FC = () => {
                             <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 700 }} dy={15} />
-                        <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 700 }} domain={[0, 100]} dx={-10} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#334155' : '#e2e8f0'} />
+                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: isDark ? '#94a3b8' : '#64748b', fontWeight: 700 }} dy={15} />
+                        <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: isDark ? '#94a3b8' : '#64748b', fontWeight: 700 }} domain={[0, 100]} dx={-10} />
                         <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#10b981', fontWeight: 700 }} domain={[-50, 50]} dx={10} />
-                        <RechartsTooltip 
-                           contentStyle={{ borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)', padding: '16px' }}
+                        <RechartsTooltip
+                           contentStyle={{ backgroundColor: isDark ? '#0f172a' : '#fff', borderRadius: '16px', border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e2e8f0', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)', padding: '16px' }}
                            itemStyle={{ fontWeight: 800, fontSize: '14px' }}
+                           labelStyle={{ color: isDark ? '#e2e8f0' : '#1e293b' }}
                         />
                         <Legend iconType="circle" wrapperStyle={{ paddingTop: '30px', fontSize: '13px', fontWeight: 700 }} />
                         <Area yAxisId="left" type="monotone" name="Концептуално Разбирање" dataKey="concept" stroke="#8b5cf6" strokeWidth={4} fillOpacity={1} fill="url(#colorConcept)" activeDot={{ r: 6, strokeWidth: 0, fill: '#8b5cf6' }} />
                         <Area yAxisId="left" type="monotone" name="Процедурална Флуентност" dataKey="execution" stroke="#0ea5e9" strokeWidth={4} fillOpacity={1} fill="url(#colorExec)" activeDot={{ r: 6, strokeWidth: 0, fill: '#0ea5e9' }} />
-                        <Line yAxisId="right" type="monotone" name="Моментум (Velocity)" dataKey="velocity" stroke="#10b981" strokeWidth={3} dot={{ r: 5, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+                        <Line yAxisId="right" type="monotone" name="Моментум (Velocity)" dataKey="velocity" stroke="#10b981" strokeWidth={3} dot={{ r: 5, fill: '#10b981', strokeWidth: 2, stroke: isDark ? '#0f172a' : '#fff' }} activeDot={{ r: 8 }} />
                       </ComposedChart>
                     </ResponsiveContainer>
                   </div>
@@ -676,28 +689,28 @@ export const AnalyticsDashboard: React.FC = () => {
               </Card>
 
               {/* Specific Knowledge Gaps Top 5 */}
-              <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm rounded-[2rem] md:col-span-2">
+              <Card className="bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl border-slate-200 dark:border-white/10 shadow-sm rounded-5xl md:col-span-2">
                 <CardContent className="p-8 md:p-10">
                   <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                     <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg flex items-center gap-3 uppercase tracking-widest text-sm">
-                      <Layers className="w-6 h-6 text-orange-500" /> 
+                      <Layers className="w-6 h-6 text-orange-500" />
                       Хронолошки Дупки во Знаењето
                     </h3>
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600">Гранулирана Анализа на Грешки</span>
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10">Гранулирана Анализа на Грешки</span>
                   </div>
                   
                   {sortedWeaknesses.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       {sortedWeaknesses.slice(0,6).map((w, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-md transition-all group">
+                        <div key={idx} className="flex items-center justify-between p-5 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-indigo-300 dark:hover:border-indigo-400/40 hover:shadow-md transition-all group">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-400 flex items-center justify-center font-black text-base group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:border-indigo-200 dark:group-hover:border-indigo-700 transition-colors">
+                            <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-400 flex items-center justify-center font-black text-base group-hover:bg-indigo-50 dark:group-hover:bg-indigo-500/15 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:border-indigo-200 dark:group-hover:border-indigo-500/30 transition-colors">
                               0{idx + 1}
                             </div>
                             <span className="font-bold text-slate-700 dark:text-slate-200 text-base">{w.concept}</span>
                           </div>
                           <div className="flex items-center gap-1.5 min-w-fit pl-4">
-                            <span className={`text-[11px] font-black px-3 py-1.5 rounded-lg uppercase tracking-wider ${w.count > 2 ? 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800' : 'text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600'}`}>
+                            <span className={`text-[11px] font-black px-3 py-1.5 rounded-lg uppercase tracking-wider ${w.count > 2 ? 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-500/20' : 'text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10'}`}>
                               {w.count} инциденти
                             </span>
                           </div>
@@ -705,7 +718,7 @@ export const AnalyticsDashboard: React.FC = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="h-48 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-center bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+                    <div className="h-48 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-center bg-slate-50 dark:bg-white/5 rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
                       <CheckCircle2 className="w-12 h-12 text-emerald-400 mb-3 opacity-50" />
                       <p className="font-medium text-sm">Системот не детектира структурни грешки.</p>
                     </div>
@@ -737,7 +750,7 @@ export const AnalyticsDashboard: React.FC = () => {
                initial={{ opacity: 0, scale: 0.95, y: 20 }}
                animate={{ opacity: 1, scale: 1, y: 0 }}
                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-               className="relative w-full max-w-5xl bg-white dark:bg-slate-800 rounded-[2rem] shadow-2xl flex flex-col h-[90vh] overflow-hidden border border-slate-200 dark:border-slate-700"
+               className="relative w-full max-w-5xl bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl rounded-5xl shadow-2xl flex flex-col h-[90vh] overflow-hidden border border-slate-200 dark:border-white/10"
             >
               <div className="px-8 py-6 border-b border-indigo-100 dark:border-indigo-900 bg-indigo-50/50 dark:bg-indigo-500/10 backdrop-blur-sm flex items-center justify-between shrink-0">
                 <div>
@@ -754,22 +767,22 @@ export const AnalyticsDashboard: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                 <button onClick={() => setInterventionPlan(null)} aria-label="Затвори интервенциски план" title="Затвори" className="p-3 bg-white dark:bg-slate-800 rounded-xl text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                 <button onClick={() => setInterventionPlan(null)} aria-label="Затвори интервенциски план" title="Затвори" className="p-3 bg-white dark:bg-white/5 rounded-xl text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-600 dark:hover:text-slate-300 border border-slate-200 dark:border-white/10 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
-              <div className="p-8 md:p-12 overflow-y-auto custom-scrollbar flex-1 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm md:text-base markdown-body prose prose-slate dark:prose-invert max-w-none prose-headings:font-black prose-headings:tracking-tight prose-headings:text-indigo-950 dark:prose-headings:text-indigo-300 prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-relaxed prose-a:text-indigo-600 dark:prose-a:text-indigo-400 prose-strong:text-indigo-900 dark:prose-strong:text-indigo-100 prose-ul:marker:text-indigo-500 dark:prose-ul:marker:text-indigo-400 prose-li:pl-2">
+              <div className="p-8 md:p-12 overflow-y-auto custom-scrollbar flex-1 bg-white dark:bg-transparent text-slate-800 dark:text-slate-200 text-sm md:text-base markdown-body prose prose-slate dark:prose-invert max-w-none prose-headings:font-black prose-headings:tracking-tight prose-headings:text-indigo-950 dark:prose-headings:text-indigo-300 prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-relaxed prose-a:text-indigo-600 dark:prose-a:text-indigo-400 prose-strong:text-indigo-900 dark:prose-strong:text-indigo-100 prose-ul:marker:text-indigo-500 dark:prose-ul:marker:text-indigo-400 prose-li:pl-2">
                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                    {interventionPlan}
                  </ReactMarkdown>
               </div>
-              <div className="px-8 py-6 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex justify-between items-center shrink-0 rounded-b-[2rem]">
+              <div className="px-8 py-6 border-t border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex justify-between items-center shrink-0 rounded-b-5xl">
                  <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono hidden md:block uppercase tracking-widest font-medium">
                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
                    Методолошки Мотор (Gemini 3.1 Pro)
                  </div>
                  <div className="flex justify-end gap-4 w-full md:w-auto">
-                   <Button onClick={() => setInterventionPlan(null)} variant="outline" className="rounded-xl font-bold px-6 h-12 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700">Затвори план</Button>
+                   <Button onClick={() => setInterventionPlan(null)} variant="outline" className="rounded-xl font-bold px-6 h-12 bg-white dark:bg-transparent hover:bg-slate-50 dark:hover:bg-white/5 border-slate-200 dark:border-white/15 dark:text-slate-200">Затвори план</Button>
                    <Button onClick={() => window.print()} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-6 h-12 shadow-[0_4px_14px_rgba(79,70,229,0.39)] transition-transform hover:scale-105 active:scale-95">
                      Увези како .PDF
                    </Button>

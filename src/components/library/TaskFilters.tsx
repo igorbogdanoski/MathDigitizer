@@ -148,7 +148,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   };
 
   return (
-    <Card className="mb-6 border-slate-200 dark:border-white/10 shadow-xl shadow-blue-900/5 dark:shadow-none rounded-[2rem] bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl relative z-10 dark:overflow-hidden">
+    <Card className="mb-6 border-slate-200 dark:border-white/10 shadow-xl shadow-blue-900/5 dark:shadow-none rounded-5xl bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl relative z-10 dark:overflow-hidden">
       <div className="hidden dark:block absolute -top-24 -right-24 w-72 h-72 bg-indigo-500/10 blur-[100px] rounded-full pointer-events-none" />
       <CardContent className="p-6 relative z-10">
         <div className="flex flex-col gap-6">

@@ -454,7 +454,7 @@ export const PedagogueCommandCenter: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="flex items-center justify-center bg-slate-900/30 rounded-[3rem] border border-slate-800/50 p-8 backdrop-blur-sm">
+                  <div className="flex items-center justify-center bg-slate-900/30 rounded-7xl border border-slate-800/50 p-8 backdrop-blur-sm">
                     {cognitiveFingerprint ? (
                       <svg width="400" height="400" viewBox="0 0 400 400">
                         {/* Radar Chart Lines */}
@@ -615,7 +615,7 @@ export const PedagogueCommandCenter: React.FC = () => {
                 exit={{ opacity: 0 }}
                 className="w-full h-full flex flex-col p-8"
               >
-                <div className="flex-1 bg-slate-950/50 rounded-[3rem] border border-slate-800/50 overflow-hidden flex flex-col shadow-inner">
+                <div className="flex-1 bg-slate-950/50 rounded-7xl border border-slate-800/50 overflow-hidden flex flex-col shadow-inner">
                   <header className="px-8 py-4 bg-slate-900/50 border-b border-slate-800 flex justify-between items-center">
                     <div className="flex items-center gap-3">
                       <div className={`w-2 h-2 rounded-full ${simStarted ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}`} />

@@ -576,7 +576,7 @@ export const SmartOCR: React.FC = () => {
                   </ReactCrop>
                   {isScanning && (
                     <div className="absolute inset-0 z-10 bg-slate-900/60 backdrop-blur-md flex flex-col items-center justify-center rounded-xl">
-                      <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-2xl flex flex-col items-center border border-slate-200 dark:border-slate-700">
+                      <div className="bg-white dark:bg-slate-800 p-8 rounded-5xl shadow-2xl flex flex-col items-center border border-slate-200 dark:border-slate-700">
                         <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" />
                         <p className="font-extrabold text-lg text-slate-900 dark:text-white">Gemini 3.1 Pro OCR...</p>
                         <p className="text-sm text-slate-500 mt-2">Анализа на пиксели во тек</p>

@@ -8,6 +8,15 @@
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-heading: "Space Grotesk", "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Named radius steps beyond Tailwind's default 3xl (1.5rem), so the
+     "premium card" corner sizes used across the app (previously scattered
+     as rounded-[1.75rem]/[2rem]/[2.5rem]/[3rem]) resolve to one shared scale
+     instead of ad-hoc arbitrary values. */
+  --radius-4xl: 1.75rem;
+  --radius-5xl: 2rem;
+  --radius-6xl: 2.5rem;
+  --radius-7xl: 3rem;
 }
 
 @layer base {

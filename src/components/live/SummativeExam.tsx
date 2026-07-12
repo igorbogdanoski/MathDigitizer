@@ -168,7 +168,7 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
          <motion.div 
            initial={{ opacity: 0, y: 20 }}
            animate={{ opacity: 1, y: 0 }}
-           className="bg-white p-10 rounded-[2rem] shadow-xl max-w-xl w-full border border-slate-200"
+           className="bg-white p-10 rounded-5xl shadow-xl max-w-xl w-full border border-slate-200"
          >
             <div className="flex justify-center mb-6">
                <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
@@ -209,7 +209,7 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
          <motion.div 
            initial={{ opacity: 0, scale: 0.9 }}
            animate={{ opacity: 1, scale: 1 }}
-           className="bg-white p-10 rounded-[2rem] shadow-xl border border-emerald-100 max-w-md w-full"
+           className="bg-white p-10 rounded-5xl shadow-xl border border-emerald-100 max-w-md w-full"
          >
             <CheckCircle className="w-20 h-20 text-emerald-500 mx-auto mb-6" />
             <h2 className="text-3xl font-black text-slate-800 mb-4">Успешно!</h2>

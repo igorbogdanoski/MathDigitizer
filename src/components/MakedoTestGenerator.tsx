@@ -62,7 +62,7 @@ export const MakedoTestGenerator: React.FC<MakedoTestGeneratorProps> = ({ tasks 
         </p>
       </div>
 
-      <div className="bg-white rounded-[2rem] shadow-xl p-8 md:p-10 border border-slate-100">
+      <div className="bg-white rounded-5xl shadow-xl p-8 md:p-10 border border-slate-100">
         <div className="space-y-8">
           <div>
             <label className="text-sm font-bold text-slate-700 uppercase tracking-widest block mb-4 flex items-center gap-2">

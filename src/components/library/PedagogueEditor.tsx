@@ -677,7 +677,7 @@ export const PedagogueEditor: React.FC = () => {
                           key={action.id}
                           onClick={() => handleAIAction(action.id as any)}
                           disabled={isAILoading}
-                          className="bg-slate-900 border border-white/5 rounded-[2rem] p-8 text-center hover:border-indigo-500 transition-all hover:bg-slate-900/50 group"
+                          className="bg-slate-900 border border-white/5 rounded-5xl p-8 text-center hover:border-indigo-500 transition-all hover:bg-slate-900/50 group"
                         >
                           <div className={`w-12 h-12 rounded-2xl bg-${action.color}-500/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform`}>
                             <action.icon className={`w-6 h-6 text-${action.color}-400`} />
