@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Trophy, Star, Zap, Target, Award, TrendingUp, Users, Loader2, ChevronRight, Medal, Brain, PieChart as PieChartIcon, CheckCircle2, Circle, Activity, Paintbrush, ScanLine, Library as LibraryIcon, Wand2, Layers, AlertTriangle, Info } from 'lucide-react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Button } from './ui/Button';
@@ -7,15 +7,22 @@ import { db, auth } from '../lib/firebase';
 import { addDoc, collection, query, where, orderBy, limit, getDocs, doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { UserStats, UserProfile } from '../lib/schema';
 import { motion } from 'motion/react';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
-import { TeacherDashboard } from './TeacherDashboard';
-import { AvatarShop } from './AvatarShop';
-
-import { StudentSkillTree } from './StudentSkillTree';
 import { Skeleton } from './ui/Skeleton';
 import { SEO } from './SEO';
 import { useToast } from '../contexts/ToastContext';
 import { captureError } from '../lib/observability';
+
+// Lazy-loaded: Dashboard.tsx is a single route-level component, but a given
+// visit only ever needs ONE of these three (teacher branch returns early;
+// the recharts-heavy mastery chart, skill tree, and avatar-shop modal are
+// only used by the non-teacher/non-student fallback view below). Keeping
+// them as static imports meant every /dashboard visit paid for all three
+// regardless of which branch actually rendered — this is what was pushing
+// the route over its bundle budget.
+const TeacherDashboard = lazy(() => import('./TeacherDashboard').then((m) => ({ default: m.TeacherDashboard })));
+const AvatarShop = lazy(() => import('./AvatarShop').then((m) => ({ default: m.AvatarShop })));
+const StudentSkillTree = lazy(() => import('./StudentSkillTree').then((m) => ({ default: m.StudentSkillTree })));
+const MasteryRadarChart = lazy(() => import('./dashboard/MasteryRadarChart'));
 
 type ReceiptStatus = 'pending' | 'reviewed' | 'approved' | 'rejected';
 
@@ -182,7 +189,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
 
   // Render Teacher Dashboard if the user is a teacher
   if (userProfile?.role === 'teacher') {
-    return <TeacherDashboard userProfile={userProfile} />;
+    return (
+      <Suspense fallback={<div className="p-8"><Skeleton className="w-full h-64 rounded-3xl" /></div>}>
+        <TeacherDashboard userProfile={userProfile} />
+      </Suspense>
+    );
   }
 
   if (userProfile?.role === 'student') {
@@ -454,7 +465,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
 
       {/* Interactive Mathematics Skill Tree */}
       <section className="mb-8">
-        <StudentSkillTree currentXP={stats.xp} />
+        <Suspense fallback={<Skeleton className="w-full h-40 rounded-3xl" />}>
+          <StudentSkillTree currentXP={stats.xp} />
+        </Suspense>
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -521,19 +534,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                 <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={masteryData}>
-                      <PolarGrid stroke="#e2e8f0" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10 }} />
-                      <Radar
-                        name="Мастерство"
-                        dataKey="A"
-                        stroke="#4f46e5"
-                        fill="#4f46e5"
-                        fillOpacity={0.5}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
+                  <Suspense fallback={<Skeleton className="w-full h-full rounded-2xl" />}>
+                    <MasteryRadarChart data={masteryData} />
+                  </Suspense>
                 </div>
                 <div className="space-y-4">
                   <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">Анализа на вештини</h4>
@@ -720,12 +723,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
         ))}
       </div>
 
-      <AvatarShop 
-        isOpen={isAvatarShopOpen} 
-        onClose={() => setIsAvatarShopOpen(false)} 
-        currentLevel={stats.level} 
-        currentAvatar={auth.currentUser?.photoURL || null} 
-      />
+      {isAvatarShopOpen && (
+        <Suspense fallback={null}>
+          <AvatarShop
+            isOpen={isAvatarShopOpen}
+            onClose={() => setIsAvatarShopOpen(false)}
+            currentLevel={stats.level}
+            currentAvatar={auth.currentUser?.photoURL || null}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };
