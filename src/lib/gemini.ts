@@ -520,6 +520,94 @@ export async function getTutorChatSession(task: MathTask, relatedTasks?: MathTas
   return chat;
 }
 
+export async function generateLessonArchitectScript(task: MathTask, language: string = 'mk'): Promise<import("./schema").LessonArchitectScript> {
+  const languageInstruction = language === 'mk'
+    ? 'Одговори на македонски јазик.'
+    : `Respond in ${language}.`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: `Ти си експерт за методика на настава по математика. За следнава задача, состави краток методолошки скрипт за час:
+
+Наслов: ${task.title}
+Тема: ${task.curriculum_topic || 'Математика'}
+Текст: ${task.original_text}
+Чести грешки: ${(task.pedagogical_insights?.common_pitfalls || []).join(', ') || 'Непознато'}
+
+Врати:
+1. socratic_hook — едно отворено прашање/провокација (конкретно за оваа задача, НЕ генеричко) со кое наставникот го отвора часот.
+2. metaphoric_bridge — една аналогија од реалниот живот што го поврзува апстрактниот концепт од задачата со нешто познато.
+3. instructional_sequence — низа од 3 чекори (секој со "time" опсег во минути, "title" и краток "desc") за тоа како да се води часот од воведување до совладување на концептот.
+
+${languageInstruction}`,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          socratic_hook: { type: Type.STRING },
+          metaphoric_bridge: { type: Type.STRING },
+          instructional_sequence: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                time: { type: Type.STRING },
+                title: { type: Type.STRING },
+                desc: { type: Type.STRING }
+              },
+              required: ['time', 'title', 'desc']
+            }
+          }
+        },
+        required: ['socratic_hook', 'metaphoric_bridge', 'instructional_sequence']
+      }
+    }
+  });
+
+  return JSON.parse(response.text || "{}");
+}
+
+const SOCRATIC_SIM_PERSONAS: Record<string, string> = {
+  struggling_abstraction: 'Се бориш со апстракција — броевите и променливите ти имаат смисла посебно, но не разбираш зошто истата буква ("x") се повторува на повеќе места во иста равенка. Прашуваш "наивни" но искрени прашања за да разбереш зошто чекорите функционираат, не само како да ги извршиш.',
+  quick_careless: 'Брз си и самоуверен, но невнимателен — прескокнуваш чекори, ги мешаш знаците (+ / -) и ги заборавaш условите (пр. домен на дефинираност). Кога наставникот ќе те праша да провериш, првично одбиваш велејќи "сигурен сум", но ако те насочи со прашање, ја наоѓаш сопствената грешка.',
+  math_anxious: 'Имаш математичка анксиозност — брзо кажуваш "не ми оди математиката" или "јас никогаш нема да го разберам ова" пред воопшто да пробаш. Треба нежно охрабрување и мали чекори за да се впуштиш во задачата.',
+};
+
+export async function getSocraticSimulationSession(task: MathTask, persona: string, language: string = 'mk') {
+  const personaDescription = SOCRATIC_SIM_PERSONAS[persona] || SOCRATIC_SIM_PERSONAS.struggling_abstraction;
+  const languageInstruction = language === 'mk' ? 'македонски јазик' : language;
+
+  const systemInstruction = `Ти симулираш ученик кој вежба со наставник (кој те тренира преку Сократов дијалог). НЕ си асистент — ти си ученик. Твојата улога е да останеш во карактер during целиот разговор.
+
+ЗАДАЧА КОЈА ЈА РЕШАВАШ:
+Наслов: ${task.title}
+Текст: ${task.original_text}
+Решение (само за твоја референца — НЕ смееш само да го кажеш, мора да „стигнеш“ до него преку разговорот со наставникот): ${task.solution_steps.join(' ')}
+
+ТВОЈАТА ПЕРСОНА: ${personaDescription}
+
+ПРАВИЛА:
+1. Секогаш одговарај ВО КАРАКТЕР, како ученик, никогаш како AI асистент.
+2. Никогаш сам не го реши целото прашање одеднаш — реагирај чекор по чекор на она што наставникот го кажува.
+3. Ако наставникот ти постави добро насочувачко прашање, покажи реален напредок во разбирањето (мал "Аха!" момент), но не премногу брзо — реалистичен ученик напредува постепено.
+4. Ако наставникот директно ти го даде одговорот наместо да те праша, реагирај реалистично на пример: збунето прифати го одговорот без вистинско разбирање, или прашај "зошто", покажувајќи дека сепак не разбираш ("Ок... ама не сфаќам зошто.").
+5. Користи LaTeX ($...$) кога споменуваш математички изрази.
+6. Јазик: ${languageInstruction}.
+
+Отвори го разговорот со ЕДНО кратко прашање/забуна за задачата (не поздрав, право на суштината), консистентно со твојата персона.`;
+
+  const chat = ai.chats.create({
+    model: "gemini-3-flash-preview",
+    config: {
+      systemInstruction,
+      temperature: 0.8,
+    }
+  });
+
+  return chat;
+}
+
 export async function generateDifferentiatedTest(tasks: MathTask[]): Promise<{groupA: MathTask[], groupB: MathTask[], groupC: MathTask[]}> {
   const prompt = `Ти си експерт за диференцирана настава по математика. 
 Дадена ти е листа на оригинални математички задачи. Твојата цел е да креираш 3 различни верзии (групи) од овие задачи:

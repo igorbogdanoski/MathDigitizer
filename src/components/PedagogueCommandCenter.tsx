@@ -4,13 +4,27 @@ import {
   X, Maximize2, Minimize2, Cpu, Zap, Brain, Activity,
   Network, Target, MessageSquare, BookOpen, Layers,
   Compass, ShieldCheck, Microscope, Database, Sparkles,
-  ChevronRight, ChevronLeft, Terminal, Play, Save, Share2
+  ChevronRight, ChevronLeft, Terminal, Play, Save, Share2,
+  Loader2, RefreshCw, Check, User
 } from 'lucide-react';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { useLibraryStore } from '../store/useLibraryStore';
-import { MathTask } from '../lib/schema';
+import { MathTask, LessonArchitectScript } from '../lib/schema';
 import { Button } from './ui/Button';
 import { Card, CardContent } from './ui/Card';
 import { useModalA11y } from '../hooks/useModalA11y';
+
+const SIM_PERSONAS: { id: string; label: string }[] = [
+  { id: 'struggling_abstraction', label: 'Се бори со апстракција' },
+  { id: 'quick_careless', label: 'Брз но невнимателен' },
+  { id: 'math_anxious', label: 'Математичка анксиозност' },
+];
+
+interface SimMessage {
+  role: 'student' | 'teacher';
+  text: string;
+}
 
 const LazyMathRenderer = lazy(() => import('./MathRenderer').then(m => ({ default: m.MathRenderer })));
 
@@ -46,8 +60,21 @@ export const PedagogueCommandCenter: React.FC = () => {
   } | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
+  const [lessonScript, setLessonScript] = useState<LessonArchitectScript | null>(null);
+  const [isGeneratingScript, setIsGeneratingScript] = useState(false);
+  const [isSavingScript, setIsSavingScript] = useState(false);
+  const [scriptSaved, setScriptSaved] = useState(false);
+
+  const [simPersona, setSimPersona] = useState<string>('struggling_abstraction');
+  const [simMessages, setSimMessages] = useState<SimMessage[]>([]);
+  const [simInput, setSimInput] = useState('');
+  const [isSimLoading, setIsSimLoading] = useState(false);
+  const [simStarted, setSimStarted] = useState(false);
+  const simChatRef = useRef<any>(null);
+  const simMessagesEndRef = useRef<HTMLDivElement>(null);
+
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
-  
+
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -55,6 +82,84 @@ export const PedagogueCommandCenter: React.FC = () => {
       renderKnowledgeMap();
     }
   }, [activeTab, isCommandCenterOpen, selectedTaskId]);
+
+  // Reset per-task ephemeral tab state (and pre-load any previously saved
+  // lesson script) whenever the selected task changes, so stale AI output
+  // from a different task never leaks into the new one.
+  useEffect(() => {
+    setLessonScript(selectedTask?.lesson_architect_script || null);
+    setScriptSaved(false);
+    setSimMessages([]);
+    setSimStarted(false);
+    simChatRef.current = null;
+  }, [selectedTaskId]);
+
+  useEffect(() => {
+    simMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [simMessages]);
+
+  const handleGenerateLessonScript = async () => {
+    if (!selectedTask) return;
+    setIsGeneratingScript(true);
+    setScriptSaved(false);
+    try {
+      const { generateLessonArchitectScript } = await import('../lib/gemini');
+      const script = await generateLessonArchitectScript(selectedTask);
+      setLessonScript(script);
+    } catch (e) {
+      console.error('Грешка при генерирање на методолошки скрипт:', e);
+    } finally {
+      setIsGeneratingScript(false);
+    }
+  };
+
+  const handleSaveLessonScript = async () => {
+    if (!selectedTask?.id || !lessonScript) return;
+    setIsSavingScript(true);
+    try {
+      await updateDoc(doc(db, 'tasks', selectedTask.id), { lesson_architect_script: lessonScript });
+      setScriptSaved(true);
+      setTimeout(() => setScriptSaved(false), 2500);
+    } catch (e) {
+      console.error('Грешка при зачувување на скриптот:', e);
+    } finally {
+      setIsSavingScript(false);
+    }
+  };
+
+  const handleStartSimulation = async () => {
+    if (!selectedTask) return;
+    setIsSimLoading(true);
+    setSimMessages([]);
+    try {
+      const { getSocraticSimulationSession } = await import('../lib/gemini');
+      const chat = await getSocraticSimulationSession(selectedTask, simPersona);
+      simChatRef.current = chat;
+      const response = await chat.sendMessage({ message: 'Започни.' });
+      setSimMessages([{ role: 'student', text: response.text || '' }]);
+      setSimStarted(true);
+    } catch (e) {
+      console.error('Грешка при стартување на симулацијата:', e);
+    } finally {
+      setIsSimLoading(false);
+    }
+  };
+
+  const handleSendSimMessage = async () => {
+    const message = simInput.trim();
+    if (!message || !simChatRef.current || isSimLoading) return;
+    setSimInput('');
+    setSimMessages(prev => [...prev, { role: 'teacher', text: message }]);
+    setIsSimLoading(true);
+    try {
+      const response = await simChatRef.current.sendMessage({ message });
+      setSimMessages(prev => [...prev, { role: 'student', text: response.text || '' }]);
+    } catch (e) {
+      console.error('Грешка во симулацијата:', e);
+    } finally {
+      setIsSimLoading(false);
+    }
+  };
 
   const renderKnowledgeMap = async () => {
     if (!svgRef.current || !selectedTask) return;
@@ -393,7 +498,7 @@ export const PedagogueCommandCenter: React.FC = () => {
             )}
 
             {activeTab === 'architect' && (
-              <motion.div 
+              <motion.div
                 key="architect"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -401,75 +506,109 @@ export const PedagogueCommandCenter: React.FC = () => {
                 className="w-full h-full p-8 overflow-y-auto"
               >
                 <div className="max-w-4xl mx-auto space-y-8">
-                  <header>
-                    <h2 className="text-3xl font-bold text-white mb-2">Lesson Architect</h2>
-                    <p className="text-slate-400">Generating a high-impact methodological script for this specific task.</p>
+                  <header className="flex items-start justify-between gap-4">
+                    <div>
+                      <h2 className="text-3xl font-bold text-white mb-2">Lesson Architect</h2>
+                      <p className="text-slate-400">AI-генериран методолошки скрипт специфичен за избраната задача.</p>
+                    </div>
+                    {selectedTask && (
+                      <Button
+                        onClick={handleGenerateLessonScript}
+                        disabled={isGeneratingScript || !selectedTask}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0"
+                      >
+                        {isGeneratingScript ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                        {lessonScript ? 'Регенерирај' : 'Генерирај скрипт'}
+                      </Button>
+                    )}
                   </header>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="bg-slate-900 border-slate-800">
-                      <CardContent className="p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                          <MessageSquare className="w-5 h-5 text-indigo-400" />
-                          <h3 className="font-bold text-slate-100">Socratic Hook</h3>
-                        </div>
-                        <p className="text-sm text-slate-400 italic">"How can a simple ratio predict the growth of a galaxy? Let's start with a single line..."</p>
-                      </CardContent>
-                    </Card>
+                  {!selectedTask ? (
+                    <div className="text-center py-24 opacity-50">
+                      <BookOpen className="w-16 h-16 text-slate-700 mx-auto mb-4" />
+                      <p className="text-slate-500 text-sm uppercase tracking-widest">Изберете задача за да генерирате методолошки скрипт</p>
+                    </div>
+                  ) : !lessonScript ? (
+                    <div className="text-center py-24">
+                      {isGeneratingScript ? (
+                        <>
+                          <Loader2 className="w-12 h-12 text-indigo-400 animate-spin mx-auto mb-4" />
+                          <p className="text-slate-400 text-sm">Составувам методолошки скрипт...</p>
+                        </>
+                      ) : (
+                        <p className="text-slate-500 text-sm">Кликнете „Генерирај скрипт" за да добиете Socratic hook, аналогија и инструкциска секвенца за оваа задача.</p>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Card className="bg-slate-900 border-slate-800">
+                          <CardContent className="p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <MessageSquare className="w-5 h-5 text-indigo-400" />
+                              <h3 className="font-bold text-slate-100">Socratic Hook</h3>
+                            </div>
+                            <p className="text-sm text-slate-400 italic">"{lessonScript.socratic_hook}"</p>
+                          </CardContent>
+                        </Card>
 
-                    <Card className="bg-slate-900 border-slate-800">
-                      <CardContent className="p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                          <Zap className="w-5 h-5 text-amber-400" />
-                          <h3 className="font-bold text-slate-100">Metaphoric Bridge</h3>
-                        </div>
-                        <p className="text-sm text-slate-400">Think of this equation as a balanced chemical reaction where coefficients are energy levels.</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                        <Layers className="w-5 h-5 text-purple-400" />
-                        <h3 className="text-lg font-bold text-white">Instructional Sequence</h3>
+                        <Card className="bg-slate-900 border-slate-800">
+                          <CardContent className="p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <Zap className="w-5 h-5 text-amber-400" />
+                              <h3 className="font-bold text-slate-100">Metaphoric Bridge</h3>
+                            </div>
+                            <p className="text-sm text-slate-400">{lessonScript.metaphoric_bridge}</p>
+                          </CardContent>
+                        </Card>
                       </div>
-                      <Button variant="outline" size="sm" className="border-slate-700 text-slate-300">
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Script
-                      </Button>
-                    </div>
 
-                    <div className="space-y-6">
-                      {[
-                        { time: '0-5m', title: 'Cognitive Provocation', desc: 'Present the problem visually without numbers to trigger intuitive estimation.' },
-                        { time: '5-15m', title: 'Controlled Struggle', desc: 'Let students attempt the abstraction. Monitor for pre-identified misconception #4.' },
-                        { time: '15-25m', title: 'The Methodological Reveal', desc: 'Bridge students native intuition with formal mathematical syntax.' }
-                      ].map((step, i) => (
-                        <div key={i} className="flex gap-4 group">
-                          <div className="flex flex-col items-center">
-                            <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-mono text-slate-400 group-hover:bg-indigo-500/20 group-hover:border-indigo-500/50 group-hover:text-indigo-400 transition-colors">
-                              {i + 1}
-                            </div>
-                            <div className="flex-1 w-px bg-slate-800 group-last:bg-transparent my-2" />
+                      <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
+                        <div className="flex items-center justify-between mb-6">
+                          <div className="flex items-center gap-3">
+                            <Layers className="w-5 h-5 text-purple-400" />
+                            <h3 className="text-lg font-bold text-white">Instructional Sequence</h3>
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-[10px] text-indigo-400 font-mono bg-indigo-500/10 px-1 rounded">{step.time}</span>
-                              <h4 className="text-sm font-bold text-slate-200">{step.title}</h4>
-                            </div>
-                            <p className="text-xs text-slate-400 leading-relaxed">{step.desc}</p>
-                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleSaveLessonScript}
+                            disabled={isSavingScript || !selectedTask?.id}
+                            className="border-slate-700 text-slate-300"
+                          >
+                            {isSavingScript ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : scriptSaved ? <Check className="w-4 h-4 mr-2 text-emerald-400" /> : <Save className="w-4 h-4 mr-2" />}
+                            {scriptSaved ? 'Зачувано' : 'Save Script'}
+                          </Button>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+
+                        <div className="space-y-6">
+                          {lessonScript.instructional_sequence.map((step, i) => (
+                            <div key={i} className="flex gap-4 group">
+                              <div className="flex flex-col items-center">
+                                <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-mono text-slate-400 group-hover:bg-indigo-500/20 group-hover:border-indigo-500/50 group-hover:text-indigo-400 transition-colors">
+                                  {i + 1}
+                                </div>
+                                <div className="flex-1 w-px bg-slate-800 group-last:bg-transparent my-2" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-[10px] text-indigo-400 font-mono bg-indigo-500/10 px-1 rounded">{step.time}</span>
+                                  <h4 className="text-sm font-bold text-slate-200">{step.title}</h4>
+                                </div>
+                                <p className="text-xs text-slate-400 leading-relaxed">{step.desc}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </motion.div>
             )}
 
             {activeTab === 'simulation' && (
-              <motion.div 
+              <motion.div
                 key="simulation"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -479,37 +618,95 @@ export const PedagogueCommandCenter: React.FC = () => {
                 <div className="flex-1 bg-slate-950/50 rounded-[3rem] border border-slate-800/50 overflow-hidden flex flex-col shadow-inner">
                   <header className="px-8 py-4 bg-slate-900/50 border-b border-slate-800 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <div className={`w-2 h-2 rounded-full ${simStarted ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}`} />
                       <span className="text-xs font-mono text-slate-400 uppercase tracking-widest">Socratic AI Student: SIM-01</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-slate-500 font-mono">PERSONA:</span>
-                      <select title="Student persona" aria-label="Student persona" className="bg-slate-800 border-none text-[10px] text-slate-300 rounded px-2 py-1 outline-none">
-                        <option>Struggling with Abstraction</option>
-                        <option>Quick but Careless</option>
-                        <option>Math Anxious</option>
-                      </select>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-slate-500 font-mono">PERSONA:</span>
+                        <select
+                          title="Student persona"
+                          aria-label="Student persona"
+                          value={simPersona}
+                          onChange={(e) => setSimPersona(e.target.value)}
+                          disabled={isSimLoading}
+                          className="bg-slate-800 border-none text-[10px] text-slate-300 rounded px-2 py-1 outline-none"
+                        >
+                          {SIM_PERSONAS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                        </select>
+                      </div>
+                      {simStarted && (
+                        <button
+                          onClick={handleStartSimulation}
+                          disabled={isSimLoading}
+                          title="Рестартирај симулација"
+                          aria-label="Рестартирај симулација"
+                          className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </header>
-                  
+
                   <div className="flex-1 p-8 overflow-y-auto space-y-6">
-                    <div className="flex gap-4 max-w-2xl">
-                      <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0">
-                        <Brain className="w-4 h-4 text-slate-400" />
+                    {!selectedTask ? (
+                      <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
+                        <Microscope className="w-12 h-12 text-slate-600 mb-4" />
+                        <p className="text-xs text-slate-500 uppercase tracking-widest">Изберете задача за да ја стартувате симулацијата</p>
                       </div>
-                      <div className="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-none p-4">
-                        <p className="text-sm text-slate-300">I see the equation, but why is there an 'x' on both sides? Does that mean it's the same 'x' or a different one?</p>
+                    ) : !simStarted ? (
+                      <div className="h-full flex flex-col items-center justify-center text-center gap-4">
+                        <p className="text-slate-400 text-sm max-w-md">Вежбајте Сократовско пренасочување со виртуелен ученик кој ја „решава" избраната задача, со избраната персона.</p>
+                        <Button onClick={handleStartSimulation} disabled={isSimLoading} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                          {isSimLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
+                          Започни симулација
+                        </Button>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        {simMessages.map((msg, i) => (
+                          <div key={i} className={`flex gap-4 max-w-2xl ${msg.role === 'teacher' ? 'ml-auto flex-row-reverse' : ''}`}>
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'teacher' ? 'bg-indigo-600' : 'bg-slate-800'}`}>
+                              {msg.role === 'teacher' ? <User className="w-4 h-4 text-white" /> : <Brain className="w-4 h-4 text-slate-400" />}
+                            </div>
+                            <div className={`rounded-2xl p-4 ${msg.role === 'teacher' ? 'bg-indigo-600 rounded-tr-none' : 'bg-slate-900 border border-slate-800 rounded-tl-none'}`}>
+                              <p className={`text-sm ${msg.role === 'teacher' ? 'text-white' : 'text-slate-300'}`}>{msg.text}</p>
+                            </div>
+                          </div>
+                        ))}
+                        {isSimLoading && (
+                          <div className="flex gap-4 max-w-2xl">
+                            <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0">
+                              <Brain className="w-4 h-4 text-slate-400" />
+                            </div>
+                            <div className="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-none p-4">
+                              <Loader2 className="w-4 h-4 text-slate-500 animate-spin" />
+                            </div>
+                          </div>
+                        )}
+                        <div ref={simMessagesEndRef} />
+                      </>
+                    )}
                   </div>
 
                   <div className="p-6 bg-slate-900/80 backdrop-blur-md border-t border-slate-800">
                     <div className="relative">
-                      <input 
-                        className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-6 py-4 text-sm text-slate-200 placeholder:text-slate-600 focus:border-indigo-500 transition-colors outline-none pr-12"
+                      <input
+                        value={simInput}
+                        onChange={(e) => setSimInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSendSimMessage(); } }}
+                        disabled={!simStarted || isSimLoading}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-6 py-4 text-sm text-slate-200 placeholder:text-slate-600 focus:border-indigo-500 transition-colors outline-none pr-12 disabled:opacity-40"
                         placeholder="Practice your Socratic redirection here..."
                       />
-                      <button title="Send response" aria-label="Send response" className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
+                      <button
+                        onClick={handleSendSimMessage}
+                        disabled={!simStarted || isSimLoading || !simInput.trim()}
+                        title="Send response"
+                        aria-label="Send response"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+                      >
                         <Play className="w-4 h-4 text-white" />
                       </button>
                     </div>

@@ -89,6 +89,18 @@ export interface PedagogicalInsight {
   quality_score?: number;
 }
 
+export interface LessonArchitectStep {
+  time: string;
+  title: string;
+  desc: string;
+}
+
+export interface LessonArchitectScript {
+  socratic_hook: string;
+  metaphoric_bridge: string;
+  instructional_sequence: LessonArchitectStep[];
+}
+
 export interface MathTask {
   id?: string;
   evidence_quote?: string; // ANTI-HALLUCINATION: Exact quote from the source video/doc mapping to this task
@@ -119,6 +131,7 @@ export interface MathTask {
   created_at?: string;
   teacher_notes?: string; // Teacher's personal opinion, stance, or manual intervention
   related_task_ids?: string[]; // IDs for Knowledge Graph links
+  lesson_architect_script?: LessonArchitectScript; // Saved output from Pedagogue Command Center's Lesson Architect tab
   prerequisite_task_ids?: string[]; // Specifically for "Task A is prerequisite forTask B"
 }
 
