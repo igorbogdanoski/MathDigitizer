@@ -277,12 +277,12 @@ export const Pricing: React.FC = () => {
 
       <section className="rounded-3xl p-10 bg-gradient-to-r from-indigo-700 to-blue-700 text-white shadow-2xl">
         <div className="max-w-3xl">
-          <h1 className="text-4xl font-black mb-4">MathDigitizer Pro Pricing</h1>
-          <p className="text-indigo-100 text-lg leading-relaxed">Еден јасен teacher plan, годишна цена со подобра вредност и school licensing по договор. Ова е најчистиот стартен модел за независен EdTech SaaS.</p>
+          <h1 className="text-4xl font-black mb-4">MathDigitizer Pro — Ценовник</h1>
+          <p className="text-indigo-100 text-lg leading-relaxed">Еден јасен план за наставници, годишна цена со подобра вредност и школска лиценца по договор. Ова е најчистиот стартен модел за домашен EdTech производ.</p>
           <div className="mt-6 flex flex-wrap gap-3 text-sm font-semibold text-indigo-50">
-            <div className="rounded-full bg-white/15 px-4 py-2">490 MKD месечно</div>
-            <div className="rounded-full bg-white/15 px-4 py-2">4,900 MKD годишно</div>
-            <div className="rounded-full bg-white/15 px-4 py-2">School plan: по договор</div>
+            <div className="rounded-full bg-white/15 px-4 py-2">490 МКД месечно</div>
+            <div className="rounded-full bg-white/15 px-4 py-2">4.900 МКД годишно</div>
+            <div className="rounded-full bg-white/15 px-4 py-2">Школски план: по договор</div>
           </div>
         </div>
       </section>
@@ -293,10 +293,10 @@ export const Pricing: React.FC = () => {
             <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6">Што добивате со Pro Teacher</h2>
             <div className="space-y-4">
               {[
-                'Advanced Analytics со подлабоки педагошки сигнали за секој ученик',
-                'Mass-Curriculum Factory и Materials Factory за побрз batch workflow',
+                'Напредна аналитика со подлабоки педагошки сигнали за секој ученик',
+                'PDF Фабрика и Фабрика за материјали за побрза масовна изработка',
                 'Приоритетни AI генерации за побрза подготовка на часови и тестови',
-                'Подобрен SaaS support и рана пристапност до roadmap подобрувања'
+                'Приоритетна поддршка и рана пристап до идните подобрувања'
               ].map((item) => (
                 <div key={item} className="flex items-center gap-3">
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
@@ -307,46 +307,46 @@ export const Pricing: React.FC = () => {
 
             <div className="grid gap-4 md:grid-cols-3 mt-8">
               <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-5">
-                <div className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">Outcome</div>
+                <div className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">Резултат</div>
                 <div className="text-lg font-black text-slate-900 dark:text-white">Помалку рачна подготовка</div>
-                <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Фокус на време-заштеда, не на endless feature листа.</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Фокус на време-заштеда, не на бескрајна листа од функции.</p>
               </div>
               <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-5">
-                <div className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">Value</div>
-                <div className="text-lg font-black text-slate-900 dark:text-white">Еден teacher = една лиценца</div>
-                <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Најлесен модел за стартен SaaS и најјасен за купување.</p>
+                <div className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">Вредност</div>
+                <div className="text-lg font-black text-slate-900 dark:text-white">Еден наставник = една лиценца</div>
+                <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Најлесен модел за стартен производ и најјасен за купување.</p>
               </div>
               <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-5">
-                <div className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">Trust</div>
-                <div className="text-lg font-black text-slate-900 dark:text-white">Локални payment опции</div>
-                <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">PayPal, банка и подоцна Stripe кога ќе биде целосно активен.</p>
+                <div className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">Доверба</div>
+                <div className="text-lg font-black text-slate-900 dark:text-white">Локални начини на плаќање</div>
+                <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">PayPal, директна банка и подоцна Stripe кога ќе биде целосно активен.</p>
               </div>
             </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
-              <div className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">Free</div>
-              <div className="text-2xl font-black text-slate-900 dark:text-white mb-2">0 MKD</div>
-              <p className="text-sm text-slate-600 dark:text-slate-300">Core користење, добар за проба и почетно onboarding.</p>
+              <div className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">Бесплатно</div>
+              <div className="text-2xl font-black text-slate-900 dark:text-white mb-2">0 МКД</div>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Основно користење, добро за проба и прв чекор во апликацијата.</p>
             </div>
             <div className="rounded-3xl border-2 border-indigo-500 bg-white dark:bg-slate-800 p-6 shadow-lg relative">
-              <div className="absolute -top-3 left-6 rounded-full bg-indigo-600 text-white px-3 py-1 text-xs font-bold uppercase tracking-widest">Recommended</div>
-              <div className="text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-300 mb-3">Pro Teacher</div>
-              <div className="text-2xl font-black text-slate-900 dark:text-white mb-2">490 MKD / месечно</div>
+              <div className="absolute -top-3 left-6 rounded-full bg-indigo-600 text-white px-3 py-1 text-xs font-bold uppercase tracking-widest">Препорачано</div>
+              <div className="text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-300 mb-3">Pro Наставник</div>
+              <div className="text-2xl font-black text-slate-900 dark:text-white mb-2">490 МКД / месечно</div>
               <p className="text-sm text-slate-600 dark:text-slate-300">Најдобар стартен план за индивидуални наставници.</p>
             </div>
             <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
-              <div className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">School</div>
+              <div className="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">Школски план</div>
               <div className="text-2xl font-black text-slate-900 dark:text-white mb-2">По договор</div>
-              <p className="text-sm text-slate-600 dark:text-slate-300">За училишта, фактурирање, bank transfer и onboarding по институција.</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">За училишта, фактурирање, банкарски трансфер и onboarding по институција.</p>
             </div>
           </div>
         </div>
 
         <div className="rounded-3xl border border-indigo-200 dark:border-indigo-700/40 bg-indigo-50 dark:bg-indigo-900/20 p-8 shadow-lg">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-700/40 text-indigo-700 dark:text-indigo-200 text-xs font-bold uppercase tracking-widest mb-4">
-            <Sparkles className="w-4 h-4" /> {selectedPlan.featured ? 'Best Value' : 'Pro'}
+            <Sparkles className="w-4 h-4" /> {selectedPlan.featured ? 'Најдобра вредност' : 'Pro'}
           </div>
 
           <div className="grid grid-cols-2 gap-2 rounded-2xl bg-white/70 dark:bg-slate-900/40 p-2 border border-indigo-100 dark:border-indigo-800/60 mb-6">
@@ -378,11 +378,14 @@ export const Pricing: React.FC = () => {
             <Button onClick={() => handleStartCheckout(primaryOption.channel)} disabled={isRedirecting} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 mb-4">
               {isRedirecting ? 'Пренасочување...' : `${selectedPlan.ctaLabel} преку ${primaryOption.label.replace('Плати со ', '')}`}
             </Button>
-          ) : (
-            <div className="w-full mb-4 rounded-xl border border-amber-300/80 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
-              Моментално нема автоматски checkout линк. Користете PayPal email или директна банкарска трансакција подолу.
-            </div>
-          )}
+          ) : null}
+
+          <div className="w-full mb-4 flex items-start gap-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-900/40 px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
+            <ShieldCheck className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+            <span>
+              Плаќање преку PayPal или директен банкарски трансфер (инструкции подолу). По прикачување потврда за уплата, Pro пристапот се активира рачно — обично во рок од неколку часа.
+            </span>
+          </div>
 
           <div className="space-y-2 mb-4">
             {checkoutOptions.filter((option) => option !== primaryOption).map((option) => (
@@ -401,7 +404,7 @@ export const Pricing: React.FC = () => {
 
           <div className="text-xs text-slate-500 dark:text-slate-300 space-y-2">
             <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4" /> Поддржани канали: Stripe, PayPal и директна банка (според конфигурација)</div>
-            <div className="flex items-center gap-2"><BrainCircuit className="w-4 h-4" /> Целта е јасен ROI за наставник, не комплексен catalog pricing</div>
+            <div className="flex items-center gap-2"><BrainCircuit className="w-4 h-4" /> Целта е јасна вредност за наставникот, а не сложен ценовник</div>
           </div>
 
           <div className="mt-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 p-4 space-y-3 text-sm text-slate-700 dark:text-slate-200">

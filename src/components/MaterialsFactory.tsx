@@ -22,6 +22,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { hasProAccess } from '../lib/saas';
 import { ProFeatureGate } from './ProFeatureGate';
 import { captureError } from '../lib/observability';
+import { WorkflowSteps } from './WorkflowSteps';
 
 export default function MaterialsFactory() {
   const navigate = useNavigate();
@@ -171,6 +172,8 @@ export default function MaterialsFactory() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-10 pb-20 animate-in fade-in duration-700">
+      <WorkflowSteps current="factory" />
+
       {/* Hero Header */}
       <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-900 p-8 md:p-12 text-white shadow-2xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 blur-[100px] -mr-48 -mt-48 rounded-full"></div>

@@ -81,31 +81,35 @@ const AppRoutes = () => {
           
           {/* Protected Routes */}
           <Route path="extract" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute
+              allowedRoles={['teacher']}
+              authFeatureName="Екстракција"
+              authFeatureDescription="Најави се бесплатно за да дигитализираш PDF, слики, видеа или ракопис во структурирани задачи."
+            >
               <ExtractionEngine setActiveTutorTask={setActiveTutorTask} />
             </ProtectedRoute>
           } />
 
           <Route path="exams-grading" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['teacher']} authFeatureName="Dugga">
               <TeacherExamsDashboard />
             </ProtectedRoute>
           } />
 
           <Route path="smart-ocr" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['teacher']} authFeatureName="Smart OCR">
               <SmartOCR />
             </ProtectedRoute>
           } />
 
           <Route path="graph-digitizer" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['teacher']} authFeatureName="Graph Digitizer">
               <GraphDigitizer />
             </ProtectedRoute>
           } />
           
           <Route path="smart-grader" element={
-            <ProtectedRoute allowedRoles={['teacher', 'student']}>
+            <ProtectedRoute allowedRoles={['teacher', 'student']} authFeatureName="AI Градер">
               <SmartGrader />
             </ProtectedRoute>
           } />
@@ -144,13 +148,16 @@ const AppRoutes = () => {
           } />
           
           <Route path="library" element={
-            <ProtectedRoute>
+            <ProtectedRoute
+              authFeatureName="Библиотека"
+              authFeatureDescription="Најави се бесплатно за да пребаруваш и зачувуваш материјали од Националната библиотека."
+            >
               <Library />
             </ProtectedRoute>
           } />
           
           <Route path="factory" element={
-            <ProtectedRoute allowedRoles={['teacher']}>
+            <ProtectedRoute allowedRoles={['teacher']} authFeatureName="Фабрика">
               <MaterialsFactory />
             </ProtectedRoute>
           } />
@@ -161,13 +168,14 @@ const AppRoutes = () => {
               requirePro
               proFeatureName="PDF Фабрика (Batch)"
               proFeatureDescription="Масовното генерирање на работни листови и Curriculum Factory за batch uploads е достапно само за Pro Teacher корисници."
+              authFeatureName="PDF Фабрика"
             >
               <CurriculumFactory />
             </ProtectedRoute>
           } />
           
           <Route path="classrooms" element={
-            <ProtectedRoute>
+            <ProtectedRoute authFeatureName="Училници">
               <Classrooms />
             </ProtectedRoute>
           } />
@@ -185,7 +193,7 @@ const AppRoutes = () => {
           } />
           
           <Route path="flashcards" element={
-            <ProtectedRoute allowedRoles={['student', 'teacher']}>
+            <ProtectedRoute allowedRoles={['student', 'teacher']} authFeatureName="Флешкарти">
               <Flashcards onReviewComplete={() => updateQuestProgress('flashcard')} />
             </ProtectedRoute>
           } />
@@ -197,7 +205,7 @@ const AppRoutes = () => {
           } />
           
           <Route path="dashboard" element={
-            <ProtectedRoute>
+            <ProtectedRoute authFeatureName="Профил">
               <Dashboard userProfile={userProfile} />
             </ProtectedRoute>
           } />
@@ -215,7 +223,7 @@ const AppRoutes = () => {
           } />
           
           <Route path="live-board" element={
-            <ProtectedRoute>
+            <ProtectedRoute authFeatureName="Виртуелна Табла">
               <VirtualWhiteboardPage />
             </ProtectedRoute>
           } />

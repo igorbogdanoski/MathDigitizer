@@ -10,6 +10,7 @@ import { useLibraryStore } from '../store/useLibraryStore';
 import { MathTask } from '../lib/schema';
 import { Button } from './ui/Button';
 import { Card, CardContent } from './ui/Card';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 const LazyMathRenderer = lazy(() => import('./MathRenderer').then(m => ({ default: m.MathRenderer })));
 
@@ -186,10 +187,16 @@ export const PedagogueCommandCenter: React.FC = () => {
     }
   };
 
+  const modalRef = useModalA11y<HTMLDivElement>(() => setIsCommandCenterOpen(false));
+
   if (!isCommandCenterOpen) return null;
 
   return (
     <motion.div 
+      ref={modalRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Pedagogue Command Center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, GraduationCap, Inbox, Settings as SettingsIcon, Check, Sparkles, TrendingUp, AlertTriangle } from 'lucide-react';
+import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, GraduationCap, Inbox, Settings as SettingsIcon, Check, Sparkles, TrendingUp, AlertTriangle, Search } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccessibility } from '../contexts/AccessibilityContext';
@@ -8,12 +8,25 @@ import { signInWithGoogle, logOut } from '../lib/firebase';
 import { RoleSelection } from './RoleSelection';
 import { OnboardingWizard } from './OnboardingWizard';
 import { GlobalAITutor } from './GlobalAITutor';
+import { CommandPalette, type CommandPaletteItem } from './CommandPalette';
 import { SEO } from './SEO';
 import { getRouteSeo } from '../lib/seo';
 import { isOnTrial, trialDaysRemaining, hasProAccess } from '../lib/saas';
 import { trackTrialExpired, trackTrialUrgency } from '../lib/analytics';
 
 import { motion, AnimatePresence } from 'motion/react';
+
+type ToolGroupKey = 'digitize' | 'generate' | 'teach' | 'analyze' | 'admin';
+
+const TOOL_GROUP_ORDER: ToolGroupKey[] = ['digitize', 'generate', 'teach', 'analyze', 'admin'];
+
+const TOOL_GROUP_LABELS: Record<ToolGroupKey, string> = {
+  digitize: 'Дигитализација и стандарди',
+  generate: 'Генерирање материјали',
+  teach: 'Настава и вежбање',
+  analyze: 'Анализа и педагогија',
+  admin: 'Администрација',
+};
 
 export const Layout: React.FC = () => {
   const { user, userProfile, isLoading, setUserProfile } = useAuth();
@@ -23,7 +36,32 @@ export const Layout: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [trialExpiredDismissed, setTrialExpiredDismissed] = useState(false);
+  const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
+  const [isAccessibilityMenuOpen, setIsAccessibilityMenuOpen] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const toolsMenuRef = useRef<HTMLDivElement>(null);
+  const accessibilityMenuRef = useRef<HTMLDivElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
   const routeSeo = getRouteSeo(location.pathname);
+
+  // Close click-toggled dropdowns when clicking/tapping outside of them —
+  // needed because these no longer rely on CSS hover (which doesn't work
+  // reliably on touch devices like classroom tablets).
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(target)) setIsToolsMenuOpen(false);
+      if (accessibilityMenuRef.current && !accessibilityMenuRef.current.contains(target)) setIsAccessibilityMenuOpen(false);
+      if (accountMenuRef.current && !accountMenuRef.current.contains(target)) setIsAccountMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -64,25 +102,51 @@ export const Layout: React.FC = () => {
   ].filter(item => item.show);
 
   const toolItems = [
-    { path: '/curriculum', icon: BookOpen, label: 'Државни Стандарди', show: userProfile?.role === 'teacher' },
-    { path: '/graph-digitizer', icon: TrendingUp, label: 'Graph Digitizer', show: !userProfile || userProfile.role === 'teacher' },
-    { path: '/smart-grader', icon: Brain, label: 'AI Градер', show: true },
-    { path: '/analytics', icon: BrainCircuit, label: 'Аналитика', show: userProfile?.role === 'teacher' },
-    { path: '/flashcards', icon: Brain, label: 'Флешкарти', show: !!userProfile },
-    { path: '/adaptive-test', icon: Zap, label: 'Адаптивен Тест', show: userProfile?.role === 'student' },
-    { path: '/factory', icon: Factory, label: 'Фабрика', show: !userProfile || userProfile.role === 'teacher' },
-    { path: '/mass-factory', icon: Layers, label: 'PDF Фабрика', show: !userProfile || userProfile.role === 'teacher' },
-    { path: '/ai-pedagogy', icon: GraduationCap, label: 'AI Педагогија', show: userProfile?.role === 'teacher' },
-    { path: '/school-inquiries', icon: Inbox, label: 'School Leads', show: userProfile?.role === 'teacher' },
-    { path: '/curriculum-admin', icon: BookOpen, label: 'Curriculum БРО', show: userProfile?.role === 'teacher' },
-    { path: '/live-board', icon: Monitor, label: 'В. Табла', show: true },
-    { path: '/classrooms', icon: Users, label: 'Училници', show: !!userProfile },
-    { path: '/exams-grading', icon: Trophy, label: 'Dugga', show: !userProfile || userProfile.role === 'teacher' },
+    { path: '/curriculum', icon: BookOpen, label: 'Државни Стандарди', show: userProfile?.role === 'teacher', group: 'digitize' as ToolGroupKey },
+    { path: '/graph-digitizer', icon: TrendingUp, label: 'Graph Digitizer', show: !userProfile || userProfile.role === 'teacher', group: 'digitize' as ToolGroupKey },
+    { path: '/curriculum-admin', icon: BookOpen, label: 'Curriculum БРО', show: userProfile?.role === 'teacher', group: 'digitize' as ToolGroupKey },
+    { path: '/factory', icon: Factory, label: 'Фабрика', show: !userProfile || userProfile.role === 'teacher', group: 'generate' as ToolGroupKey },
+    { path: '/mass-factory', icon: Layers, label: 'PDF Фабрика', show: !userProfile || userProfile.role === 'teacher', group: 'generate' as ToolGroupKey },
+    { path: '/live-board', icon: Monitor, label: 'В. Табла', show: true, group: 'teach' as ToolGroupKey },
+    { path: '/classrooms', icon: Users, label: 'Училници', show: !!userProfile, group: 'teach' as ToolGroupKey },
+    { path: '/exams-grading', icon: Trophy, label: 'Dugga', show: !userProfile || userProfile.role === 'teacher', group: 'teach' as ToolGroupKey },
+    { path: '/adaptive-test', icon: Zap, label: 'Адаптивен Тест', show: userProfile?.role === 'student', group: 'teach' as ToolGroupKey },
+    { path: '/flashcards', icon: Brain, label: 'Флешкарти', show: !!userProfile, group: 'teach' as ToolGroupKey },
+    { path: '/analytics', icon: BrainCircuit, label: 'Аналитика', show: userProfile?.role === 'teacher', group: 'analyze' as ToolGroupKey },
+    { path: '/ai-pedagogy', icon: GraduationCap, label: 'AI Педагогија', show: userProfile?.role === 'teacher', group: 'analyze' as ToolGroupKey },
+    { path: '/smart-grader', icon: Brain, label: 'AI Градер', show: true, group: 'analyze' as ToolGroupKey },
+    { path: '/school-inquiries', icon: Inbox, label: 'School Leads', show: userProfile?.role === 'teacher', group: 'admin' as ToolGroupKey },
   ].filter(item => item.show);
+
+  const groupedToolItems = TOOL_GROUP_ORDER.map((groupKey) => ({
+    key: groupKey,
+    label: TOOL_GROUP_LABELS[groupKey],
+    items: toolItems.filter((item) => item.group === groupKey),
+  })).filter((group) => group.items.length > 0);
+
+  const commandPaletteItems: CommandPaletteItem[] = [
+    ...mainNavItems.map((item) => ({ path: item.path, icon: item.icon, label: item.label, groupLabel: 'Главно' })),
+    ...toolItems.map((item) => ({ path: item.path, icon: item.icon, label: item.label, groupLabel: TOOL_GROUP_LABELS[item.group] })),
+  ];
+
+  // Global "go to anything" shortcut — Ctrl/Cmd+K.
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
+    setIsToolsMenuOpen(false);
+    setIsAccessibilityMenuOpen(false);
+    setIsAccountMenuOpen(false);
   }, [location.pathname]);
 
   return (
@@ -217,33 +281,45 @@ export const Layout: React.FC = () => {
               })}
 
               {toolItems.length > 0 && (
-                <div className="relative group ml-1 z-[100]">
-                  <button type="button" className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors">
+                <div ref={toolsMenuRef} className="relative ml-1 z-[100]">
+                  <button
+                    type="button"
+                    onClick={() => setIsToolsMenuOpen((prev) => !prev)}
+                    aria-haspopup="menu"
+                    aria-expanded={isToolsMenuOpen}
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
+                  >
                     <MoreHorizontal className="w-4 h-4" />
                     <span>Алатки</span>
-                    <ChevronDown className="w-3 h-3 opacity-50 group-hover:rotate-180 transition-transform duration-300" />
+                    <ChevronDown className={`w-3 h-3 opacity-50 transition-transform duration-300 ${isToolsMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  <div className="absolute top-10 left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 min-w-[200px]">
-                    <div className="w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 flex flex-col gap-0.5 max-h-[70vh] overflow-y-auto">
-                      <div className="px-3 py-1 mb-1 text-xs font-bold text-slate-400 uppercase tracking-widest hidden sm:block">Сите Алатки</div>
-                      {toolItems.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = location.pathname === item.path;
-                        return (
-                          <Link
-                            key={item.path}
-                            to={item.path}
-                            className={`flex items-center gap-3 px-4 py-2 text-sm font-medium transition-colors mx-1 rounded-lg ${
-                              isActive 
-                                ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400' 
-                                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white'
-                            }`}
-                          >
-                            <Icon className="w-4 h-4 opacity-70" />
-                            <span>{item.label}</span>
-                          </Link>
-                        );
-                      })}
+                  <div
+                    className={`absolute top-10 left-0 pt-2 transition-all duration-200 min-w-[240px] ${isToolsMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                  >
+                    <div className="w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 flex flex-col gap-0.5 max-h-[70vh] overflow-y-auto">
+                      {groupedToolItems.map((toolGroup, groupIndex) => (
+                        <div key={toolGroup.key} className={groupIndex > 0 ? 'mt-1 pt-1 border-t border-slate-100 dark:border-slate-700/60' : ''}>
+                          <div className="px-4 py-1 mb-0.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">{toolGroup.label}</div>
+                          {toolGroup.items.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = location.pathname === item.path;
+                            return (
+                              <Link
+                                key={item.path}
+                                to={item.path}
+                                className={`flex items-center gap-3 px-4 py-2 text-sm font-medium transition-colors mx-1 rounded-lg ${
+                                  isActive 
+                                    ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400' 
+                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white'
+                                }`}
+                              >
+                                <Icon className="w-4 h-4 opacity-70" />
+                                <span>{item.label}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -252,6 +328,19 @@ export const Layout: React.FC = () => {
           </nav>
 
           <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Quick search / command palette trigger */}
+            <button
+              type="button"
+              onClick={() => setIsCommandPaletteOpen(true)}
+              className="hidden md:flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xs font-medium"
+              title="Брзо пребарување"
+              aria-label="Отвори брзо пребарување"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">Пребарај</span>
+              <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-[10px] font-bold">Ctrl K</kbd>
+            </button>
+
             {/* Quick theme toggle (always visible, instant feedback) */}
             <button
               type="button"
@@ -264,16 +353,19 @@ export const Layout: React.FC = () => {
             </button>
 
             {/* Accessibility settings dropdown */}
-            <div className="relative group z-[100]">
+            <div ref={accessibilityMenuRef} className="relative z-[100]">
               <button
                 type="button"
+                onClick={() => setIsAccessibilityMenuOpen((prev) => !prev)}
+                aria-haspopup="menu"
+                aria-expanded={isAccessibilityMenuOpen}
                 className={`p-2 rounded-full transition-colors ${(dyslexiaMode || dyscalculiaMode) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                 title="Пристапност"
                 aria-label="Accessibility settings"
               >
                 <SettingsIcon className="w-4 h-4" />
               </button>
-              <div className="absolute top-10 right-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 min-w-[260px]">
+              <div className={`absolute top-10 right-0 pt-2 transition-all duration-200 min-w-[260px] ${isAccessibilityMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
                 <div className="w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2">
                   <div className="px-4 py-2 text-[10px] font-bold tracking-widest uppercase text-slate-400">Пристапност</div>
                   <button
@@ -305,9 +397,12 @@ export const Layout: React.FC = () => {
             <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block mx-1"></div>
 
             {user ? (
-              <div className="relative group z-[100]">
+              <div ref={accountMenuRef} className="relative z-[100]">
                 <button
                   type="button"
+                  onClick={() => setIsAccountMenuOpen((prev) => !prev)}
+                  aria-haspopup="menu"
+                  aria-expanded={isAccountMenuOpen}
                   className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   title={user.email ?? ''}
                   aria-label="Account menu"
@@ -322,7 +417,7 @@ export const Layout: React.FC = () => {
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
                 </button>
 
-                <div className="absolute top-12 right-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 min-w-[280px]">
+                <div className={`absolute top-12 right-0 pt-2 transition-all duration-200 min-w-[280px] ${isAccountMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
                   <div className="w-72 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                     <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3">
                       {user.photoURL ? (
@@ -405,26 +500,30 @@ export const Layout: React.FC = () => {
             })}
             
             {toolItems.length > 0 && (
-              <div className="mt-6">
-                <div className="px-4 mb-2 text-xs font-bold tracking-widest uppercase text-slate-400">Алатки</div>
-                {toolItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = location.pathname === item.path;
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className={`flex items-center gap-3 px-4 py-3 text-base font-medium rounded-xl transition-colors ${
-                        isActive 
-                          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' 
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5 bg-white dark:bg-slate-800 rounded-lg p-0.5 shadow-sm border border-slate-200 dark:border-slate-700" />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
+              <div className="mt-6 space-y-4">
+                {groupedToolItems.map((toolGroup) => (
+                  <div key={toolGroup.key}>
+                    <div className="px-4 mb-2 text-xs font-bold tracking-widest uppercase text-slate-400">{toolGroup.label}</div>
+                    {toolGroup.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = location.pathname === item.path;
+                      return (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          className={`flex items-center gap-3 px-4 py-3 text-base font-medium rounded-xl transition-colors ${
+                            isActive 
+                              ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' 
+                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <Icon className="w-5 h-5 bg-white dark:bg-slate-800 rounded-lg p-0.5 shadow-sm border border-slate-200 dark:border-slate-700" />
+                          <span>{item.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
             )}
 
@@ -470,6 +569,12 @@ export const Layout: React.FC = () => {
         </AnimatePresence>
       </main>
       
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        items={commandPaletteItems}
+      />
+
       {/* Global AI Pedagogical Assistant (only for logged in users) */}
       {userProfile && <GlobalAITutor />}
 

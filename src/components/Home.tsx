@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BrainCircuit, BookOpen, Factory, Wand2, ArrowRight, Sparkles, Quote, Play, Square, Info, X, FileText, Cpu, ShieldCheck, CheckCircle, FileType2, Zap, Users, Star } from 'lucide-react';
 import { Button } from './ui/Button';
@@ -94,6 +94,22 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
   const [showGuide, setShowGuide] = useState(false);
   const [kahootPin, setKahootPin] = useState('');
   const isPro = hasProAccess(userProfile);
+  const footerCtaRef = useRef<HTMLDivElement>(null);
+  const [isFooterCtaVisible, setIsFooterCtaVisible] = useState(false);
+  const [stickyBarDismissed, setStickyBarDismissed] = useState(false);
+
+  // Hide the sticky bottom CTA once the equivalent footer CTA is already
+  // visible on screen, so guests never see two "sign up" prompts at once.
+  useEffect(() => {
+    const node = footerCtaRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsFooterCtaVisible(entry.isIntersecting),
+      { rootMargin: '0px 0px -10% 0px' }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   const handleJoinKahoot = (e: React.FormEvent) => {
     e.preventDefault();
@@ -599,7 +615,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
       </section>
 
       {/* Modern High-End Footer Teaser for Pricing */}
-      <section className="max-w-4xl mx-auto px-6 text-center pt-8 border-t border-slate-200 dark:border-slate-800/50 pb-12">
+      <section ref={footerCtaRef} className="max-w-4xl mx-auto px-6 text-center pt-8 border-t border-slate-200 dark:border-slate-800/50 pb-12">
          <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight transition-colors duration-300">Подготвени да ја трансформирате едукацијата?</h2>
         <p className="text-slate-500 dark:text-slate-400 font-medium mb-8 transition-colors duration-300">Core користењето останува достапно, а Pro е наменет за наставници што сакаат побрз, посигурен и посериозен workflow.</p>
          {!user ? (
@@ -711,32 +727,47 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
         )}
       </AnimatePresence>
 
-      {/* Sticky bottom CTA — only for non-logged-in visitors, dismissible */}
-      {!user && (
-        <motion.div
-          initial={{ y: 80, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 2.5, duration: 0.5, ease: 'easeOut' }}
-          className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between gap-4 px-5 py-3.5 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800 shadow-[0_-4px_30px_rgba(79,70,229,0.25)] sm:px-8"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shrink-0">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <p className="text-sm text-slate-200 font-medium truncate">
-              <span className="text-white font-bold">Бесплатна регистрација</span> — пробај ги сите core функции веднаш.
-            </p>
-          </div>
-          <Button
-            size="sm"
-            onClick={signInWithGoogle}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl px-5 shrink-0 h-9"
+      {/* Sticky bottom CTA — only for non-logged-in visitors, hidden once the
+          footer CTA above is already visible, and dismissible with the X. */}
+      <AnimatePresence>
+        {!user && !isFooterCtaVisible && !stickyBarDismissed && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ delay: 2.5, duration: 0.5, ease: 'easeOut' }}
+            className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between gap-4 px-5 py-3.5 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800 shadow-[0_-4px_30px_rgba(79,70,229,0.25)] sm:px-8"
           >
-            Започни
-            <ArrowRight className="w-4 h-4 ml-1.5" />
-          </Button>
-        </motion.div>
-      )}
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shrink-0">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <p className="text-sm text-slate-200 font-medium truncate">
+                <span className="text-white font-bold">Бесплатна регистрација</span> — пробај ги сите core функции веднаш.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                onClick={signInWithGoogle}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl px-5 h-9"
+              >
+                Започни
+                <ArrowRight className="w-4 h-4 ml-1.5" />
+              </Button>
+              <button
+                type="button"
+                onClick={() => setStickyBarDismissed(true)}
+                aria-label="Затвори ја оваа порака"
+                title="Затвори"
+                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

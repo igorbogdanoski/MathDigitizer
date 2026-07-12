@@ -13,6 +13,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface MaterialPreviewProps {
   type: MaterialType;
@@ -29,6 +30,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
   const { user } = useAuth();
   const { showToast } = useToast();
   const printRef = useRef<HTMLDivElement>(null);
+  const modalRef = useModalA11y<HTMLDivElement>(onClose);
   
   const launchKahoot = async () => {
     if (!user) {
@@ -441,7 +443,13 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md overflow-y-auto">
+    <div
+      ref={modalRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Преглед на материјал"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md overflow-y-auto"
+    >
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

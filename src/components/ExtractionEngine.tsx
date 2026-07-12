@@ -26,6 +26,7 @@ import { KahootMaker } from './KahootMaker';
 import { MakedoTestGenerator } from './MakedoTestGenerator';
 import { GeoGebraViewer } from './GeoGebraViewer';
 import { SEO } from './SEO';
+import { WorkflowSteps } from './WorkflowSteps';
 
 interface ExtractionEngineProps {
   setActiveTutorTask: (task: MathTask) => void;
@@ -396,6 +397,8 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
         keywords="ai екстракција, математика, youtube математика, pdf ocr"
       />
       
+      <WorkflowSteps current="extract" />
+
       {/* Top Level Mode Selector */}
       <div className="flex justify-center mb-8">
         <div className="inline-flex bg-slate-100 p-1 rounded-2xl shadow-inner border border-slate-200">
@@ -435,12 +438,16 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
         <MakedoTestGenerator tasks={tasks} />
       ) : (
         <>
-          {!isPro && sessionExtractionCount > 0 && (
-            <div className="rounded-2xl border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20 px-5 py-3 flex items-center justify-between gap-4 text-sm">
-              <span className="text-amber-800 dark:text-amber-200 font-medium">
+          {!isPro && (
+            <div className={`rounded-2xl border px-5 py-3 flex items-center justify-between gap-4 text-sm ${
+              sessionExtractionCount >= FREE_EXTRACTION_LIMIT - 1
+                ? 'border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20'
+                : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50'
+            }`}>
+              <span className={`font-medium ${sessionExtractionCount >= FREE_EXTRACTION_LIMIT - 1 ? 'text-amber-800 dark:text-amber-200' : 'text-slate-600 dark:text-slate-300'}`}>
                 Бесплатен тир: {sessionExtractionCount}/{FREE_EXTRACTION_LIMIT} екстракции искористени оваа сесија.
               </span>
-              <a href="/pricing" className="text-amber-700 dark:text-amber-300 font-bold underline underline-offset-2 whitespace-nowrap">
+              <a href="/pricing" className={`font-bold underline underline-offset-2 whitespace-nowrap ${sessionExtractionCount >= FREE_EXTRACTION_LIMIT - 1 ? 'text-amber-700 dark:text-amber-300' : 'text-indigo-600 dark:text-indigo-400'}`}>
                 Надгради на Pro →
               </a>
             </div>

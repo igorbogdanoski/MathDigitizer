@@ -24,6 +24,7 @@ import rehypeKatex from 'rehype-katex';
 import { generateInterventionPlan } from '../lib/gemini';
 import { hasProAccess } from '../lib/saas';
 import { ProFeatureGate } from './ProFeatureGate';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 // Advanced Math Pedagogy Strands (Kilpatrick et al., "Adding It Up")
 const MATH_STRANDS = [
@@ -45,6 +46,7 @@ export const AnalyticsDashboard: React.FC = () => {
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [interventionPlan, setInterventionPlan] = useState<string | null>(null);
   const isPro = hasProAccess(userProfile);
+  const interventionModalRef = useModalA11y<HTMLDivElement>(() => setInterventionPlan(null));
 
   if (!isPro) {
     return (
@@ -719,7 +721,13 @@ export const AnalyticsDashboard: React.FC = () => {
       {/* Socratic Intervention Modals */}
       <AnimatePresence>
         {interventionPlan && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
+          <div
+            ref={interventionModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Сократов План за Интервенција"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8"
+          >
             <motion.div 
                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"

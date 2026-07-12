@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { calculateSM2 } from '../lib/srsAlgorithm';
 import { generateFlashcards } from '../lib/gemini';
 import { useToast } from '../contexts/ToastContext';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface FlashcardsProps {
   onReviewComplete?: () => void;
@@ -40,6 +41,9 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
   const [showAIModal, setShowAIModal] = useState(false);
   const [aiTopic, setAiTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+
+  const addModalRef = useModalA11y<HTMLDivElement>(() => setShowAddModal(false));
+  const aiModalRef = useModalA11y<HTMLDivElement>(() => setShowAIModal(false));
 
   // Quiz State
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
@@ -808,7 +812,13 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
       {/* Add Modal */}
       <AnimatePresence>
         {showAddModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div
+            ref={addModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Креирај Картичка"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+          >
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -942,7 +952,13 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
       {/* AI Generate Modal */}
       <AnimatePresence>
         {showAIModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div
+            ref={aiModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="AI Генератор"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+          >
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}

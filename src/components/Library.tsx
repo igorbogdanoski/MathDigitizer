@@ -31,6 +31,8 @@ import { Skeleton } from './ui/Skeleton';
 import { useRealtimeTasks } from '../hooks/useRealtimeTasks';
 import { useToast } from '../contexts/ToastContext';
 import { WorksheetModal } from './library/WorksheetModal';
+import { useModalA11y } from '../hooks/useModalA11y';
+import { WorkflowSteps } from './WorkflowSteps';
 
 export const Library: React.FC = () => {
   const store = useLibraryStore();
@@ -45,6 +47,9 @@ export const Library: React.FC = () => {
   const [manipulativeType, setManipulativeType] = useState<'algebra-tiles' | 'geogebra-3d'>('algebra-tiles');
   const [isGeneratingKahoot, setIsGeneratingKahoot] = useState(false);
   const [showWorksheetModal, setShowWorksheetModal] = useState(false);
+
+  const graphModalRef = useModalA11y<HTMLDivElement>(() => store.setActiveGraphTask(null));
+  const manipulativesModalRef = useModalA11y<HTMLDivElement>(() => setShowManipulativesModal(false));
 
   useEffect(() => {
     const handleOpenModal = () => setShowCreateModal(true);
@@ -268,6 +273,8 @@ export const Library: React.FC = () => {
 
   return (
     <div className="space-y-6 relative">
+      <WorkflowSteps current="library" />
+
       {isGeneratingKahoot && (
         <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-white animate-in fade-in">
            <div className="w-16 h-16 border-4 border-indigo-500 border-t-white rounded-full animate-spin mb-6"></div>
@@ -428,7 +435,13 @@ export const Library: React.FC = () => {
 
       <AnimatePresence>
         {store.activeGraphTask && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div
+            ref={graphModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Интерактивен График"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+          >
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -507,7 +520,14 @@ export const Library: React.FC = () => {
       {/* Mathigon / GeoGebra Manipulatives Modal */}
       <AnimatePresence>
         {showManipulativesModal && (
-           <div className="fixed inset-0 z-[100] flex flex-col p-4 bg-slate-900/80 backdrop-blur-sm" onClick={() => setShowManipulativesModal(false)}>
+           <div
+             ref={manipulativesModalRef}
+             role="dialog"
+             aria-modal="true"
+             aria-label="Математички Манипулативи"
+             className="fixed inset-0 z-[100] flex flex-col p-4 bg-slate-900/80 backdrop-blur-sm"
+             onClick={() => setShowManipulativesModal(false)}
+           >
              <motion.div 
                initial={{ opacity: 0, scale: 0.95, y: 20 }}
                animate={{ opacity: 1, scale: 1, y: 0 }}
