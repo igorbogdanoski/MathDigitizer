@@ -13,6 +13,7 @@ import { db, auth } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { analyzeGraphWithAI, GraphAnalysis } from '../lib/gemini';
 import { SEO } from './SEO';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -124,6 +125,7 @@ export const GraphDigitizer: React.FC = () => {
   const [waitingCalib, setWaitingCalib] = useState<1 | 2 | null>(null);
   const [pendingPixel, setPendingPixel] = useState<{ x: number; y: number } | null>(null);
   const [calibDialog, setCalibDialog] = useState(false);
+  const calibModalRef = useModalA11y<HTMLDivElement>(() => { setCalibDialog(false); setPendingPixel(null); });
   const [calibInput, setCalibInput] = useState({ x: '', y: '' });
 
   // Datasets
@@ -950,7 +952,7 @@ export const GraphDigitizer: React.FC = () => {
 
       {/* Calibration dialog */}
       {calibDialog && pendingPixel && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div ref={calibModalRef} role="dialog" aria-modal="true" className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6 w-80 space-y-4">
             <div className="flex items-center gap-2">
               <Target className="w-5 h-5 text-indigo-600" />

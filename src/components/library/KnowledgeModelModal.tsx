@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, ExternalLink } from 'lucide-react';
 import { MathTask } from '../../lib/schema';
 import { KnowledgeModelSolver } from './KnowledgeModelSolver';
+import { useModalA11y } from '../../hooks/useModalA11y';
 
 interface Props {
   task: MathTask | null;
@@ -10,11 +11,18 @@ interface Props {
 }
 
 export const KnowledgeModelModal: React.FC<Props> = ({ task, onClose }) => {
+  const modalRef = useModalA11y<HTMLDivElement>(onClose);
+
   if (!task) return null;
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      >
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}

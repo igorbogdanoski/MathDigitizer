@@ -43,7 +43,7 @@ export const StudentSkillTree: React.FC<{ currentXP: number }> = ({ currentXP })
   };
 
   return (
-    <div className="w-full relative bg-slate-950 rounded-[3rem] p-8 md:p-12 overflow-hidden shadow-2xl border border-slate-800 min-h-[800px] flex items-center justify-center">
+    <div className="w-full relative bg-slate-950 rounded-7xl p-8 md:p-12 overflow-hidden shadow-2xl border border-slate-800 min-h-[800px] flex items-center justify-center">
       {/* Background decorations */}
       <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#6366f1 2px, transparent 2px)', backgroundSize: '60px 60px' }} />
       <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(2,6,23,1))] pointer-events-none"></div>
@@ -136,7 +136,7 @@ export const StudentSkillTree: React.FC<{ currentXP: number }> = ({ currentXP })
              exit={{ opacity: 0, x: 50, scale: 0.95 }}
              className="absolute bottom-10 right-10 z-50 w-96"
           >
-             <Card className="bg-slate-900/95 backdrop-blur-2xl border-slate-700 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden rounded-[2rem]">
+             <Card className="bg-slate-900/95 backdrop-blur-2xl border-slate-700 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden rounded-5xl">
                 <div className="h-1.5 bg-gradient-to-r from-rose-500 via-indigo-500 to-blue-500"></div>
                 <CardContent className="p-8">
                    <div className="flex justify-between items-start mb-6">

@@ -101,7 +101,7 @@ export const KahootMaker = () => {
   if (draftQuiz) {
     return (
       <div className="w-full max-w-4xl mx-auto space-y-6 animate-in slide-in-from-bottom-8">
-         <div className="bg-white rounded-[2rem] shadow-xl p-8 border border-slate-100">
+         <div className="bg-white rounded-5xl shadow-xl p-8 border border-slate-100">
              <div className="flex justify-between items-center mb-8 pb-6 border-b border-slate-100">
                 <div>
                    <h2 className="text-2xl font-black text-slate-800 tracking-tight">Преглед на Квизот</h2>
@@ -163,7 +163,7 @@ export const KahootMaker = () => {
         </p>
       </div>
 
-      <div className="bg-white rounded-[2rem] shadow-xl p-8 md:p-10 border border-slate-100">
+      <div className="bg-white rounded-5xl shadow-xl p-8 md:p-10 border border-slate-100">
         <div className="space-y-8">
           <div>
             <label className="text-sm font-bold text-slate-700 uppercase tracking-widest block mb-4 flex items-center gap-2">

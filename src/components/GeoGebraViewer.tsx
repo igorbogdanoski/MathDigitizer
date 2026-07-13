@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Minimize2, Activity, PenTool, MousePointer2, Play } from 'lucide-react';
 import { Button } from './ui/Button';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface GeoGebraViewerProps {
   commands: string[];
@@ -43,6 +44,8 @@ export function GeoGebraViewer({ commands, onClose, inline = false }: GeoGebraVi
   useEffect(() => {
     postMsg({ type: 'setPenSize', size: strokeWidth * 2 }); // Scale for GeoGebra
   }, [strokeWidth]);
+
+  const modalRef = useModalA11y<HTMLDivElement>(() => onClose?.());
 
   if (isMinimized && !inline) {
     return (
@@ -198,7 +201,13 @@ export function GeoGebraViewer({ commands, onClose, inline = false }: GeoGebraVi
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-in fade-in zoom-in duration-300 shadow-2xl">
+    <div
+      ref={modalRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="GeoGebra Интерактивно Платно"
+      className="fixed inset-0 z-[100] bg-white flex flex-col animate-in fade-in zoom-in duration-300 shadow-2xl"
+    >
       {/* Header Toolbar */}
       <div className="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 text-white shrink-0">
         <div className="flex items-center gap-3">

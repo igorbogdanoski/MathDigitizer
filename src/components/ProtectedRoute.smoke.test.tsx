@@ -10,12 +10,20 @@ vi.mock('../contexts/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+vi.mock('../contexts/ToastContext', () => ({
+  useToast: () => ({ showToast: vi.fn() }),
+}));
+
+vi.mock('../lib/firebase', () => ({
+  signInWithGoogle: vi.fn(),
+}));
+
 describe('ProtectedRoute smoke', () => {
   beforeEach(() => {
     mockUseAuth.mockReset();
   });
 
-  it('redirects unauthenticated users to home', () => {
+  it('shows an in-place sign-in gate for unauthenticated users instead of redirecting', () => {
     mockUseAuth.mockReturnValue({
       user: null,
       userProfile: null,
@@ -29,7 +37,7 @@ describe('ProtectedRoute smoke', () => {
           <Route
             path="/private"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute authFeatureName="Приватна страница">
                 <div>Private page</div>
               </ProtectedRoute>
             }
@@ -38,7 +46,10 @@ describe('ProtectedRoute smoke', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Home page')).toBeInTheDocument();
+    expect(screen.queryByText('Home page')).not.toBeInTheDocument();
+    expect(screen.queryByText('Private page')).not.toBeInTheDocument();
+    expect(screen.getByText(/Најави се со Google/i)).toBeInTheDocument();
+    expect(screen.getByText(/Приватна страница/i)).toBeInTheDocument();
   });
 
   it('blocks route when role is not allowed — student goes to /student-dashboard', () => {

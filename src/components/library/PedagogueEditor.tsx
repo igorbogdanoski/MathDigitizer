@@ -16,6 +16,7 @@ import { VoiceInputButton } from '../VoiceInputButton';
 import { enhancePedagogueTask } from '../../lib/gemini';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { useModalA11y } from '../../hooks/useModalA11y';
 
 export const PedagogueEditor: React.FC = () => {
   const { editingTask, setEditingTask, tasks, setTasks, onTaskUpdated } = useLibraryStore();
@@ -23,6 +24,8 @@ export const PedagogueEditor: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'content' | 'pedagogy' | 'ai'>('content');
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [isAILoading, setIsAILoading] = useState(false);
+
+  const modalRef = useModalA11y<HTMLDivElement>(() => setEditingTask(null));
 
   useEffect(() => {
     if (editingTask) {
@@ -172,7 +175,10 @@ export const PedagogueEditor: React.FC = () => {
   };
 
   return (
-    <motion.div 
+    <motion.div
+      ref={modalRef}
+      role="dialog"
+      aria-modal="true"
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.98 }}
@@ -677,7 +683,7 @@ export const PedagogueEditor: React.FC = () => {
                           key={action.id}
                           onClick={() => handleAIAction(action.id as any)}
                           disabled={isAILoading}
-                          className="bg-slate-900 border border-white/5 rounded-[2rem] p-8 text-center hover:border-indigo-500 transition-all hover:bg-slate-900/50 group"
+                          className="bg-slate-900 border border-white/5 rounded-5xl p-8 text-center hover:border-indigo-500 transition-all hover:bg-slate-900/50 group"
                         >
                           <div className={`w-12 h-12 rounded-2xl bg-${action.color}-500/10 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform`}>
                             <action.icon className={`w-6 h-6 text-${action.color}-400`} />

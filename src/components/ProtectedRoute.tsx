@@ -1,8 +1,9 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { hasProAccess } from '../lib/saas';
 import { ProFeatureGate } from './ProFeatureGate';
+import { AuthRequiredGate } from './AuthRequiredGate';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -11,6 +12,9 @@ interface ProtectedRouteProps {
   requirePro?: boolean;
   proFeatureName?: string;
   proFeatureDescription?: string;
+  /** Human-readable label shown on the sign-in gate, e.g. "Библиотека". */
+  authFeatureName?: string;
+  authFeatureDescription?: string;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
@@ -19,9 +23,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requirePro,
   proFeatureName = 'Pro функционалност',
   proFeatureDescription = 'Оваа алатка е достапна само за Pro Teacher корисници. Надгради за да добиеш пристап.',
+  authFeatureName,
+  authFeatureDescription,
 }) => {
   const { user, userProfile, isLoading } = useAuth();
-  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -33,7 +38,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!user) {
-    return <Navigate to="/" state={{ from: location }} replace />;
+    return <AuthRequiredGate featureName={authFeatureName} description={authFeatureDescription} />;
   }
 
   if (allowedRoles && userProfile && !allowedRoles.includes(userProfile.role)) {

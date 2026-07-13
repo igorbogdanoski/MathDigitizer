@@ -59,7 +59,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   const [isGradeDropdownOpen, setIsGradeDropdownOpen] = useState(false);
   const { showToast } = useToast();
   const [isGeneratingEmbeddings, setIsGeneratingEmbeddings] = useState(false);
-  
+
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const dokDropdownRef = useRef<HTMLDivElement>(null);
   const gradeDropdownRef = useRef<HTMLDivElement>(null);
@@ -70,10 +70,10 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
     if (!confirm(`Дали сте сигурни дека сакате да генерирате embeddings за ${missingEmbeddingsCount} задачи? Ова може да потрае и ќе користи квота од АИ.`)) {
       return;
     }
-    
+
     setIsGeneratingEmbeddings(true);
     let successCount = 0;
-    
+
     // We do it sequentially or tiny batches to not hit rate limits easily
     const tasksToProcess = tasks.filter(t => !t.embedding && t.id);
     for (const task of tasksToProcess) {
@@ -88,7 +88,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
         console.error("Embedding generate failed for task " + task.id, err);
       }
     }
-    
+
     showToast(`Успешно генерирани ${successCount} од ${missingEmbeddingsCount} задачи.`, 'success');
     setIsGeneratingEmbeddings(false);
   };
@@ -148,8 +148,9 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   };
 
   return (
-    <Card className="mb-6 border-slate-200 shadow-xl shadow-blue-900/5 rounded-[2rem] bg-white dark:bg-slate-800 relative z-10">
-      <CardContent className="p-6">
+    <Card className="mb-6 border-slate-200 dark:border-white/10 shadow-xl shadow-blue-900/5 dark:shadow-none rounded-5xl bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl relative z-10 dark:overflow-hidden">
+      <div className="hidden dark:block absolute -top-24 -right-24 w-72 h-72 bg-indigo-500/10 blur-[100px] rounded-full pointer-events-none" />
+      <CardContent className="p-6 relative z-10">
         <div className="flex flex-col gap-6">
           {/* Top Row: Search and Selection Mode */}
           <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
@@ -159,7 +160,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                   {isSemanticSearching ? (
                      <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
                   ) : searchMode === 'semantic' ? (
-                     <Brain className="w-5 h-5 text-purple-500" />
+                     <Brain className="w-5 h-5 text-purple-500 dark:text-purple-400" />
                   ) : (
                      <Search className="w-5 h-5 text-indigo-400" />
                   )}
@@ -169,7 +170,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                   placeholder={searchMode === 'semantic' ? "Семантичко пребарување (пр. задачи со триаголници и Питагорова теорема)..." : "Текстуално пребарување..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 pr-12 h-14 text-lg bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-800 transition-colors rounded-2xl shadow-inner text-slate-700 dark:text-slate-200 font-medium placeholder:text-slate-400"
+                  className="pl-12 pr-12 h-14 text-lg bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-white/10 focus:bg-white dark:focus:bg-slate-950 transition-colors rounded-2xl shadow-inner text-slate-700 dark:text-slate-200 font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 />
                 {searchQuery && (
                   <button
@@ -181,45 +182,45 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                   </button>
                 )}
               </div>
-              
-              <div className="flex items-center ml-2 border bg-slate-100 rounded-lg max-w-max p-1">
+
+              <div className="flex items-center ml-2 border dark:border-white/10 bg-slate-100 dark:bg-white/5 rounded-lg max-w-max p-1">
                  <button
                     type="button"
                     onClick={() => { setSearchMode('keyword'); setSemanticQueryEmbedding(null); }}
-                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${searchMode === 'keyword' ? 'bg-white text-indigo-700 shadow flex items-center gap-1' : 'text-slate-500 flex items-center gap-1'}`}
+                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${searchMode === 'keyword' ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow flex items-center gap-1' : 'text-slate-500 dark:text-slate-400 flex items-center gap-1'}`}
                  >
                     <Search className="w-3 h-3" /> Текстуално (Fuzzy)
                  </button>
                  <button
                     type="button"
                     onClick={() => setSearchMode('semantic')}
-                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${searchMode === 'semantic' ? 'bg-white text-purple-700 shadow flex items-center gap-1' : 'text-slate-500 flex items-center gap-1'}`}
+                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${searchMode === 'semantic' ? 'bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-300 shadow flex items-center gap-1' : 'text-slate-500 dark:text-slate-400 flex items-center gap-1'}`}
                     title="Користи Вештачка Интелигенција за пребарување по значење"
                  >
                     <Brain className="w-3 h-3" /> Семантичко
                  </button>
               </div>
-              
+
               {searchMode === 'semantic' && missingEmbeddingsCount > 0 && (
                 <div className="flex justify-start ml-2">
-                   <button 
+                   <button
                      type="button"
                      onClick={handleGenerateMissingEmbeddings}
                      disabled={isGeneratingEmbeddings}
-                     className="text-[10px] text-orange-500 hover:text-orange-700 underline flex items-center gap-1"
+                     className="text-[10px] text-orange-500 dark:text-amber-400 hover:text-orange-700 dark:hover:text-amber-300 underline flex items-center gap-1"
                    >
                      {isGeneratingEmbeddings ? <Loader2 className="w-3 h-3 animate-spin" /> : <Brain className="w-3 h-3" />}
                      {isGeneratingEmbeddings ? 'Генерирање: почекајте...' : `Ажурирај ${missingEmbeddingsCount} неиндексирани задачи`}
                    </button>
                 </div>
               )}
-              
+
               {/* Search History Dropdown */}
               {searchQuery === '' && searchHistory.length > 0 && (
-                <div className="absolute z-20 top-full left-0 mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg overflow-hidden">
-                  <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                    <span className="text-xs font-semibold text-slate-500 uppercase">Скорешни пребарувања</span>
-                    <button onClick={() => { setSearchHistory([]); localStorage.removeItem('searchHistory'); }} className="text-xs text-slate-400 hover:text-slate-600">Избриши</button>
+                <div className="absolute z-20 top-full left-0 mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-md shadow-lg dark:shadow-2xl overflow-hidden">
+                  <div className="px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-white/10 flex justify-between items-center">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Скорешни пребарувања</span>
+                    <button onClick={() => { setSearchHistory([]); localStorage.removeItem('searchHistory'); }} className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">Избриши</button>
                   </div>
                   <ul>
                     {searchHistory.map((query, idx) => (
@@ -227,7 +228,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                         <button
                           type="button"
                           onClick={() => setSearchQuery(query)}
-                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                          className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 flex items-center gap-2"
                         >
                           <HistoryIcon className="w-4 h-4 text-slate-400" />
                           {query}
@@ -246,17 +247,17 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                   setIsSelectionMode(!isSelectionMode);
                   if (isSelectionMode) setSelectedForTest(new Set());
                 }}
-                className={isSelectionMode ? "bg-indigo-600 hover:bg-indigo-700" : ""}
+                className={isSelectionMode ? "bg-indigo-600 hover:bg-indigo-700" : "dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/5"}
               >
                 {isSelectionMode ? <CheckSquare className="w-4 h-4 mr-2" /> : <Square className="w-4 h-4 mr-2" />}
                 {isSelectionMode ? 'Заврши селекција' : 'Селектирај'}
               </Button>
-              
+
               {!isSelectionMode && (
                 <Button
                   variant="outline"
                   onClick={() => document.dispatchEvent(new CustomEvent('open-create-task-modal'))}
-                  className="hidden sm:flex border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                  className="hidden sm:flex border-indigo-200 dark:border-indigo-400/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10"
                   title="Креирај задача рачно"
                 >
                   <Plus className="w-4 h-4 mr-1" />
@@ -304,7 +305,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                     <Zap className="w-4 h-4 mr-2" />
                     Жива Училница
                   </Button>
-                  
+
                   <Button
                     variant="default"
                     onClick={() => {
@@ -316,7 +317,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                     <Brain className="w-4 h-4 mr-2" />
                     Quizlet ({selectedForTest.size})
                   </Button>
-                  
+
                   <Button
                     variant="outline"
                     onClick={handleBulkDelete}
@@ -338,49 +339,49 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
              </div>
 
              <div className="flex flex-wrap gap-3 items-center flex-1">
-                <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
+                <div className="flex items-center gap-2 bg-slate-100 dark:bg-white/5 p-1 rounded-lg">
               <button
                 onClick={() => setDifficultyFilter('all')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${difficultyFilter === 'all' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${difficultyFilter === 'all' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
               >
                 Сите
               </button>
               <button
                 onClick={() => setDifficultyFilter('easy')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${difficultyFilter === 'easy' ? 'bg-green-100 text-green-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${difficultyFilter === 'easy' ? 'bg-green-100 dark:bg-emerald-500/15 text-green-800 dark:text-emerald-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
               >
                 Лесни
               </button>
               <button
                 onClick={() => setDifficultyFilter('medium')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${difficultyFilter === 'medium' ? 'bg-yellow-100 text-yellow-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${difficultyFilter === 'medium' ? 'bg-yellow-100 dark:bg-amber-500/15 text-yellow-800 dark:text-amber-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
               >
                 Средни
               </button>
               <button
                 onClick={() => setDifficultyFilter('hard')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${difficultyFilter === 'hard' ? 'bg-red-100 text-red-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${difficultyFilter === 'hard' ? 'bg-red-100 dark:bg-rose-500/15 text-red-800 dark:text-rose-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
               >
                 Тешки
               </button>
             </div>
 
-            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
+            <div className="flex items-center gap-2 bg-slate-100 dark:bg-white/5 p-1 rounded-lg">
               <button
                 onClick={() => setSourceFilter('all')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${sourceFilter === 'all' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${sourceFilter === 'all' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
               >
                 Сите Извори
               </button>
               <button
                 onClick={() => setSourceFilter('url')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${sourceFilter === 'url' ? 'bg-blue-100 text-blue-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${sourceFilter === 'url' ? 'bg-blue-100 dark:bg-blue-500/15 text-blue-800 dark:text-blue-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
               >
                 URL/Видео
               </button>
               <button
                 onClick={() => setSourceFilter('image')}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${sourceFilter === 'image' ? 'bg-purple-100 text-purple-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${sourceFilter === 'image' ? 'bg-purple-100 dark:bg-purple-500/15 text-purple-800 dark:text-purple-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
               >
                 Слика/Ракопис
               </button>
@@ -388,12 +389,12 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
 
             <div className="flex flex-col sm:flex-row items-center gap-2 min-w-[300px]">
               <Filter className="w-4 h-4 text-slate-400 hidden sm:block" />
-              
+
               <div className="relative w-full sm:w-40">
                 <select
                   value={folderFilter}
                   onChange={(e) => setFolderFilter(e.target.value)}
-                  className="w-full h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-no-repeat bg-[right_8px_center] bg-[length:16px_16px]"
+                  className="w-full h-10 rounded-md border border-slate-300 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-no-repeat bg-[right_8px_center] bg-[length:16px_16px]"
                   style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")' }}
                 >
                   <option value="all">Сите Папки</option>
@@ -402,25 +403,25 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                   ))}
                 </select>
               </div>
-              
+
               <div className="relative w-full sm:flex-1" ref={gradeDropdownRef}>
-                <button 
+                <button
                   onClick={() => setIsGradeDropdownOpen(!isGradeDropdownOpen)}
-                  className="w-full h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-left flex justify-between items-center text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 rounded-md border border-slate-300 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-left flex justify-between items-center text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <span className="truncate">{gradeFilter.length === 0 ? 'Сите одделенија' : gradeFilter.join(', ')}</span>
                   <ChevronDown className="w-4 h-4 ml-2 opacity-50 flex-shrink-0" />
                 </button>
                 {isGradeDropdownOpen && (
-                  <div className="absolute z-10 top-full left-0 mt-1 w-full sm:w-48 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                    <div className="p-2 border-b border-slate-100 flex gap-2">
-                      <button onClick={() => setGradeFilter(allGrades)} className="text-xs text-blue-600 hover:underline">Селектирај сите</button>
-                      <button onClick={() => setGradeFilter([])} className="text-xs text-slate-500 hover:underline">Деселектирај сите</button>
+                  <div className="absolute z-10 top-full left-0 mt-1 w-full sm:w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-md shadow-lg dark:shadow-2xl max-h-60 overflow-y-auto">
+                    <div className="p-2 border-b border-slate-100 dark:border-white/10 flex gap-2">
+                      <button onClick={() => setGradeFilter(allGrades)} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Селектирај сите</button>
+                      <button onClick={() => setGradeFilter([])} className="text-xs text-slate-500 dark:text-slate-400 hover:underline">Деселектирај сите</button>
                     </div>
                     {allGrades.map(grade => (
-                      <label key={grade} className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer">
-                        <input 
-                          type="checkbox" 
+                      <label key={grade} className="flex items-center px-3 py-2 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer">
+                        <input
+                          type="checkbox"
                           checked={gradeFilter.includes(grade)}
                           onChange={(e) => {
                             if (e.target.checked) setGradeFilter([...gradeFilter, grade]);
@@ -428,31 +429,31 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                           }}
                           className="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                         />
-                        <span className="text-sm text-slate-700">{grade}</span>
+                        <span className="text-sm text-slate-700 dark:text-slate-200">{grade}</span>
                       </label>
                     ))}
                   </div>
                 )}
               </div>
-              
+
               <div className="relative w-full sm:flex-1" ref={tagDropdownRef}>
-                <button 
+                <button
                   onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
-                  className="w-full h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-left flex justify-between items-center text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 rounded-md border border-slate-300 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-left flex justify-between items-center text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <span className="truncate">{tagFilter.length === 0 ? 'Сите области' : tagFilter.join(', ')}</span>
                   <ChevronDown className="w-4 h-4 ml-2 opacity-50 flex-shrink-0" />
                 </button>
                 {isTagDropdownOpen && (
-                  <div className="absolute z-10 top-full left-0 mt-1 w-full sm:w-48 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                    <div className="p-2 border-b border-slate-100 flex gap-2">
-                      <button onClick={() => setTagFilter(allTags)} className="text-xs text-blue-600 hover:underline">Селектирај сите</button>
-                      <button onClick={() => setTagFilter([])} className="text-xs text-slate-500 hover:underline">Деселектирај сите</button>
+                  <div className="absolute z-10 top-full left-0 mt-1 w-full sm:w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-md shadow-lg dark:shadow-2xl max-h-60 overflow-y-auto">
+                    <div className="p-2 border-b border-slate-100 dark:border-white/10 flex gap-2">
+                      <button onClick={() => setTagFilter(allTags)} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Селектирај сите</button>
+                      <button onClick={() => setTagFilter([])} className="text-xs text-slate-500 dark:text-slate-400 hover:underline">Деселектирај сите</button>
                     </div>
                     {allTags.map(tag => (
-                      <label key={tag} className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer">
-                        <input 
-                          type="checkbox" 
+                      <label key={tag} className="flex items-center px-3 py-2 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer">
+                        <input
+                          type="checkbox"
                           checked={tagFilter.includes(tag)}
                           onChange={(e) => {
                             if (e.target.checked) setTagFilter([...tagFilter, tag]);
@@ -460,7 +461,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                           }}
                           className="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                         />
-                        <span className="text-sm text-slate-700">{tag}</span>
+                        <span className="text-sm text-slate-700 dark:text-slate-200">{tag}</span>
                       </label>
                     ))}
                   </div>
@@ -468,23 +469,23 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               </div>
 
               <div className="relative w-full sm:flex-1" ref={dokDropdownRef}>
-                <button 
+                <button
                   onClick={() => setIsDokDropdownOpen(!isDokDropdownOpen)}
-                  className="w-full h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-left flex justify-between items-center text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 rounded-md border border-slate-300 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-left flex justify-between items-center text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <span className="truncate">{dokFilter.length === 0 ? 'Сите DoK нивоа' : `${dokFilter.length} избрани`}</span>
                   <ChevronDown className="w-4 h-4 ml-2 opacity-50 flex-shrink-0" />
                 </button>
                 {isDokDropdownOpen && (
-                  <div className="absolute z-10 top-full left-0 mt-1 w-full sm:w-48 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                    <div className="p-2 border-b border-slate-100 flex gap-2">
-                      <button onClick={() => setDokFilter([1,2,3,4])} className="text-xs text-blue-600 hover:underline">Селектирај сите</button>
-                      <button onClick={() => setDokFilter([])} className="text-xs text-slate-500 hover:underline">Деселектирај сите</button>
+                  <div className="absolute z-10 top-full left-0 mt-1 w-full sm:w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-md shadow-lg dark:shadow-2xl max-h-60 overflow-y-auto">
+                    <div className="p-2 border-b border-slate-100 dark:border-white/10 flex gap-2">
+                      <button onClick={() => setDokFilter([1,2,3,4])} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Селектирај сите</button>
+                      <button onClick={() => setDokFilter([])} className="text-xs text-slate-500 dark:text-slate-400 hover:underline">Деселектирај сите</button>
                     </div>
                     {[1, 2, 3, 4].map(level => (
-                      <label key={level} className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer">
-                        <input 
-                          type="checkbox" 
+                      <label key={level} className="flex items-center px-3 py-2 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer">
+                        <input
+                          type="checkbox"
                           checked={dokFilter.includes(level)}
                           onChange={(e) => {
                             if (e.target.checked) setDokFilter([...dokFilter, level]);
@@ -492,7 +493,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                           }}
                           className="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                         />
-                        <span className="text-sm text-slate-700">Ниво {level}</span>
+                        <span className="text-sm text-slate-700 dark:text-slate-200">Ниво {level}</span>
                       </label>
                     ))}
                   </div>
@@ -506,30 +507,30 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                 const nextSort = sortDifficulty === 'none' ? 'asc' : sortDifficulty === 'asc' ? 'desc' : 'none';
                 setSortDifficulty(nextSort);
               }}
-              className="ml-auto"
+              className="ml-auto dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/5"
             >
               <ArrowUpDown className="w-4 h-4 mr-2" />
               Тежина {sortDifficulty === 'asc' ? '↑' : sortDifficulty === 'desc' ? '↓' : ''}
             </Button>
 
             {(searchQuery || difficultyFilter !== 'all' || sourceFilter !== 'all' || tagFilter.length > 0 || gradeFilter.length > 0 || dokFilter.length > 0 || folderFilter !== 'all' || sortDifficulty !== 'none') && (
-              <Button variant="ghost" onClick={clearFilters} className="text-slate-500 hover:text-slate-700">
+              <Button variant="ghost" onClick={clearFilters} className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
                 <X className="w-4 h-4 mr-2" />
                 Исчисти филтри
               </Button>
             )}
 
             <div className="flex gap-2 ml-auto">
-              <Button variant="outline" size="sm" onClick={() => exportToWord(sortedAndFilteredTasks, 'math-tasks.docx')} title="Експортирај во Word (Docx)">
-                <FileText className="w-4 h-4 mr-2 text-blue-600" />
+              <Button variant="outline" size="sm" onClick={() => exportToWord(sortedAndFilteredTasks, 'math-tasks.docx')} title="Експортирај во Word (Docx)" className="dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/5">
+                <FileText className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />
                 Word
               </Button>
-              <Button variant="outline" size="sm" onClick={() => exportToMarkdown(sortedAndFilteredTasks)} title="Експортирај во Markdown">
+              <Button variant="outline" size="sm" onClick={() => exportToMarkdown(sortedAndFilteredTasks)} title="Експортирај во Markdown" className="dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/5">
                 <Download className="w-4 h-4 mr-2" />
                 MD
               </Button>
-              <Button variant="outline" size="sm" onClick={handleExportCSV} title="Експортирај во CSV">
-                <FileSpreadsheet className="w-4 h-4 mr-2 text-green-600" />
+              <Button variant="outline" size="sm" onClick={handleExportCSV} title="Експортирај во CSV" className="dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/5">
+                <FileSpreadsheet className="w-4 h-4 mr-2 text-green-600 dark:text-emerald-400" />
                 CSV
               </Button>
             </div>
@@ -540,4 +541,3 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
     </Card>
   );
 };
-

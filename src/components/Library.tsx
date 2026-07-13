@@ -31,6 +31,8 @@ import { Skeleton } from './ui/Skeleton';
 import { useRealtimeTasks } from '../hooks/useRealtimeTasks';
 import { useToast } from '../contexts/ToastContext';
 import { WorksheetModal } from './library/WorksheetModal';
+import { useModalA11y } from '../hooks/useModalA11y';
+import { WorkflowSteps } from './WorkflowSteps';
 
 export const Library: React.FC = () => {
   const store = useLibraryStore();
@@ -45,6 +47,9 @@ export const Library: React.FC = () => {
   const [manipulativeType, setManipulativeType] = useState<'algebra-tiles' | 'geogebra-3d'>('algebra-tiles');
   const [isGeneratingKahoot, setIsGeneratingKahoot] = useState(false);
   const [showWorksheetModal, setShowWorksheetModal] = useState(false);
+
+  const graphModalRef = useModalA11y<HTMLDivElement>(() => store.setActiveGraphTask(null));
+  const manipulativesModalRef = useModalA11y<HTMLDivElement>(() => setShowManipulativesModal(false));
 
   useEffect(() => {
     const handleOpenModal = () => setShowCreateModal(true);
@@ -244,7 +249,7 @@ export const Library: React.FC = () => {
     return (
       <div className="flex flex-col h-[calc(100vh-120px)] space-y-4 animate-in fade-in duration-500">
         {/* Toolbar Skeleton */}
-        <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200">
+        <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-white/10">
           <div className="flex gap-4 w-full max-w-2xl">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-32 shrink-0" />
@@ -255,9 +260,9 @@ export const Library: React.FC = () => {
             <Skeleton className="h-10 w-10 rounded-lg" />
           </div>
         </div>
-        
+
         {/* List Skeleton */}
-        <div className="flex-1 bg-white rounded-xl border border-slate-200 p-4 space-y-4">
+        <div className="flex-1 bg-white dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-white/10 p-4 space-y-4">
           {[...Array(5)].map((_, i) => (
             <Skeleton key={i} className="w-full h-32 rounded-xl" />
           ))}
@@ -268,6 +273,8 @@ export const Library: React.FC = () => {
 
   return (
     <div className="space-y-6 relative">
+      <WorkflowSteps current="library" />
+
       {isGeneratingKahoot && (
         <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-white animate-in fade-in">
            <div className="w-16 h-16 border-4 border-indigo-500 border-t-white rounded-full animate-spin mb-6"></div>
@@ -375,18 +382,18 @@ export const Library: React.FC = () => {
               if (!task) return null;
               const index = sortedAndFilteredTasks.indexOf(task);
               return (
-                <Card className="overflow-hidden border-slate-200 shadow-lg">
-                  <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                    <span className="font-semibold text-slate-800 text-lg">
+                <Card className="overflow-hidden border-slate-200 dark:border-white/10 dark:bg-slate-900/60 dark:backdrop-blur-xl shadow-lg">
+                  <div className="bg-slate-50 dark:bg-white/5 px-6 py-4 border-b border-slate-200 dark:border-white/10 flex justify-between items-center">
+                    <span className="font-semibold text-slate-800 dark:text-slate-100 text-lg">
                       {task.type === 'theory' ? `Теорија: ${task.title}` : task.title}
                     </span>
                     <button
                       type="button"
                       onClick={() => store.setSelectedTaskId(null)}
-                      className="p-1 hover:bg-slate-200 rounded-full transition-colors"
+                      className="p-1 hover:bg-slate-200 dark:hover:bg-white/10 rounded-full transition-colors"
                       title="Затвори"
                     >
-                      <X className="w-5 h-5 text-slate-500" />
+                      <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                     </button>
                   </div>
                   <CardContent className="p-6 max-h-[calc(100vh-12rem)] overflow-y-auto">
@@ -428,7 +435,13 @@ export const Library: React.FC = () => {
 
       <AnimatePresence>
         {store.activeGraphTask && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div
+            ref={graphModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Интерактивен График"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+          >
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -507,7 +520,14 @@ export const Library: React.FC = () => {
       {/* Mathigon / GeoGebra Manipulatives Modal */}
       <AnimatePresence>
         {showManipulativesModal && (
-           <div className="fixed inset-0 z-[100] flex flex-col p-4 bg-slate-900/80 backdrop-blur-sm" onClick={() => setShowManipulativesModal(false)}>
+           <div
+             ref={manipulativesModalRef}
+             role="dialog"
+             aria-modal="true"
+             aria-label="Математички Манипулативи"
+             className="fixed inset-0 z-[100] flex flex-col p-4 bg-slate-900/80 backdrop-blur-sm"
+             onClick={() => setShowManipulativesModal(false)}
+           >
              <motion.div 
                initial={{ opacity: 0, scale: 0.95, y: 20 }}
                animate={{ opacity: 1, scale: 1, y: 0 }}

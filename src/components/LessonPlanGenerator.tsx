@@ -6,6 +6,7 @@ import { MathTask } from '../lib/schema';
 import { generateLessonPlan } from '../lib/gemini';
 import { exportLessonPlanToWord } from '../lib/export';
 import { useToast } from '../contexts/ToastContext';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface LessonPlanGeneratorProps {
   selectedTasks: MathTask[];
@@ -14,6 +15,7 @@ interface LessonPlanGeneratorProps {
 
 export const LessonPlanGenerator: React.FC<LessonPlanGeneratorProps> = ({ selectedTasks, onClose }) => {
   const { showToast } = useToast();
+  const modalRef = useModalA11y<HTMLDivElement>(onClose);
   const [topicName, setTopicName] = useState('Анализа на функции');
   const [gradeLevel, setGradeLevel] = useState('1 година');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -38,7 +40,7 @@ export const LessonPlanGenerator: React.FC<LessonPlanGeneratorProps> = ({ select
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div ref={modalRef} role="dialog" aria-modal="true" className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-slate-200 dark:border-slate-700 overflow-hidden">
         {/* Header */}
         <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex justify-between items-center backdrop-blur-sm shrink-0">

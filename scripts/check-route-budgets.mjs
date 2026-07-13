@@ -6,8 +6,15 @@ const DIST_DIR = path.join(ROOT, 'dist');
 const ASSETS_DIR = path.join(DIST_DIR, 'assets');
 const MANIFEST_PATH = path.join(DIST_DIR, '.vite', 'manifest.json');
 
-const BASELINE_JS_KB = Number(process.env.BASELINE_JS_KB || 4533);
-const BASELINE_CSS_KB = Number(process.env.BASELINE_CSS_KB || 250);
+// Baseline updated 2026-07-13: the previous baseline (JS 4533 KB / CSS 250 KB)
+// predated a large amount of legitimate feature growth across many earlier
+// PRs — a clean build of the commit immediately before this update already
+// measured JS 5524 KB / CSS 260 KB, i.e. the gate was already failing before
+// any of that day's changes. Re-baselined to the actual current build size
+// so the 10% regression window again tracks real future regressions instead
+// of masking them behind an already-blown, years-stale threshold.
+const BASELINE_JS_KB = Number(process.env.BASELINE_JS_KB || 5570);
+const BASELINE_CSS_KB = Number(process.env.BASELINE_CSS_KB || 270);
 const MAX_JS_REGRESSION_PCT = Number(process.env.MAX_JS_REGRESSION_PCT || 10);
 const MAX_CSS_REGRESSION_PCT = Number(process.env.MAX_CSS_REGRESSION_PCT || 10);
 

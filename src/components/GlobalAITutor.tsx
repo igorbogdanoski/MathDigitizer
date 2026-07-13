@@ -97,7 +97,7 @@ export const GlobalAITutor: React.FC = () => {
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-[100] w-[calc(100vw-3rem)] md:w-[450px] h-[600px] max-h-[85vh] bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl shadow-indigo-900/20 border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden"
+            className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-[100] w-[calc(100vw-3rem)] md:w-[450px] h-[600px] max-h-[85vh] bg-white dark:bg-slate-900 rounded-5xl shadow-2xl shadow-indigo-900/20 border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="bg-slate-950 px-6 py-5 flex items-center justify-between shrink-0">

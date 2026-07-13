@@ -264,7 +264,7 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
   };
 
   return (
-    <div className="flex flex-col w-full h-[600px] md:h-[700px] bg-slate-50 border border-slate-200 rounded-[2rem] overflow-hidden shadow-xl">
+    <div className="flex flex-col w-full h-[600px] md:h-[700px] bg-slate-50 border border-slate-200 rounded-5xl overflow-hidden shadow-xl">
       <div className="bg-white px-6 py-4 flex flex-wrap items-center justify-between border-b gap-4 border-slate-200 shrink-0">
          <div className="flex items-center gap-4">
             <Button 

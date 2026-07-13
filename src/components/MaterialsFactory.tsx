@@ -22,6 +22,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { hasProAccess } from '../lib/saas';
 import { ProFeatureGate } from './ProFeatureGate';
 import { captureError } from '../lib/observability';
+import { WorkflowSteps } from './WorkflowSteps';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 export default function MaterialsFactory() {
   const navigate = useNavigate();
@@ -42,6 +44,8 @@ export default function MaterialsFactory() {
 
   const [isGeneratingDiff, setIsGeneratingDiff] = useState(false);
   const [diffResult, setDiffResult] = useState<{groupA: MathTask[], groupB: MathTask[], groupC: MathTask[]} | null>(null);
+
+  const diffResultModalRef = useModalA11y<HTMLDivElement>(() => setDiffResult(null));
 
   const handleGenerateMaterial = async () => {
     if (selectedTasks.size === 0) {
@@ -171,8 +175,10 @@ export default function MaterialsFactory() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-10 pb-20 animate-in fade-in duration-700">
+      <WorkflowSteps current="factory" />
+
       {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-900 p-8 md:p-12 text-white shadow-2xl">
+      <div className="relative overflow-hidden rounded-6xl bg-slate-900 p-8 md:p-12 text-white shadow-2xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 blur-[100px] -mr-48 -mt-48 rounded-full"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 blur-[80px] -ml-32 -mb-32 rounded-full"></div>
         
@@ -263,7 +269,7 @@ export default function MaterialsFactory() {
                 whileHover={{ y: -5, scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setSelectedType(type.id)}
-                className={`p-6 rounded-[2rem] border-2 text-left transition-all relative overflow-hidden group ${
+                className={`p-6 rounded-5xl border-2 text-left transition-all relative overflow-hidden group ${
                   isSelected 
                     ? 'border-indigo-600 bg-white dark:bg-slate-800 shadow-xl ring-4 ring-indigo-500/10' 
                     : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 hover:border-slate-200 dark:hover:border-slate-700 shadow-sm'
@@ -314,7 +320,7 @@ export default function MaterialsFactory() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden min-h-[500px] flex flex-col">
+        <div className="bg-white dark:bg-slate-800 rounded-6xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden min-h-[500px] flex flex-col">
           {/* Toolbar */}
           <div className="border-b border-slate-100 dark:border-slate-700 p-6 bg-slate-50/50 dark:bg-slate-800/50 flex flex-wrap gap-6 items-center justify-between">
             <div className="flex items-center gap-4 flex-1">
@@ -383,7 +389,7 @@ export default function MaterialsFactory() {
               </div>
             ) : tasks.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6">
+                <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-6xl flex items-center justify-center mx-auto mb-6">
                   <BookOpen className="w-12 h-12 text-slate-300" />
                 </div>
                 <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Библиотеката е празна</h3>
@@ -503,12 +509,17 @@ export default function MaterialsFactory() {
       {/* Differentiated Test Results Modal */}
       <AnimatePresence>
         {diffResult && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+          <div
+            ref={diffResultModalRef}
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
+          >
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-6xl my-8 border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col max-h-[90vh]"
+              className="bg-white dark:bg-slate-900 rounded-6xl shadow-2xl w-full max-w-6xl my-8 border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col max-h-[90vh]"
             >
               <div className="p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 items-start">
                 <div>

@@ -26,6 +26,7 @@ import { KahootMaker } from './KahootMaker';
 import { MakedoTestGenerator } from './MakedoTestGenerator';
 import { GeoGebraViewer } from './GeoGebraViewer';
 import { SEO } from './SEO';
+import { WorkflowSteps } from './WorkflowSteps';
 
 interface ExtractionEngineProps {
   setActiveTutorTask: (task: MathTask) => void;
@@ -396,6 +397,8 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
         keywords="ai екстракција, математика, youtube математика, pdf ocr"
       />
       
+      <WorkflowSteps current="extract" />
+
       {/* Top Level Mode Selector */}
       <div className="flex justify-center mb-8">
         <div className="inline-flex bg-slate-100 p-1 rounded-2xl shadow-inner border border-slate-200">
@@ -435,18 +438,22 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
         <MakedoTestGenerator tasks={tasks} />
       ) : (
         <>
-          {!isPro && sessionExtractionCount > 0 && (
-            <div className="rounded-2xl border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20 px-5 py-3 flex items-center justify-between gap-4 text-sm">
-              <span className="text-amber-800 dark:text-amber-200 font-medium">
+          {!isPro && (
+            <div className={`rounded-2xl border px-5 py-3 flex items-center justify-between gap-4 text-sm ${
+              sessionExtractionCount >= FREE_EXTRACTION_LIMIT - 1
+                ? 'border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20'
+                : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50'
+            }`}>
+              <span className={`font-medium ${sessionExtractionCount >= FREE_EXTRACTION_LIMIT - 1 ? 'text-amber-800 dark:text-amber-200' : 'text-slate-600 dark:text-slate-300'}`}>
                 Бесплатен тир: {sessionExtractionCount}/{FREE_EXTRACTION_LIMIT} екстракции искористени оваа сесија.
               </span>
-              <a href="/pricing" className="text-amber-700 dark:text-amber-300 font-bold underline underline-offset-2 whitespace-nowrap">
+              <a href="/pricing" className={`font-bold underline underline-offset-2 whitespace-nowrap ${sessionExtractionCount >= FREE_EXTRACTION_LIMIT - 1 ? 'text-amber-700 dark:text-amber-300' : 'text-indigo-600 dark:text-indigo-400'}`}>
                 Надгради на Pro →
               </a>
             </div>
           )}
           {/* Premium Hero Section for URL Extractor */}
-          <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-indigo-900 rounded-[2rem] overflow-hidden shadow-2xl border border-indigo-500/20">
+          <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-indigo-900 rounded-5xl overflow-hidden shadow-2xl border border-indigo-500/20">
         <div className="px-6 py-12 md:py-16 relative">
           {/* Decorative Background Elements */}
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -1035,7 +1042,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                 key={index} 
-                className="bg-white rounded-[2rem] shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden transition-all duration-500 flex flex-col group relative printable-task-card"
+                className="bg-white rounded-5xl shadow-sm hover:shadow-xl border border-slate-200 overflow-hidden transition-all duration-500 flex flex-col group relative printable-task-card"
               >
                 <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-400 to-indigo-600 no-print"></div>
                 <div className="p-3 bg-slate-50/80 border-b border-slate-100 flex justify-between items-center ml-1">
@@ -1422,7 +1429,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                       </div>
                     ) : (
                       <div className="text-center z-10 space-y-5 w-full m-auto">
-                        <div className="w-20 h-20 bg-white rounded-[2rem] shadow-sm border border-slate-200 flex items-center justify-center mx-auto mb-2 text-indigo-300">
+                        <div className="w-20 h-20 bg-white rounded-5xl shadow-sm border border-slate-200 flex items-center justify-center mx-auto mb-2 text-indigo-300">
                           <ImageIcon className="w-10 h-10 opacity-70" />
                         </div>
                         <div className="space-y-1.5">

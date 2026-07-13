@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Trophy, Star, Zap, Target, Award, TrendingUp, Users, Loader2, ChevronRight, Medal, Brain, PieChart as PieChartIcon, CheckCircle2, Circle, Activity, Paintbrush, ScanLine, Library as LibraryIcon, Wand2, Layers, AlertTriangle, Info } from 'lucide-react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Button } from './ui/Button';
@@ -7,15 +7,22 @@ import { db, auth } from '../lib/firebase';
 import { addDoc, collection, query, where, orderBy, limit, getDocs, doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { UserStats, UserProfile } from '../lib/schema';
 import { motion } from 'motion/react';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
-import { TeacherDashboard } from './TeacherDashboard';
-import { AvatarShop } from './AvatarShop';
-
-import { StudentSkillTree } from './StudentSkillTree';
 import { Skeleton } from './ui/Skeleton';
 import { SEO } from './SEO';
 import { useToast } from '../contexts/ToastContext';
 import { captureError } from '../lib/observability';
+
+// Lazy-loaded: Dashboard.tsx is a single route-level component, but a given
+// visit only ever needs ONE of these three (teacher branch returns early;
+// the recharts-heavy mastery chart, skill tree, and avatar-shop modal are
+// only used by the non-teacher/non-student fallback view below). Keeping
+// them as static imports meant every /dashboard visit paid for all three
+// regardless of which branch actually rendered — this is what was pushing
+// the route over its bundle budget.
+const TeacherDashboard = lazy(() => import('./TeacherDashboard').then((m) => ({ default: m.TeacherDashboard })));
+const AvatarShop = lazy(() => import('./AvatarShop').then((m) => ({ default: m.AvatarShop })));
+const StudentSkillTree = lazy(() => import('./StudentSkillTree').then((m) => ({ default: m.StudentSkillTree })));
+const MasteryRadarChart = lazy(() => import('./dashboard/MasteryRadarChart'));
 
 type ReceiptStatus = 'pending' | 'reviewed' | 'approved' | 'rejected';
 
@@ -182,7 +189,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
 
   // Render Teacher Dashboard if the user is a teacher
   if (userProfile?.role === 'teacher') {
-    return <TeacherDashboard userProfile={userProfile} />;
+    return (
+      <Suspense fallback={<div className="p-8"><Skeleton className="w-full h-64 rounded-3xl" /></div>}>
+        <TeacherDashboard userProfile={userProfile} />
+      </Suspense>
+    );
   }
 
   if (userProfile?.role === 'student') {
@@ -191,9 +202,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
 
   if (!stats) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-slate-800 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
-        <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-4">
-          <Activity className="w-8 h-8 text-indigo-600" />
+      <div className="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl rounded-3xl border border-dashed border-slate-300 dark:border-white/10">
+        <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-500/15 rounded-full flex items-center justify-center mb-4">
+          <Activity className="w-8 h-8 text-indigo-600 dark:text-indigo-300" />
         </div>
         <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Грешка при вчитување на статистиките</h3>
         <p className="text-slate-500 dark:text-slate-400 max-w-sm mb-6">
@@ -210,34 +221,34 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
     if (latestApprovedReceiptAt) {
       return {
         label: 'Billing: Pro active',
-        className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
+        className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300',
       };
     }
 
     if (hasPendingReceipt) {
       return {
         label: 'Billing: Pending review',
-        className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200',
+        className: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
       };
     }
 
     if (hasReviewedReceipt) {
       return {
         label: 'Billing: In review stage',
-        className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200',
+        className: 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300',
       };
     }
 
     if (hasRejectedReceipt) {
       return {
         label: 'Billing: Needs action',
-        className: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200',
+        className: 'bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300',
       };
     }
 
     return {
       label: 'Billing: No receipt submitted',
-      className: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
+      className: 'bg-slate-200 text-slate-700 dark:bg-white/10 dark:text-slate-300',
     };
   }, [hasPendingReceipt, hasRejectedReceipt, hasReviewedReceipt, latestApprovedReceiptAt]);
 
@@ -336,7 +347,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
         </section>
       ) : null}
 
-      <section className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+      <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
             <AlertTriangle className="w-4 h-4 text-slate-500 dark:text-slate-300" />
@@ -350,7 +361,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
               <Button
                 type="button"
                 variant="outline"
-                className="h-8 px-3"
+                className="h-8 px-3 dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/5"
                 onClick={() => {
                   void trackBillingCtaClick();
                   navigate('/pricing');
@@ -362,7 +373,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
           </div>
         </div>
 
-        <div className="mt-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3">
+        <div className="mt-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 mb-2">
             <Info className="w-3.5 h-3.5" />
             Status guide
@@ -374,7 +385,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
             {billingGuideItems.map((item) => (
               <div
                 key={item.key}
-                className={`rounded-lg px-2.5 py-2 border ${item.isActive ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-900 dark:text-indigo-200' : 'border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/20 text-slate-600 dark:text-slate-300'}`}
+                className={`rounded-lg px-2.5 py-2 border ${item.isActive ? 'border-indigo-300 dark:border-indigo-400/30 bg-indigo-50 dark:bg-indigo-500/15 text-indigo-900 dark:text-indigo-300' : 'border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 text-slate-600 dark:text-slate-400'}`}
               >
                 <span className="font-semibold">{item.title}:</span> {item.description}
               </div>
@@ -454,15 +465,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
 
       {/* Interactive Mathematics Skill Tree */}
       <section className="mb-8">
-        <StudentSkillTree currentXP={stats.xp} />
+        <Suspense fallback={<Skeleton className="w-full h-40 rounded-3xl" />}>
+          <StudentSkillTree currentXP={stats.xp} />
+        </Suspense>
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
           
           {/* Daily Quests Section */}
-          <Card className="border-slate-200 dark:border-slate-700 overflow-hidden">
-            <CardHeader className="border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+          <Card className="border-slate-200 dark:border-white/10 dark:bg-slate-900/60 dark:backdrop-blur-xl overflow-hidden">
+            <CardHeader className="border-b border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-white/5">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Target className="w-5 h-5 text-orange-500" />
                 Дневни Предизвици
@@ -472,10 +485,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
               {stats.quests && stats.quests.date === new Date().toISOString().split('T')[0] ? (
                 <div className="space-y-4">
                   {stats.quests.items.map((quest) => (
-                    <div key={quest.id} className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                    <div key={quest.id} className="bg-slate-50 dark:bg-white/5 rounded-xl p-4 border border-slate-100 dark:border-white/10">
                       <div className="flex justify-between items-center mb-2">
                         <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${quest.completed ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' : 'bg-slate-200 text-slate-500 dark:bg-slate-700'}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${quest.completed ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-slate-200 text-slate-500 dark:bg-white/10 dark:text-slate-400'}`}>
                             {quest.completed ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
                           </div>
                           <span className={`font-semibold ${quest.completed ? 'text-slate-900 dark:text-white line-through opacity-70' : 'text-slate-900 dark:text-white'}`}>
@@ -491,7 +504,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
                           <span>Прогрес</span>
                           <span>{quest.progress} / {quest.target}</span>
                         </div>
-                        <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div className="h-2 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
                           <motion.div 
                             initial={{ width: 0 }}
                             animate={{ width: `${(quest.progress / quest.target) * 100}%` }}
@@ -503,7 +516,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-slate-500">
+                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
                   <p>Дневните предизвици се освежуваат...</p>
                 </div>
               )}
@@ -511,8 +524,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
           </Card>
 
           {/* Mastery Radar Chart */}
-          <Card className="border-slate-200 dark:border-slate-700 overflow-hidden">
-            <CardHeader className="border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+          <Card className="border-slate-200 dark:border-white/10 dark:bg-slate-900/60 dark:backdrop-blur-xl overflow-hidden">
+            <CardHeader className="border-b border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-white/5">
               <CardTitle className="text-lg flex items-center gap-2">
                 <PieChartIcon className="w-5 h-5 text-indigo-600" />
                 Мастерство по Теми
@@ -521,19 +534,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                 <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={masteryData}>
-                      <PolarGrid stroke="#e2e8f0" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10 }} />
-                      <Radar
-                        name="Мастерство"
-                        dataKey="A"
-                        stroke="#4f46e5"
-                        fill="#4f46e5"
-                        fillOpacity={0.5}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
+                  <Suspense fallback={<Skeleton className="w-full h-full rounded-2xl" />}>
+                    <MasteryRadarChart data={masteryData} />
+                  </Suspense>
                 </div>
                 <div className="space-y-4">
                   <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">Анализа на вештини</h4>
@@ -548,7 +551,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
                           <span>{item.subject}</span>
                           <span>{item.A}%</span>
                         </div>
-                        <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
                           <motion.div 
                             initial={{ width: 0 }}
                             animate={{ width: `${item.A}%` }}
@@ -579,9 +582,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
               <motion.div 
                 key={idx}
                 whileHover={{ scale: 1.05 }}
-                className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 text-center shadow-sm hover:shadow-md transition-all"
+                className="bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl p-4 rounded-2xl border border-slate-200 dark:border-white/10 text-center shadow-sm hover:shadow-md transition-all"
               >
-                <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/15 rounded-full flex items-center justify-center mx-auto mb-3">
                   <Medal className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{badge}</div>
@@ -589,8 +592,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
             ))}
             {/* Locked Badges Placeholder */}
             {[1, 2, 3].map((_, idx) => (
-              <div key={idx} className="bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 text-center opacity-50">
-                <div className="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-3">
+              <div key={idx} className="bg-slate-50 dark:bg-white/5 p-4 rounded-2xl border border-dashed border-slate-200 dark:border-white/10 text-center opacity-50">
+                <div className="w-12 h-12 bg-slate-100 dark:bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3">
                   <Star className="w-6 h-6 text-slate-300" />
                 </div>
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Заклучено</div>
@@ -599,7 +602,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
           </div>
 
           {/* Recent Activity Placeholder */}
-          <Card className="border-slate-200 dark:border-slate-700">
+          <Card className="border-slate-200 dark:border-white/10 dark:bg-slate-900/60 dark:backdrop-blur-xl">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-emerald-500" />
@@ -608,29 +611,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/5 rounded-xl">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                      <Zap className="w-4 h-4 text-blue-600" />
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-500/15 flex items-center justify-center">
+                      <Zap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                      <div className="text-sm font-bold">Генерирана слична задача</div>
-                      <div className="text-[10px] text-slate-500 uppercase tracking-tighter">Пред 2 часа</div>
+                      <div className="text-sm font-bold text-slate-800 dark:text-slate-100">Генерирана слична задача</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Пред 2 часа</div>
                     </div>
                   </div>
-                  <div className="text-sm font-bold text-emerald-600">+50 XP</div>
+                  <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">+50 XP</div>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/5 rounded-xl">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
-                      <Brain className="w-4 h-4 text-purple-600" />
+                    <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-500/15 flex items-center justify-center">
+                      <Brain className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     </div>
                     <div>
-                      <div className="text-sm font-bold">Завршена сесија со картички</div>
-                      <div className="text-[10px] text-slate-500 uppercase tracking-tighter">Пред 5 часа</div>
+                      <div className="text-sm font-bold text-slate-800 dark:text-slate-100">Завршена сесија со картички</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Пред 5 часа</div>
                     </div>
                   </div>
-                  <div className="text-sm font-bold text-emerald-600">+120 XP</div>
+                  <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">+120 XP</div>
                 </div>
               </div>
             </CardContent>
@@ -643,9 +646,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
             <Users className="w-6 h-6 text-blue-600" />
             Лидерска Табла
           </h3>
-          <Card className="border-slate-200 dark:border-slate-700 overflow-hidden">
-            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 border-b border-slate-200 dark:border-slate-700">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-widest">
+          <Card className="border-slate-200 dark:border-white/10 dark:bg-slate-900/60 dark:backdrop-blur-xl overflow-hidden">
+            <div className="bg-slate-50 dark:bg-white/5 p-4 border-b border-slate-200 dark:border-white/10">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                 <span>Ранг / Корисник</span>
                 <span>XP</span>
               </div>
@@ -654,8 +657,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
               {leaderboard.map((leader, idx) => (
                 <div 
                   key={idx} 
-                  className={`flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800 last:border-0 ${
-                    leader.uid === auth.currentUser?.uid ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''
+                  className={`flex items-center justify-between p-4 border-b border-slate-100 dark:border-white/10 last:border-0 ${
+                    leader.uid === auth.currentUser?.uid ? 'bg-blue-50/50 dark:bg-blue-500/10' : ''
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -663,16 +666,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
                       idx === 0 ? 'bg-yellow-400 text-white' :
                       idx === 1 ? 'bg-slate-300 text-white' :
                       idx === 2 ? 'bg-orange-400 text-white' :
-                      'bg-slate-100 dark:bg-slate-700 text-slate-500'
+                      'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400'
                     }`}>
                       {idx + 1}
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                      <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
                         {leader.photoURL ? (
                           <img src={leader.photoURL} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-slate-500">
+                          <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-slate-500 dark:text-slate-400">
                             {leader.displayName?.charAt(0) || '?'}
                           </div>
                         )}
@@ -688,8 +691,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
                 </div>
               ))}
             </CardContent>
-            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 text-center">
-              <Button variant="ghost" size="sm" className="text-xs text-blue-600 hover:text-blue-700">
+            <div className="p-4 bg-slate-50 dark:bg-white/5 text-center">
+              <Button variant="ghost" size="sm" className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
                 Види ја целата табла <ChevronRight className="w-3 h-3 ml-1" />
               </Button>
             </div>
@@ -711,7 +714,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
           { title: "Тест Фабрика", desc: "Генерирај тестови во секунда", icon: <Layers className="w-5 h-5 text-rose-500" />, to: "/mass-factory", bg: "bg-rose-50 dark:bg-rose-900/10 hover:bg-rose-100 dark:hover:bg-rose-900/20", borderColor: "border-rose-100 dark:border-rose-800/50" }
         ].map((item, idx) => (
           <Link key={idx} to={item.to} className={`flex flex-col p-4 rounded-2xl border transition-all ${item.bg} ${item.borderColor}`}>
-            <div className="bg-white dark:bg-slate-800 p-2.5 rounded-xl w-max shadow-sm mb-3">
+            <div className="bg-white dark:bg-white/10 p-2.5 rounded-xl w-max shadow-sm mb-3">
               {item.icon}
             </div>
             <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm mb-1">{item.title}</h4>
@@ -720,12 +723,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
         ))}
       </div>
 
-      <AvatarShop 
-        isOpen={isAvatarShopOpen} 
-        onClose={() => setIsAvatarShopOpen(false)} 
-        currentLevel={stats.level} 
-        currentAvatar={auth.currentUser?.photoURL || null} 
-      />
+      {isAvatarShopOpen && (
+        <Suspense fallback={null}>
+          <AvatarShop
+            isOpen={isAvatarShopOpen}
+            onClose={() => setIsAvatarShopOpen(false)}
+            currentLevel={stats.level}
+            currentAvatar={auth.currentUser?.photoURL || null}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };

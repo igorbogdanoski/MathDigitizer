@@ -101,7 +101,7 @@ export function getProPricingPlans(): ProPricingPlan[] {
   return [
     {
       period: 'monthly',
-      label: 'Pro Teacher Monthly',
+      label: 'Pro Наставник — месечно',
       priceMkd: monthlyPrice,
       billingLabel: 'месечно',
       description: 'За индивидуални наставници што сакаат низок влезен праг и флексибилност.',
@@ -109,7 +109,7 @@ export function getProPricingPlans(): ProPricingPlan[] {
     },
     {
       period: 'annual',
-      label: 'Pro Teacher Annual',
+      label: 'Pro Наставник — годишно',
       priceMkd: annualPrice,
       billingLabel: 'годишно',
       description: 'Најдобра вредност за наставници што ќе работат со платформата цела година.',

@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import MaterialsFactory from './MaterialsFactory';
 
 const mockNavigate = vi.fn();
@@ -51,7 +52,11 @@ vi.mock('../store/useLibraryStore', () => ({
 
 describe('MaterialsFactory smoke', () => {
   it('renders generation workspace and keeps generate action guarded until selection', async () => {
-    render(<MaterialsFactory />);
+    render(
+      <MemoryRouter>
+        <MaterialsFactory />
+      </MemoryRouter>
+    );
 
     expect(
       await screen.findByRole('heading', { level: 1, name: /Materials\s*Factory/i })

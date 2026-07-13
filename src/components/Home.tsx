@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BrainCircuit, BookOpen, Factory, Wand2, ArrowRight, Sparkles, Quote, Play, Square, Info, X, FileText, Cpu, ShieldCheck, CheckCircle, FileType2, Zap, Users, Star } from 'lucide-react';
 import { Button } from './ui/Button';
@@ -94,6 +94,22 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
   const [showGuide, setShowGuide] = useState(false);
   const [kahootPin, setKahootPin] = useState('');
   const isPro = hasProAccess(userProfile);
+  const footerCtaRef = useRef<HTMLDivElement>(null);
+  const [isFooterCtaVisible, setIsFooterCtaVisible] = useState(false);
+  const [stickyBarDismissed, setStickyBarDismissed] = useState(false);
+
+  // Hide the sticky bottom CTA once the equivalent footer CTA is already
+  // visible on screen, so guests never see two "sign up" prompts at once.
+  useEffect(() => {
+    const node = footerCtaRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsFooterCtaVisible(entry.isIntersecting),
+      { rootMargin: '0px 0px -10% 0px' }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   const handleJoinKahoot = (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,7 +223,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
       />
       
       {/* Advanced Hero Section (World-Class EdTech Landing) */}
-      <section className="relative overflow-hidden rounded-[2.5rem] bg-slate-950 text-white shadow-[0_0_100px_rgba(37,99,235,0.18)] mx-4 lg:mx-8 xl:mx-12 mt-4 px-6 md:px-12 py-16 lg:py-24 transition-colors duration-500 border border-slate-800/80">
+      <section className="relative overflow-hidden rounded-6xl bg-slate-950 text-white shadow-[0_0_100px_rgba(37,99,235,0.18)] mx-4 lg:mx-8 xl:mx-12 mt-4 px-6 md:px-12 py-16 lg:py-24 transition-colors duration-500 border border-slate-800/80">
         
         {/* Deep Abstract Animated Grid */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20 hover:opacity-30 transition-opacity duration-1000"></div>
@@ -217,7 +233,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
         <motion.div 
           animate={{ y: [0, -40, 0], rotate: [0, 10, 0], scale: [1, 1.1, 1] }} 
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-20 left-10 lg:left-32 w-24 h-24 bg-gradient-to-br from-indigo-500/20 to-blue-500/5 backdrop-blur-2xl border border-white/10 rounded-[2rem] flex items-center justify-center text-blue-300 text-3xl shadow-[0_0_40px_rgba(59,130,246,0.2)] hidden md:flex"
+          className="absolute top-20 left-10 lg:left-32 w-24 h-24 bg-gradient-to-br from-indigo-500/20 to-blue-500/5 backdrop-blur-2xl border border-white/10 rounded-5xl flex items-center justify-center text-blue-300 text-3xl shadow-[0_0_40px_rgba(59,130,246,0.2)] hidden md:flex"
         >
           <MathRenderer content="$\int_a^b$" inline />
         </motion.div>
@@ -372,7 +388,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
             transition={{ delay: 0.35, duration: 0.9 }}
             className="relative"
           >
-            <div className="rounded-[2rem] border border-white/10 bg-white/8 backdrop-blur-2xl p-6 md:p-7 shadow-[0_30px_100px_rgba(15,23,42,0.45)]">
+            <div className="rounded-5xl border border-white/10 bg-white/8 backdrop-blur-2xl p-6 md:p-7 shadow-[0_30px_100px_rgba(15,23,42,0.45)]">
               <div className="flex items-center justify-between gap-4 mb-6">
                 <div>
                   <div className="text-xs font-black uppercase tracking-[0.24em] text-blue-200/80 mb-2">Teacher cockpit</div>
@@ -416,7 +432,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
       <section className="max-w-7xl mx-auto px-6 -mt-2">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {PLATFORM_STATS.map((stat) => (
-            <div key={stat.label} className="rounded-[1.75rem] border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/60 p-6 shadow-sm backdrop-blur-xl text-center">
+            <div key={stat.label} className="rounded-4xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/60 p-6 shadow-sm backdrop-blur-xl text-center">
               <div className="text-4xl font-black text-indigo-600 dark:text-indigo-400 mb-2">{stat.value}</div>
               <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">{stat.label}</div>
             </div>
@@ -435,11 +451,11 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
           <motion.div 
             whileHover={{ y: -8, scale: 1.01 }}
             onClick={() => navigate('/library')}
-            className="md:col-span-12 bg-gradient-to-br from-rose-500 to-orange-500 dark:from-rose-900 dark:to-orange-900 p-10 md:p-14 rounded-[3rem] shadow-2xl hover:shadow-rose-500/30 transition-all duration-500 cursor-pointer group relative overflow-hidden"
+            className="md:col-span-12 bg-gradient-to-br from-rose-500 to-orange-500 dark:from-rose-900 dark:to-orange-900 p-10 md:p-14 rounded-7xl shadow-2xl hover:shadow-rose-500/30 transition-all duration-500 cursor-pointer group relative overflow-hidden"
           >
             <div className="absolute -right-20 -top-20 w-[600px] h-[600px] bg-white/10 blur-[80px] rounded-full mix-blend-overlay"></div>
             <div className="relative z-10 flex flex-col h-full w-full md:w-2/3">
-               <div className="w-20 h-20 bg-white/20 backdrop-blur-xl border border-white/30 rounded-[1.5rem] flex items-center justify-center mb-8 shadow-2xl">
+               <div className="w-20 h-20 bg-white/20 backdrop-blur-xl border border-white/30 rounded-3xl flex items-center justify-center mb-8 shadow-2xl">
                  <Play className="w-10 h-10 text-white fill-white" />
                </div>
                <h3 className="text-4xl md:text-5xl font-black text-white mb-6 leading-tight">MathKahoot!<br/>Жива Училница</h3>
@@ -452,7 +468,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
             </div>
             {/* Kahoot Decor Graphic */}
             <div className="hidden md:flex absolute -right-10 bottom-0 top-0 items-center justify-center w-1/2 pointer-events-none">
-                <div className="w-full max-w-sm h-3/4 bg-white/10 backdrop-blur-md rounded-l-[3rem] border-y border-l border-white/20 p-8 shadow-2xl flex flex-col justify-center gap-4">
+                <div className="w-full max-w-sm h-3/4 bg-white/10 backdrop-blur-md rounded-l-7xl border-y border-l border-white/20 p-8 shadow-2xl flex flex-col justify-center gap-4">
                    <div className="text-white font-black text-3xl text-center mb-4">Кој е резултатот?</div>
                    <div className="grid grid-cols-2 gap-4">
                       <div className="bg-red-500 h-24 rounded-2xl border-b-4 border-red-700"></div>
@@ -468,7 +484,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
           <motion.div 
             whileHover={{ y: -8, scale: 1.02 }}
             onClick={() => navigate('/extract')}
-            className="md:col-span-6 bg-white dark:bg-slate-800 p-10 rounded-[3rem] shadow-xl hover:shadow-2xl border border-slate-200 dark:border-slate-700 transition-all duration-500 cursor-pointer group flex flex-col relative overflow-hidden"
+            className="md:col-span-6 bg-white dark:bg-slate-800 p-10 rounded-7xl shadow-xl hover:shadow-2xl border border-slate-200 dark:border-slate-700 transition-all duration-500 cursor-pointer group flex flex-col relative overflow-hidden"
           >
             <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-blue-500/30">
               <Wand2 className="w-8 h-8 text-white" />
@@ -486,7 +502,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
           <motion.div 
             whileHover={{ y: -8, scale: 1.01 }}
             onClick={() => navigate('/classrooms')}
-            className="md:col-span-6 bg-slate-100 dark:bg-slate-800/50 p-10 md:p-14 rounded-[3rem] shadow-xl hover:shadow-2xl transition-all duration-500 cursor-pointer group flex flex-col relative overflow-hidden border border-slate-200 dark:border-slate-700"
+            className="md:col-span-6 bg-slate-100 dark:bg-slate-800/50 p-10 md:p-14 rounded-7xl shadow-xl hover:shadow-2xl transition-all duration-500 cursor-pointer group flex flex-col relative overflow-hidden border border-slate-200 dark:border-slate-700"
           >
             <div className="absolute right-0 top-0 opacity-5">
                <FileType2 className="w-[400px] h-[400px] text-amber-500 transform translate-x-1/4 -translate-y-1/4 group-hover:rotate-12 transition-transform duration-700" />
@@ -522,7 +538,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
             <motion.div
               key={t.author}
               whileHover={{ y: -4 }}
-              className="rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-8 shadow-sm hover:shadow-lg transition-all duration-300 backdrop-blur-xl flex flex-col"
+              className="rounded-5xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-8 shadow-sm hover:shadow-lg transition-all duration-300 backdrop-blur-xl flex flex-col"
             >
               <div className="flex gap-1 mb-6">
                 {[...Array(5)].map((_, i) => (
@@ -550,7 +566,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
       <section className="max-w-7xl mx-auto px-6 pb-8">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {HOME_SIGNAL_CARDS.map((card) => (
-            <div key={card.title} className="rounded-[1.75rem] border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/60 p-6 shadow-sm backdrop-blur-xl">
+            <div key={card.title} className="rounded-4xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/60 p-6 shadow-sm backdrop-blur-xl">
               <div className="text-xs font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 mb-3">{card.title}</div>
               <div className="text-3xl font-black text-slate-900 dark:text-white mb-2">{card.value}</div>
               <div className="text-sm text-slate-600 dark:text-slate-300">{card.detail}</div>
@@ -561,7 +577,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
 
       {/* Quote of the Day (Modernized as a floating card) */}
       <section className="max-w-5xl mx-auto px-6 mb-16">
-        <div className="relative p-10 md:p-14 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-indigo-950/40 dark:to-blue-900/20 rounded-[2.5rem] shadow-inner border border-blue-100 dark:border-indigo-500/20 overflow-hidden group hover:shadow-lg transition-all duration-300">
+        <div className="relative p-10 md:p-14 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-indigo-950/40 dark:to-blue-900/20 rounded-6xl shadow-inner border border-blue-100 dark:border-indigo-500/20 overflow-hidden group hover:shadow-lg transition-all duration-300">
           <Quote className="absolute top-10 right-10 w-32 h-32 text-blue-200 dark:text-blue-500/10 opacity-50 transform -rotate-12 group-hover:scale-110 transition-transform duration-700" />
           
           <div className="relative z-10">
@@ -599,7 +615,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
       </section>
 
       {/* Modern High-End Footer Teaser for Pricing */}
-      <section className="max-w-4xl mx-auto px-6 text-center pt-8 border-t border-slate-200 dark:border-slate-800/50 pb-12">
+      <section ref={footerCtaRef} className="max-w-4xl mx-auto px-6 text-center pt-8 border-t border-slate-200 dark:border-slate-800/50 pb-12">
          <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight transition-colors duration-300">Подготвени да ја трансформирате едукацијата?</h2>
         <p className="text-slate-500 dark:text-slate-400 font-medium mb-8 transition-colors duration-300">Core користењето останува достапно, а Pro е наменет за наставници што сакаат побрз, посигурен и посериозен workflow.</p>
          {!user ? (
@@ -711,32 +727,47 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
         )}
       </AnimatePresence>
 
-      {/* Sticky bottom CTA — only for non-logged-in visitors, dismissible */}
-      {!user && (
-        <motion.div
-          initial={{ y: 80, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 2.5, duration: 0.5, ease: 'easeOut' }}
-          className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between gap-4 px-5 py-3.5 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800 shadow-[0_-4px_30px_rgba(79,70,229,0.25)] sm:px-8"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shrink-0">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <p className="text-sm text-slate-200 font-medium truncate">
-              <span className="text-white font-bold">Бесплатна регистрација</span> — пробај ги сите core функции веднаш.
-            </p>
-          </div>
-          <Button
-            size="sm"
-            onClick={signInWithGoogle}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl px-5 shrink-0 h-9"
+      {/* Sticky bottom CTA — only for non-logged-in visitors, hidden once the
+          footer CTA above is already visible, and dismissible with the X. */}
+      <AnimatePresence>
+        {!user && !isFooterCtaVisible && !stickyBarDismissed && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ delay: 2.5, duration: 0.5, ease: 'easeOut' }}
+            className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between gap-4 px-5 py-3.5 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800 shadow-[0_-4px_30px_rgba(79,70,229,0.25)] sm:px-8"
           >
-            Започни
-            <ArrowRight className="w-4 h-4 ml-1.5" />
-          </Button>
-        </motion.div>
-      )}
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shrink-0">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <p className="text-sm text-slate-200 font-medium truncate">
+                <span className="text-white font-bold">Бесплатна регистрација</span> — пробај ги сите core функции веднаш.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                onClick={signInWithGoogle}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl px-5 h-9"
+              >
+                Започни
+                <ArrowRight className="w-4 h-4 ml-1.5" />
+              </Button>
+              <button
+                type="button"
+                onClick={() => setStickyBarDismissed(true)}
+                aria-label="Затвори ја оваа порака"
+                title="Затвори"
+                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
