@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -15,10 +15,64 @@ interface MathRendererProps {
   inline?: boolean;
 }
 
+// AI-generated LaTeX occasionally comes back with a handful of predictable
+// slips — an unclosed \left/\right pair, an odd number of braces, a bare
+// backslash at the end of a line. None of these are fixable in general, but
+// these specific patterns are common enough (and safe enough to auto-close)
+// that fixing them here means the difference between "renders correctly"
+// and "shows a raw KaTeX error" for a meaningful share of real content.
+function sanitizeLatex(source: string): string {
+  let text = source;
+
+  // Balance curly braces within each math segment ($...$, $$...$$, \(...\),
+  // \[...\]) by appending any missing closing braces at the end of the
+  // segment — far better than leaving KaTeX to fail on the whole formula.
+  const mathSegmentPattern = /(\$\$[\s\S]*?\$\$|\$[^$\n]*?\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\])/g;
+  text = text.replace(mathSegmentPattern, (segment) => {
+    let opens = 0;
+    for (const ch of segment) {
+      if (ch === '{') opens++;
+      else if (ch === '}') opens--;
+    }
+    if (opens > 0) {
+      // Insert missing closing braces just before the segment's own closing
+      // delimiter, not after it.
+      const closingDelimMatch = segment.match(/(\$\$|\$|\\\)|\\\])$/);
+      const closingDelim = closingDelimMatch ? closingDelimMatch[0] : '';
+      const body = closingDelim ? segment.slice(0, -closingDelim.length) : segment;
+      return body + '}'.repeat(opens) + closingDelim;
+    }
+    return segment;
+  });
+
+  // \left...\right must be paired; an unmatched \left with no \right at all
+  // in the same segment makes KaTeX refuse to render anything after it.
+  text = text.replace(mathSegmentPattern, (segment) => {
+    const leftCount = (segment.match(/\\left(?![a-zA-Z])/g) || []).length;
+    const rightCount = (segment.match(/\\right(?![a-zA-Z])/g) || []).length;
+    if (leftCount > rightCount) {
+      const closingDelimMatch = segment.match(/(\$\$|\$|\\\)|\\\])$/);
+      const closingDelim = closingDelimMatch ? closingDelimMatch[0] : '';
+      const body = closingDelim ? segment.slice(0, -closingDelim.length) : segment;
+      return body + ' \\right.'.repeat(leftCount - rightCount) + closingDelim;
+    }
+    return segment;
+  });
+
+  return text;
+}
+
+// Never throw on unrecoverable LaTeX: render a subdued inline error span
+// (styled in index.css via .katex-error) instead of taking down whatever
+// component happens to be hosting this content.
+const REHYPE_KATEX_OPTIONS = { throwOnError: false, errorColor: '#94a3b8', strict: false } as const;
+
 export const MathRenderer: React.FC<MathRendererProps> = ({ content, className, inline }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [copiedFormula, setCopiedFormula] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<{ formula: string, text: string, isLoading: boolean } | null>(null);
+
+  const sanitizedContent = useMemo(() => sanitizeLatex(content), [content]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -108,12 +162,12 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className, 
     >
       <ReactMarkdown
         remarkPlugins={[remarkMath]}
-        rehypePlugins={[rehypeKatex]}
+        rehypePlugins={[[rehypeKatex, REHYPE_KATEX_OPTIONS]]}
         components={components}
       >
-        {content}
+        {sanitizedContent}
       </ReactMarkdown>
-      
+
       {copiedFormula && !explanation && (
         <div className="fixed bottom-4 right-4 bg-slate-900/90 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-4 z-[100] border border-slate-700 backdrop-blur-sm max-w-md">
           <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
@@ -149,8 +203,8 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className, 
                 <span>Се генерира објаснување...</span>
               </div>
             ) : (
-              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                {explanation.text}
+              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[[rehypeKatex, REHYPE_KATEX_OPTIONS]]}>
+                {sanitizeLatex(explanation.text)}
               </ReactMarkdown>
             )}
           </div>

@@ -9,7 +9,7 @@
     "start": "NODE_ENV=production tsx server.ts",
     "preview": "vite preview",
     "test": "vitest",
-    "test:smoke": "vitest --run src/components/ProtectedRoute.smoke.test.tsx src/components/TutorChat.smoke.test.tsx src/components/MaterialsFactory.smoke.test.tsx src/lib/export.smoke.test.ts src/hooks/useTaskFilters.test.ts src/components/ExtractionEngine.smoke.test.tsx src/components/SmartGrader.smoke.test.tsx src/components/AnalyticsDashboard.smoke.test.tsx",
+    "test:smoke": "vitest --run src/components/ProtectedRoute.smoke.test.tsx src/components/TutorChat.smoke.test.tsx src/components/MaterialsFactory.smoke.test.tsx src/lib/export.smoke.test.ts src/hooks/useTaskFilters.test.ts src/components/ExtractionEngine.smoke.test.tsx src/components/SmartGrader.smoke.test.tsx src/components/AnalyticsDashboard.smoke.test.tsx src/components/MathRenderer.smoke.test.tsx",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "quality:bundle": "node scripts/check-bundle-budget.mjs",
