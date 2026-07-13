@@ -112,6 +112,14 @@ body.dyscalculia-mode .katex .mop {
   @apply bg-indigo-50 ring-1 ring-indigo-200 dark:bg-indigo-900/30 dark:ring-indigo-800;
 }
 
+/* Unrenderable LaTeX (rehype-katex throwOnError: false) falls back to this
+   instead of KaTeX's default alarming red error dump — reads as "content
+   pending" rather than "something broke". */
+.katex-error {
+  @apply text-slate-400 dark:text-slate-500 border-b border-dashed border-slate-300 dark:border-slate-600 cursor-help;
+  font-family: inherit !important;
+}
+
 .katex-display {
   @apply p-4 rounded-xl transition-all duration-200 overflow-x-auto my-4 bg-white border border-slate-100 shadow-sm dark:bg-slate-800 dark:border-slate-700;
 }

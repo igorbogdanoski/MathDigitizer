@@ -1,4 +1,6 @@
 {
+  "buildCommand": "mkdir -p public && echo ok > public/index.html",
+  "outputDirectory": "public",
   "rewrites": [
     {
       "source": "/__/auth/:path*",
@@ -7,10 +9,6 @@
     {
       "source": "/__/firebase/init.json",
       "destination": "https://mathdigitizer-pro.firebaseapp.com/__/firebase/init.json"
-    },
-    {
-      "source": "/((?!__/|api/|assets/|.*\\..*).*)",
-      "destination": "/index.html"
     }
   ]
 }
