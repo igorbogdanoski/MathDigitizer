@@ -263,8 +263,8 @@ export const Layout: React.FC = () => {
             </Link>
           </div>
           
-          <nav className="flex-1 hidden lg:flex justify-start ml-8 overflow-visible">
-             <div className="flex items-center gap-1">
+          <nav className="flex-1 hidden lg:flex justify-start ml-4 2xl:ml-8 overflow-visible">
+             <div className="flex items-center gap-0.5 2xl:gap-1">
               {mainNavItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
@@ -272,7 +272,7 @@ export const Layout: React.FC = () => {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-xl transition-all duration-300 relative whitespace-nowrap flex-shrink-0 ${
+                    className={`flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-3 py-2 text-sm font-semibold rounded-xl transition-all duration-300 relative whitespace-nowrap flex-shrink-0 ${
                       isActive 
                         ? 'text-indigo-600 dark:text-indigo-400' 
                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/50'
@@ -294,7 +294,7 @@ export const Layout: React.FC = () => {
                     onClick={() => setIsToolsMenuOpen((prev) => !prev)}
                     aria-haspopup="menu"
                     aria-expanded={isToolsMenuOpen}
-                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
+                    className="flex items-center gap-1.5 px-2 2xl:px-3 py-2 text-sm font-semibold rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
                   >
                     <MoreHorizontal className="w-4 h-4" />
                     <span>Алатки</span>
@@ -344,7 +344,7 @@ export const Layout: React.FC = () => {
               aria-label="Отвори брзо пребарување"
             >
               <Search className="w-3.5 h-3.5" />
-              <span className="hidden lg:inline">Пребарај</span>
+              <span className="hidden 2xl:inline">Пребарај</span>
               <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-[10px] font-bold">Ctrl K</kbd>
             </button>
 
