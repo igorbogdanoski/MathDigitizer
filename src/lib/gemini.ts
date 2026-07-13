@@ -28,8 +28,22 @@ function buildCurriculumContextBlock(query: string, gradeHint?: string): string 
 let _aiInstance: any = null;
 let cachedApiKey: string | undefined = undefined;
 
+// The static site (math.mismath.net, Hostinger) has no backend of its own —
+// these /api/* routes are served from a separate Vercel deployment, so
+// relative paths won't resolve in production. VITE_API_BASE_URL points at
+// that deployment; falls back to same-origin relative paths for local dev
+// (where `npm run dev`'s Express server does serve /api/* itself).
+function getApiBaseUrl(): string {
+  const base = (import.meta as any)?.env?.VITE_API_BASE_URL as string | undefined;
+  return base ? base.replace(/\/$/, '') : '';
+}
+
+function apiUrl(path: string): string {
+  return `${getApiBaseUrl()}${path}`;
+}
+
 async function postJson(url: string, payload: any) {
-  const response = await fetch(url, {
+  const response = await fetch(apiUrl(url), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload ?? {})
@@ -1170,7 +1184,7 @@ export async function advancedMultimodalExtraction(
          const isVimeo = source.data.includes('vimeo.com');
          if (!isVimeo) {
            try {
-             const apiEndpoint = isYoutube ? `/api/youtube/transcript?url=${encodeURIComponent(source.data)}` : `/api/scrape?url=${encodeURIComponent(source.data)}`;
+             const apiEndpoint = apiUrl(isYoutube ? `/api/youtube/transcript?url=${encodeURIComponent(source.data)}` : `/api/scrape?url=${encodeURIComponent(source.data)}`);
              const res = await fetch(apiEndpoint);
              if (res.ok) {
                const text = await res.text();
@@ -1381,7 +1395,7 @@ export async function extractMathTasksFromUrl(url: string, model: string = "gemi
        }
      } else if (!isVimeo) {
        try {
-         const apiEndpoint = `/api/scrape?url=${encodeURIComponent(url)}`;
+         const apiEndpoint = apiUrl(`/api/scrape?url=${encodeURIComponent(url)}`);
          const res = await fetch(apiEndpoint);
          if (res.ok) {
            const text = await res.text();
