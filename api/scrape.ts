@@ -21,11 +21,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log(`[WebScraper] Fetching content from: ${url}`);
     const fetchResponse = await fetch(parsed.toString(), {
       signal: withTimeout(10000),
+      // Never auto-follow redirects: a URL that passes the isPrivateHost
+      // check on first fetch could otherwise 3xx to a private/metadata
+      // address and have that followed with no re-validation. The caller
+      // can resubmit the redirect target explicitly if it's a legitimate one.
+      redirect: 'manual',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       },
     });
 
+    if (fetchResponse.status >= 300 && fetchResponse.status < 400) {
+      throw new Error('Redirects are not followed for scrape targets');
+    }
     if (!fetchResponse.ok) {
       throw new Error(`Failed to fetch status: ${fetchResponse.status}`);
     }

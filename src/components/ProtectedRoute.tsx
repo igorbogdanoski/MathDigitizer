@@ -41,9 +41,22 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <AuthRequiredGate featureName={authFeatureName} description={authFeatureDescription} />;
   }
 
-  if (allowedRoles && userProfile && !allowedRoles.includes(userProfile.role)) {
-    const fallback = userProfile.role === 'student' ? '/student-dashboard' : '/dashboard';
-    return <Navigate to={fallback} replace />;
+  if (allowedRoles) {
+    // Profile not loaded yet (mid-onboarding, or the fetch failed and left
+    // userProfile null) — block rendering rather than silently letting the
+    // role check no-op and falling through to the protected content below.
+    if (!userProfile) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
+          <p className="text-slate-500">Се вчитува...</p>
+        </div>
+      );
+    }
+    if (!allowedRoles.includes(userProfile.role)) {
+      const fallback = userProfile.role === 'student' ? '/student-dashboard' : '/dashboard';
+      return <Navigate to={fallback} replace />;
+    }
   }
 
   if (requirePro && !hasProAccess(userProfile)) {
