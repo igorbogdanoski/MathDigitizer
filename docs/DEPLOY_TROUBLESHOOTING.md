@@ -39,41 +39,42 @@ These were genuine bugs in `deploy.yml`, found and fixed on 2026-07-13:
    phase 1 (rm/mkdir, best-effort, suffixed with `|| true`) and phase 2 (the actual `put`s, with
    `set cmd:fail-exit yes` and no `|| true`, so a real upload/login failure still aborts loudly).
 
-## Open mystery — NOT resolved, needs Hostinger support
+## Root cause found (2026-07-13): `FTP_SERVER_DIR` pointed at the wrong location
 
-After fixing all three bugs above, a deploy run completed successfully end-to-end: `lftp`
-reported success, and an `ls -la index.html` executed **inside that same authenticated FTP
-session, immediately after the upload**, showed a fresh timestamp and the correct file size.
+The "FTP write confirmed, HTTP still stale" mystery below turned out to have a mundane cause:
+the FTP account's login-landing directory (`FTP_SERVER_DIR = "."`) is **not** the document root
+Hostinger actually serves for `math.mismath.net`. Confirmed by directly listing the FTP tree:
 
-However:
-- The live site at `https://math.mismath.net/` (checked with cache-busting query params, against
-  both resolved origin IPs individually, over a 10-minute polling window) kept serving the old
-  content the whole time.
-- Hostinger's own web File Manager (`srv495-files.hstgr.io`), even after a hard refresh, showed
-  `index.html`'s "Last modified" as ~2 hours old — not matching the fresh FTP-session timestamp.
+- FTP login root (`/`) contains a built `dist/`-style output directly, **plus** a `domains/`
+  subfolder.
+- `domains/mismath.net/public_html/` is a WordPress install (`wp-content`, `wp-login.php`, ...)
+  with a `math/` subfolder and a `moodle/` subfolder alongside it — this account hosts multiple
+  sites/subdomains under one FTP login, each in its own `domains/<domain>/public_html[/<sub>]`
+  folder.
+- `domains/mismath.net/public_html/math/` is the actual docroot for the `math.mismath.net`
+  subdomain. Verified by comparing `index.html`'s `Last-Modified`/`Content-Length` in that folder
+  against the live `https://math.mismath.net/` response headers — **exact match** (both showed
+  `Last-Modified: ... 03:29:59 GMT`, `Content-Length: 8201`), while the FTP-root `index.html` was
+  a different, newer file (different deploy, different size) that was never actually being served.
 
-This is a genuine contradiction between what the FTP protocol confirms was written and what both
-HTTP and the web File Manager show. The most likely explanation is that the FTP account's
-apparent document root and the domain's actually-served document root are two different
-locations on Hostinger's backend (the account's home directory listing does contain a
-`public_html -> /home/u731170910/domains/mismath.net/public_html` symlink, suggesting a possibly
-more complex multi-domain layout than a single flat docroot) — but this can't be diagnosed further
-from outside; it needs someone with backend visibility into the account's actual filesystem/DNS/
-proxy configuration.
+The earlier attempt to fix this (see bug #2 above) tried `FTP_SERVER_DIR = public_html` or
+`public_html/math`, which don't exist directly under the FTP login root (hence the `550 No such
+file or directory`) — the missing piece was the `domains/mismath.net/` prefix.
 
-**Evidence to hand to Hostinger support:**
-- FTP `ls -la index.html` inside the upload session → fresh timestamp, correct size, right after upload.
-- `curl` against both origin IPs (`92.113.16.8`, `92.113.23.251`) with cache-busting, 10 minutes
-  after the confirmed-successful upload → still serving old content.
-- Question for them: does the `u731170910` FTP account's session root definitively map 1:1 to the
-  document root actually served for `math.mismath.net`, or is there a separate sync/cache/staging
-  layer in between?
+**Fix:** set the `FTP_SERVER_DIR` GitHub Actions secret to:
 
-## Reliable fallback until the mystery is resolved
+```text
+domains/mismath.net/public_html/math
+```
 
-Manual deploy works immediately and has been used successfully:
+(relative to the FTP login root, no leading slash). This makes `deploy.yml`'s `CD_CMD` actually
+`cd` into the real docroot before uploading, instead of writing to the unused FTP-root location.
+
+## Reliable fallback if this regresses
+
+Manual deploy works immediately:
 1. `npm run build` locally (make sure `.env.local` has the needed `VITE_*` vars).
 2. Upload the contents of `dist/` (not the `.vite/` subfolder — that's build metadata only) via
-   Hostinger's web File Manager or an FTP client, replacing the existing files in
-   `public_html/math`.
+   Hostinger's web File Manager or an FTP client, into
+   `domains/mismath.net/public_html/math/` (relative to the FTP account root).
 3. Verify: `curl -sI https://math.mismath.net/` and check the `last-modified` header updates.

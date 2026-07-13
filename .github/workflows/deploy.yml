@@ -49,9 +49,11 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/dist
 
-          # FTP_DIR is intentionally allowed to be empty: this account's FTP
-          # session already lands directly in the site's document root on
-          # login (confirmed 2026-07-13), so `cd` into anything is wrong.
+          # FTP_DIR must be set to domains/mismath.net/public_html/math
+          # (relative to the FTP login root, no leading slash) — this
+          # account's FTP login lands in a different location than the
+          # actual document root Hostinger serves for math.mismath.net.
+          # See docs/DEPLOY_TROUBLESHOOTING.md for how this was confirmed.
           CD_CMD=""
           if [ -n "$FTP_DIR" ]; then
             CD_CMD="cd $FTP_DIR"
