@@ -3,6 +3,8 @@ import path from "path";
 import http from "http";
 import { Server } from "socket.io";
 
+const DEFAULT_ALLOWED_ORIGINS = ["https://math.mismath.net"];
+
 const PRIVATE_HOST_PATTERNS = [
   /^localhost$/i,
   /^127\./,
@@ -10,18 +12,37 @@ const PRIVATE_HOST_PATTERNS = [
   /^192\.168\./,
   /^172\.(1[6-9]|2\d|3[0-1])\./,
   /^0\.0\.0\.0$/,
+  // Link-local, including the AWS/GCP/Azure cloud metadata endpoint
+  // (169.254.169.254) — previously not blocked at all.
+  /^169\.254\./,
   /^\[::1\]$/,
+  /^\[::ffff:127\./,
+  /^\[fe80:/i,
+  /^\[fc[0-9a-f]{2}:/i,
+  /^\[fd[0-9a-f]{2}:/i,
 ];
+
+// See api/_shared.ts's isSuspiciousNumericHost for the rationale — kept in
+// sync between the two backend implementations of this same check.
+function isSuspiciousNumericHost(hostname: string): boolean {
+  if (/^\d+$/.test(hostname)) return true;
+  if (/^0x[0-9a-f]+$/i.test(hostname)) return true;
+  const octets = hostname.split(".");
+  if (octets.length > 1 && octets.length !== 4) return true;
+  if (octets.some((o) => /^0x/i.test(o) || (/^0\d/.test(o) && o !== "0"))) return true;
+  return false;
+}
 
 function isAllowedOrigin(origin?: string): boolean {
   if (!origin) return true;
   const raw = process.env.ALLOWED_ORIGINS;
-  if (!raw) return true;
   const allowlist = raw
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-  return allowlist.includes(origin);
+    ? raw.split(",").map((value) => value.trim()).filter(Boolean)
+    : DEFAULT_ALLOWED_ORIGINS;
+  // Fail closed (matches api/_shared.ts) rather than allowing any origin
+  // when ALLOWED_ORIGINS isn't set — this previously defaulted open, which
+  // is dangerous for the unauthenticated endpoints below.
+  return allowlist.includes(origin) || origin === "http://localhost:3000";
 }
 
 function parseSafeUrl(url: string): URL | null {
@@ -38,7 +59,7 @@ function parseSafeUrl(url: string): URL | null {
 
 function isPrivateHost(hostname: string): boolean {
   const normalized = hostname.trim().toLowerCase();
-  return PRIVATE_HOST_PATTERNS.some((pattern) => pattern.test(normalized));
+  return PRIVATE_HOST_PATTERNS.some((pattern) => pattern.test(normalized)) || isSuspiciousNumericHost(normalized);
 }
 
 function withTimeout(ms: number): AbortSignal {
@@ -273,11 +294,18 @@ async function startServer() {
       console.log(`[WebScraper] Fetching content from: ${url}`);
       const fetchResponse = await fetch(parsed.toString(), {
         signal: withTimeout(10000),
+        // Never auto-follow redirects — see api/scrape.ts for the rationale
+        // (a URL that passes isPrivateHost on first fetch could otherwise
+        // 3xx to a private/metadata address with no re-validation).
+        redirect: 'manual',
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
       });
-      
+
+      if (fetchResponse.status >= 300 && fetchResponse.status < 400) {
+        throw new Error('Redirects are not followed for scrape targets');
+      }
       if (!fetchResponse.ok) {
         throw new Error(`Failed to fetch status: ${fetchResponse.status}`);
       }

@@ -83,9 +83,16 @@ export default defineConfig(({mode}) => {
       environment: 'jsdom',
       setupFiles: './src/setupTests.ts',
     },
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-    },
+    // No `define` block for GEMINI_API_KEY: that key is meant to stay
+    // server-side only (used by server.ts / the Vercel /api functions).
+    // Inlining it here via `define` would bake the raw key into the public
+    // client bundle for every build that has it set in the environment —
+    // this was a real, unintended leak, distinct from the already-documented
+    // (and separately, weakly, referrer-restricted) VITE_GEMINI_API_KEY path
+    // in src/lib/gemini.ts. `process.env.GEMINI_API_KEY` there is read inside
+    // a try/catch specifically so it fails closed (ReferenceError, caught)
+    // when `process` isn't defined in the browser, which is what should
+    // happen now that this define is gone.
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

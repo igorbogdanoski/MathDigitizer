@@ -51,8 +51,32 @@ const PRIVATE_HOST_PATTERNS = [
   /^192\.168\./,
   /^172\.(1[6-9]|2\d|3[0-1])\./,
   /^0\.0\.0\.0$/,
+  // Link-local, including the AWS/GCP/Azure cloud metadata endpoint
+  // (169.254.169.254) — previously not blocked at all.
+  /^169\.254\./,
+  // IPv6 loopback, link-local, and unique-local ranges. URL#hostname keeps
+  // the brackets for IPv6 literals (e.g. "[::1]"), so match on that form.
   /^\[::1\]$/,
+  /^\[::ffff:127\./,
+  /^\[fe80:/i,
+  /^\[fc[0-9a-f]{2}:/i,
+  /^\[fd[0-9a-f]{2}:/i,
 ];
+
+// Rejects alternate IP encodings that resolve to an IPv4 address but don't
+// match the dotted-decimal patterns above by construction — e.g. decimal
+// (2130706433), hex (0x7f000001), or octal (0177.0.0.1) forms of 127.0.0.1,
+// or a dotted form with fewer/more than 4 octets. A hostname is only ever
+// legitimately either a domain name or a plain 4-octet dotted-decimal IPv4
+// address; anything else numeric-looking is treated as suspicious.
+function isSuspiciousNumericHost(hostname: string): boolean {
+  if (/^\d+$/.test(hostname)) return true; // pure decimal, e.g. 2130706433
+  if (/^0x[0-9a-f]+$/i.test(hostname)) return true; // hex, e.g. 0x7f000001
+  const octets = hostname.split('.');
+  if (octets.length > 1 && octets.length !== 4) return true; // malformed dotted form
+  if (octets.some((o) => /^0x/i.test(o) || (/^0\d/.test(o) && o !== '0'))) return true; // per-octet hex/octal
+  return false;
+}
 
 export function parseSafeUrl(url: string): URL | null {
   try {
@@ -68,7 +92,7 @@ export function parseSafeUrl(url: string): URL | null {
 
 export function isPrivateHost(hostname: string): boolean {
   const normalized = hostname.trim().toLowerCase();
-  return PRIVATE_HOST_PATTERNS.some((pattern) => pattern.test(normalized));
+  return PRIVATE_HOST_PATTERNS.some((pattern) => pattern.test(normalized)) || isSuspiciousNumericHost(normalized);
 }
 
 export function withTimeout(ms: number): AbortSignal {

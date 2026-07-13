@@ -35,6 +35,11 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
     }
 
+    function isClassroomTeacher(classroomId) {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/classrooms/$(classroomId)).data.teacherId == request.auth.uid;
+    }
+
     function isDocOwner() {
       return isAuthenticated() && request.auth.uid == resource.data.author_uid;
     }
@@ -117,7 +122,7 @@ service cloud.firestore {
     }
 
     function isValidUserProfile(data) {
-      let allowedFields = ['uid', 'email', 'displayName', 'role', 'createdAt', 'isPro', 'trialStartedAt'];
+      let allowedFields = ['uid', 'email', 'displayName', 'role', 'createdAt', 'isPro', 'trialStartedAt', 'proStartedAt', 'proEndsAt', 'paymentChannel'];
       return hasOnlyAllowedFields(allowedFields) &&
              data.uid is string && data.uid.size() > 0 && data.uid.size() < 50 &&
              data.email is string && data.email.size() > 0 && data.email.size() < 100 &&
@@ -125,7 +130,18 @@ service cloud.firestore {
              data.role in ['teacher', 'student'] &&
              isValidDateString(data.createdAt) &&
              (!('isPro' in data) || data.isPro is bool) &&
-             (!('trialStartedAt' in data) || isValidDateString(data.trialStartedAt));
+             (!('trialStartedAt' in data) || isValidDateString(data.trialStartedAt)) &&
+             (!('proStartedAt' in data) || isValidDateString(data.proStartedAt)) &&
+             (!('proEndsAt' in data) || isValidDateString(data.proEndsAt)) &&
+             (!('paymentChannel' in data) || data.paymentChannel in ['bank', 'paypal']);
+    }
+
+    // isPro must be read via .get() with a default because self-serve create/update
+    // paths are not allowed to set it at all (see selfUserUpdateAllowed /
+    // selfUserCreateAllowed below) — treating "absent" as false lets those paths
+    // compare old vs new state without special-casing the first-write case.
+    function effectiveIsPro(data) {
+      return data.get('isPro', false) == true;
     }
 
     function isValidIntegrityCheck(data) {
@@ -216,9 +232,15 @@ service cloud.firestore {
              isValidDateString(data.updated_at);
     }
 
-    function canTeacherActivateProOnUser() {
-      return isTeacher() &&
-             request.resource.data.keys().hasOnly(['uid', 'email', 'displayName', 'role', 'createdAt', 'isPro']) &&
+    function canTeacherActivateProOnUser(userId) {
+      // A teacher may only grant Pro to a DIFFERENT account, never their own —
+      // closes the trivial "self-declare teacher, self-grant Pro" abuse path.
+      // Note: `role` here is self-declared at signup with no verification (by
+      // product design), so this still doesn't prevent a determined actor from
+      // creating a second account to grant itself Pro — that's a monetization
+      // question to revisit separately, not something rules alone can close.
+      return isTeacher() && userId != request.auth.uid &&
+             request.resource.data.keys().hasOnly(['uid', 'email', 'displayName', 'role', 'createdAt', 'isPro', 'proStartedAt', 'proEndsAt', 'paymentChannel']) &&
              request.resource.data.uid == resource.data.uid &&
              request.resource.data.email == resource.data.email &&
              request.resource.data.displayName == resource.data.displayName &&
@@ -227,20 +249,37 @@ service cloud.firestore {
              request.resource.data.isPro == true;
     }
 
+    function selfUserCreateAllowed() {
+      return isAuthenticated() && isValidUserProfile(request.resource.data) &&
+             effectiveIsPro(request.resource.data) == false;
+    }
+
+    function selfUserUpdateAllowed() {
+      // Self-service profile edits may never change role or Pro status —
+      // those are privileged transitions (teacher activation / payment
+      // approval) handled exclusively by canTeacherActivateProOnUser.
+      return isAuthenticated() && isValidUserProfile(request.resource.data) &&
+             request.resource.data.role == resource.data.role &&
+             effectiveIsPro(request.resource.data) == effectiveIsPro(resource.data);
+    }
+
     match /user_stats/{userId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() && userId == request.auth.uid;
     }
 
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      // User can create/update their own profile only if the data is structurally valid
-      allow create: if isAuthenticated() && userId == request.auth.uid &&
-                    isValidUserProfile(request.resource.data);
-      // Self-update (valid profile shape) OR teacher activating Pro on a student
-      allow update: if (isAuthenticated() && userId == request.auth.uid &&
-                        isValidUserProfile(request.resource.data)) ||
-                    canTeacherActivateProOnUser();
+      // Read own profile freely; teachers may also read any profile (needed
+      // for classroom rosters / admin approval flows). Students can no longer
+      // read arbitrary other users' profiles (email, role, Pro status).
+      allow read: if isAuthenticated() && (userId == request.auth.uid || isTeacher());
+      // User can create their own profile only if structurally valid and not
+      // self-granting Pro.
+      allow create: if userId == request.auth.uid && selfUserCreateAllowed();
+      // Self-update (role/Pro immutable via this path) OR teacher activating
+      // Pro on a *different* account (payment approval / manual grant).
+      allow update: if (userId == request.auth.uid && selfUserUpdateAllowed()) ||
+                    canTeacherActivateProOnUser(userId);
       allow delete: if false;
     }
 
@@ -307,10 +346,21 @@ service cloud.firestore {
       );
       allow create: if isAuthenticated() &&
         request.resource.data.user_id == request.auth.uid;
-      allow update: if isAuthenticated() &&
-        resource.data.user_id == request.auth.uid;
+      // No app code ever updates an attempt after creation (write-once) — was
+      // previously wide open to letting the owning student rewrite the whole
+      // doc after the fact. Disabled rather than scoped, since it's unused.
+      allow update: if false;
       allow delete: if isAuthenticated() &&
         resource.data.user_id == request.auth.uid;
+    }
+
+    match /active_user_sessions/{sessionId} {
+      // "I am actively solving a task" beacon, written by the solving user
+      // and read by teachers for the Live Classroom Monitor spectator view.
+      allow read: if isTeacher();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     match /classrooms/{classroomId} {
@@ -347,25 +397,36 @@ service cloud.firestore {
 
     match /live_sessions/{pin} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.teacher_uid == request.auth.uid;
+      // The owning teacher can change anything (advance questions, change
+      // status, etc). Any other authenticated user (a joining student) may
+      // only ever touch the `participants` map — joining/answering — never
+      // quiz_data, status, or current_question_index belonging to someone
+      // else's session.
+      allow update: if isAuthenticated() && (
+        resource.data.teacher_uid == request.auth.uid ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participants'])
+      );
       // Only teachers can clean up live sessions
       allow delete: if isTeacher();
     }
 
     match /whiteboard_sessions/{sessionId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      // Scope deletion to the session author only
+      allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
+      // This is a personal "save my session" write, not shared real-time
+      // collaboration (that's classrooms/{id}/canvas_strokes below) — scope
+      // to the author, matching the existing delete rule.
+      allow update: if isAuthenticated() && resource.data.authorId == request.auth.uid;
       allow delete: if isAuthenticated() && resource.data.authorId == request.auth.uid;
     }
 
     match /assignments/{assignmentId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
+      // Assignment docs carry no owner field of their own — ownership is
+      // derived transitively via the classroom they belong to.
+      allow create: if isClassroomTeacher(request.resource.data.classroomId);
+      allow update, delete: if isClassroomTeacher(resource.data.classroomId);
     }
 
     match /student_progress/{progressId} {
