@@ -1,4 +1,14 @@
 {
-  "buildCommand": "mkdir -p public && printf '<!doctype html><html><body><h1>MathDigitizer API</h1><p>This Vercel project serves only the /api/* backend functions for math.mismath.net (Hostinger). It is not the app.</p></body></html>' > public/index.html",
-  "outputDirectory": "public"
+  "buildCommand": "mkdir -p public && printf '<!doctype html><html><body><h1>MathDigitizer API</h1><p>This Vercel project serves the Firebase auth handler proxy and the /api/* backend functions for math.mismath.net (Hostinger). It is not the app.</p></body></html>' > public/index.html",
+  "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/__/auth/:path*",
+      "destination": "https://mathdigitizer-pro.firebaseapp.com/__/auth/:path*"
+    },
+    {
+      "source": "/__/firebase/init.json",
+      "destination": "https://mathdigitizer-pro.firebaseapp.com/__/firebase/init.json"
+    }
+  ]
 }
