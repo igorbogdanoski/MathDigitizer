@@ -1,5 +1,5 @@
 {
-  "buildCommand": "mkdir -p public && printf '<!doctype html><html><body><h1>MathDigitizer API</h1><p>This Vercel project serves the Firebase auth handler proxy and the /api/* backend functions for math.mismath.net (Hostinger). It is not the app.</p></body></html>' > public/index.html",
+  "buildCommand": "mkdir -p public && echo ok > public/index.html",
   "outputDirectory": "public",
   "rewrites": [
     {
