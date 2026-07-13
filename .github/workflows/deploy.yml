@@ -48,30 +48,45 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/dist
 
+          # FTP_DIR is intentionally allowed to be empty: this account's FTP
+          # session already lands directly in the site's document root on
+          # login (confirmed 2026-07-13), so `cd` into anything is wrong.
+          CD_CMD=""
+          if [ -n "$FTP_DIR" ]; then
+            CD_CMD="cd $FTP_DIR"
+          fi
+
+          # Phase 1 (best-effort, no fail-exit): clean up legacy filenames and
+          # ensure directories exist. mkdir legitimately "fails" every run
+          # once a directory already exists from a prior deploy — that's not
+          # a real error, so this phase must NOT abort on it.
           {
             echo "set ftp:ssl-allow no"
             echo "set ftp:use-mlsd no"
             echo "set ftp:use-mdtm no"
             echo "set net:timeout 60"
             echo "set net:max-retries 3"
-            # Abort the whole batch (non-zero exit) on the first failed command
-            # instead of silently continuing — a wrong FTP_DIR or a permission
-            # error used to leave this step green with nothing actually
-            # uploaded, since lftp doesn't fail the shell command by default
-            # when an individual queued command errors.
-            echo "set cmd:fail-exit yes"
-            # FTP_DIR is intentionally allowed to be empty: this account's FTP
-            # session already lands directly in the site's document root on
-            # login (confirmed 2026-07-13), so `cd` into anything is wrong.
-            if [ -n "$FTP_DIR" ]; then
-              echo "cd $FTP_DIR"
-            fi
+            echo "$CD_CMD"
             for f in index.html .htaccess vite.svg robots.txt manifest.json .ftp-deploy-sync-state.json; do
               echo "rm -f $f"
             done
             find . -mindepth 1 -type d | sed 's|^\./||' | sort | while read -r d; do
               echo "mkdir -p \"$d\""
             done
+            echo "bye"
+          } | lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST"
+
+          # Phase 2 (fail-exit yes): the actual upload. This must succeed for
+          # every file, so a bad login/path/permission now aborts the step
+          # instead of silently leaving stale content live.
+          {
+            echo "set ftp:ssl-allow no"
+            echo "set ftp:use-mlsd no"
+            echo "set ftp:use-mdtm no"
+            echo "set net:timeout 60"
+            echo "set net:max-retries 3"
+            echo "set cmd:fail-exit yes"
+            echo "$CD_CMD"
             find . -type f | sed 's|^\./||' | while read -r f; do
               echo "put \"$GITHUB_WORKSPACE/dist/$f\" -o \"$f\""
             done
