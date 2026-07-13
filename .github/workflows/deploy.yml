@@ -24,6 +24,17 @@ jobs:
           VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
           VITE_ADMIN_EMAIL: ${{ secrets.VITE_ADMIN_EMAIL }}
 
+      - name: Capture build fingerprint
+        id: fingerprint
+        run: |
+          BUNDLE=$(grep -oE '/assets/index-[a-zA-Z0-9_-]+\.js' "$GITHUB_WORKSPACE/dist/index.html" | head -1)
+          if [ -z "$BUNDLE" ]; then
+            echo "Could not find a main JS bundle reference in dist/index.html — build is broken." >&2
+            exit 1
+          fi
+          echo "bundle=$BUNDLE" >> "$GITHUB_OUTPUT"
+          echo "Built bundle: $BUNDLE"
+
       - name: Install lftp
         run: sudo apt-get install -y lftp
 
@@ -41,10 +52,20 @@ jobs:
             echo "set ftp:ssl-allow no"
             echo "set ftp:use-mlsd no"
             echo "set ftp:use-mdtm no"
-            echo "set ftp:set-permissions no"
             echo "set net:timeout 60"
             echo "set net:max-retries 3"
-            echo "cd $FTP_DIR"
+            # Abort the whole batch (non-zero exit) on the first failed command
+            # instead of silently continuing — a wrong FTP_DIR or a permission
+            # error used to leave this step green with nothing actually
+            # uploaded, since lftp doesn't fail the shell command by default
+            # when an individual queued command errors.
+            echo "set cmd:fail-exit yes"
+            # FTP_DIR is intentionally allowed to be empty: this account's FTP
+            # session already lands directly in the site's document root on
+            # login (confirmed 2026-07-13), so `cd` into anything is wrong.
+            if [ -n "$FTP_DIR" ]; then
+              echo "cd $FTP_DIR"
+            fi
             for f in index.html .htaccess vite.svg robots.txt manifest.json .ftp-deploy-sync-state.json; do
               echo "rm -f $f"
             done
@@ -70,7 +91,9 @@ jobs:
             echo "set ftp:use-mlsd no"
             echo "set ftp:use-mdtm no"
             echo "set net:timeout 30"
-            echo "cd $FTP_DIR"
+            if [ -n "$FTP_DIR" ]; then
+              echo "cd $FTP_DIR"
+            fi
             echo "chmod 755 ."
             find . -maxdepth 1 -type f | sed 's|^\./||' | while read -r f; do
               echo "chmod 644 \"$f\""
@@ -85,10 +108,23 @@ jobs:
           } | lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST"
 
       - name: Verify deployment
+        env:
+          EXPECTED_BUNDLE: ${{ steps.fingerprint.outputs.bundle }}
         run: |
-          sleep 5
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://math.mismath.net/)
-          SIZE=$(curl -s https://math.mismath.net/ | wc -c)
-          LM=$(curl -sI https://math.mismath.net/ | grep -i "last-modified")
-          echo "HTTP status: $STATUS | index.html size: $SIZE bytes"
-          echo "$LM"
+          echo "Expecting live index.html to reference: $EXPECTED_BUNDLE"
+
+          for attempt in 1 2 3 4 5 6; do
+            sleep 10
+            LIVE_HTML=$(curl -s --max-time 20 "https://math.mismath.net/?cachebust=$(date +%s)")
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://math.mismath.net/)
+            LIVE_BUNDLE=$(echo "$LIVE_HTML" | grep -oE '/assets/index-[a-zA-Z0-9_-]+\.js' | head -1)
+            echo "Attempt $attempt: HTTP $STATUS, live bundle: ${LIVE_BUNDLE:-<none found>}"
+
+            if [ "$LIVE_BUNDLE" = "$EXPECTED_BUNDLE" ]; then
+              echo "Verified: live site is serving the bundle just deployed."
+              exit 0
+            fi
+          done
+
+          echo "::error::Deployment verification failed — after 6 attempts (~60s) the live site at https://math.mismath.net/ is still not serving $EXPECTED_BUNDLE. The lftp step reported success, but the uploaded files are not visible on the live site. Check that the FTP_SERVER_DIR secret points at the actual document root for math.mismath.net." >&2
+          exit 1
