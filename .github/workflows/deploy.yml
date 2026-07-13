@@ -52,7 +52,6 @@ jobs:
             echo "set ftp:ssl-allow no"
             echo "set ftp:use-mlsd no"
             echo "set ftp:use-mdtm no"
-            echo "set ftp:set-permissions no"
             echo "set net:timeout 60"
             echo "set net:max-retries 3"
             # Abort the whole batch (non-zero exit) on the first failed command
@@ -61,7 +60,12 @@ jobs:
             # uploaded, since lftp doesn't fail the shell command by default
             # when an individual queued command errors.
             echo "set cmd:fail-exit yes"
-            echo "cd $FTP_DIR"
+            # FTP_DIR is intentionally allowed to be empty: this account's FTP
+            # session already lands directly in the site's document root on
+            # login (confirmed 2026-07-13), so `cd` into anything is wrong.
+            if [ -n "$FTP_DIR" ]; then
+              echo "cd $FTP_DIR"
+            fi
             for f in index.html .htaccess vite.svg robots.txt manifest.json .ftp-deploy-sync-state.json; do
               echo "rm -f $f"
             done
@@ -87,7 +91,9 @@ jobs:
             echo "set ftp:use-mlsd no"
             echo "set ftp:use-mdtm no"
             echo "set net:timeout 30"
-            echo "cd $FTP_DIR"
+            if [ -n "$FTP_DIR" ]; then
+              echo "cd $FTP_DIR"
+            fi
             echo "chmod 755 ."
             find . -maxdepth 1 -type f | sed 's|^\./||' | while read -r f; do
               echo "chmod 644 \"$f\""
