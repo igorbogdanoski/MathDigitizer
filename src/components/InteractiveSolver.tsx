@@ -4,6 +4,7 @@ import { Button } from './ui/Button';
 import { MathRenderer } from './MathRenderer';
 import { MathTask, CognitiveTelemetryStep, TaskAttempt, UserProfile } from '../lib/schema';
 import { verifyUserStep, analyzeSolutionImage } from '../lib/gemini';
+import { tryFastStepVerify } from '../lib/mathVerify';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, addDoc, getDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
@@ -119,8 +120,20 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
     }
 
     try {
-      const result = await verifyUserStep(task, userSteps, inputToVerify);
-      
+      // Fast path: if this step is symbolically equivalent to the expected
+      // next step in the task's own solution, confirm instantly without an
+      // AI call. Never used for hint requests (those need real Socratic
+      // guidance text, not a correctness check) and never produces a hard
+      // "incorrect" — a miss here just falls through to the AI as before.
+      const isHintRequest = rawInput.includes("Сократска насока");
+      const fastResult = isHintRequest
+        ? null
+        : await tryFastStepVerify(task.solution_steps?.[userSteps.length], rawInput);
+
+      const result = fastResult
+        ? { ...fastResult, isFinished: userSteps.length + 1 >= (task.solution_steps?.length || 0) }
+        : await verifyUserStep(task, userSteps, inputToVerify);
+
       // Build internal telemetry payload
       const stepData: CognitiveTelemetryStep = {
         step_text: rawInput,

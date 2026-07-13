@@ -125,7 +125,7 @@ export const GraphDigitizer: React.FC = () => {
   const [waitingCalib, setWaitingCalib] = useState<1 | 2 | null>(null);
   const [pendingPixel, setPendingPixel] = useState<{ x: number; y: number } | null>(null);
   const [calibDialog, setCalibDialog] = useState(false);
-  const calibModalRef = useModalA11y<HTMLDivElement>(() => { setCalibDialog(false); setPendingPixel(null); });
+  const calibModalRef = useModalA11y<HTMLDivElement>(() => { setCalibDialog(false); setPendingPixel(null); }, calibDialog);
   const [calibInput, setCalibInput] = useState({ x: '', y: '' });
 
   // Datasets

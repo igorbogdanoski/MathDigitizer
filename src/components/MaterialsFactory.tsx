@@ -45,7 +45,7 @@ export default function MaterialsFactory() {
   const [isGeneratingDiff, setIsGeneratingDiff] = useState(false);
   const [diffResult, setDiffResult] = useState<{groupA: MathTask[], groupB: MathTask[], groupC: MathTask[]} | null>(null);
 
-  const diffResultModalRef = useModalA11y<HTMLDivElement>(() => setDiffResult(null));
+  const diffResultModalRef = useModalA11y<HTMLDivElement>(() => setDiffResult(null), !!diffResult);
 
   const handleGenerateMaterial = async () => {
     if (selectedTasks.size === 0) {

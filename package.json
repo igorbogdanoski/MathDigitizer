@@ -9,7 +9,7 @@
     "start": "NODE_ENV=production tsx server.ts",
     "preview": "vite preview",
     "test": "vitest",
-    "test:smoke": "vitest --run src/components/ProtectedRoute.smoke.test.tsx src/components/TutorChat.smoke.test.tsx src/components/MaterialsFactory.smoke.test.tsx src/lib/export.smoke.test.ts src/hooks/useTaskFilters.test.ts src/components/ExtractionEngine.smoke.test.tsx src/components/SmartGrader.smoke.test.tsx src/components/AnalyticsDashboard.smoke.test.tsx src/components/MathRenderer.smoke.test.tsx",
+    "test:smoke": "vitest --run src/components/ProtectedRoute.smoke.test.tsx src/components/TutorChat.smoke.test.tsx src/components/MaterialsFactory.smoke.test.tsx src/lib/export.smoke.test.ts src/hooks/useTaskFilters.test.ts src/components/ExtractionEngine.smoke.test.tsx src/components/SmartGrader.smoke.test.tsx src/components/AnalyticsDashboard.smoke.test.tsx src/components/MathRenderer.smoke.test.tsx src/lib/mathVerify.test.ts",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "quality:bundle": "node scripts/check-bundle-budget.mjs",
@@ -23,6 +23,7 @@
     "promote": "node scripts/promote-to-production.mjs"
   },
   "dependencies": {
+    "@cortex-js/compute-engine": "^0.76.0",
     "@google/genai": "^1.50.1",
     "@sentry/react": "^10.56.0",
     "@stripe/stripe-js": "^9.3.1",

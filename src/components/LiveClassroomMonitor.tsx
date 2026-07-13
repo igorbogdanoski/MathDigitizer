@@ -9,7 +9,7 @@ import { useModalA11y } from '../hooks/useModalA11y';
 export const LiveClassroomMonitor = () => {
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const modalRef = useModalA11y<HTMLDivElement>(() => setSelectedSessionId(null));
+  const modalRef = useModalA11y<HTMLDivElement>(() => setSelectedSessionId(null), !!selectedSessionId);
 
   useEffect(() => {
     // Only subscribe to sessions that are currently active
