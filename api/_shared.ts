@@ -66,16 +66,21 @@ const PRIVATE_HOST_PATTERNS = [
 // Rejects alternate IP encodings that resolve to an IPv4 address but don't
 // match the dotted-decimal patterns above by construction — e.g. decimal
 // (2130706433), hex (0x7f000001), or octal (0177.0.0.1) forms of 127.0.0.1,
-// or a dotted form with fewer/more than 4 octets. A hostname is only ever
-// legitimately either a domain name or a plain 4-octet dotted-decimal IPv4
-// address; anything else numeric-looking is treated as suspicious.
+// or a dotted form with fewer/more than 4 octets. Only fires when every
+// dot-separated label is itself numeric — a real domain name always has at
+// least one non-numeric label (the TLD), so this can't false-positive on
+// ordinary 2-3-label domains (an earlier version of this check compared
+// octets.length to a fixed 4 unconditionally, which rejected almost every
+// real domain name — e.g. any 2-label domain like "example.com" or a
+// punycode host like "xn--b1agatflbfbtgq5jm.xn--p1ai" — fixed same-day).
 function isSuspiciousNumericHost(hostname: string): boolean {
   if (/^\d+$/.test(hostname)) return true; // pure decimal, e.g. 2130706433
   if (/^0x[0-9a-f]+$/i.test(hostname)) return true; // hex, e.g. 0x7f000001
-  const octets = hostname.split('.');
-  if (octets.length > 1 && octets.length !== 4) return true; // malformed dotted form
-  if (octets.some((o) => /^0x/i.test(o) || (/^0\d/.test(o) && o !== '0'))) return true; // per-octet hex/octal
-  return false;
+  const labels = hostname.split('.');
+  const isNumericLabel = (label: string) => /^0x[0-9a-f]+$/i.test(label) || /^\d+$/.test(label);
+  if (!labels.every(isNumericLabel)) return false; // has a real (non-numeric) label — a normal domain
+  if (labels.some((label) => /^0x/i.test(label) || (/^0\d/.test(label) && label !== '0'))) return true; // hex/octal octet
+  return labels.length !== 4; // all-numeric but not a plain 4-octet IPv4 shape
 }
 
 export function parseSafeUrl(url: string): URL | null {

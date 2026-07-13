@@ -27,10 +27,11 @@ const PRIVATE_HOST_PATTERNS = [
 function isSuspiciousNumericHost(hostname: string): boolean {
   if (/^\d+$/.test(hostname)) return true;
   if (/^0x[0-9a-f]+$/i.test(hostname)) return true;
-  const octets = hostname.split(".");
-  if (octets.length > 1 && octets.length !== 4) return true;
-  if (octets.some((o) => /^0x/i.test(o) || (/^0\d/.test(o) && o !== "0"))) return true;
-  return false;
+  const labels = hostname.split(".");
+  const isNumericLabel = (label: string) => /^0x[0-9a-f]+$/i.test(label) || /^\d+$/.test(label);
+  if (!labels.every(isNumericLabel)) return false; // has a real (non-numeric) label — a normal domain
+  if (labels.some((label) => /^0x/i.test(label) || (/^0\d/.test(label) && label !== "0"))) return true;
+  return labels.length !== 4;
 }
 
 function isAllowedOrigin(origin?: string): boolean {
