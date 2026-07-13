@@ -501,14 +501,14 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                         {url.toLowerCase().includes('youtube') || url.toLowerCase().includes('youtu.be') || url.toLowerCase().includes('vimeo') ? <PlayCircle className="w-6 h-6 text-red-400" /> : <LinkIcon className="w-6 h-6 text-indigo-400" />}
                       </div>
                       <textarea
-                        placeholder="Вметнете еден или повеќе линкови (YouTube, Vimeo...). Секој линк во нов ред. (Bulk Mode - инспирирано од ReClip)"
+                        placeholder="Вметнете еден или повеќе линкови — YouTube видео ИЛИ веб-страница со задачи (на пр. сајт со контролни работи). Секој линк во нов ред. (Bulk Mode - инспирирано од ReClip)"
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
                         disabled={isLoading}
                         className="pl-14 pt-4 min-h-[5rem] text-lg bg-white/90 border-white/40 focus:bg-white text-slate-800 placeholder-slate-400 rounded-2xl shadow-inner transition-all w-full resize-y"
                       />
                     </div>
-                    
+
                     <div className="relative group mt-1">
                       <textarea
                         placeholder="Опционално: Овде залепете рачен транскрипт доколку системот не успее да го симне..."
@@ -521,16 +521,22 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
 
                     <div className="bg-emerald-900/30 border border-emerald-400/30 rounded-2xl p-4 mt-2">
                        <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-3">
-                          <PlayCircle className="w-5 h-5 text-emerald-400" />
-                          Вграден YouTube Scraper (Бесплатно / Не е потребна ScraperAPI екстензија)
+                          <Globe className="w-5 h-5 text-emerald-400" />
+                          Вграден Web & YouTube Scraper (Бесплатно / Не е потребна ScraperAPI екстензија)
                        </h4>
+                       <p className="text-xs text-emerald-100/90 mb-3">
+                          Истото поле погоре прифаќа <strong>кој било линк</strong> — не само YouTube. Залепете
+                          линк од произволна веб-страница со математички задачи (на пр. сајт со контролни
+                          работи на кирилица) и содржината автоматски се извлекува, вклучувајќи ги
+                          математичките формули.
+                       </p>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-emerald-100/80">
                           <div className="space-y-2">
                              <p className="font-semibold text-emerald-100">Како функционира?</p>
                              <ul className="list-disc pl-4 space-y-1">
                                <li>Нема потреба од надворешни Edge/Chrome алатки ниту претплати од $50 за ScraperAPI.</li>
-                               <li>Вметнете обичен YouTube линк во полето погоре.</li>
-                               <li>Нашиот нов интерен Express.js мотор директно го извлекува скриениот транскрипт (CC) бесплатно.</li>
+                               <li>YouTube линк → го вадиме скриениот транскрипт (CC) бесплатно.</li>
+                               <li>Линк до обична веб-страница → го вадиме текстот и математичките изрази (MathJax/KaTeX) од страницата.</li>
                                <li>Отворете ги <strong>Напредните параметри</strong> подолу за прецизно подесување (по угледот на оригиналната екстензија).</li>
                              </ul>
                           </div>
@@ -579,9 +585,9 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                         <>
                           <ImageIcon className={`w-8 h-8 mb-2 transition-transform ${isDragOver ? 'text-emerald-400 scale-125' : 'text-indigo-300 group-hover:scale-110'}`} />
                           <p className={`font-medium tracking-tight ${isDragOver ? 'text-emerald-200' : 'text-indigo-200'}`}>
-                            {isDragOver ? 'Спуштете го документот овде' : 'Кликни или довлечи (Drag & Drop) PDF/Слика'}
+                            {isDragOver ? 'Спуштете го документот овде' : 'Кликни или довлечи (Drag & Drop) PDF / Word (.docx) / Видео / Слика'}
                           </p>
-                          <p className="text-[10px] text-indigo-400 uppercase mt-1">Поддршка за стари OCR книги и ракопис</p>
+                          <p className="text-[10px] text-indigo-400 uppercase mt-1">Поддршка за стари OCR книги, ракопис и Word документи со вградени формули</p>
                         </>
                       )}
                     </label>
