@@ -66,7 +66,9 @@ jobs:
             echo "set ftp:use-mdtm no"
             echo "set net:timeout 60"
             echo "set net:max-retries 3"
-            echo "$CD_CMD"
+            if [ -n "$CD_CMD" ]; then
+              echo "$CD_CMD"
+            fi
             for f in index.html .htaccess vite.svg robots.txt manifest.json .ftp-deploy-sync-state.json; do
               echo "rm -f $f"
             done
@@ -93,10 +95,16 @@ jobs:
             echo "set net:timeout 60"
             echo "set net:max-retries 3"
             echo "set cmd:fail-exit yes"
-            echo "$CD_CMD"
+            if [ -n "$CD_CMD" ]; then
+              echo "$CD_CMD"
+            fi
             find . -type f | sed 's|^\./||' | while read -r f; do
               echo "put \"$GITHUB_WORKSPACE/dist/$f\" -o \"$f\""
             done
+            # Prove the upload actually landed, from the server's own
+            # perspective, inside this same authenticated session — no HTTP
+            # cache layer can lie about this the way it can for a curl check.
+            echo "ls -la index.html"
             echo "bye"
           } | lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST"
 
