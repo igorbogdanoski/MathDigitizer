@@ -74,7 +74,14 @@ jobs:
               echo "mkdir -p \"$d\""
             done
             echo "bye"
-          } | lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST"
+          } | lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST" || true
+          # ^ GitHub Actions runs this script with `bash -e`, so lftp's own
+          # exit code (non-zero whenever ANY queued command failed, even
+          # without cmd:fail-exit, it just doesn't abort the batch early)
+          # would otherwise kill this step on the very "already exists"
+          # mkdir noise phase 1 is meant to tolerate. Phase 2 below must NOT
+          # have this — its failures are the ones that should actually stop
+          # the deploy.
 
           # Phase 2 (fail-exit yes): the actual upload. This must succeed for
           # every file, so a bad login/path/permission now aborts the step
