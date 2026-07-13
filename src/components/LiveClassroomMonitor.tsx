@@ -4,10 +4,12 @@ import { db } from '../lib/firebase';
 import { Activity, X, Maximize2 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { InteractiveCanvas } from './InteractiveCanvas';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 export const LiveClassroomMonitor = () => {
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const modalRef = useModalA11y<HTMLDivElement>(() => setSelectedSessionId(null));
 
   useEffect(() => {
     // Only subscribe to sessions that are currently active
@@ -71,7 +73,7 @@ export const LiveClassroomMonitor = () => {
 
       {/* Fullscreen Spectator Modal */}
       {selectedSessionId && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md">
+        <div ref={modalRef} role="dialog" aria-modal="true" className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md">
            <div className="w-full max-w-5xl h-[80vh] flex flex-col bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-2xl relative">
               <div className="absolute top-4 right-4 z-50">
                  <Button variant="outline" size="sm" onClick={() => setSelectedSessionId(null)} className="bg-white/80 backdrop-blur">

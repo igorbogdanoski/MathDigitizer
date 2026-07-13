@@ -5,6 +5,7 @@ import { Input } from './ui/Input';
 import { MathTask } from '../lib/schema';
 import { MathRenderer } from './MathRenderer';
 import { useReactToPrint } from 'react-to-print';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface TestGeneratorProps {
   selectedTasks: MathTask[];
@@ -13,6 +14,7 @@ interface TestGeneratorProps {
 }
 
 export const TestGenerator: React.FC<TestGeneratorProps> = ({ selectedTasks: initialSelectedTasks, allTasks = [], onClose }) => {
+  const modalRef = useModalA11y<HTMLDivElement>(onClose);
   const [selectedTasks, setSelectedTasks] = useState<MathTask[]>(initialSelectedTasks);
   const [title, setTitle] = useState('Математички Тест / Вежби');
   const [schoolName, setSchoolName] = useState('');
@@ -64,7 +66,12 @@ export const TestGenerator: React.FC<TestGeneratorProps> = ({ selectedTasks: ini
   const uniqueGrades = Array.from(new Set(allTasks.map(t => t.grade_level).filter(Boolean))).sort();
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div
+      ref={modalRef}
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+    >
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col border border-slate-200 dark:border-slate-700 overflow-hidden">
         {/* Header */}
         <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex justify-between items-center backdrop-blur-sm">

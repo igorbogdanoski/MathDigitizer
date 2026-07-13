@@ -9,6 +9,7 @@ import { InteractiveCanvas } from './InteractiveCanvas';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { captureError } from '../lib/observability';
 import { cosineSimilarity } from '../lib/ragContext';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface TutorChatProps {
   task: MathTask;
@@ -16,6 +17,7 @@ interface TutorChatProps {
 }
 
 export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
+  const modalRef = useModalA11y<HTMLDivElement>(onClose);
   const store = useLibraryStore();
   const [messages, setMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
   const [input, setInput] = useState('');
@@ -190,7 +192,12 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-md">
+    <div
+      ref={modalRef}
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-md"
+    >
       <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] w-full max-w-6xl h-[95vh] md:h-[85vh] flex flex-col md:flex-row overflow-hidden border border-slate-200 dark:border-slate-700 animate-in zoom-in-95 duration-300">
         
         {/* Left Side: Context & Vygotsky ZPD Map (Hidden on very small screens) */}

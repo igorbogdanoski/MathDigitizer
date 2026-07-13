@@ -23,6 +23,7 @@ import { hasProAccess } from '../lib/saas';
 import { ProFeatureGate } from './ProFeatureGate';
 import { captureError } from '../lib/observability';
 import { WorkflowSteps } from './WorkflowSteps';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 export default function MaterialsFactory() {
   const navigate = useNavigate();
@@ -43,6 +44,8 @@ export default function MaterialsFactory() {
 
   const [isGeneratingDiff, setIsGeneratingDiff] = useState(false);
   const [diffResult, setDiffResult] = useState<{groupA: MathTask[], groupB: MathTask[], groupC: MathTask[]} | null>(null);
+
+  const diffResultModalRef = useModalA11y<HTMLDivElement>(() => setDiffResult(null));
 
   const handleGenerateMaterial = async () => {
     if (selectedTasks.size === 0) {
@@ -506,7 +509,12 @@ export default function MaterialsFactory() {
       {/* Differentiated Test Results Modal */}
       <AnimatePresence>
         {diffResult && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+          <div
+            ref={diffResultModalRef}
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
+          >
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
