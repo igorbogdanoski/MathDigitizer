@@ -42,8 +42,8 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
   const [aiTopic, setAiTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const addModalRef = useModalA11y<HTMLDivElement>(() => setShowAddModal(false));
-  const aiModalRef = useModalA11y<HTMLDivElement>(() => setShowAIModal(false));
+  const addModalRef = useModalA11y<HTMLDivElement>(() => setShowAddModal(false), showAddModal);
+  const aiModalRef = useModalA11y<HTMLDivElement>(() => setShowAIModal(false), showAIModal);
 
   // Quiz State
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);

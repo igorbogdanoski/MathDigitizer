@@ -48,8 +48,8 @@ export const Library: React.FC = () => {
   const [isGeneratingKahoot, setIsGeneratingKahoot] = useState(false);
   const [showWorksheetModal, setShowWorksheetModal] = useState(false);
 
-  const graphModalRef = useModalA11y<HTMLDivElement>(() => store.setActiveGraphTask(null));
-  const manipulativesModalRef = useModalA11y<HTMLDivElement>(() => setShowManipulativesModal(false));
+  const graphModalRef = useModalA11y<HTMLDivElement>(() => store.setActiveGraphTask(null), !!store.activeGraphTask);
+  const manipulativesModalRef = useModalA11y<HTMLDivElement>(() => setShowManipulativesModal(false), showManipulativesModal);
 
   useEffect(() => {
     const handleOpenModal = () => setShowCreateModal(true);

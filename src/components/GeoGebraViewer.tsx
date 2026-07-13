@@ -45,7 +45,7 @@ export function GeoGebraViewer({ commands, onClose, inline = false }: GeoGebraVi
     postMsg({ type: 'setPenSize', size: strokeWidth * 2 }); // Scale for GeoGebra
   }, [strokeWidth]);
 
-  const modalRef = useModalA11y<HTMLDivElement>(() => onClose?.());
+  const modalRef = useModalA11y<HTMLDivElement>(() => onClose?.(), !inline);
 
   if (isMinimized && !inline) {
     return (

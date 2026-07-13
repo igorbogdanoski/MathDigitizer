@@ -58,7 +58,7 @@ export const AnalyticsDashboard: React.FC = () => {
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [interventionPlan, setInterventionPlan] = useState<string | null>(null);
   const isPro = hasProAccess(userProfile);
-  const interventionModalRef = useModalA11y<HTMLDivElement>(() => setInterventionPlan(null));
+  const interventionModalRef = useModalA11y<HTMLDivElement>(() => setInterventionPlan(null), !!interventionPlan);
 
   if (!isPro) {
     return (

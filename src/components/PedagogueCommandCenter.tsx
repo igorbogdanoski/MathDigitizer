@@ -292,7 +292,7 @@ export const PedagogueCommandCenter: React.FC = () => {
     }
   };
 
-  const modalRef = useModalA11y<HTMLDivElement>(() => setIsCommandCenterOpen(false));
+  const modalRef = useModalA11y<HTMLDivElement>(() => setIsCommandCenterOpen(false), isCommandCenterOpen);
 
   if (!isCommandCenterOpen) return null;
 

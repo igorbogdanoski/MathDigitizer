@@ -25,7 +25,7 @@ export const PedagogueEditor: React.FC = () => {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [isAILoading, setIsAILoading] = useState(false);
 
-  const modalRef = useModalA11y<HTMLDivElement>(() => setEditingTask(null));
+  const modalRef = useModalA11y<HTMLDivElement>(() => setEditingTask(null), !!(editingTask && localTask));
 
   useEffect(() => {
     if (editingTask) {
