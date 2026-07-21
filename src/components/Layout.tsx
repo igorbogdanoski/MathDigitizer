@@ -110,6 +110,7 @@ export const Layout: React.FC = () => {
     { path: '/adaptive-test', icon: Zap, label: 'Адаптивен Тест', show: userProfile?.role === 'student', group: 'teach' as ToolGroupKey },
     { path: '/flashcards', icon: Brain, label: 'Флешкарти', show: !!userProfile, group: 'teach' as ToolGroupKey },
     { path: '/analytics', icon: BrainCircuit, label: 'Аналитика', show: userProfile?.role === 'teacher', group: 'analyze' as ToolGroupKey },
+    { path: '/gradebook', icon: BookOpen, label: 'Дневник', show: userProfile?.role === 'teacher', group: 'analyze' as ToolGroupKey },
     { path: '/ai-pedagogy', icon: GraduationCap, label: 'AI Педагогија', show: userProfile?.role === 'teacher', group: 'analyze' as ToolGroupKey },
     { path: '/smart-grader', icon: Brain, label: 'AI Градер', show: true, group: 'analyze' as ToolGroupKey },
     { path: '/school-inquiries', icon: Inbox, label: 'School Leads', show: userProfile?.role === 'teacher', group: 'admin' as ToolGroupKey },
