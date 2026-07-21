@@ -15,16 +15,19 @@ import mkCommon from './locales/mk/common.json';
 import mkNavigation from './locales/mk/navigation.json';
 import mkPricing from './locales/mk/pricing.json';
 import mkHome from './locales/mk/home.json';
+import mkLibrary from './locales/mk/library.json';
 
 import enCommon from './locales/en/common.json';
 import enNavigation from './locales/en/navigation.json';
 import enPricing from './locales/en/pricing.json';
 import enHome from './locales/en/home.json';
+import enLibrary from './locales/en/library.json';
 
 import alCommon from './locales/al/common.json';
 import alNavigation from './locales/al/navigation.json';
 import alPricing from './locales/al/pricing.json';
 import alHome from './locales/al/home.json';
+import alLibrary from './locales/al/library.json';
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'mk', name: 'Македонски', flag: '🇲🇰' },
@@ -44,23 +47,26 @@ i18n
         navigation: mkNavigation,
         pricing: mkPricing,
         home: mkHome,
+        library: mkLibrary,
       },
       en: {
         common: enCommon,
         navigation: enNavigation,
         pricing: enPricing,
         home: enHome,
+        library: enLibrary,
       },
       al: {
         common: alCommon,
         navigation: alNavigation,
         pricing: alPricing,
         home: alHome,
+        library: alLibrary,
       },
     },
     fallbackLng: 'mk',
     defaultNS: 'common',
-    ns: ['common', 'navigation', 'pricing', 'home'],
+    ns: ['common', 'navigation', 'pricing', 'home', 'library'],
     
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
