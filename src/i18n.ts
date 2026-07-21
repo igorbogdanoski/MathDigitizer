@@ -20,6 +20,8 @@ import mkExtraction from './locales/mk/extraction.json';
 import mkDashboard from './locales/mk/dashboard.json';
 import mkFlashcards from './locales/mk/flashcards.json';
 import mkGradebook from './locales/mk/gradebook.json';
+import mkDifferentiation from './locales/mk/differentiation.json';
+import mkEarlyWarning from './locales/mk/earlyWarning.json';
 
 import enCommon from './locales/en/common.json';
 import enNavigation from './locales/en/navigation.json';
@@ -30,6 +32,8 @@ import enExtraction from './locales/en/extraction.json';
 import enDashboard from './locales/en/dashboard.json';
 import enFlashcards from './locales/en/flashcards.json';
 import enGradebook from './locales/en/gradebook.json';
+import enDifferentiation from './locales/en/differentiation.json';
+import enEarlyWarning from './locales/en/earlyWarning.json';
 
 import alCommon from './locales/al/common.json';
 import alNavigation from './locales/al/navigation.json';
@@ -40,6 +44,8 @@ import alExtraction from './locales/al/extraction.json';
 import alDashboard from './locales/al/dashboard.json';
 import alFlashcards from './locales/al/flashcards.json';
 import alGradebook from './locales/al/gradebook.json';
+import alDifferentiation from './locales/al/differentiation.json';
+import alEarlyWarning from './locales/al/earlyWarning.json';
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'mk', name: 'Македонски', flag: '🇲🇰' },
@@ -64,6 +70,8 @@ i18n
         dashboard: mkDashboard,
         flashcards: mkFlashcards,
         gradebook: mkGradebook,
+        differentiation: mkDifferentiation,
+        earlyWarning: mkEarlyWarning,
       },
       en: {
         common: enCommon,
@@ -75,6 +83,8 @@ i18n
         dashboard: enDashboard,
         flashcards: enFlashcards,
         gradebook: enGradebook,
+        differentiation: enDifferentiation,
+        earlyWarning: enEarlyWarning,
       },
       al: {
         common: alCommon,
@@ -86,11 +96,13 @@ i18n
         dashboard: alDashboard,
         flashcards: alFlashcards,
         gradebook: alGradebook,
+        differentiation: alDifferentiation,
+        earlyWarning: alEarlyWarning,
       },
     },
     fallbackLng: 'mk',
     defaultNS: 'common',
-    ns: ['common', 'navigation', 'pricing', 'home', 'library', 'extraction', 'dashboard', 'flashcards', 'gradebook'],
+    ns: ['common', 'navigation', 'pricing', 'home', 'library', 'extraction', 'dashboard', 'flashcards', 'gradebook', 'differentiation', 'earlyWarning'],
     
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],

@@ -1,0 +1,23 @@
+{
+  "title": "Early Warning System",
+  "subtitle": "Detection of at-risk students",
+  "totalStudents": "Total students",
+  "lowRisk": "Low risk",
+  "mediumRisk": "Medium risk",
+  "highRisk": "High risk",
+  "riskScore": "Risk score",
+  "all": "All",
+  "topInterventions": "Most common recommended interventions",
+  "decliningGrades": "Declining grades",
+  "lowEngagement": "Low engagement",
+  "days": "days",
+  "lowAverage": "Low average",
+  "failedTests": "Failed tests",
+  "recommendedInterventions": "Recommended interventions",
+  "noAtRiskStudents": "No students in this risk category",
+  "riskFactors": "Risk factors",
+  "averageGrade": "Average",
+  "trend": "Trend",
+  "lastActivity": "Last activity",
+  "errorLoading": "Error loading grades"
+}
