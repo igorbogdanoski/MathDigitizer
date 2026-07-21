@@ -275,3 +275,69 @@ export interface MakedoTestDocument {
   created_at: string;
   author_uid: string;
 }
+
+// ─── Gradebook Types ─────────────────────────────────────────────────────────
+
+/** МК систем на оценување: 1-5 (недоволно, доволно, добро, многу добро, одлично) */
+export type MKGrade = 1 | 2 | 3 | 4 | 5;
+
+/** Категории на оцени */
+export type GradeCategory = 'test' | 'homework' | 'project' | 'participation' | 'oral' | 'other';
+
+/** Единечен запис за оценка */
+export interface GradeEntry {
+  id?: string;
+  classroomId: string;
+  studentId: string;
+  studentName: string;
+  taskId?: string; // Поврзано со задача од библиотеката
+  taskTitle?: string;
+  category: GradeCategory;
+  grade: MKGrade;
+  maxPoints?: number; // За процентуално оценување
+  earnedPoints?: number;
+  feedback?: string;
+  gradedAt: string; // ISO date
+  gradedBy: string; // teacher uid
+  term: 'I' | 'II' | 'III' | 'IV'; // Четвртине
+  schoolYear: string; // пр. "2026/2027"
+}
+
+/** Просек по ученик */
+export interface StudentAverage {
+  studentId: string;
+  studentName: string;
+  average: number;
+  totalGrades: number;
+  byCategory: Record<GradeCategory, number>;
+  trend: 'improving' | 'stable' | 'declining';
+}
+
+/** Цел дневник за одделение */
+export interface Gradebook {
+  id?: string;
+  classroomId: string;
+  teacherUid: string;
+  schoolYear: string;
+  term: 'I' | 'II' | 'III' | 'IV';
+  entries: GradeEntry[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Конфигурација за тежини на категории */
+export interface GradeWeightConfig {
+  test: number; // пр. 0.5 (50%)
+  homework: number; // пр. 0.2 (20%)
+  project: number; // пр. 0.2 (20%)
+  participation: number; // пр. 0.1 (10%)
+}
+
+/** Експорт опции */
+export interface GradebookExportOptions {
+  format: 'excel' | 'pdf' | 'csv';
+  includeAverages: boolean;
+  includeFeedback: boolean;
+  includeTrends: boolean;
+  language: 'mk' | 'en' | 'al';
+}
