@@ -771,6 +771,7 @@ export const SmartOCR: React.FC = () => {
                             }}
                             className={`p-1.5 rounded-md transition-colors flex-shrink-0 ${batchCopied === i ? 'text-emerald-500 bg-emerald-50' : 'text-slate-400 hover:text-emerald-500 hover:bg-emerald-50'}`}
                             title="Копирај LaTeX"
+                            aria-label="Копирај LaTeX"
                           >
                             {batchCopied === i ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                           </button>

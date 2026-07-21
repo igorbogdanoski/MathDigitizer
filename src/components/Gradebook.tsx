@@ -525,6 +525,7 @@ export const Gradebook: React.FC<GradebookProps> = ({ classroomId }) => {
                           if (entry) handleEditGrade(entry);
                         }}
                         className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"
+                        aria-label={`Уреди оценка за ${student.studentName}`}
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -567,6 +568,7 @@ export const Gradebook: React.FC<GradebookProps> = ({ classroomId }) => {
                   setEditingEntry(null);
                 }}
                 className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                aria-label="Затвори"
               >
                 <X className="w-5 h-5" />
               </button>

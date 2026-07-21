@@ -394,6 +394,7 @@ export const Library: React.FC = () => {
                       onClick={() => store.setSelectedTaskId(null)}
                       className="p-1 hover:bg-slate-200 dark:hover:bg-white/10 rounded-full transition-colors"
                       title="Затвори"
+                      aria-label="Затвори"
                     >
                       <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                     </button>
