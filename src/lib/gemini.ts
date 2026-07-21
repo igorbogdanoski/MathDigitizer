@@ -945,13 +945,21 @@ ${enableLogicalReconstruction
 }
 
 export async function generateDifferentiatedTasks(originalTask: MathTask, style: 'traditional' | 'real-world' | 'modern' = 'traditional'): Promise<{ easy: MathTask, hard: MathTask }> {
-  const stylePrompt = 
+  const stylePrompt =
     style === 'modern' ? 'Користи модерен Gen-Z контекст.' :
     style === 'real-world' ? 'Користи контекст од реалниот свет.' :
     'Користи традиционален контекст.';
 
-  const prompt = `Врз основа на следната математичка задача, генерирај ДВЕ нови задачи за диференцирана настава: една ПОЛЕСНА (за ученици на кои им треба поддршка) и една ПОТЕШКА (за напредни ученици).
+  // Get curriculum context for alignment
+  const curriculumQuery = [
+    originalTask.curriculum_topic,
+    originalTask.grade_level,
+    ...(originalTask.tags ?? []),
+  ].filter(Boolean).join(' ');
+  const curriculumCtx = await buildCurriculumContextBlockRag(curriculumQuery, originalTask.grade_level);
 
+  const prompt = `Врз основа на следната математичка задача, генерирај ДВЕ нови задачи за диференцирана настава: една ПОЛЕСНА (за ученици на кои им треба поддршка) и една ПОТЕШКА (за напредни ученици).
+${curriculumCtx ? `\n${curriculumCtx}\n` : ''}
 СТИЛ: ${stylePrompt}
 
 ОРИГИНАЛНА ЗАДАЧА:
@@ -1052,12 +1060,16 @@ ${originalTask.original_text}
 export type MaterialType = 'worksheet' | 'test' | 'collection' | 'quiz' | 'presentation' | 'flashcards' | 'homework' | 'study_guide';
 
 export async function generateLessonPlan(tasks: MathTask[], gradeLevel: string, topicName: string, language: string = 'mk') {
-  const languagePrompt = 
+  const languagePrompt =
     language === 'en' ? 'Use English language and professional terminology.' :
     language === 'al' ? 'Përdor gjuhën shqipe dhe terminologji profesionale.' :
     'Користи македонски јазик, стручна терминологија и беспрекорен LaTeX за формулите.';
 
+  // Get curriculum context for alignment
+  const curriculumCtx = await buildCurriculumContextBlockRag(topicName, gradeLevel);
+
   const prompt = `Ти си Експерт Методичар за математика според стандардите на БРО (Биро за развој на образованието) во Македонија.
+${curriculumCtx ? `\n${curriculumCtx}\n` : ''}
 Корисникот сака да генерира формална "Дневна подготовка за час" базирана на овие избрани задачи:
 
 ЗАДАЧИ ЗА ЧАСОТ:
