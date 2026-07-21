@@ -341,3 +341,52 @@ export interface GradebookExportOptions {
   includeTrends: boolean;
   language: 'mk' | 'en' | 'al';
 }
+
+// ─── Task Differentiation Types ──────────────────────────────────────────────
+
+/** Ниво на диференцијација */
+export type DifferentiationLevel = 'support' | 'core' | 'extension';
+
+/** Ниво на помош (hint) */
+export type HintLevel = 1 | 2 | 3;
+
+/** Диференцирана задача */
+export interface DifferentiatedTask {
+  id?: string;
+  baseTaskId: string;
+  baseTaskTitle: string;
+  level: DifferentiationLevel;
+  task: MathTask;
+  scaffolding: string[]; // Чекор-по-чекор помош
+  hints: {
+    level1: string; // Суптилна помош (насока)
+    level2: string; // Средна помош (прв чекор)
+    level3: string; // Голема помош (речиси решение)
+  };
+  successCriteria: string[]; // Што значи "успех"
+  estimatedTime: number; // минути
+  prerequisites: string[]; // Потребни знаења
+  createdAt: string;
+}
+
+/** Резултат од генерирање на диференцијација */
+export interface DifferentiationResult {
+  baseTask: MathTask;
+  variants: {
+    support: DifferentiatedTask;
+    core: DifferentiatedTask;
+    extension: DifferentiatedTask;
+  };
+  pedagogicalNotes: string;
+  bloomLevel: string;
+  dokLevel: number;
+}
+
+/** Конфигурација за диференцијација */
+export interface DifferentiationConfig {
+  generateSupport: boolean;
+  generateExtension: boolean;
+  includeHints: boolean;
+  includeScaffolding: boolean;
+  language: 'mk' | 'en' | 'al';
+}
