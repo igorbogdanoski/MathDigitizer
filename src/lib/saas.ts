@@ -1,12 +1,5 @@
 import { UserProfile } from './schema';
 
-export const PREMIUM_FEATURES = {
-  advancedAnalytics: 'advanced_analytics',
-  unlimitedExtraction: 'unlimited_extraction',
-  priorityGeneration: 'priority_generation',
-} as const;
-
-export type PremiumFeature = typeof PREMIUM_FEATURES[keyof typeof PREMIUM_FEATURES];
 export type BillingPeriod = 'monthly' | 'annual';
 
 const TRIAL_DAYS = 7;
@@ -169,8 +162,4 @@ export function getManualPaymentDetails(): ManualPaymentDetails {
     billingContactEmail,
     schoolPlanLabel: readEnvString('VITE_SCHOOL_PLAN_LABEL') ?? 'По договор / фактура',
   };
-}
-
-export function canUsePremiumFeature(profile: UserProfile | null | undefined, _feature: PremiumFeature): boolean {
-  return hasProAccess(profile);
 }

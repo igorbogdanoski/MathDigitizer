@@ -13,8 +13,11 @@ export interface ReceiptEmailParams {
 }
 
 async function sendEmail(templateId: string, params: Record<string, string>): Promise<void> {
-  if (!SERVICE_ID || !PUBLIC_KEY) return;
-  await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+  if (!SERVICE_ID || !PUBLIC_KEY) {
+    console.warn('[emailService] Missing EmailJS config — skipping send');
+    return;
+  }
+  const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -24,6 +27,11 @@ async function sendEmail(templateId: string, params: Record<string, string>): Pr
       template_params: params,
     }),
   });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    console.error(`[emailService] Failed to send email (template=${templateId}): ${res.status} ${body}`);
+    throw new Error(`EmailJS send failed: ${res.status}`);
+  }
 }
 
 export async function sendReceiptNotification(params: ReceiptEmailParams): Promise<void> {

@@ -1,7 +1,20 @@
 // Curriculum Knowledge — Firestore-backed persistent curriculum RAG
 // Collection: curriculum_knowledge
-// Populated by: scripts/ingest-curriculum.mjs
-// Used in: all Gemini generation functions for curriculum alignment
+// Populated by: scripts/ingest-curriculum.mjs + CurriculumAdmin.tsx UI
+//
+// STATUS (Phase 4): This module is functional for ingestion and search,
+// but is NOT YET wired into the main generation functions in gemini.ts.
+// Currently, generation functions use the simpler `buildCurriculumContextBlock`
+// (static keyword search from curriculumData.ts).
+//
+// TODO: Wire `searchCurriculum` + `formatCurriculumContext` into generation
+// functions for true RAG-based curriculum alignment. This requires:
+// 1. Passing an embedQuery function to searchCurriculum
+// 2. Replacing buildCurriculumContextBlock calls with searchCurriculum
+// 3. Testing that generated content quality improves
+//
+// The admin UI (CurriculumAdmin.tsx) allows ingesting curriculum chunks
+// with embeddings, which is useful preparation for the full RAG integration.
 
 import { collection, query, where, getDocs, addDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';

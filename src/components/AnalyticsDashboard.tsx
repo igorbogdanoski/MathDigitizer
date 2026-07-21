@@ -60,15 +60,6 @@ export const AnalyticsDashboard: React.FC = () => {
   const isPro = hasProAccess(userProfile);
   const interventionModalRef = useModalA11y<HTMLDivElement>(() => setInterventionPlan(null), !!interventionPlan);
 
-  if (!isPro) {
-    return (
-      <ProFeatureGate
-        featureName="Advanced Analytics"
-        description="Оваа аналитика е дел од Pro планот. Отклучете ја за подлабоки педагошки сигнали, когнитивни индикатори и интервенциски планови."
-      />
-    );
-  }
-
   useEffect(() => {
     const fetchSubmissions = async () => {
       if (!user) return;
@@ -312,6 +303,15 @@ export const AnalyticsDashboard: React.FC = () => {
       .sort((a, b) => b[1] - a[1])
       .map(([concept, count]) => ({ concept, count }));
   }, [activeStudentData]);
+
+  if (!isPro) {
+    return (
+      <ProFeatureGate
+        featureName="Advanced Analytics"
+        description="Оваа аналитика е дел од Pro планот. Отклучете ја за подлабоки педагошки сигнали, когнитивни индикатори и интервенциски планови."
+      />
+    );
+  }
 
   const getSeriesDotClass = (seriesName?: string) => {
     if (seriesName === 'Просек') return 'bg-indigo-500';

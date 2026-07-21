@@ -1,3 +1,5 @@
+import { getProPricingPlans } from './saas';
+
 export interface RouteSeoConfig {
   title: string;
   description: string;
@@ -65,7 +67,7 @@ function buildDefaultStructuredData(pathname: string): Array<Record<string, unkn
       },
       offers: {
         '@type': 'Offer',
-        price: '490.00',
+        price: getProPricingPlans()[0].priceMkd.toFixed(2),
         priceCurrency: 'MKD',
         availability: 'https://schema.org/InStock',
         url: absoluteUrl('/pricing')
@@ -88,7 +90,7 @@ function buildPricingStructuredData(): Array<Record<string, unknown>> {
           name: 'Pro Teacher Monthly',
           description: 'Месечен Pro план за индивидуални наставници — флексибилен влезен праг.',
           priceCurrency: 'MKD',
-          price: '490.00',
+          price: getProPricingPlans()[0].priceMkd.toFixed(2),
           availability: 'https://schema.org/InStock',
           url: absoluteUrl('/pricing'),
           eligibleDuration: 'P1M',
@@ -103,7 +105,7 @@ function buildPricingStructuredData(): Array<Record<string, unknown>> {
           name: 'Pro Teacher Annual',
           description: 'Годишен Pro план — најдобра вредност, заштеда од речиси 2 месеци.',
           priceCurrency: 'MKD',
-          price: '4900.00',
+          price: getProPricingPlans()[1].priceMkd.toFixed(2),
           availability: 'https://schema.org/InStock',
           url: absoluteUrl('/pricing'),
           eligibleDuration: 'P1Y',

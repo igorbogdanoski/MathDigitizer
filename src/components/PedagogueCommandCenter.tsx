@@ -76,17 +76,19 @@ export const PedagogueCommandCenter: React.FC = () => {
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
 
   const svgRef = useRef<SVGSVGElement>(null);
+  const simulationRef = useRef<any>(null);
 
   useEffect(() => {
     if (activeTab === 'map' && isCommandCenterOpen && selectedTask) {
       renderKnowledgeMap();
     }
+    return () => {
+      simulationRef.current?.stop();
+    };
   }, [activeTab, isCommandCenterOpen, selectedTaskId]);
 
-  // Reset per-task ephemeral tab state (and pre-load any previously saved
-  // lesson script) whenever the selected task changes, so stale AI output
-  // from a different task never leaks into the new one.
   useEffect(() => {
+    setCognitiveFingerprint(null);
     setLessonScript(selectedTask?.lesson_architect_script || null);
     setScriptSaved(false);
     setSimMessages([]);
@@ -100,11 +102,13 @@ export const PedagogueCommandCenter: React.FC = () => {
 
   const handleGenerateLessonScript = async () => {
     if (!selectedTask) return;
+    const taskId = selectedTask.id;
     setIsGeneratingScript(true);
     setScriptSaved(false);
     try {
       const { generateLessonArchitectScript } = await import('../lib/gemini');
       const script = await generateLessonArchitectScript(selectedTask);
+      if (useLibraryStore.getState().selectedTaskId !== taskId) return;
       setLessonScript(script);
     } catch (e) {
       console.error('Грешка при генерирање на методолошки скрипт:', e);
@@ -115,9 +119,11 @@ export const PedagogueCommandCenter: React.FC = () => {
 
   const handleSaveLessonScript = async () => {
     if (!selectedTask?.id || !lessonScript) return;
+    const taskId = selectedTask.id;
     setIsSavingScript(true);
     try {
-      await updateDoc(doc(db, 'tasks', selectedTask.id), { lesson_architect_script: lessonScript });
+      await updateDoc(doc(db, 'tasks', taskId), { lesson_architect_script: lessonScript });
+      if (useLibraryStore.getState().selectedTaskId !== taskId) return;
       setScriptSaved(true);
       setTimeout(() => setScriptSaved(false), 2500);
     } catch (e) {
@@ -187,10 +193,12 @@ export const PedagogueCommandCenter: React.FC = () => {
       ...(selectedTask.prerequisite_task_ids || []).map(id => ({ source: id, target: selectedTask.id as string, value: 2 }))
     ];
 
+    simulationRef.current?.stop();
     const simulation = d3.forceSimulation<Node>(nodes)
       .force("link", d3.forceLink<Node, Link>(links).id(d => d.id).distance(150))
       .force("charge", d3.forceManyBody().strength(-500))
       .force("center", d3.forceCenter(width / 2, height / 2));
+    simulationRef.current = simulation;
 
     const svg = d3.select(svgRef.current);
 

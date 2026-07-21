@@ -262,8 +262,12 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
         }
         for (let i = 0; i < urls.length; i++) {
             setStatusText(`Процесирање на линк ${i + 1} од ${urls.length}...`);
-            const singleTasks = await extractMathTasksFromUrl(urls[i], model, timeRange, urls.length === 1 ? manualTranscript : '', textInstructions, outputLanguage);
-            extractedTasks = [...extractedTasks, ...singleTasks];
+            try {
+              const singleTasks = await extractMathTasksFromUrl(urls[i], model, timeRange, urls.length === 1 ? manualTranscript : '', textInstructions, outputLanguage);
+              extractedTasks = [...extractedTasks, ...singleTasks];
+            } catch (urlErr) {
+              console.error(`Failed to extract from URL ${i + 1}:`, urlErr);
+            }
             setProgress(Math.max(10, Math.min(90, Math.floor(((i + 1) / urls.length) * 100))));
         }
       } else {
@@ -322,10 +326,11 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
           }
         }));
         setSavedTasks(newSavedSet);
+        if (newSavedSet.size > 0) {
+          awardXP(100);
+          updateQuestProgress('extract');
+        }
       }
-
-      awardXP(100);
-      updateQuestProgress('extract');
     } catch (err) {
       setProgress(0);
       const errorMessage = err instanceof Error ? err.message : 'Настана грешка при екстракцијата. Проверете го изворот или обидете се повторно.';

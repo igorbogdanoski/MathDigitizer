@@ -68,7 +68,8 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
     });
   }, [flashcards]);
 
-  const studyCards = isStudying ? dueFlashcards : flashcards;
+  const [frozenStudyCards, setFrozenStudyCards] = useState<Flashcard[]>([]);
+  const studyCards = isStudying ? frozenStudyCards : flashcards;
 
   useEffect(() => {
     const fetchFlashcards = async () => {
@@ -150,6 +151,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
 
   const startStudySession = () => {
     if (dueFlashcards.length === 0) return;
+    setFrozenStudyCards([...dueFlashcards]);
     setIsStudying(true);
     setCurrentIndex(0);
     setIsFlipped(false);

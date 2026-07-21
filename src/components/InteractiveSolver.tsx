@@ -27,29 +27,41 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
   const [liveSyncId, setLiveSyncId] = useState<string | null>(null);
 
   useEffect(() => {
-     if (user) {
-        getDoc(doc(db, 'users', user.uid)).then(docSnap => {
-           if (docSnap.exists()) {
-               setUserProfile(docSnap.data() as UserProfile);
-           }
-        });
-        
-        // Generate a deterministic session ID for teacher to spectate
-        const newSyncId = `${user.uid}_${task.id}`;
-        setLiveSyncId(newSyncId);
-        
-        // Also register this active session for teachers to see
-        // Assuming task might pass classroomIds or we just save it globally.
-        setDoc(doc(db, 'active_user_sessions', newSyncId), {
-           userId: user.uid,
-           userName: userProfile?.displayName || user.email || 'Непознат',
-           taskId: task.id,
-           taskTitle: task.title || task.curriculum_topic,
-           startedAt: new Date().toISOString(),
-           lastActive: new Date().toISOString()
-        });
-     }
+     if (!user) return;
+     let cancelled = false;
+
+     getDoc(doc(db, 'users', user.uid)).then(docSnap => {
+        if (cancelled) return;
+        if (docSnap.exists()) {
+            const profile = docSnap.data() as UserProfile;
+            setUserProfile(profile);
+
+            const newSyncId = `${user.uid}_${task.id}`;
+            setLiveSyncId(newSyncId);
+
+            setDoc(doc(db, 'active_user_sessions', newSyncId), {
+               userId: user.uid,
+               userName: profile.displayName || user.email || 'Непознат',
+               taskId: task.id,
+               taskTitle: task.title || task.curriculum_topic,
+               startedAt: new Date().toISOString(),
+               lastActive: new Date().toISOString()
+            });
+        }
+     });
+
+     return () => {
+        cancelled = true;
+     };
   }, [user, task.id]);
+
+  useEffect(() => {
+     return () => {
+        if (liveSyncId) {
+           deleteDoc(doc(db, 'active_user_sessions', liveSyncId)).catch(() => {});
+        }
+     };
+  }, [liveSyncId]);
 
   const [userSteps, setUserSteps] = useState<string[]>([]);
   const [currentInput, setCurrentInput] = useState('');
@@ -231,23 +243,37 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
     }
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleFinish = async () => {
-    await saveTelemetryToFirebase('completed');
-    if (liveSyncId) {
-      await deleteDoc(doc(db, 'active_user_sessions', liveSyncId));
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await saveTelemetryToFirebase('completed');
+      if (liveSyncId) {
+        await deleteDoc(doc(db, 'active_user_sessions', liveSyncId));
+      }
+      onComplete(200);
+      onClose();
+    } finally {
+      setIsSubmitting(false);
     }
-    onComplete(200); // Award 200 XP for interactive solving
-    onClose();
   };
 
   const handleManualClose = async () => {
-    if (telemetrySteps.length > 0 && !isFinished) {
-       await saveTelemetryToFirebase('abandoned');
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      if (telemetrySteps.length > 0 && !isFinished) {
+         await saveTelemetryToFirebase('abandoned');
+      }
+      if (liveSyncId) {
+        await deleteDoc(doc(db, 'active_user_sessions', liveSyncId));
+      }
+      onClose();
+    } finally {
+      setIsSubmitting(false);
     }
-    if (liveSyncId) {
-      await deleteDoc(doc(db, 'active_user_sessions', liveSyncId));
-    }
-    onClose();
   };
 
   const modalRef = useModalA11y<HTMLDivElement>(handleManualClose);
