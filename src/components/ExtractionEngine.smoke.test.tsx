@@ -4,28 +4,25 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { ExtractionEngine } from './ExtractionEngine';
+import { ToastProvider } from '@/src/contexts/ToastContext';
 
-vi.mock('../contexts/AuthContext', () => ({
+vi.mock('@/src/contexts/AuthContext', () => ({
   useAuth: () => ({ user: null, userProfile: null }),
 }));
 
-vi.mock('../contexts/ToastContext', () => ({
-  useToast: () => ({ showToast: vi.fn() }),
-}));
-
-vi.mock('../contexts/GamificationContext', () => ({
+vi.mock('@/src/contexts/GamificationContext', () => ({
   useGamification: () => ({ awardXP: vi.fn(), updateQuestProgress: vi.fn() }),
 }));
 
-vi.mock('../lib/saas', () => ({
+vi.mock('@/src/lib/saas', () => ({
   hasProAccess: () => false,
 }));
 
-vi.mock('../store/useLibraryStore', () => ({
+vi.mock('@/src/store/useLibraryStore', () => ({
   useLibraryStore: () => ({ setEditingTask: vi.fn(), setOnTaskUpdated: vi.fn() }),
 }));
 
-vi.mock('../lib/firebase', () => ({
+vi.mock('@/src/lib/firebase', () => ({
   db: {},
 }));
 
@@ -36,7 +33,7 @@ vi.mock('firebase/firestore', () => ({
   setDoc: vi.fn(),
 }));
 
-vi.mock('../lib/gemini', () => ({
+vi.mock('@/src/lib/gemini', () => ({
   extractMathTasksFromUrl: vi.fn(),
   generateImage: vi.fn(),
   generateMathGraphicConfig: vi.fn(),
@@ -45,7 +42,7 @@ vi.mock('../lib/gemini', () => ({
   generateTaskEmbedding: vi.fn(),
 }));
 
-vi.mock('../lib/export', () => ({
+vi.mock('@/src/lib/export', () => ({
   exportToJson: vi.fn(),
   exportToLatex: vi.fn(),
   exportToMarkdown: vi.fn(),
@@ -55,11 +52,13 @@ vi.mock('../lib/export', () => ({
 describe('ExtractionEngine smoke', () => {
   it('renders the multimodal extractor and keeps submit disabled with no source', () => {
     render(
-      <HelmetProvider>
-        <MemoryRouter>
-          <ExtractionEngine setActiveTutorTask={vi.fn()} />
-        </MemoryRouter>
-      </HelmetProvider>
+      <ToastProvider>
+        <HelmetProvider>
+          <MemoryRouter>
+            <ExtractionEngine setActiveTutorTask={vi.fn()} />
+          </MemoryRouter>
+        </HelmetProvider>
+      </ToastProvider>
     );
 
     expect(screen.getByText(/Multimodal AI Екстрактор/i)).toBeInTheDocument();
@@ -70,11 +69,13 @@ describe('ExtractionEngine smoke', () => {
 
   it('enables submit once a URL is entered, and disables again after switching to an empty text source', () => {
     render(
-      <HelmetProvider>
-        <MemoryRouter>
-          <ExtractionEngine setActiveTutorTask={vi.fn()} />
-        </MemoryRouter>
-      </HelmetProvider>
+      <ToastProvider>
+        <HelmetProvider>
+          <MemoryRouter>
+            <ExtractionEngine setActiveTutorTask={vi.fn()} />
+          </MemoryRouter>
+        </HelmetProvider>
+      </ToastProvider>
     );
 
     const urlInput = screen.getByPlaceholderText(/Вметнете еден или повеќе линкови/i);

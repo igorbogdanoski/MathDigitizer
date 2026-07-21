@@ -14,7 +14,7 @@
  * - Локални payment процесори (CaSys, NLB плаќање)
  */
 
-import type { BillingPeriod } from './schema';
+import type { BillingPeriod } from './saas';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

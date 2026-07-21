@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { Trophy, Star, Zap, Target, Award, TrendingUp, Users, Loader2, ChevronRight, Medal, Brain, PieChart as PieChartIcon, CheckCircle2, Circle, Activity, Paintbrush, ScanLine, Library as LibraryIcon, Wand2, Layers, AlertTriangle, Info } from 'lucide-react';
+import { Trophy, Star, Zap, Target, Award, TrendingUp, Users, Loader2, ChevronRight, Medal, Brain, PieChart as PieChartIcon, CheckCircle2, Circle, Activity, Paintbrush, ScanLine, Library as LibraryIcon, Wand2, Layers, AlertTriangle, Info, CreditCard } from 'lucide-react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Button } from './ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
@@ -705,12 +705,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
         </h3>
         <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Сите алатки на едно место</span>
       </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-12">
         {[
           { title: "Smart OCR", desc: "Скенирај задачи", icon: <ScanLine className="w-5 h-5 text-blue-500" />, to: "/smart-ocr", bg: "bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20", borderColor: "border-blue-100 dark:border-blue-800/50" },
           { title: "Библиотека", desc: "Банка на знаење", icon: <LibraryIcon className="w-5 h-5 text-emerald-500" />, to: "/library", bg: "bg-emerald-50 dark:bg-emerald-900/10 hover:bg-emerald-100 dark:hover:bg-emerald-900/20", borderColor: "border-emerald-100 dark:border-emerald-800/50" },
           { title: "Модул Екстракција", desc: "Од YouTube видеа", icon: <Wand2 className="w-5 h-5 text-purple-500" />, to: "/extract", bg: "bg-purple-50 dark:bg-purple-900/10 hover:bg-purple-100 dark:hover:bg-purple-900/20", borderColor: "border-purple-100 dark:border-purple-800/50" },
-          { title: "Тест Фабрика", desc: "Генерирај тестови во секунда", icon: <Layers className="w-5 h-5 text-rose-500" />, to: "/mass-factory", bg: "bg-rose-50 dark:bg-rose-900/10 hover:bg-rose-100 dark:hover:bg-rose-900/20", borderColor: "border-rose-100 dark:border-rose-800/50" }
+          { title: "Тест Фабрика", desc: "Генерирај тестови во секунда", icon: <Layers className="w-5 h-5 text-rose-500" />, to: "/mass-factory", bg: "bg-rose-50 dark:bg-rose-900/10 hover:bg-rose-100 dark:hover:bg-rose-900/20", borderColor: "border-rose-100 dark:border-rose-800/50" },
+          { title: "Billing", desc: "Претплата и плаќања", icon: <CreditCard className="w-5 h-5 text-indigo-500" />, to: "/billing", bg: "bg-indigo-50 dark:bg-indigo-900/10 hover:bg-indigo-100 dark:hover:bg-indigo-900/20", borderColor: "border-indigo-100 dark:border-indigo-800/50" }
         ].map((item, idx) => (
           <Link key={idx} to={item.to} className={`flex flex-col p-4 rounded-2xl border transition-all ${item.bg} ${item.borderColor}`}>
             <div className="bg-white dark:bg-white/10 p-2.5 rounded-xl w-max shadow-sm mb-3">
