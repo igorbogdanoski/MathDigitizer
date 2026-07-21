@@ -255,7 +255,7 @@ async function startServer() {
 
   app.post("/api/ai/chats/:chatId/send-message", requireAuth, async (req, res) => {
     try {
-      const { chatId } = req.params;
+      const chatId = req.params.chatId as string;
       const chat = serverChatSessions.get(chatId);
       if (!chat) {
         return res.status(404).json({ error: "Chat session not found" });
