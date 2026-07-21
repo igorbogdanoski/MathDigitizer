@@ -1,8 +1,15 @@
+/**
+ * @deprecated Import from './ai' instead. This file will be split into domain
+ * modules (extraction.ts, grading.ts, generation.ts, etc.) — see src/lib/ai/index.ts
+ * for the migration plan. All exports are re-exported from './ai' for backward
+ * compatibility.
+ */
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { MathTask } from "./schema";
 import { PromptStrategy, buildPromptEnvelope, buildRagTaskContext } from "./promptEngineering";
 import { buildRagContextFromLibrary } from "./ragContext";
 import { searchCurriculumKeyword, buildCurriculumChunkText, ALL_MK_CURRICULUM } from "./curriculumData";
+import { searchCurriculum, formatCurriculumContext } from "./curriculumKnowledge";
 
 // ─── Curriculum RAG helper (synchronous — no extra API call) ─────────────────
 function buildCurriculumContextBlock(query: string, gradeHint?: string): string {
@@ -24,6 +31,26 @@ function buildCurriculumContextBlock(query: string, gradeHint?: string): string 
   return lines.join('\n');
 }
 
+// ─── RAG-based Curriculum Context (async, uses embeddings) ───────────────────
+// Preferred over buildCurriculumContextBlock when Firestore curriculum_knowledge
+// collection is populated. Falls back to static keyword search if no chunks found.
+async function buildCurriculumContextBlockRag(query: string, gradeHint?: string): Promise<string> {
+  try {
+    const results = await searchCurriculum(query, {
+      embedQuery: generateTaskEmbedding,
+      gradeFilter: gradeHint,
+      maxResults: 3,
+    });
+    if (results.length > 0) {
+      return formatCurriculumContext(results);
+    }
+  } catch (e) {
+    console.warn('RAG curriculum search failed, falling back to keyword search:', e);
+  }
+  // Fallback to static keyword search
+  return buildCurriculumContextBlock(query, gradeHint);
+}
+
 // ─── Иницијализација на Gemini клиентот ──────────────────────────────────────
 let _aiInstance: any = null;
 let cachedApiKey: string | undefined = undefined;
@@ -42,10 +69,32 @@ function apiUrl(path: string): string {
   return `${getApiBaseUrl()}${path}`;
 }
 
+// Get Firebase ID token for authenticated API requests
+async function getAuthToken(): Promise<string | null> {
+  try {
+    const { auth } = await import('./firebase');
+    const user = auth.currentUser;
+    if (user) {
+      return await user.getIdToken();
+    }
+  } catch (e) {
+    console.warn('Failed to get auth token:', e);
+  }
+  return null;
+}
+
 async function postJson(url: string, payload: any) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  
+  // Add auth token for /api/ai/* routes
+  const token = await getAuthToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(apiUrl(url), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(payload ?? {})
   });
 
@@ -678,7 +727,7 @@ export async function generateSimilarTask(originalTask: MathTask, style: 'tradit
     originalTask.grade_level,
     ...(originalTask.tags ?? []),
   ].filter(Boolean).join(' ');
-  const curriculumCtx = buildCurriculumContextBlock(curriculumQuery, originalTask.grade_level);
+  const curriculumCtx = await buildCurriculumContextBlockRag(curriculumQuery, originalTask.grade_level);
 
   const prompt = `Врз основа на следната математичка задача, генерирај НОВА, СЛИЧНА задача која ги тестира истите концепти но со различни вредности или малку поинаков контекст.
 ${curriculumCtx ? `\n${curriculumCtx}\n` : ''}
@@ -1601,7 +1650,7 @@ export async function generateImage(prompt: string, gradeLevel?: string): Promis
 }
 
 export async function extractMathTasksFromImage(base64Image: string, mimeType: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, model: string = "gemini-3.1-pro-preview"): Promise<MathTask[]> {
-  const curriculumCtx = buildCurriculumContextBlock('математика македонски наставна програма');
+  const curriculumCtx = await buildCurriculumContextBlockRag('математика македонски наставна програма');
   const prompt = `Ти си Врвен Светски Експерт за Дигитализација на Математика, "Advanced Vision OCR" и Едукативен Технолог (EdTech).
 ${curriculumCtx ? `\n${curriculumCtx}\n` : ''}
 Твојата мисија е ПЕРФЕКТНО да ја анализираш сликата/документот и да ги извлечеш задачите, вклучувајќи ги и оние од ракописи или стари документи.

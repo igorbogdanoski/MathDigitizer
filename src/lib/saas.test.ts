@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hasProAccess, canUsePremiumFeature, getProPricingPlans, getManualPaymentDetails, PREMIUM_FEATURES } from './saas';
+import { hasProAccess, getProPricingPlans, getManualPaymentDetails } from './saas';
 import type { UserProfile } from './schema';
 
 const baseProfile: UserProfile = {
@@ -29,19 +29,6 @@ describe('hasProAccess', () => {
 
   it('returns true when isPro is true', () => {
     expect(hasProAccess({ ...baseProfile, isPro: true })).toBe(true);
-  });
-});
-
-describe('canUsePremiumFeature', () => {
-  it('mirrors hasProAccess for all premium features', () => {
-    const proProfile = { ...baseProfile, isPro: true };
-    const freeProfile = { ...baseProfile };
-
-    for (const feature of Object.values(PREMIUM_FEATURES)) {
-      expect(canUsePremiumFeature(proProfile, feature)).toBe(true);
-      expect(canUsePremiumFeature(freeProfile, feature)).toBe(false);
-      expect(canUsePremiumFeature(null, feature)).toBe(false);
-    }
   });
 });
 

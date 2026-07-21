@@ -2,6 +2,51 @@ import express from "express";
 import path from "path";
 import http from "http";
 import { Server } from "socket.io";
+import * as admin from "firebase-admin";
+
+// ─── Firebase Admin Initialization ───────────────────────────────────────────
+// Requires GOOGLE_APPLICATION_CREDENTIALS env var pointing to a service account
+// JSON file, or FIREBASE_SERVICE_ACCOUNT_JSON env var with the JSON content.
+let firebaseAdminInitialized = false;
+try {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+    firebaseAdminInitialized = true;
+  } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    admin.initializeApp();
+    firebaseAdminInitialized = true;
+  }
+} catch (e) {
+  console.warn("[Firebase Admin] Failed to initialize:", e);
+}
+
+// Authentication middleware for /api/ai/* routes
+async function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
+  if (!firebaseAdminInitialized) {
+    // If Firebase Admin is not configured, allow requests (for local dev)
+    // but log a warning
+    console.warn("[Auth] Firebase Admin not configured — allowing unauthenticated request");
+    return next();
+  }
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Missing or invalid Authorization header" });
+  }
+
+  const token = authHeader.split("Bearer ")[1];
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    (req as any).user = decodedToken;
+    next();
+  } catch (error) {
+    console.error("[Auth] Token verification failed:", error);
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
+}
 
 const DEFAULT_ALLOWED_ORIGINS = ["https://math.mismath.net"];
 
@@ -169,7 +214,7 @@ async function startServer() {
     res.json({ apiKey: process.env.GEMINI_API_KEY || "" });
   });
 
-  app.post("/api/ai/generate-content", async (req, res) => {
+  app.post("/api/ai/generate-content", requireAuth, async (req, res) => {
     try {
       const client = await getServerAiClient();
       const response = await client.models.generateContent(req.body || {});
@@ -180,7 +225,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/ai/embed-content", async (req, res) => {
+  app.post("/api/ai/embed-content", requireAuth, async (req, res) => {
     try {
       const client = await getServerAiClient();
       const response = await client.models.embedContent(req.body || {});
@@ -191,7 +236,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/ai/chats/create", async (req, res) => {
+  app.post("/api/ai/chats/create", requireAuth, async (req, res) => {
     try {
       const client = await getServerAiClient();
       const chat = await client.chats.create(req.body || {});
@@ -208,7 +253,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/ai/chats/:chatId/send-message", async (req, res) => {
+  app.post("/api/ai/chats/:chatId/send-message", requireAuth, async (req, res) => {
     try {
       const { chatId } = req.params;
       const chat = serverChatSessions.get(chatId);

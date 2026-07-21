@@ -15,6 +15,7 @@ async function loadPwaPlugin() {
       name: 'MathDigitizer Pro',
       short_name: 'MathPro',
       description: 'Напредна платформа за дигитализација и учење математика',
+      lang: 'mk',
       theme_color: '#4f46e5',
       background_color: '#ffffff',
       display: 'standalone',
@@ -90,6 +91,7 @@ export default defineConfig(async ({mode}) => {
       environment: 'jsdom',
       setupFiles: './src/setupTests.ts',
       pool: 'forks',
+      exclude: ['e2e/**', 'node_modules/**'],
     },
     resolve: {
       alias: {
