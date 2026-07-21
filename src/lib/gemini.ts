@@ -1241,9 +1241,16 @@ export async function advancedMultimodalExtraction(
       if (!urlContext) {
          const isYoutube = source.data.includes('youtube.com') || source.data.includes('youtu.be');
          const isVimeo = source.data.includes('vimeo.com');
-         if (!isVimeo) {
+         if (isYoutube || isVimeo) {
+           // Use Gemini transcript extraction for both YouTube and Vimeo
            try {
-             const apiEndpoint = apiUrl(isYoutube ? `/api/youtube/transcript?url=${encodeURIComponent(source.data)}` : `/api/scrape?url=${encodeURIComponent(source.data)}`);
+             urlContext = await fetchYoutubeTranscriptViaGemini(source.data, undefined);
+           } catch (e) {
+             console.warn("Gemini транскрипт не успеа за видео:", e);
+           }
+         } else {
+           try {
+             const apiEndpoint = apiUrl(`/api/scrape?url=${encodeURIComponent(source.data)}`);
              const res = await fetch(apiEndpoint);
              if (res.ok) {
                const text = await res.text();
@@ -1443,16 +1450,16 @@ export async function extractMathTasksFromUrl(url: string, model: string = "gemi
   if (!videoContext) {
      const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
      const isVimeo = url.includes('vimeo.com');
-     if (isYoutube) {
-       // Transcript-first approach: pass the YouTube URL directly to Gemini Flash.
-       // Faster and cheaper than the /api/youtube/transcript backend endpoint (unavailable
-       // on static hosting) and more reliable than Gemini Search for long or unlisted videos.
+     if (isYoutube || isVimeo) {
+       // Transcript-first approach: pass the video URL directly to Gemini Flash.
+       // Works for both YouTube and Vimeo - Gemini extracts audio/captions.
+       // Faster and cheaper than backend scraping and more reliable than Gemini Search.
        try {
          videoContext = await fetchYoutubeTranscriptViaGemini(url, timeRange);
        } catch (e) {
          console.warn("Gemini транскрипт не успеа, паѓаме на Gemini Search:", e);
        }
-     } else if (!isVimeo) {
+     } else {
        try {
          const apiEndpoint = apiUrl(`/api/scrape?url=${encodeURIComponent(url)}`);
          const res = await fetch(apiEndpoint);
