@@ -174,49 +174,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
     { subject: 'Анализа', A: 55, fullMark: 100 },
   ];
 
-  if (isLoading) {
-    return (
-      <div className="space-y-8 animate-in fade-in duration-500">
-        <Skeleton className="w-full h-32 rounded-3xl" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="w-full h-32 rounded-xl" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // Render Teacher Dashboard if the user is a teacher
-  if (userProfile?.role === 'teacher') {
-    return (
-      <Suspense fallback={<div className="p-8"><Skeleton className="w-full h-64 rounded-3xl" /></div>}>
-        <TeacherDashboard userProfile={userProfile} />
-      </Suspense>
-    );
-  }
-
-  if (userProfile?.role === 'student') {
-    return <Navigate to="/student-dashboard" replace />;
-  }
-
-  if (!stats) {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl rounded-3xl border border-dashed border-slate-300 dark:border-white/10">
-        <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-500/15 rounded-full flex items-center justify-center mb-4">
-          <Activity className="w-8 h-8 text-indigo-600 dark:text-indigo-300" />
-        </div>
-        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Грешка при вчитување на статистиките</h3>
-        <p className="text-slate-500 dark:text-slate-400 max-w-sm mb-6">
-          Вашите телеметриски податоци не може да се пронајдат. Обидете се да ја освежите страницата или да решите задача за да активирате запис.
-        </p>
-        <Button onClick={() => window.location.reload()}>
-          Освежи Страница
-        </Button>
-      </div>
-    );
-  }
-
   const billingHealthBadge = useMemo(() => {
     if (latestApprovedReceiptAt) {
       return {
@@ -297,6 +254,48 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
   const activeGuideItem = useMemo(() => {
     return billingGuideItems.find((item) => item.isActive) ?? billingGuideItems[0];
   }, [billingGuideItems]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <Skeleton className="w-full h-32 rounded-3xl" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="w-full h-32 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (userProfile?.role === 'teacher') {
+    return (
+      <Suspense fallback={<div className="p-8"><Skeleton className="w-full h-64 rounded-3xl" /></div>}>
+        <TeacherDashboard userProfile={userProfile} />
+      </Suspense>
+    );
+  }
+
+  if (userProfile?.role === 'student') {
+    return <Navigate to="/student-dashboard" replace />;
+  }
+
+  if (!stats) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl rounded-3xl border border-dashed border-slate-300 dark:border-white/10">
+        <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-500/15 rounded-full flex items-center justify-center mb-4">
+          <Activity className="w-8 h-8 text-indigo-600 dark:text-indigo-300" />
+        </div>
+        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Грешка при вчитување на статистиките</h3>
+        <p className="text-slate-500 dark:text-slate-400 max-w-sm mb-6">
+          Вашите телеметриски податоци не може да се пронајдат. Обидете се да ја освежите страницата или да решите задача за да активирате запис.
+        </p>
+        <Button onClick={() => window.location.reload()}>
+          Освежи Страница
+        </Button>
+      </div>
+    );
+  }
 
   const trackBillingCtaClick = async () => {
     const currentUser = auth.currentUser;

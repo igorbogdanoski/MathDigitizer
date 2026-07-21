@@ -62,10 +62,13 @@ export const Library: React.FC = () => {
         setShowManipulativesModal(true);
     };
     
-    // Create Kahoot handler
+    const getSelectedTasksLive = () => {
+      const state = useLibraryStore.getState();
+      return state.tasks.filter(t => t.id && state.selectedForTest.has(t.id));
+    };
 
     const handleLiveSession = async () => {
-      const selected = getSelectedTasks();
+      const selected = getSelectedTasksLive();
       if (selected.length === 0) return;
       
       setIsGeneratingKahoot(true);
@@ -94,9 +97,8 @@ export const Library: React.FC = () => {
       }
     };
     
-    // Create Quizlet / Flashcards handler
     const handleExportFlashcards = async () => {
-      const selected = getSelectedTasks();
+      const selected = getSelectedTasksLive();
       if (selected.length === 0) return;
       if (!auth.currentUser) return;
       

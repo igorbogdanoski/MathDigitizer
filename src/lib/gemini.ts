@@ -478,7 +478,7 @@ export async function generateInterventionTasks(
       }
     });
 
-    const responseText = result.text();
+    const responseText = result.text;
     if (!responseText) throw new Error("No response from AI");
     
     // Clean potential markdown blocks
@@ -2010,7 +2010,9 @@ ${studentHistory ? `ИСТОРИЈА И АНАЛИТИКА НА УЧЕНИКОТ
                 presentation: { type: Type.OBJECT, properties: { score: { type: Type.NUMBER }, comment: { type: Type.STRING } }, required: ["score", "comment"] }
               },
               required: ["concept", "execution", "presentation"]
-            }
+            },
+            good_sides: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Што е одлично направено во решавањето" },
+            bad_sides: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Критични слаби точки во решавањето" }
           },
           required: ["analysis", "errorsFound", "suggestions", "good_sides", "bad_sides", "score", "pedagogical_evaluation", "rubric_breakdown"]
         }
@@ -2175,7 +2177,7 @@ ${originalTask.original_text}
       }
     });
 
-    const text = response.text();
+    const text = response.text;
     if (!text) throw new Error("Empty response from AI");
     
     return JSON.parse(text) as MathTask[];
