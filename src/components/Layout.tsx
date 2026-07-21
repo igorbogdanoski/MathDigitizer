@@ -487,7 +487,6 @@ export const Layout: React.FC = () => {
                 variant="default"
                 size="sm"
                 onClick={signInWithGoogle}
-                className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-500/20"
               >
                 <LogIn className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Најави се</span>

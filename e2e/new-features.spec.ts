@@ -111,6 +111,38 @@ test.describe('Billing dashboard', () => {
   });
 });
 
+test.describe('Responsive — mobile overflow', () => {
+  const pages = [
+    { path: '/pricing', name: 'pricing', waitFor: 'text=490 МКД месечно' },
+    { path: '/blog/ocr-matematika', name: 'blog article', waitFor: 'h2' },
+    { path: '/billing', name: 'billing', waitFor: 'text=Потребна е најава' },
+  ];
+
+  for (const page of pages) {
+    test(`no horizontal overflow at 375px on ${page.name}`, async ({ browser }) => {
+      const context = await browser.newContext({ viewport: { width: 375, height: 667 } });
+      const mobilePage = await context.newPage();
+      await mobilePage.goto(page.path, { waitUntil: 'domcontentloaded' });
+
+      // Wait for the page's real content to render so we measure the settled
+      // layout, not a transient mid-load state (lazy chunks + auth resolution)
+      await mobilePage.locator(page.waitFor).first().waitFor({ state: 'visible', timeout: 20_000 });
+      await mobilePage.waitForTimeout(500);
+
+      const hasHorizontalScroll = await mobilePage.evaluate(() => {
+        return document.documentElement.scrollWidth > document.documentElement.clientWidth + 1;
+      });
+
+      expect(
+        hasHorizontalScroll,
+        `${page.name} should not have horizontal overflow at 375px`
+      ).toBe(false);
+
+      await context.close();
+    });
+  }
+});
+
 test.describe('Home page — key sections', () => {
   test('hero section renders with navigation', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
