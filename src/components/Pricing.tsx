@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { addDoc, collection } from 'firebase/firestore';
 import { ArrowRight, Check, CheckCircle2, Copy, GraduationCap, Landmark, Sparkles, ShieldCheck, BrainCircuit, Hash } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -16,6 +17,7 @@ function buildReferenceCode(uid: string | undefined, period: BillingPeriod): str
 }
 
 export const Pricing: React.FC = () => {
+  const { t } = useTranslation('pricing');
   const { user } = useAuth();
   const { showToast } = useToast();
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -237,8 +239,8 @@ export const Pricing: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-10">
       <SEO
-        title="Ценовник и Планови"
-        description="Изберете помеѓу месечен и годишен MathDigitizer Pro план, со school licensing опција и локални payment методи за Македонија."
+        title={t('title')}
+        description={t('subtitle')}
         keywords="ценовник, про наставник, годишен план, school licensing, директна банка, едукација, математика, македонија"
         canonical="/pricing"
         structuredData={[
@@ -358,7 +360,7 @@ export const Pricing: React.FC = () => {
                 className={`rounded-xl px-4 py-3 text-sm font-bold transition-colors ${billingPeriod === plan.period ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5'}`}
                 title={plan.description}
               >
-                {plan.period === 'monthly' ? 'Месечно' : 'Годишно'}
+                {plan.period === 'monthly' ? t('monthly') : t('annual')}
               </button>
             ))}
           </div>
