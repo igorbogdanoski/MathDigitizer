@@ -457,7 +457,7 @@ export async function generateSpeech(text: string): Promise<string> {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash-preview-tts",
+      model: "gemini-3.1-flash-tts-preview",
       contents: [{ parts: [{ text: transliteratedText }] }],
       config: {
         responseModalities: [Modality.AUDIO],
@@ -1691,7 +1691,7 @@ export async function generateImage(prompt: string, gradeLevel?: string): Promis
     const styleModifier = `Style: Modern, colorful, and engaging educational vector illustration. White background, crisp lines, perfect composition. No mathematical symbols or text in the image.`;
     
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash-image",
+      model: "gemini-3.1-flash-image",
       contents: {
         parts: [
           {
