@@ -710,6 +710,33 @@ export const SmartOCR: React.FC = () => {
             )}
             
             <div className="flex-1 p-6 overflow-y-auto">
+              {/* Batch Progress Indicator */}
+              {batchProgress && (
+                <div className="mb-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                      Обработка на слики...
+                    </span>
+                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                      {batchProgress.done} / {batchProgress.total}
+                    </span>
+                  </div>
+                  <div className="w-full bg-indigo-100 dark:bg-indigo-900/50 rounded-full h-2.5">
+                    <div
+                      className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${(batchProgress.done / batchProgress.total) * 100}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-2">
+                    {batchProgress.done === 0
+                      ? 'Започнување...'
+                      : batchProgress.done < batchProgress.total
+                        ? `Обработена слика ${batchProgress.done} од ${batchProgress.total}...`
+                        : 'Завршено!'}
+                  </p>
+                </div>
+              )}
+
               {batchTasks.length > 0 && !latexCode ? (
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
