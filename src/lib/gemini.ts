@@ -2688,3 +2688,226 @@ export async function analyzeGraphWithAI(
     handleGeminiError(error);
   }
 }
+
+// ─── Task Differentiation ────────────────────────────────────────────────────
+
+import type { DifferentiationResult, DifferentiatedTask, DifferentiationConfig } from './schema';
+
+/**
+ * Генерира диференцирани верзии на задача (support, core, extension)
+ * со scaffolding, hints и success criteria.
+ */
+export async function generateDifferentiatedTask(
+  baseTask: MathTask,
+  config: DifferentiationConfig = {
+    generateSupport: true,
+    generateExtension: true,
+    includeHints: true,
+    includeScaffolding: true,
+    language: 'mk',
+  }
+): Promise<DifferentiationResult> {
+  const languagePrompt =
+    config.language === 'en' ? 'Use English language.' :
+    config.language === 'al' ? 'Përdor gjuhën shqipe.' :
+    'Користи македонски јазик.';
+
+  const prompt = `Ти си Експерт за Диференцирана Настава по Математика.
+
+ЗАДАЧА:
+${baseTask.original_text}
+
+ТЕЖИНА: ${baseTask.difficulty}
+DOK НИВО: ${baseTask.dok_level || 2}
+ТЕМА: ${baseTask.curriculum_topic || 'Математика'}
+
+Генерирај ТРИ диференцирани верзии на оваа задача:
+
+1. **SUPPORT** (за ученици кои имаат потешкотии):
+   - Поедноставни броеви/контекст
+   - Повеќе чекори во решението
+   - Визуелни помагала (ако е применливо)
+   - Scaffolding: чекор-по-чекор водич
+   - 3 нивоа на hints (од суптилно до речиси решение)
+
+2. **CORE** (стандардно ниво):
+   - Слична на оригиналната задача
+   - Умерена помош
+   - 2 нивоа на hints
+
+3. **EXTENSION** (за напредни ученици):
+   - Покомплексен контекст или дополнителни барања
+   - Повисоко DOK ниво
+   - Предизвик за критичко мислење
+   - Минимална помош
+
+За секоја верзија вклучи:
+- task: целосната задача (title, original_text, solution_steps, difficulty)
+- scaffolding: низа од чекори за помош
+- hints: { level1, level2, level3 }
+- successCriteria: што значи "успешно решено"
+- estimatedTime: минути
+- prerequisites: потребни предзнаења
+
+${languagePrompt}
+
+Врати СТРОГО JSON.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            baseTask: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                original_text: { type: Type.STRING },
+                difficulty: { type: Type.STRING },
+              },
+            },
+            variants: {
+              type: Type.OBJECT,
+              properties: {
+                support: {
+                  type: Type.OBJECT,
+                  properties: {
+                    task: {
+                      type: Type.OBJECT,
+                      properties: {
+                        title: { type: Type.STRING },
+                        original_text: { type: Type.STRING },
+                        solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        difficulty: { type: Type.STRING },
+                      },
+                    },
+                    scaffolding: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    hints: {
+                      type: Type.OBJECT,
+                      properties: {
+                        level1: { type: Type.STRING },
+                        level2: { type: Type.STRING },
+                        level3: { type: Type.STRING },
+                      },
+                    },
+                    successCriteria: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    estimatedTime: { type: Type.NUMBER },
+                    prerequisites: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  },
+                },
+                core: {
+                  type: Type.OBJECT,
+                  properties: {
+                    task: {
+                      type: Type.OBJECT,
+                      properties: {
+                        title: { type: Type.STRING },
+                        original_text: { type: Type.STRING },
+                        solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        difficulty: { type: Type.STRING },
+                      },
+                    },
+                    scaffolding: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    hints: {
+                      type: Type.OBJECT,
+                      properties: {
+                        level1: { type: Type.STRING },
+                        level2: { type: Type.STRING },
+                        level3: { type: Type.STRING },
+                      },
+                    },
+                    successCriteria: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    estimatedTime: { type: Type.NUMBER },
+                    prerequisites: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  },
+                },
+                extension: {
+                  type: Type.OBJECT,
+                  properties: {
+                    task: {
+                      type: Type.OBJECT,
+                      properties: {
+                        title: { type: Type.STRING },
+                        original_text: { type: Type.STRING },
+                        solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        difficulty: { type: Type.STRING },
+                      },
+                    },
+                    scaffolding: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    hints: {
+                      type: Type.OBJECT,
+                      properties: {
+                        level1: { type: Type.STRING },
+                        level2: { type: Type.STRING },
+                        level3: { type: Type.STRING },
+                      },
+                    },
+                    successCriteria: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    estimatedTime: { type: Type.NUMBER },
+                    prerequisites: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  },
+                },
+              },
+            },
+            pedagogicalNotes: { type: Type.STRING },
+            bloomLevel: { type: Type.STRING },
+            dokLevel: { type: Type.NUMBER },
+          },
+          required: ['variants', 'pedagogicalNotes', 'bloomLevel', 'dokLevel'],
+        },
+      },
+    });
+
+    if (!response.text) throw new Error('Нема одговор од AI.');
+    const result = parseGeminiResponse(response.text);
+
+    // Transform to DifferentiationResult format
+    const now = new Date().toISOString();
+    const createDifferentiatedTask = (
+      level: 'support' | 'core' | 'extension',
+      data: any
+    ): DifferentiatedTask => ({
+      baseTaskId: baseTask.id || '',
+      baseTaskTitle: baseTask.title,
+      level,
+      task: {
+        id: `${baseTask.id}-${level}`,
+        type: 'task',
+        title: data.task?.title || `${baseTask.title} (${level})`,
+        original_text: data.task?.original_text || baseTask.original_text,
+        solution_steps: data.task?.solution_steps || [],
+        latex_formulas: baseTask.latex_formulas || [],
+        difficulty: data.task?.difficulty || baseTask.difficulty,
+        source_url: baseTask.source_url,
+        tags: baseTask.tags || [],
+        dok_level: baseTask.dok_level,
+        grade_level: baseTask.grade_level,
+        curriculum_topic: baseTask.curriculum_topic,
+      },
+      scaffolding: data.scaffolding || [],
+      hints: data.hints || { level1: '', level2: '', level3: '' },
+      successCriteria: data.successCriteria || [],
+      estimatedTime: data.estimatedTime || 10,
+      prerequisites: data.prerequisites || [],
+      createdAt: now,
+    });
+
+    return {
+      baseTask,
+      variants: {
+        support: createDifferentiatedTask('support', result.variants?.support || {}),
+        core: createDifferentiatedTask('core', result.variants?.core || {}),
+        extension: createDifferentiatedTask('extension', result.variants?.extension || {}),
+      },
+      pedagogicalNotes: result.pedagogicalNotes || '',
+      bloomLevel: result.bloomLevel || 'Примена',
+      dokLevel: result.dokLevel || baseTask.dok_level || 2,
+    };
+  } catch (error) {
+    handleGeminiError(error);
+  }
+}
