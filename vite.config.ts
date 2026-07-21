@@ -91,7 +91,7 @@ export default defineConfig(async ({mode}) => {
       environment: 'jsdom',
       setupFiles: './src/setupTests.ts',
       pool: 'forks',
-      exclude: ['e2e/**', 'node_modules/**'],
+      exclude: ['e2e/**', 'node_modules/**', 'src/lib/firestore.rules.test.ts'],
     },
     resolve: {
       alias: {

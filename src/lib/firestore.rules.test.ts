@@ -1,3 +1,16 @@
+/**
+ * Firestore Security Rules Unit Tests
+ * 
+ * These tests require the Firebase emulator to be running.
+ * They are excluded from the regular `npm run test` run.
+ * 
+ * To run these tests:
+ *   firebase emulators:exec --only firestore "npx vitest --run src/lib/firestore.rules.test.ts"
+ * 
+ * Or add to CI workflow:
+ *   - name: Run Firestore rules tests
+ *     run: firebase emulators:exec --only firestore "npm run test -- --run src/lib/firestore.rules.test.ts"
+ */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import {
   initializeTestEnvironment,
