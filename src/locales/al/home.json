@@ -48,5 +48,47 @@
     "title": "Gati për të filluar?",
     "subtitle": "Bashkohuni me qindra mësues që tashmë përdorin platformën",
     "button": "Filloni falas sot"
-  }
+  },
+  "valuePoints": [
+    "Ekstraktim me AI që vërtet kursen kohë në përgatitje.",
+    "Analitikë dhe ndërhyrje pedagogjike në vend të vetëm zhurmë gjeneruese.",
+    "Një model SaaS gati për vendin, me plane Pro dhe shkollore për institucione reale."
+  ],
+  "signalCards": [
+    { "title": "SaaS për mësues", "value": "490 MKD", "detail": "në muaj për Pro Teacher" },
+    { "title": "Vlera vjetore", "value": "4,900 MKD", "detail": "opsioni më i mirë për gjithë vitin" },
+    { "title": "Shtrirje shkollore", "value": "Sipas marrëveshjes", "detail": "faturë, bankë dhe onboarding" },
+    { "title": "Pagesa lokale", "value": "Bankë direkte", "detail": "pagesë + vërtetim për aktivizim manual" }
+  ],
+  "workflowSteps": [
+    { "title": "Ekstraktim", "detail": "Video, PDF ose imazh në probleme matematikore të strukturuara." },
+    { "title": "Bibliotekë pedagogjike", "detail": "Përmbajtje gati për RAG për ripërdorim, analizë dhe teste." },
+    { "title": "Shpërndarje", "detail": "Materiale, analitikë dhe rrjedha pune në klasë nga i njëjti sistem." }
+  ],
+  "platformStats": [
+    { "value": "5h", "label": "Orë të kursyera në javë" },
+    { "value": "10x", "label": "Angazhim më i lartë në klasë" },
+    { "value": "2 min", "label": "Gjenerim testi PDF" },
+    { "value": "100%", "label": "Ndërtuar për shkollat e MK" }
+  ],
+  "testimonialsList": [
+    {
+      "quote": "MathDigitizer më kursen mbi 5 orë në javë. Në vend që t'i fus problemet manualisht, thjesht i nxjerr me AI dhe i ruaj në bibliotekën time.",
+      "author": "Marija K.",
+      "role": "Mësuese matematike",
+      "city": "Shkup"
+    },
+    {
+      "quote": "Sesionet Live Kahoot i bënë mësimet e mia interaktive. Nxënësit konkurrojnë me njëri-tjetrin — është një ndryshim i vërtetë në angazhim.",
+      "author": "Todor M.",
+      "role": "Mësues matematike",
+      "city": "Manastir"
+    },
+    {
+      "quote": "Më në fund një sistem që kupton terminologjinë matematikore maqedonase. Fabrika PDF më gjeneron teste për 2 minuta.",
+      "author": "Elena V.",
+      "role": "Mësuese matematike",
+      "city": "Ohër"
+    }
+  ]
 }

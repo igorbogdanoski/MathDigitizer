@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Upload, CheckCircle2, AlertTriangle, FileWarning, Search, 
-  Brain, BrainCircuit, ScanLine, Calculator, ChevronRight, Image as ImageIcon, Camera, User
+import {
+  Upload, CheckCircle2, AlertTriangle, FileWarning, Search,
+  Brain, BrainCircuit, ScanLine, Calculator, ChevronRight, Image as ImageIcon, Camera, User, BookOpen
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card, CardContent } from './ui/Card';
-import { MathTask, GradedSubmission } from '../lib/schema';
+import { MathTask, GradedSubmission, GradeEntry, MKGrade, GradeCategory } from '../lib/schema';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { MathRenderer } from './MathRenderer';
 import { analyzeSolutionImage, generateTargetedPracticeTasks, analyzeBatchTestImage } from '../lib/gemini';
@@ -14,6 +14,42 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { addDoc, collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+
+// Helper: Convert score (0-100) to MK grade (1-5)
+function scoreToMKGrade(score: number): MKGrade {
+  if (score >= 90) return 5; // Одлично
+  if (score >= 75) return 4; // Многу добро
+  if (score >= 60) return 3; // Добро
+  if (score >= 50) return 2; // Доволно
+  return 1; // Недоволно
+}
+
+// Helper: Save grade to Gradebook
+async function saveToGradebook(
+  studentName: string,
+  score: number,
+  taskTitle: string,
+  teacherUid: string,
+  category: GradeCategory = 'test'
+): Promise<void> {
+  const gradeEntry: Omit<GradeEntry, 'id'> = {
+    classroomId: 'default', // TODO: Get from context or selection
+    studentId: studentName.toLowerCase().replace(/\s+/g, '-'),
+    studentName,
+    taskTitle,
+    category,
+    grade: scoreToMKGrade(score),
+    maxPoints: 100,
+    earnedPoints: score,
+    feedback: `AI оценување: ${score}/100`,
+    gradedAt: new Date().toISOString(),
+    gradedBy: teacherUid,
+    term: 'I', // TODO: Get current term
+    schoolYear: '2026/2027', // TODO: Get current school year
+  };
+
+  await addDoc(collection(db, 'grade_entries'), gradeEntry);
+}
 
 export const SmartGrader: React.FC = () => {
   const { tasks } = useLibraryStore();
@@ -130,7 +166,7 @@ Feedback: ${doc.feedback_summary}`;
       if (gradingMode === 'single') {
         const analysisResult = await analyzeSolutionImage(selectedTask!, base64Data, imageMimeType, studentHistory);
         setResult(analysisResult);
-        
+
         // Save longitudinal analytics
         if (user) {
            try {
@@ -147,6 +183,18 @@ Feedback: ${doc.feedback_summary}`;
                 created_at: new Date().toISOString()
              };
              await addDoc(collection(db, 'graded_submissions'), submission);
+
+             // Save to Gradebook
+             if (studentIdentifier.trim()) {
+               await saveToGradebook(
+                 studentIdentifier.trim(),
+                 analysisResult.score,
+                 selectedTask!.title || 'AI Оценување',
+                 user.uid,
+                 'test'
+               );
+               showToast('Оценката е зачувана во дневникот', 'success');
+             }
            } catch (dbErr) {
              console.error("Failed to save student analytic profiling:", dbErr);
            }
@@ -154,7 +202,7 @@ Feedback: ${doc.feedback_summary}`;
       } else {
         const batchAnalysis = await analyzeBatchTestImage(base64Data, imageMimeType, studentHistory);
         setBatchResults(batchAnalysis);
-        
+
         // Save longitudinal analytics for each extracted task
         if (user) {
           for (let i = 0; i < batchAnalysis.length; i++) {
@@ -173,9 +221,23 @@ Feedback: ${doc.feedback_summary}`;
                   created_at: new Date().toISOString()
                };
                await addDoc(collection(db, 'graded_submissions'), submission);
+
+               // Save to Gradebook
+               if (studentIdentifier.trim()) {
+                 await saveToGradebook(
+                   studentIdentifier.trim(),
+                   br.score,
+                   br.extracted_task_text?.substring(0, 50) || `Задача ${i + 1}`,
+                   user.uid,
+                   'test'
+                 );
+               }
              } catch (dbErr) {
                console.error("Failed to save student analytic profiling for batch task:", dbErr);
              }
+          }
+          if (studentIdentifier.trim()) {
+            showToast(`${batchAnalysis.length} оцени се зачувани во дневникот`, 'success');
           }
         }
       }

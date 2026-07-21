@@ -1,0 +1,23 @@
+{
+  "title": "Early Warning систем",
+  "subtitle": "Детекција на ученици во ризик",
+  "totalStudents": "Вкупно ученици",
+  "lowRisk": "Низок ризик",
+  "mediumRisk": "Среден ризик",
+  "highRisk": "Висок ризик",
+  "riskScore": "Ризик скор",
+  "all": "Сите",
+  "topInterventions": "Најчести препорачани интервенции",
+  "decliningGrades": "Опаѓачки оцени",
+  "lowEngagement": "Ниска активност",
+  "days": "дена",
+  "lowAverage": "Низок просек",
+  "failedTests": "Паднати тестови",
+  "recommendedInterventions": "Препорачани интервенции",
+  "noAtRiskStudents": "Нема ученици во оваа категорија на ризик",
+  "riskFactors": "Фактори на ризик",
+  "averageGrade": "Просек",
+  "trend": "Тренд",
+  "lastActivity": "Последна активност",
+  "errorLoading": "Грешка при вчитување на оцени"
+}

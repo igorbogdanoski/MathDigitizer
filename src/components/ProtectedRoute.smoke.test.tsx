@@ -3,18 +3,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
+import { ToastProvider } from '@/src/contexts/ToastContext';
 
-const mockUseAuth = vi.fn();
+const { mockUseAuth } = vi.hoisted(() => ({
+  mockUseAuth: vi.fn(),
+}));
 
-vi.mock('../contexts/AuthContext', () => ({
+vi.mock('@/src/contexts/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-vi.mock('../contexts/ToastContext', () => ({
-  useToast: () => ({ showToast: vi.fn() }),
-}));
-
-vi.mock('../lib/firebase', () => ({
+vi.mock('@/src/lib/firebase', () => ({
   signInWithGoogle: vi.fn(),
 }));
 
@@ -31,19 +30,21 @@ describe('ProtectedRoute smoke', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/private']}>
-        <Routes>
-          <Route path="/" element={<div>Home page</div>} />
-          <Route
-            path="/private"
-            element={
-              <ProtectedRoute authFeatureName="Приватна страница">
-                <div>Private page</div>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </MemoryRouter>
+      <ToastProvider>
+        <MemoryRouter initialEntries={['/private']}>
+          <Routes>
+            <Route path="/" element={<div>Home page</div>} />
+            <Route
+              path="/private"
+              element={
+                <ProtectedRoute authFeatureName="Приватна страница">
+                  <div>Private page</div>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </ToastProvider>
     );
 
     expect(screen.queryByText('Home page')).not.toBeInTheDocument();
@@ -60,19 +61,21 @@ describe('ProtectedRoute smoke', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/teacher-only']}>
-        <Routes>
-          <Route path="/student-dashboard" element={<div>Student dashboard page</div>} />
-          <Route
-            path="/teacher-only"
-            element={
-              <ProtectedRoute allowedRoles={['teacher']}>
-                <div>Teacher page</div>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </MemoryRouter>
+      <ToastProvider>
+        <MemoryRouter initialEntries={['/teacher-only']}>
+          <Routes>
+            <Route path="/student-dashboard" element={<div>Student dashboard page</div>} />
+            <Route
+              path="/teacher-only"
+              element={
+                <ProtectedRoute allowedRoles={['teacher']}>
+                  <div>Teacher page</div>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </ToastProvider>
     );
 
     expect(screen.getByText('Student dashboard page')).toBeInTheDocument();
@@ -86,19 +89,21 @@ describe('ProtectedRoute smoke', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/student-only']}>
-        <Routes>
-          <Route path="/dashboard" element={<div>Dashboard page</div>} />
-          <Route
-            path="/student-only"
-            element={
-              <ProtectedRoute allowedRoles={['student']}>
-                <div>Student page</div>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </MemoryRouter>
+      <ToastProvider>
+        <MemoryRouter initialEntries={['/student-only']}>
+          <Routes>
+            <Route path="/dashboard" element={<div>Dashboard page</div>} />
+            <Route
+              path="/student-only"
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <div>Student page</div>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </ToastProvider>
     );
 
     expect(screen.getByText('Dashboard page')).toBeInTheDocument();
@@ -112,18 +117,20 @@ describe('ProtectedRoute smoke', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/teacher-only']}>
-        <Routes>
-          <Route
-            path="/teacher-only"
-            element={
-              <ProtectedRoute allowedRoles={['teacher']}>
-                <div>Teacher page</div>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </MemoryRouter>
+      <ToastProvider>
+        <MemoryRouter initialEntries={['/teacher-only']}>
+          <Routes>
+            <Route
+              path="/teacher-only"
+              element={
+                <ProtectedRoute allowedRoles={['teacher']}>
+                  <div>Teacher page</div>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </ToastProvider>
     );
 
     expect(screen.getByText('Teacher page')).toBeInTheDocument();

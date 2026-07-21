@@ -149,6 +149,7 @@ export const GraphDigitizer: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [copiedGeo, setCopiedGeo] = useState(false);
+  const [autoSave, setAutoSave] = useState(false);
 
   // ── File handling ──────────────────────────────────────────────────────────
 
@@ -273,6 +274,11 @@ export const GraphDigitizer: React.FC = () => {
       );
       setAnalysis(result);
       showToast('AI анализата е завршена!', 'success');
+
+      // Auto-save to Library if enabled
+      if (autoSave && auth.currentUser) {
+        await saveToLibrary();
+      }
     } catch (err: any) {
       showToast(err?.message ?? 'Грешка при AI анализа', 'error');
     } finally {
@@ -757,6 +763,17 @@ export const GraphDigitizer: React.FC = () => {
                   )}
 
                   <div className="h-px bg-slate-200 dark:bg-slate-700" />
+
+                  {/* Auto-save option */}
+                  <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoSave}
+                      onChange={(e) => setAutoSave(e.target.checked)}
+                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    Автоматско зачувување по анализа
+                  </label>
 
                   <Button className="w-full" onClick={saveToLibrary} disabled={isSaving || !!savedId}>
                     {isSaving

@@ -945,13 +945,21 @@ ${enableLogicalReconstruction
 }
 
 export async function generateDifferentiatedTasks(originalTask: MathTask, style: 'traditional' | 'real-world' | 'modern' = 'traditional'): Promise<{ easy: MathTask, hard: MathTask }> {
-  const stylePrompt = 
+  const stylePrompt =
     style === 'modern' ? 'Користи модерен Gen-Z контекст.' :
     style === 'real-world' ? 'Користи контекст од реалниот свет.' :
     'Користи традиционален контекст.';
 
-  const prompt = `Врз основа на следната математичка задача, генерирај ДВЕ нови задачи за диференцирана настава: една ПОЛЕСНА (за ученици на кои им треба поддршка) и една ПОТЕШКА (за напредни ученици).
+  // Get curriculum context for alignment
+  const curriculumQuery = [
+    originalTask.curriculum_topic,
+    originalTask.grade_level,
+    ...(originalTask.tags ?? []),
+  ].filter(Boolean).join(' ');
+  const curriculumCtx = await buildCurriculumContextBlockRag(curriculumQuery, originalTask.grade_level);
 
+  const prompt = `Врз основа на следната математичка задача, генерирај ДВЕ нови задачи за диференцирана настава: една ПОЛЕСНА (за ученици на кои им треба поддршка) и една ПОТЕШКА (за напредни ученици).
+${curriculumCtx ? `\n${curriculumCtx}\n` : ''}
 СТИЛ: ${stylePrompt}
 
 ОРИГИНАЛНА ЗАДАЧА:
@@ -1052,12 +1060,16 @@ ${originalTask.original_text}
 export type MaterialType = 'worksheet' | 'test' | 'collection' | 'quiz' | 'presentation' | 'flashcards' | 'homework' | 'study_guide';
 
 export async function generateLessonPlan(tasks: MathTask[], gradeLevel: string, topicName: string, language: string = 'mk') {
-  const languagePrompt = 
+  const languagePrompt =
     language === 'en' ? 'Use English language and professional terminology.' :
     language === 'al' ? 'Përdor gjuhën shqipe dhe terminologji profesionale.' :
     'Користи македонски јазик, стручна терминологија и беспрекорен LaTeX за формулите.';
 
+  // Get curriculum context for alignment
+  const curriculumCtx = await buildCurriculumContextBlockRag(topicName, gradeLevel);
+
   const prompt = `Ти си Експерт Методичар за математика според стандардите на БРО (Биро за развој на образованието) во Македонија.
+${curriculumCtx ? `\n${curriculumCtx}\n` : ''}
 Корисникот сака да генерира формална "Дневна подготовка за час" базирана на овие избрани задачи:
 
 ЗАДАЧИ ЗА ЧАСОТ:
@@ -1241,9 +1253,16 @@ export async function advancedMultimodalExtraction(
       if (!urlContext) {
          const isYoutube = source.data.includes('youtube.com') || source.data.includes('youtu.be');
          const isVimeo = source.data.includes('vimeo.com');
-         if (!isVimeo) {
+         if (isYoutube || isVimeo) {
+           // Use Gemini transcript extraction for both YouTube and Vimeo
            try {
-             const apiEndpoint = apiUrl(isYoutube ? `/api/youtube/transcript?url=${encodeURIComponent(source.data)}` : `/api/scrape?url=${encodeURIComponent(source.data)}`);
+             urlContext = await fetchYoutubeTranscriptViaGemini(source.data, undefined);
+           } catch (e) {
+             console.warn("Gemini транскрипт не успеа за видео:", e);
+           }
+         } else {
+           try {
+             const apiEndpoint = apiUrl(`/api/scrape?url=${encodeURIComponent(source.data)}`);
              const res = await fetch(apiEndpoint);
              if (res.ok) {
                const text = await res.text();
@@ -1443,16 +1462,16 @@ export async function extractMathTasksFromUrl(url: string, model: string = "gemi
   if (!videoContext) {
      const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
      const isVimeo = url.includes('vimeo.com');
-     if (isYoutube) {
-       // Transcript-first approach: pass the YouTube URL directly to Gemini Flash.
-       // Faster and cheaper than the /api/youtube/transcript backend endpoint (unavailable
-       // on static hosting) and more reliable than Gemini Search for long or unlisted videos.
+     if (isYoutube || isVimeo) {
+       // Transcript-first approach: pass the video URL directly to Gemini Flash.
+       // Works for both YouTube and Vimeo - Gemini extracts audio/captions.
+       // Faster and cheaper than backend scraping and more reliable than Gemini Search.
        try {
          videoContext = await fetchYoutubeTranscriptViaGemini(url, timeRange);
        } catch (e) {
          console.warn("Gemini транскрипт не успеа, паѓаме на Gemini Search:", e);
        }
-     } else if (!isVimeo) {
+     } else {
        try {
          const apiEndpoint = apiUrl(`/api/scrape?url=${encodeURIComponent(url)}`);
          const res = await fetch(apiEndpoint);
@@ -1622,6 +1641,46 @@ RULES:
     return response.text || "{}";
   } catch (error) {
     console.error("Грешка при генерирање векторска графика:", error);
+    throw error;
+  }
+}
+
+/**
+ * Генерира TikZ/LaTeX код за математичка визуелизација
+ */
+export async function generateTikZCode(description: string): Promise<string> {
+  const prompt = `Ти си Експерт за LaTeX/TikZ визуелизација на математика.
+
+Генерирај TikZ код за следниот опис:
+${description}
+
+ПРАВИЛА:
+1. Користи \\begin{tikzpicture}...\\end{tikzpicture}
+2. Вклучи оски, мрежа, и етикети
+3. Користи бои за различни елементи
+4. Додај легенда ако има повеќе елементи
+5. Врати САМО валиден TikZ код, без markdown
+
+Пример формат:
+\\begin{tikzpicture}[scale=0.5]
+  \\draw[->] (-5,0) -- (5,0) node[right] {$x$};
+  \\draw[->] (0,-5) -- (0,5) node[above] {$y$};
+  \\draw[domain=-4:4,smooth,variable=\\x,blue] plot ({\\x},{0.5*\\x*\\x});
+  \\node at (2,2) {$y = \\frac{1}{2}x^2$};
+\\end{tikzpicture}`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: prompt,
+      config: {
+        temperature: 0.3,
+      }
+    });
+
+    return response.text || "";
+  } catch (error) {
+    console.error("Грешка при генерирање TikZ код:", error);
     throw error;
   }
 }
@@ -2684,6 +2743,229 @@ export async function analyzeGraphWithAI(
 
     if (!response.text) throw new Error('Нема одговор од AI.');
     return parseGeminiResponse(response.text) as GraphAnalysis;
+  } catch (error) {
+    handleGeminiError(error);
+  }
+}
+
+// ─── Task Differentiation ────────────────────────────────────────────────────
+
+import type { DifferentiationResult, DifferentiatedTask, DifferentiationConfig } from './schema';
+
+/**
+ * Генерира диференцирани верзии на задача (support, core, extension)
+ * со scaffolding, hints и success criteria.
+ */
+export async function generateDifferentiatedTask(
+  baseTask: MathTask,
+  config: DifferentiationConfig = {
+    generateSupport: true,
+    generateExtension: true,
+    includeHints: true,
+    includeScaffolding: true,
+    language: 'mk',
+  }
+): Promise<DifferentiationResult> {
+  const languagePrompt =
+    config.language === 'en' ? 'Use English language.' :
+    config.language === 'al' ? 'Përdor gjuhën shqipe.' :
+    'Користи македонски јазик.';
+
+  const prompt = `Ти си Експерт за Диференцирана Настава по Математика.
+
+ЗАДАЧА:
+${baseTask.original_text}
+
+ТЕЖИНА: ${baseTask.difficulty}
+DOK НИВО: ${baseTask.dok_level || 2}
+ТЕМА: ${baseTask.curriculum_topic || 'Математика'}
+
+Генерирај ТРИ диференцирани верзии на оваа задача:
+
+1. **SUPPORT** (за ученици кои имаат потешкотии):
+   - Поедноставни броеви/контекст
+   - Повеќе чекори во решението
+   - Визуелни помагала (ако е применливо)
+   - Scaffolding: чекор-по-чекор водич
+   - 3 нивоа на hints (од суптилно до речиси решение)
+
+2. **CORE** (стандардно ниво):
+   - Слична на оригиналната задача
+   - Умерена помош
+   - 2 нивоа на hints
+
+3. **EXTENSION** (за напредни ученици):
+   - Покомплексен контекст или дополнителни барања
+   - Повисоко DOK ниво
+   - Предизвик за критичко мислење
+   - Минимална помош
+
+За секоја верзија вклучи:
+- task: целосната задача (title, original_text, solution_steps, difficulty)
+- scaffolding: низа од чекори за помош
+- hints: { level1, level2, level3 }
+- successCriteria: што значи "успешно решено"
+- estimatedTime: минути
+- prerequisites: потребни предзнаења
+
+${languagePrompt}
+
+Врати СТРОГО JSON.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            baseTask: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                original_text: { type: Type.STRING },
+                difficulty: { type: Type.STRING },
+              },
+            },
+            variants: {
+              type: Type.OBJECT,
+              properties: {
+                support: {
+                  type: Type.OBJECT,
+                  properties: {
+                    task: {
+                      type: Type.OBJECT,
+                      properties: {
+                        title: { type: Type.STRING },
+                        original_text: { type: Type.STRING },
+                        solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        difficulty: { type: Type.STRING },
+                      },
+                    },
+                    scaffolding: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    hints: {
+                      type: Type.OBJECT,
+                      properties: {
+                        level1: { type: Type.STRING },
+                        level2: { type: Type.STRING },
+                        level3: { type: Type.STRING },
+                      },
+                    },
+                    successCriteria: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    estimatedTime: { type: Type.NUMBER },
+                    prerequisites: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  },
+                },
+                core: {
+                  type: Type.OBJECT,
+                  properties: {
+                    task: {
+                      type: Type.OBJECT,
+                      properties: {
+                        title: { type: Type.STRING },
+                        original_text: { type: Type.STRING },
+                        solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        difficulty: { type: Type.STRING },
+                      },
+                    },
+                    scaffolding: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    hints: {
+                      type: Type.OBJECT,
+                      properties: {
+                        level1: { type: Type.STRING },
+                        level2: { type: Type.STRING },
+                        level3: { type: Type.STRING },
+                      },
+                    },
+                    successCriteria: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    estimatedTime: { type: Type.NUMBER },
+                    prerequisites: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  },
+                },
+                extension: {
+                  type: Type.OBJECT,
+                  properties: {
+                    task: {
+                      type: Type.OBJECT,
+                      properties: {
+                        title: { type: Type.STRING },
+                        original_text: { type: Type.STRING },
+                        solution_steps: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        difficulty: { type: Type.STRING },
+                      },
+                    },
+                    scaffolding: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    hints: {
+                      type: Type.OBJECT,
+                      properties: {
+                        level1: { type: Type.STRING },
+                        level2: { type: Type.STRING },
+                        level3: { type: Type.STRING },
+                      },
+                    },
+                    successCriteria: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    estimatedTime: { type: Type.NUMBER },
+                    prerequisites: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  },
+                },
+              },
+            },
+            pedagogicalNotes: { type: Type.STRING },
+            bloomLevel: { type: Type.STRING },
+            dokLevel: { type: Type.NUMBER },
+          },
+          required: ['variants', 'pedagogicalNotes', 'bloomLevel', 'dokLevel'],
+        },
+      },
+    });
+
+    if (!response.text) throw new Error('Нема одговор од AI.');
+    const result = parseGeminiResponse(response.text);
+
+    // Transform to DifferentiationResult format
+    const now = new Date().toISOString();
+    const createDifferentiatedTask = (
+      level: 'support' | 'core' | 'extension',
+      data: any
+    ): DifferentiatedTask => ({
+      baseTaskId: baseTask.id || '',
+      baseTaskTitle: baseTask.title,
+      level,
+      task: {
+        id: `${baseTask.id}-${level}`,
+        type: 'task',
+        title: data.task?.title || `${baseTask.title} (${level})`,
+        original_text: data.task?.original_text || baseTask.original_text,
+        solution_steps: data.task?.solution_steps || [],
+        latex_formulas: baseTask.latex_formulas || [],
+        difficulty: data.task?.difficulty || baseTask.difficulty,
+        source_url: baseTask.source_url,
+        tags: baseTask.tags || [],
+        dok_level: baseTask.dok_level,
+        grade_level: baseTask.grade_level,
+        curriculum_topic: baseTask.curriculum_topic,
+      },
+      scaffolding: data.scaffolding || [],
+      hints: data.hints || { level1: '', level2: '', level3: '' },
+      successCriteria: data.successCriteria || [],
+      estimatedTime: data.estimatedTime || 10,
+      prerequisites: data.prerequisites || [],
+      createdAt: now,
+    });
+
+    return {
+      baseTask,
+      variants: {
+        support: createDifferentiatedTask('support', result.variants?.support || {}),
+        core: createDifferentiatedTask('core', result.variants?.core || {}),
+        extension: createDifferentiatedTask('extension', result.variants?.extension || {}),
+      },
+      pedagogicalNotes: result.pedagogicalNotes || '',
+      bloomLevel: result.bloomLevel || 'Примена',
+      dokLevel: result.dokLevel || baseTask.dok_level || 2,
+    };
   } catch (error) {
     handleGeminiError(error);
   }
