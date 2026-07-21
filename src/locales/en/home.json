@@ -48,5 +48,47 @@
     "title": "Ready to get started?",
     "subtitle": "Join hundreds of teachers already using the platform",
     "button": "Start for free today"
-  }
+  },
+  "valuePoints": [
+    "AI extraction that genuinely saves preparation time.",
+    "Pedagogical analytics and interventions instead of just generative noise.",
+    "A locally-ready SaaS model with Pro and school plans for real institutions."
+  ],
+  "signalCards": [
+    { "title": "Teacher-first SaaS", "value": "490 MKD", "detail": "per month for Pro Teacher" },
+    { "title": "Annual value", "value": "4,900 MKD", "detail": "best option for the whole year" },
+    { "title": "School rollout", "value": "By agreement", "detail": "invoice, bank and onboarding" },
+    { "title": "Local payments", "value": "Direct bank", "detail": "payment + receipt for manual activation" }
+  ],
+  "workflowSteps": [
+    { "title": "Extraction", "detail": "Video, PDF or image into structured math problems." },
+    { "title": "Pedagogical library", "detail": "RAG-ready content for reuse, analysis and tests." },
+    { "title": "Delivery", "detail": "Materials, analytics and live classroom workflows from one system." }
+  ],
+  "platformStats": [
+    { "value": "5h", "label": "Hours saved weekly" },
+    { "value": "10x", "label": "Higher classroom engagement" },
+    { "value": "2 min", "label": "PDF test generation" },
+    { "value": "100%", "label": "Built for MK schools" }
+  ],
+  "testimonialsList": [
+    {
+      "quote": "MathDigitizer saves me over 5 hours a week. Instead of manually entering problems, I just extract them with AI and save them to my library.",
+      "author": "Marija K.",
+      "role": "Math teacher",
+      "city": "Skopje"
+    },
+    {
+      "quote": "Live Kahoot sessions made my lessons interactive. Students compete with each other — it's a real change in engagement.",
+      "author": "Todor M.",
+      "role": "Math teacher",
+      "city": "Bitola"
+    },
+    {
+      "quote": "Finally a system that understands Macedonian math terminology. The PDF factory generates tests for me in 2 minutes.",
+      "author": "Elena V.",
+      "role": "Math teacher",
+      "city": "Ohrid"
+    }
+  ]
 }

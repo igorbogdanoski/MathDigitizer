@@ -22,57 +22,10 @@ const MATH_QUOTES = [
   { text: "Математиката се состои од докажување на најочигледните работи на најмалку очигледен начин.", author: "Џорџ Поја" }
 ];
 
-const HOME_VALUE_POINTS = [
-  'AI екстракција што навистина штеди време во подготовка.',
-  'Педагошки analytics и интервенции наместо само генеративен шум.',
-  'Локално подготвен SaaS модел со Pro и school plan за реални институции.',
-];
-
-const HOME_SIGNAL_CARDS = [
-  { title: 'Teacher-first SaaS', value: '490 MKD', detail: 'месечно за Pro Teacher' },
-  { title: 'Годишна вредност', value: '4,900 MKD', detail: 'најдобра опција за цела година' },
-  { title: 'School rollout', value: 'По договор', detail: 'фактура, банка и onboarding' },
-  { title: 'Локални плаќања', value: 'Директна банка', detail: 'уплата + потврда за рачна активација' },
-];
-
-const HOME_WORKFLOW_STEPS = [
-  { title: 'Екстракција', detail: 'Видео, PDF или слика во структурирани математички задачи.' },
-  { title: 'Педагошка библиотека', detail: 'RAG-ready содржина за повторна употреба, анализа и тестови.' },
-  { title: 'Испорака', detail: 'Материјали, analytics и live classroom workflows од истиот систем.' },
-];
-
-const TESTIMONIALS = [
-  {
-    quote: "MathDigitizer ми заштеди над 5 часа неделно. Наместо рачно внесување задачи, само ги извлекувам со AI и ги зачувувам во библиотека.",
-    author: "Марија К.",
-    role: "Наставничка по математика",
-    city: "Скопје",
-    initials: "МК",
-    avatarClass: "bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300",
-  },
-  {
-    quote: "Live Kahoot сесиите ги направија моите часови интерактивни. Учениците се натпреваруваат меѓу себе — тоа е вистинска промена во ангажираноста.",
-    author: "Тодор М.",
-    role: "Наставник по математика",
-    city: "Битола",
-    initials: "ТМ",
-    avatarClass: "bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300",
-  },
-  {
-    quote: "Конечно систем кој разбира македонски математички термини. PDF фабриката ми генерира тестови за 2 минути.",
-    author: "Елена В.",
-    role: "Наставничка по математика",
-    city: "Охрид",
-    initials: "ЕВ",
-    avatarClass: "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300",
-  },
-];
-
-const PLATFORM_STATS = [
-  { value: "5h", label: "Заштедени часа неделно" },
-  { value: "10x", label: "Поголем ангажман во класот" },
-  { value: "2 мин", label: "PDF тест генерирање" },
-  { value: "100%", label: "Направено за МК училишта" },
+const TESTIMONIAL_AVATARS = [
+  { initials: "МК", avatarClass: "bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300" },
+  { initials: "ТМ", avatarClass: "bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300" },
+  { initials: "ЕВ", avatarClass: "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300" },
 ];
 
 interface HomeProps {
@@ -86,6 +39,11 @@ import { hasProAccess } from '../lib/saas';
 
 export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
   const { t } = useTranslation('home');
+  const valuePoints = t('valuePoints', { returnObjects: true }) as string[];
+  const signalCards = t('signalCards', { returnObjects: true }) as { title: string; value: string; detail: string }[];
+  const workflowSteps = t('workflowSteps', { returnObjects: true }) as { title: string; detail: string }[];
+  const platformStats = t('platformStats', { returnObjects: true }) as { value: string; label: string }[];
+  const testimonials = t('testimonialsList', { returnObjects: true }) as { quote: string; author: string; role: string; city: string }[];
   const navigate = useNavigate();
   const { userProfile } = useAuth();
   const { showToast } = useToast();
@@ -301,7 +259,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
               transition={{ delay: 0.45, duration: 0.8 }}
               className="grid gap-3 mb-8"
             >
-              {HOME_VALUE_POINTS.map((point) => (
+              {valuePoints.map((point) => (
                 <div key={point} className="flex items-start gap-3 text-left">
                   <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
                   <span className="text-slate-200 text-base md:text-lg">{point}</span>
@@ -402,7 +360,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
               </div>
 
               <div className="space-y-4">
-                {HOME_WORKFLOW_STEPS.map((step, index) => (
+                {workflowSteps.map((step, index) => (
                   <div key={step.title} className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm font-black text-cyan-200">0{index + 1}</div>
@@ -433,7 +391,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
       {/* Platform Stats Strip */}
       <section className="max-w-7xl mx-auto px-6 -mt-2">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {PLATFORM_STATS.map((stat) => (
+          {platformStats.map((stat) => (
             <div key={stat.label} className="rounded-4xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/60 p-6 shadow-sm backdrop-blur-xl text-center">
               <div className="text-4xl font-black text-indigo-600 dark:text-indigo-400 mb-2">{stat.value}</div>
               <div className="text-sm font-semibold text-slate-600 dark:text-slate-300">{stat.label}</div>
@@ -533,12 +491,14 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
 
       {/* Testimonials Section */}
       <section className="max-w-7xl mx-auto px-6 py-4">
-        <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-4 text-center tracking-tight">Што велат наставниците</h2>
+        <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-4 text-center tracking-tight">{t('testimonials.title')}</h2>
         <p className="text-slate-500 dark:text-slate-400 text-center mb-12 font-medium max-w-2xl mx-auto">Реални искуства од наставници кои го користат MathDigitizer Pro во македонски училишта.</p>
         <div className="grid gap-6 md:grid-cols-3">
-          {TESTIMONIALS.map((t) => (
+          {testimonials.map((testimonial, idx) => {
+            const avatar = TESTIMONIAL_AVATARS[idx] ?? TESTIMONIAL_AVATARS[0];
+            return (
             <motion.div
-              key={t.author}
+              key={testimonial.author}
               whileHover={{ y: -4 }}
               className="rounded-5xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-8 shadow-sm hover:shadow-lg transition-all duration-300 backdrop-blur-xl flex flex-col"
             >
@@ -548,26 +508,27 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
                 ))}
               </div>
               <blockquote className="text-slate-700 dark:text-slate-200 text-base leading-relaxed mb-8 flex-1 font-medium italic">
-                "{t.quote}"
+                "{testimonial.quote}"
               </blockquote>
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm shrink-0 ${t.avatarClass}`}>
-                  {t.initials}
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm shrink-0 ${avatar.avatarClass}`}>
+                  {avatar.initials}
                 </div>
                 <div>
-                  <div className="font-black text-slate-900 dark:text-white text-sm">{t.author}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">{t.role} · {t.city}</div>
+                  <div className="font-black text-slate-900 dark:text-white text-sm">{testimonial.author}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">{testimonial.role} · {testimonial.city}</div>
                 </div>
               </div>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
       {/* Social Proof / Value Signals — positioned after features to build trust before pricing */}
       <section className="max-w-7xl mx-auto px-6 pb-8">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {HOME_SIGNAL_CARDS.map((card) => (
+          {signalCards.map((card) => (
             <div key={card.title} className="rounded-4xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/60 p-6 shadow-sm backdrop-blur-xl">
               <div className="text-xs font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 mb-3">{card.title}</div>
               <div className="text-3xl font-black text-slate-900 dark:text-white mb-2">{card.value}</div>
