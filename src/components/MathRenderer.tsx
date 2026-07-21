@@ -59,7 +59,54 @@ function sanitizeLatex(source: string): string {
     return segment;
   });
 
+  // Normalize common AI mistakes
+  text = text
+    // Fix double subscripts/superscripts: x_1_2 → x_{12}
+    .replace(/([a-zA-Z])_(\d)_(\d)/g, '$1_{$2$3}')
+    // Fix missing braces in fractions: \frac12 → \frac{1}{2}
+    .replace(/\\frac(\d)(\d)/g, '\\frac{$1}{$2}')
+    // Fix \sqrt without braces: \sqrt2 → \sqrt{2}
+    .replace(/\\sqrt(\d+)/g, '\\sqrt{$1}')
+    // Normalize \cdot vs \times (prefer \cdot for multiplication)
+    .replace(/\\times(?=\s*\d)/g, '\\cdot')
+    // Fix missing \ in common commands
+    .replace(/(?<![\\])sin(?=\s*[\(\{])/g, '\\sin')
+    .replace(/(?<![\\])cos(?=\s*[\(\{])/g, '\\cos')
+    .replace(/(?<![\\])tan(?=\s*[\(\{])/g, '\\tan')
+    .replace(/(?<![\\])log(?=\s*[\(\{])/g, '\\log')
+    .replace(/(?<![\\])ln(?=\s*[\(\{])/g, '\\ln')
+    // Fix double equals: x==5 → x=5
+    .replace(/==/g, '=')
+    // Fix missing spaces around equals in display math
+    .replace(/\$\$([^$]+)\$\$/g, (match, content) => {
+      // Add proper spacing around = in aligned environments
+      const aligned = content.replace(/([^=\s])=([^=\s])/g, '$1 &= $2');
+      return `$$${aligned}$$`;
+    });
+
   return text;
+}
+
+// Convert long equations to aligned environment for better readability
+function normalizeLongEquation(latex: string): string {
+  // If the equation is very long and contains multiple = signs,
+  // convert to aligned environment
+  const equalsCount = (latex.match(/=/g) || []).length;
+  const isLong = latex.length > 100;
+
+  if (equalsCount >= 2 && isLong && !latex.includes('\\begin{aligned}')) {
+    // Split by = and create aligned environment
+    const parts = latex.split('=').map(p => p.trim());
+    if (parts.length >= 3) {
+      const aligned = parts.map((part, i) => {
+        if (i === 0) return part;
+        return `&= ${part}`;
+      }).join(' \\\\\n');
+      return `\\begin{aligned}\n${aligned}\n\\end{aligned}`;
+    }
+  }
+
+  return latex;
 }
 
 // Never throw on unrecoverable LaTeX: render a subdued inline error span
