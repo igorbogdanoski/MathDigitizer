@@ -1,0 +1,70 @@
+{
+  "title": "Zgjidhni planin tuaj",
+  "subtitle": "Filloni falas, përmirësoni kur të jeni gati",
+  "monthly": "Mujor",
+  "annual": "Vjetor",
+  "savePercent": "Kurseni {{percent}}%",
+  "perMonth": "/muaj",
+  "perYear": "/vit",
+  "freePlan": {
+    "name": "Falas",
+    "price": "0",
+    "description": "Për mësues individualë që duan të provojnë",
+    "features": [
+      "3 dixhitalizime në ditë",
+      "Ekstraktim bazë nga PDF",
+      "5 kartela",
+      "Mbështetje nga komuniteti"
+    ]
+  },
+  "proPlan": {
+    "name": "Pro Teacher",
+    "priceMonthly": "490",
+    "priceAnnual": "4900",
+    "description": "Për mësues profesionistë dhe shkolla",
+    "features": [
+      "Dixhitalizime të pakufizuara",
+      "Vlerësim dhe analizë me AI",
+      "Kartela të pakufizuara",
+      "Pedagogji e avancuar",
+      "Mbështetje prioritare",
+      "Të gjitha veçoritë e ardhshme"
+    ],
+    "bestValue": "Vlera më e mirë",
+    "recommended": "Rekomanduar"
+  },
+  "schoolPlan": {
+    "name": "Shkollë",
+    "price": "Me porosi",
+    "description": "Për shkolla dhe institucione arsimore",
+    "features": [
+      "Gjithçka në Pro Teacher",
+      "Mësues të pakufizuar",
+      "Profile nxënësish",
+      "Administrim i centralizuar",
+      "Trajnim dhe mbështetje",
+      "Integrime të personalizuara"
+    ],
+    "contactUs": "Na kontaktoni"
+  },
+  "startFreeTrial": "Filloni provën falas",
+  "subscribeNow": "Abonohuni tani",
+  "contactSales": "Kontaktoni shitjet",
+  "trialDays": "7 ditë provë falas",
+  "noCreditCard": "Nuk kërkohet kartë krediti",
+  "cancelAnytime": "Anuloni në çdo kohë",
+  "paymentMethods": {
+    "bank": "Transfertë bankare",
+    "paypal": "PayPal",
+    "invoice": "Faturë"
+  },
+  "faq": {
+    "title": "Pyetjet e bëra shpesh",
+    "q1": "A mund ta ndryshoj planin më vonë?",
+    "a1": "Po, mund të përmirësoni ose të ulni në çdo kohë.",
+    "q2": "A ka zbritje për shkollat?",
+    "a2": "Po, na kontaktoni për oferta speciale për shkolla.",
+    "q3": "Si funksionon prova?",
+    "a3": "7 ditë akses i plotë në të gjitha veçoritë Pro, pa angazhim."
+  }
+}

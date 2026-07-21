@@ -9,6 +9,7 @@ import { RoleSelection } from './RoleSelection';
 import { OnboardingWizard } from './OnboardingWizard';
 import { GlobalAITutor } from './GlobalAITutor';
 import { CommandPalette, type CommandPaletteItem } from './CommandPalette';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { SEO } from './SEO';
 import { getRouteSeo } from '../lib/seo';
 import { isOnTrial, trialDaysRemaining, hasProAccess } from '../lib/saas';
@@ -347,6 +348,9 @@ export const Layout: React.FC = () => {
               <span className="hidden 2xl:inline">Пребарај</span>
               <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-[10px] font-bold">Ctrl K</kbd>
             </button>
+
+            {/* Language switcher */}
+            <LanguageSwitcher />
 
             {/* Quick theme toggle (always visible, instant feedback) */}
             <button

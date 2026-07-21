@@ -1,0 +1,52 @@
+{
+  "hero": {
+    "title": "Dixhitalizoni matematikën në sekonda",
+    "subtitle": "Platformë e fuqizuar me AI për mësues — nga teksti i skanuar te problemi interaktiv",
+    "cta": "Filloni falas",
+    "watchDemo": "Shikoni demonstrimin"
+  },
+  "features": {
+    "title": "Gjithçka që ju nevojitet për mësimdhënie moderne",
+    "ocr": {
+      "title": "Ekstraktim OCR",
+      "description": "Nxirrni probleme nga PDF, imazhe ose video YouTube me precizion AI"
+    },
+    "grading": {
+      "title": "Vlerësim me AI",
+      "description": "Vlerësim automatik i detyrave dhe testeve me feedback të detajuar"
+    },
+    "flashcards": {
+      "title": "Kartela",
+      "description": "Gjeneroni dhe ndani kartela me përsëritje të hapësiruar"
+    },
+    "analytics": {
+      "title": "Analitika",
+      "description": "Ndjekni përparimin e nxënësve me raporte të detajuara"
+    },
+    "materials": {
+      "title": "Gjenerim materialesh",
+      "description": "Krijoni teste, fletë pune dhe prezantime me pak klikime"
+    },
+    "pedagogy": {
+      "title": "Mbështetje pedagogjike",
+      "description": "Asistent AI për strategji dhe ndërhyrje pedagogjike"
+    }
+  },
+  "stats": {
+    "tasks": "Detyra të dixhitalizuara",
+    "teachers": "Mësues aktivë",
+    "accuracy": "Precizion AI"
+  },
+  "testimonials": {
+    "title": "Çfarë thonë mësuesit",
+    "quote1": "MathDigitizer më kursen orë çdo javë. Ekstraktimi OCR është i mrekullueshëm!",
+    "author1": "Ana Jovanovska, mësuese matematike",
+    "quote2": "Më në fund një mjet i bërë për mësuesit maqedonas. Vlerësimi me AI është i shkëlqyer.",
+    "author2": "Marko Petrovski, profesor"
+  },
+  "cta": {
+    "title": "Gati për të filluar?",
+    "subtitle": "Bashkohuni me qindra mësues që tashmë përdorin platformën",
+    "button": "Filloni falas sot"
+  }
+}

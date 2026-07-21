@@ -1,0 +1,70 @@
+{
+  "title": "Choose your plan",
+  "subtitle": "Start free, upgrade when you're ready",
+  "monthly": "Monthly",
+  "annual": "Annual",
+  "savePercent": "Save {{percent}}%",
+  "perMonth": "/month",
+  "perYear": "/year",
+  "freePlan": {
+    "name": "Free",
+    "price": "0",
+    "description": "For individual teachers who want to try",
+    "features": [
+      "3 digitizations per day",
+      "Basic PDF extraction",
+      "5 flashcards",
+      "Community support"
+    ]
+  },
+  "proPlan": {
+    "name": "Pro Teacher",
+    "priceMonthly": "490",
+    "priceAnnual": "4900",
+    "description": "For professional teachers and schools",
+    "features": [
+      "Unlimited digitizations",
+      "AI grading and analysis",
+      "Unlimited flashcards",
+      "Advanced pedagogy",
+      "Priority support",
+      "All future features"
+    ],
+    "bestValue": "Best Value",
+    "recommended": "Recommended"
+  },
+  "schoolPlan": {
+    "name": "School",
+    "price": "Custom",
+    "description": "For schools and educational institutions",
+    "features": [
+      "Everything in Pro Teacher",
+      "Unlimited teachers",
+      "Student profiles",
+      "Centralized administration",
+      "Training and support",
+      "Custom integrations"
+    ],
+    "contactUs": "Contact us"
+  },
+  "startFreeTrial": "Start free trial",
+  "subscribeNow": "Subscribe now",
+  "contactSales": "Contact sales",
+  "trialDays": "7-day free trial",
+  "noCreditCard": "No credit card required",
+  "cancelAnytime": "Cancel anytime",
+  "paymentMethods": {
+    "bank": "Bank transfer",
+    "paypal": "PayPal",
+    "invoice": "Invoice"
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "q1": "Can I change my plan later?",
+    "a1": "Yes, you can upgrade or downgrade at any time.",
+    "q2": "Is there a discount for schools?",
+    "a2": "Yes, contact us for special school offers.",
+    "q3": "How does the trial work?",
+    "a3": "7 days full access to all Pro features, no commitment."
+  }
+}

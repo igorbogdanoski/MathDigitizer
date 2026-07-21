@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
 import App from './App.tsx';
 import './index.css';
+import './i18n'; // Initialize i18n
 
 Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN,
