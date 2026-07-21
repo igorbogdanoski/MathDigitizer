@@ -3,6 +3,11 @@ import { Helmet } from 'react-helmet-async';
 
 type JsonLdPayload = Record<string, unknown>;
 
+interface HreflangAlternate {
+  lang: string;
+  href: string;
+}
+
 interface SEOProps {
   title: string;
   description?: string;
@@ -15,11 +20,12 @@ interface SEOProps {
   locale?: string;
   twitterCard?: 'summary' | 'summary_large_image';
   structuredData?: JsonLdPayload | JsonLdPayload[];
+  hreflangAlternates?: HreflangAlternate[];
 }
 
-export const SEO: React.FC<SEOProps> = ({ 
-  title, 
-  description = "MathDigitizer Pro - Напредна AI Едукација на македонски јазик.", 
+export const SEO: React.FC<SEOProps> = ({
+  title,
+  description = "MathDigitizer Pro - Напредна AI Едукација на македонски јазик.",
   keywords = "математика, образование, AI тутор, генератор на задачи",
   type = "website",
   canonical,
@@ -28,7 +34,8 @@ export const SEO: React.FC<SEOProps> = ({
   siteName = 'MathDigitizer Pro',
   locale = 'mk_MK',
   twitterCard = 'summary_large_image',
-  structuredData
+  structuredData,
+  hreflangAlternates
 }) => {
   const siteTitle = `${title} | ${siteName}`;
   const canonicalHref = canonical && typeof window !== 'undefined'
@@ -53,7 +60,15 @@ export const SEO: React.FC<SEOProps> = ({
       <meta name="keywords" content={keywords} />
       <meta name="robots" content={robotsContent} />
       {canonicalHref && <link rel="canonical" href={canonicalHref} />}
-      
+
+      {/* Hreflang alternates for multilingual SEO */}
+      {hreflangAlternates?.map((alt) => (
+        <link key={`hreflang-${alt.lang}`} rel="alternate" hrefLang={alt.lang} href={alt.href} />
+      ))}
+      {hreflangAlternates && hreflangAlternates.length > 0 && (
+        <link rel="alternate" hrefLang="x-default" href={hreflangAlternates[0].href} />
+      )}
+
       {/* Open Graph */}
       <meta property="og:title" content={siteTitle} />
       <meta property="og:description" content={description} />
