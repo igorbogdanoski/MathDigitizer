@@ -716,11 +716,16 @@ ${JSON.stringify(tasks.map(t => ({ title: t.title, text: t.original_text, topic:
   }
 }
 
-export async function generateSimilarTask(originalTask: MathTask, style: 'traditional' | 'real-world' | 'modern' = 'traditional'): Promise<MathTask> {
+export async function generateSimilarTask(originalTask: MathTask, style: 'traditional' | 'real-world' | 'modern' = 'traditional', language: string = 'mk'): Promise<MathTask> {
   const stylePrompt =
     style === 'modern' ? 'Користи модерен Gen-Z контекст (гејминг, социјални мрежи, криптовалути).' :
     style === 'real-world' ? 'Користи контекст од реалниот свет и секојдневниот живот (бизнис, готвење, патување).' :
     'Користи традиционален, академски наставен контекст.';
+
+  const languagePrompt = 
+    language === 'en' ? 'Use English language.' :
+    language === 'al' ? 'Përdor gjuhën shqipe.' :
+    'Користи македонски јазик.';
 
   const curriculumQuery = [
     originalTask.curriculum_topic,
@@ -739,7 +744,7 @@ ${originalTask.original_text}
 ПРАВИЛА:
 1. Задачата мора да биде на истото ниво на тежина (${originalTask.difficulty}) и DoK ниво (${originalTask.dok_level}).
 2. Задачата МОРА да биде усогласена со официјалните исходи на БРО наведени погоре.
-3. Користи македонски јазик.
+3. ${languagePrompt}
 4. Врати го резултатот СТРОГО како еден JSON објект кој ја следи истата структура како оригиналот.
 5. Осигурај се дека решението е математички точно.`;
 
@@ -1046,7 +1051,12 @@ ${originalTask.original_text}
 
 export type MaterialType = 'worksheet' | 'test' | 'collection' | 'quiz' | 'presentation' | 'flashcards' | 'homework' | 'study_guide';
 
-export async function generateLessonPlan(tasks: MathTask[], gradeLevel: string, topicName: string) {
+export async function generateLessonPlan(tasks: MathTask[], gradeLevel: string, topicName: string, language: string = 'mk') {
+  const languagePrompt = 
+    language === 'en' ? 'Use English language and professional terminology.' :
+    language === 'al' ? 'Përdor gjuhën shqipe dhe terminologji profesionale.' :
+    'Користи македонски јазик, стручна терминологија и беспрекорен LaTeX за формулите.';
+
   const prompt = `Ти си Експерт Методичар за математика според стандардите на БРО (Биро за развој на образованието) во Македонија.
 Корисникот сака да генерира формална "Дневна подготовка за час" базирана на овие избрани задачи:
 
@@ -1064,8 +1074,8 @@ ${JSON.stringify(tasks.map(t => ({ title: t.title, text: t.original_text, tags: 
    - Завршен дел (5-10 мин) - сумирање, домашна работа.
 3. Формативно оценување: Инструменти и прашања за проверка на разбирањето.
 
-Врати го одговорот ВО СТРОГО JSON ФОРМАТ. 
-Користи македонски јазик, стручна терминологија и беспрекорен LaTeX за формулите.
+Врати го одговорот ВО СТРОГО JSON ФОРМАТ.
+${languagePrompt}
 
 СТРУКТУРА НА ОДГОВОРОТ (JSON):
 {
