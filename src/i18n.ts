@@ -19,6 +19,7 @@ import mkLibrary from './locales/mk/library.json';
 import mkExtraction from './locales/mk/extraction.json';
 import mkDashboard from './locales/mk/dashboard.json';
 import mkFlashcards from './locales/mk/flashcards.json';
+import mkGradebook from './locales/mk/gradebook.json';
 
 import enCommon from './locales/en/common.json';
 import enNavigation from './locales/en/navigation.json';
@@ -28,6 +29,7 @@ import enLibrary from './locales/en/library.json';
 import enExtraction from './locales/en/extraction.json';
 import enDashboard from './locales/en/dashboard.json';
 import enFlashcards from './locales/en/flashcards.json';
+import enGradebook from './locales/en/gradebook.json';
 
 import alCommon from './locales/al/common.json';
 import alNavigation from './locales/al/navigation.json';
@@ -37,6 +39,7 @@ import alLibrary from './locales/al/library.json';
 import alExtraction from './locales/al/extraction.json';
 import alDashboard from './locales/al/dashboard.json';
 import alFlashcards from './locales/al/flashcards.json';
+import alGradebook from './locales/al/gradebook.json';
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'mk', name: 'Македонски', flag: '🇲🇰' },
@@ -60,6 +63,7 @@ i18n
         extraction: mkExtraction,
         dashboard: mkDashboard,
         flashcards: mkFlashcards,
+        gradebook: mkGradebook,
       },
       en: {
         common: enCommon,
@@ -70,6 +74,7 @@ i18n
         extraction: enExtraction,
         dashboard: enDashboard,
         flashcards: enFlashcards,
+        gradebook: enGradebook,
       },
       al: {
         common: alCommon,
@@ -80,11 +85,12 @@ i18n
         extraction: alExtraction,
         dashboard: alDashboard,
         flashcards: alFlashcards,
+        gradebook: alGradebook,
       },
     },
     fallbackLng: 'mk',
     defaultNS: 'common',
-    ns: ['common', 'navigation', 'pricing', 'home', 'library', 'extraction', 'dashboard', 'flashcards'],
+    ns: ['common', 'navigation', 'pricing', 'home', 'library', 'extraction', 'dashboard', 'flashcards', 'gradebook'],
     
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
