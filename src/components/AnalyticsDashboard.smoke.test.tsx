@@ -3,23 +3,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
+import { ToastProvider } from '@/src/contexts/ToastContext';
 
-const mockGetDocs = vi.fn();
-const mockHasProAccess = vi.fn();
-
-vi.mock('../contexts/AuthContext', () => ({
-  useAuth: () => ({ user: { uid: 'u1' }, userProfile: { role: 'teacher' } }),
+const { mockGetDocs, mockUseAuth } = vi.hoisted(() => ({
+  mockGetDocs: vi.fn(),
+  mockUseAuth: vi.fn(),
 }));
 
-vi.mock('../contexts/ToastContext', () => ({
-  useToast: () => ({ showToast: vi.fn() }),
+vi.mock('@/src/contexts/AuthContext', () => ({
+  useAuth: () => mockUseAuth(),
 }));
 
-vi.mock('../lib/saas', () => ({
-  hasProAccess: (...args: unknown[]) => mockHasProAccess(...args),
-}));
-
-vi.mock('../lib/firebase', () => ({
+vi.mock('@/src/lib/firebase', () => ({
   db: {},
 }));
 
@@ -31,37 +26,41 @@ vi.mock('firebase/firestore', () => ({
   getDocs: (...args: unknown[]) => mockGetDocs(...args),
 }));
 
-vi.mock('../lib/gemini', () => ({
+vi.mock('@/src/lib/gemini', () => ({
   generateInterventionPlan: vi.fn(),
 }));
 
 describe('AnalyticsDashboard smoke', () => {
   beforeEach(() => {
     mockGetDocs.mockReset();
-    mockHasProAccess.mockReset();
+    mockUseAuth.mockReset();
   });
 
   it('shows the Pro feature gate for non-Pro users instead of the analytics dashboard', () => {
-    mockHasProAccess.mockReturnValue(false);
+    mockUseAuth.mockReturnValue({ user: { uid: 'u1' }, userProfile: { role: 'teacher' } });
     mockGetDocs.mockResolvedValue({ docs: [] });
 
     render(
-      <MemoryRouter>
-        <AnalyticsDashboard />
-      </MemoryRouter>
+      <ToastProvider>
+        <MemoryRouter>
+          <AnalyticsDashboard />
+        </MemoryRouter>
+      </ToastProvider>
     );
 
     expect(screen.getByText(/Advanced Analytics/i)).toBeInTheDocument();
   });
 
   it('shows an empty-data state for Pro users with no graded submissions yet', async () => {
-    mockHasProAccess.mockReturnValue(true);
+    mockUseAuth.mockReturnValue({ user: { uid: 'u1' }, userProfile: { role: 'teacher', isPro: true } });
     mockGetDocs.mockResolvedValue({ docs: [] });
 
     render(
-      <MemoryRouter>
-        <AnalyticsDashboard />
-      </MemoryRouter>
+      <ToastProvider>
+        <MemoryRouter>
+          <AnalyticsDashboard />
+        </MemoryRouter>
+      </ToastProvider>
     );
 
     expect(await screen.findByText(/Отсуство на емпириски податоци/i)).toBeInTheDocument();

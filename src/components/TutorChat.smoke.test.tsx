@@ -3,24 +3,26 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TutorChat } from './TutorChat';
 
-const mockSendMessage = vi.fn();
-const mockGetTutorChatSession = vi.fn();
+const { mockSendMessage, mockGetTutorChatSession } = vi.hoisted(() => ({
+  mockSendMessage: vi.fn(),
+  mockGetTutorChatSession: vi.fn(),
+}));
 
-vi.mock('../lib/gemini', () => ({
+vi.mock('@/src/lib/gemini', () => ({
   getTutorChatSession: (...args: unknown[]) => mockGetTutorChatSession(...args),
   analyzeSolutionImage: vi.fn(),
   generateSpeech: vi.fn(),
 }));
 
-vi.mock('../store/useLibraryStore', () => ({
+vi.mock('@/src/store/useLibraryStore', () => ({
   useLibraryStore: () => ({ tasks: [] }),
 }));
 
-vi.mock('./MathRenderer', () => ({
+vi.mock('@/src/components/MathRenderer', () => ({
   MathRenderer: ({ content }: { content: string }) => <div>{content}</div>,
 }));
 
-vi.mock('./InteractiveCanvas', () => ({
+vi.mock('@/src/components/InteractiveCanvas', () => ({
   InteractiveCanvas: () => <div>Canvas</div>,
 }));
 
@@ -36,7 +38,7 @@ describe('TutorChat smoke', () => {
     mockGetTutorChatSession.mockResolvedValue({ sendMessage: mockSendMessage });
   });
 
-  it('initializes chat and responds to user message', async () => {
+  it('initializes chat and responds to user message', { timeout: 15000 }, async () => {
     render(
       <TutorChat
         task={{

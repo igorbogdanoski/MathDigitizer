@@ -2,35 +2,33 @@ import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SmartGrader } from './SmartGrader';
-import { MathTask } from '../lib/schema';
+import { ToastProvider } from '@/src/contexts/ToastContext';
 
-const TASKS: MathTask[] = [
-  {
-    id: '1',
-    type: 'task',
-    title: 'Квадратна равенка',
-    original_text: 'Реши ја равенката x^2 - 5x + 6 = 0',
-    solution_steps: [],
-    latex_formulas: [],
-    source_url: '',
-    difficulty: 'medium',
-    tags: [],
-  },
-];
+const { TASKS } = vi.hoisted(() => ({
+  TASKS: [
+    {
+      id: '1',
+      type: 'task',
+      title: 'Квадратна равенка',
+      original_text: 'Реши ја равенката x^2 - 5x + 6 = 0',
+      solution_steps: [],
+      latex_formulas: [],
+      source_url: '',
+      difficulty: 'medium',
+      tags: [],
+    },
+  ],
+}));
 
-vi.mock('../store/useLibraryStore', () => ({
+vi.mock('@/src/store/useLibraryStore', () => ({
   useLibraryStore: () => ({ tasks: TASKS }),
 }));
 
-vi.mock('../contexts/AuthContext', () => ({
+vi.mock('@/src/contexts/AuthContext', () => ({
   useAuth: () => ({ user: { uid: 'u1' } }),
 }));
 
-vi.mock('../contexts/ToastContext', () => ({
-  useToast: () => ({ showToast: vi.fn() }),
-}));
-
-vi.mock('../lib/firebase', () => ({
+vi.mock('@/src/lib/firebase', () => ({
   db: {},
 }));
 
@@ -44,7 +42,7 @@ vi.mock('firebase/firestore', () => ({
   limit: vi.fn(),
 }));
 
-vi.mock('../lib/gemini', () => ({
+vi.mock('@/src/lib/gemini', () => ({
   analyzeSolutionImage: vi.fn(),
   generateTargetedPracticeTasks: vi.fn(),
   analyzeBatchTestImage: vi.fn(),
@@ -52,7 +50,11 @@ vi.mock('../lib/gemini', () => ({
 
 describe('SmartGrader smoke', () => {
   it('keeps the analyze button disabled until both a task and an image are selected (single mode)', () => {
-    render(<SmartGrader />);
+    render(
+      <ToastProvider>
+        <SmartGrader />
+      </ToastProvider>
+    );
 
     const analyzeButton = screen.getByRole('button', { name: /Оцени ракопис/i });
     expect(analyzeButton).toBeDisabled();
@@ -63,7 +65,11 @@ describe('SmartGrader smoke', () => {
   });
 
   it('switching to batch mode removes the task-selection requirement but still requires an image', () => {
-    render(<SmartGrader />);
+    render(
+      <ToastProvider>
+        <SmartGrader />
+      </ToastProvider>
+    );
 
     fireEvent.click(screen.getByRole('button', { name: /Бач \(Цел Тест\)/i }));
 
@@ -72,7 +78,11 @@ describe('SmartGrader smoke', () => {
   });
 
   it('filters the task list by search query in single mode', () => {
-    render(<SmartGrader />);
+    render(
+      <ToastProvider>
+        <SmartGrader />
+      </ToastProvider>
+    );
 
     expect(screen.getByText('Квадратна равенка')).toBeInTheDocument();
 

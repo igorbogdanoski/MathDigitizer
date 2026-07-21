@@ -198,6 +198,125 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  // ─── Billing API ────────────────────────────────────────────────────────────
+
+  /**
+   * POST /api/billing/verify-payment
+   * Admin-only: approve or reject a payment receipt.
+   * On approval, activates Pro for the user in Firestore.
+   */
+  app.post("/api/billing/verify-payment", requireAuth, async (req, res) => {
+    try {
+      if (!firebaseAdminInitialized) {
+        return res.status(503).json({ error: "Firebase Admin not configured" });
+      }
+
+      const { receiptId, action, reviewNote } = req.body || {};
+      if (!receiptId || !["approve", "reject"].includes(action)) {
+        return res.status(400).json({ error: "receiptId and action (approve|reject) are required" });
+      }
+
+      const adminUid = (req as any).user?.uid;
+      const adminEmail = (req as any).user?.email;
+
+      // Only allow admin emails to verify payments
+      const adminAllowlist = (process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAIL || "")
+        .split(",").map((e: string) => e.trim().toLowerCase()).filter(Boolean);
+      if (!adminAllowlist.includes(adminEmail?.toLowerCase())) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+
+      const db = admin.firestore();
+      const receiptRef = db.collection("payment_receipts").doc(receiptId);
+      const receiptSnap = await receiptRef.get();
+
+      if (!receiptSnap.exists) {
+        return res.status(404).json({ error: "Receipt not found" });
+      }
+
+      const receipt = receiptSnap.data()!;
+      const newStatus = action === "approve" ? "approved" : "rejected";
+
+      await receiptRef.update({
+        status: newStatus,
+        reviewed_by: adminEmail,
+        reviewed_at: new Date().toISOString(),
+        review_note: reviewNote || "",
+      });
+
+      // Activate Pro on approval
+      if (action === "approve" && receipt.requester_uid) {
+        const userRef = db.collection("users").doc(receipt.requester_uid);
+        await userRef.set({
+          isPro: true,
+          proStartedAt: new Date().toISOString(),
+          paymentChannel: receipt.payment_channel || "bank",
+        }, { merge: true });
+      }
+
+      return res.json({
+        success: true,
+        status: newStatus,
+        proActivated: action === "approve",
+      });
+    } catch (error: any) {
+      console.error("[Billing] verify-payment failed:", error?.message || error);
+      return res.status(500).json({ error: "Payment verification failed" });
+    }
+  });
+
+  /**
+   * GET /api/billing/status
+   * Returns the authenticated user's billing/subscription status.
+   */
+  app.get("/api/billing/status", requireAuth, async (req, res) => {
+    try {
+      if (!firebaseAdminInitialized) {
+        return res.status(503).json({ error: "Firebase Admin not configured" });
+      }
+
+      const uid = (req as any).user?.uid;
+      if (!uid) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const db = admin.firestore();
+      const userSnap = await db.collection("users").doc(uid).get();
+      const userData = userSnap.exists ? userSnap.data()! : {};
+
+      // Fetch user's payment receipts
+      const receiptsSnap = await db.collection("payment_receipts")
+        .where("requester_uid", "==", uid)
+        .orderBy("created_at", "desc")
+        .limit(20)
+        .get();
+
+      const receipts = receiptsSnap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
+
+      const isPro = Boolean(userData.isPro);
+      const trialStartedAt = userData.trialStartedAt as string | undefined;
+      let trialDaysRemaining = 0;
+      if (trialStartedAt && !isPro) {
+        const elapsed = Math.floor((Date.now() - new Date(trialStartedAt).getTime()) / 86_400_000);
+        trialDaysRemaining = Math.max(0, 7 - elapsed);
+      }
+
+      return res.json({
+        isPro,
+        trialDaysRemaining,
+        proStartedAt: userData.proStartedAt || null,
+        paymentChannel: userData.paymentChannel || null,
+        receipts,
+      });
+    } catch (error: any) {
+      console.error("[Billing] status failed:", error?.message || error);
+      return res.status(500).json({ error: "Failed to fetch billing status" });
+    }
+  });
+
   // Public key config endpoint is disabled by default in production.
   // Enable only when strictly needed via ALLOW_PUBLIC_API_CONFIG=true.
   app.get("/api/config", (req, res) => {

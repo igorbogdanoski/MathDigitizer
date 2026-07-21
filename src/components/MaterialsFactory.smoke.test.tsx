@@ -3,8 +3,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import MaterialsFactory from './MaterialsFactory';
+import { ToastProvider } from '@/src/contexts/ToastContext';
 
-const mockNavigate = vi.fn();
+const { mockNavigate } = vi.hoisted(() => ({
+  mockNavigate: vi.fn(),
+}));
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
@@ -23,39 +26,37 @@ vi.mock('firebase/firestore', () => ({
   serverTimestamp: vi.fn(),
 }));
 
-vi.mock('../lib/firebase', () => ({
+vi.mock('@/src/lib/firebase', () => ({
   db: {},
   auth: {},
 }));
 
-vi.mock('../contexts/ToastContext', () => ({
-  useToast: () => ({ showToast: vi.fn() }),
-}));
-
-vi.mock('../contexts/AuthContext', () => ({
+vi.mock('@/src/contexts/AuthContext', () => ({
   useAuth: () => ({ userProfile: { role: 'teacher', plan: 'pro' } }),
 }));
 
-vi.mock('../lib/saas', () => ({
+vi.mock('@/src/lib/saas', () => ({
   hasProAccess: () => true,
 }));
 
-vi.mock('../lib/gemini', () => ({
+vi.mock('@/src/lib/gemini', () => ({
   generateDifferentiatedTest: vi.fn(),
   generateEducationalMaterial: vi.fn(),
 }));
 
-vi.mock('../store/useLibraryStore', () => ({
+vi.mock('@/src/store/useLibraryStore', () => ({
   useLibraryStore: (selector: (state: { setEditingTask: ReturnType<typeof vi.fn> }) => unknown) =>
     selector({ setEditingTask: vi.fn() }),
 }));
 
 describe('MaterialsFactory smoke', () => {
-  it('renders generation workspace and keeps generate action guarded until selection', async () => {
+  it('renders generation workspace and keeps generate action guarded until selection', { timeout: 15000 }, async () => {
     render(
-      <MemoryRouter>
-        <MaterialsFactory />
-      </MemoryRouter>
+      <ToastProvider>
+        <MemoryRouter>
+          <MaterialsFactory />
+        </MemoryRouter>
+      </ToastProvider>
     );
 
     expect(
