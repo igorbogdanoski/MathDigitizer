@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { BrainCircuit, BookOpen, Factory, Wand2, ArrowRight, Sparkles, Quote, Play, Square, Info, X, FileText, Cpu, ShieldCheck, CheckCircle, FileType2, Zap, Users, Star } from 'lucide-react';
 import { Button } from './ui/Button';
 import { generateSpeech } from '../lib/gemini';
@@ -84,6 +85,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { hasProAccess } from '../lib/saas';
 
 export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
+  const { t } = useTranslation('home');
   const navigate = useNavigate();
   const { userProfile } = useAuth();
   const { showToast } = useToast();
@@ -268,29 +270,29 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
               </div>
             </motion.div>
 
-            <motion.h1 
+            <motion.h1
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.8, ease: "easeOut" }}
               className="text-5xl md:text-7xl lg:text-[5.6rem] font-black tracking-tight mb-6 leading-[0.92] text-left"
             >
-              Помалку хаос.
+              {t('hero.title').split(' ')[0]}
               <br />
               <span className="relative inline-block mt-2">
                 <span className="absolute -inset-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 blur-2xl opacity-35"></span>
                 <span className="relative text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-indigo-200 to-cyan-200">
-                  Повеќе математика.
+                  {t('hero.title').split(' ').slice(1).join(' ')}
                 </span>
               </span>
             </motion.h1>
 
-            <motion.p 
+            <motion.p
                initial={{ opacity: 0, y: 20 }}
                animate={{ opacity: 1, y: 0 }}
                transition={{ delay: 0.35, duration: 0.8 }}
                className="text-lg md:text-2xl text-slate-300 max-w-3xl mb-8 leading-relaxed font-medium text-left"
             >
-              MathDigitizer е teacher-first AI платформа што спојува <strong className="text-white">екстракција</strong>, <strong className="text-white">педагошка аналитика</strong> и <strong className="text-white">готови classroom workflows</strong> во еден систем што реално штеди време.
+              {t('hero.subtitle')}
             </motion.p>
 
             <motion.div
@@ -616,16 +618,16 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
 
       {/* Modern High-End Footer Teaser for Pricing */}
       <section ref={footerCtaRef} className="max-w-4xl mx-auto px-6 text-center pt-8 border-t border-slate-200 dark:border-slate-800/50 pb-12">
-         <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight transition-colors duration-300">Подготвени да ја трансформирате едукацијата?</h2>
-        <p className="text-slate-500 dark:text-slate-400 font-medium mb-8 transition-colors duration-300">Core користењето останува достапно, а Pro е наменет за наставници што сакаат побрз, посигурен и посериозен workflow.</p>
+         <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight transition-colors duration-300">{t('cta.title')}</h2>
+        <p className="text-slate-500 dark:text-slate-400 font-medium mb-8 transition-colors duration-300">{t('cta.subtitle')}</p>
          {!user ? (
             <Button onClick={signInWithGoogle} className="bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 text-white h-14 px-8 rounded-2xl font-bold font-sans shadow-xl transition-all duration-300">
-               Започнете Сега
+               {t('cta.button')}
             </Button>
          ) : (
             <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
             <Button onClick={() => navigate('/library')} className="bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-500 dark:text-white text-white h-14 px-8 rounded-2xl font-bold font-sans shadow-xl transition-all duration-300">
-                Кон Библиотеката
+                {t('navigation:library')}
               </Button>
               {!isPro && (
                 <Button
