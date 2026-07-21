@@ -275,3 +275,191 @@ export interface MakedoTestDocument {
   created_at: string;
   author_uid: string;
 }
+
+// ─── Gradebook Types ─────────────────────────────────────────────────────────
+
+/** МК систем на оценување: 1-5 (недоволно, доволно, добро, многу добро, одлично) */
+export type MKGrade = 1 | 2 | 3 | 4 | 5;
+
+/** Категории на оцени */
+export type GradeCategory = 'test' | 'homework' | 'project' | 'participation' | 'oral' | 'other';
+
+/** Единечен запис за оценка */
+export interface GradeEntry {
+  id?: string;
+  classroomId: string;
+  studentId: string;
+  studentName: string;
+  taskId?: string; // Поврзано со задача од библиотеката
+  taskTitle?: string;
+  category: GradeCategory;
+  grade: MKGrade;
+  maxPoints?: number; // За процентуално оценување
+  earnedPoints?: number;
+  feedback?: string;
+  gradedAt: string; // ISO date
+  gradedBy: string; // teacher uid
+  term: 'I' | 'II' | 'III' | 'IV'; // Четвртине
+  schoolYear: string; // пр. "2026/2027"
+}
+
+/** Просек по ученик */
+export interface StudentAverage {
+  studentId: string;
+  studentName: string;
+  average: number;
+  totalGrades: number;
+  byCategory: Record<GradeCategory, number>;
+  trend: 'improving' | 'stable' | 'declining';
+}
+
+/** Цел дневник за одделение */
+export interface Gradebook {
+  id?: string;
+  classroomId: string;
+  teacherUid: string;
+  schoolYear: string;
+  term: 'I' | 'II' | 'III' | 'IV';
+  entries: GradeEntry[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Конфигурација за тежини на категории */
+export interface GradeWeightConfig {
+  test: number; // пр. 0.5 (50%)
+  homework: number; // пр. 0.2 (20%)
+  project: number; // пр. 0.2 (20%)
+  participation: number; // пр. 0.1 (10%)
+}
+
+/** Експорт опции */
+export interface GradebookExportOptions {
+  format: 'excel' | 'pdf' | 'csv';
+  includeAverages: boolean;
+  includeFeedback: boolean;
+  includeTrends: boolean;
+  language: 'mk' | 'en' | 'al';
+}
+
+// ─── Task Differentiation Types ──────────────────────────────────────────────
+
+/** Ниво на диференцијација */
+export type DifferentiationLevel = 'support' | 'core' | 'extension';
+
+/** Ниво на помош (hint) */
+export type HintLevel = 1 | 2 | 3;
+
+/** Диференцирана задача */
+export interface DifferentiatedTask {
+  id?: string;
+  baseTaskId: string;
+  baseTaskTitle: string;
+  level: DifferentiationLevel;
+  task: MathTask;
+  scaffolding: string[]; // Чекор-по-чекор помош
+  hints: {
+    level1: string; // Суптилна помош (насока)
+    level2: string; // Средна помош (прв чекор)
+    level3: string; // Голема помош (речиси решение)
+  };
+  successCriteria: string[]; // Што значи "успех"
+  estimatedTime: number; // минути
+  prerequisites: string[]; // Потребни знаења
+  createdAt: string;
+}
+
+/** Резултат од генерирање на диференцијација */
+export interface DifferentiationResult {
+  baseTask: MathTask;
+  variants: {
+    support: DifferentiatedTask;
+    core: DifferentiatedTask;
+    extension: DifferentiatedTask;
+  };
+  pedagogicalNotes: string;
+  bloomLevel: string;
+  dokLevel: number;
+}
+
+/** Конфигурација за диференцијација */
+export interface DifferentiationConfig {
+  generateSupport: boolean;
+  generateExtension: boolean;
+  includeHints: boolean;
+  includeScaffolding: boolean;
+  language: 'mk' | 'en' | 'al';
+}
+
+// ─── Early Warning System Types ──────────────────────────────────────────────
+
+/** Ниво на ризик */
+export type RiskLevel = 'low' | 'medium' | 'high';
+
+/** Фактори за ризик */
+export interface RiskFactors {
+  decliningGrades: boolean; // Оценките опаѓаат
+  missingAssignments: number; // Број на пропуштени задачи
+  lowEngagement: boolean; // Ниска активност
+  timeSinceLastActivity: number; // Денови од последна активност
+  averageGrade: number; // Просечна оценка
+  gradeTrend: 'improving' | 'stable' | 'declining';
+  attendanceRate?: number; // Процент на присуство (0-100)
+  failedTests: number; // Број на паднати тестови (< 2.0)
+}
+
+/** Профил на ризик за ученик */
+export interface StudentRiskProfile {
+  studentId: string;
+  studentName: string;
+  classroomId: string;
+  riskLevel: RiskLevel;
+  riskScore: number; // 0-100 (повисоко = поголем ризик)
+  factors: RiskFactors;
+  recommendedInterventions: string[];
+  lastUpdated: string;
+}
+
+/** Интервенција */
+export interface Intervention {
+  id?: string;
+  studentId: string;
+  studentName: string;
+  classroomId: string;
+  type: 'extra_practice' | 'one_on_one' | 'parent_contact' | 'peer_tutoring' | 'modified_tasks';
+  description: string;
+  assignedAt: string;
+  assignedBy: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  completedAt?: string;
+  notes?: string;
+}
+
+/** Конфигурација за Early Warning */
+export interface EarlyWarningConfig {
+  // Прагови за ризик
+  decliningGradeThreshold: number; // пр. 0.5 (опад за 0.5 оценка)
+  missingAssignmentThreshold: number; // пр. 3 (3 пропуштени)
+  inactivityDaysThreshold: number; // пр. 7 (7 дена неактивност)
+  lowGradeThreshold: number; // пр. 2.5 (под 2.5 е ризик)
+  failedTestThreshold: number; // пр. 2 (2 паднати тестови)
+
+  // Тежини за фактори
+  weights: {
+    decliningGrades: number; // пр. 0.25
+    missingAssignments: number; // пр. 0.20
+    lowEngagement: number; // пр. 0.20
+    lowGrades: number; // пр. 0.25
+    failedTests: number; // пр. 0.10
+  };
+}
+
+/** Резултат од анализа на ризик */
+export interface RiskAnalysisResult {
+  totalStudents: number;
+  lowRisk: number;
+  mediumRisk: number;
+  highRisk: number;
+  students: StudentRiskProfile[];
+  topInterventions: { type: string; count: number }[];
+}

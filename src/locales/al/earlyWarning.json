@@ -1,0 +1,23 @@
+{
+  "title": "Sistemi i Paralajmërimit të Hershëm",
+  "subtitle": "Zbulimi i nxënësve në rrezik",
+  "totalStudents": "Nxënës gjithsej",
+  "lowRisk": "Rrezik i ulët",
+  "mediumRisk": "Rrezik mesatar",
+  "highRisk": "Rrezik i lartë",
+  "riskScore": "Pikët e rrezikut",
+  "all": "Të gjithë",
+  "topInterventions": "Ndërhyrjet më të rekomanduara",
+  "decliningGrades": "Nota në rënie",
+  "lowEngagement": "Angazhim i ulët",
+  "days": "ditë",
+  "lowAverage": "Mesatare e ulët",
+  "failedTests": "Teste të dështuara",
+  "recommendedInterventions": "Ndërhyrje të rekomanduara",
+  "noAtRiskStudents": "Nuk ka nxënës në këtë kategori rreziku",
+  "riskFactors": "Faktorët e rrezikut",
+  "averageGrade": "Mesatarja",
+  "trend": "Trendi",
+  "lastActivity": "Aktiviteti i fundit",
+  "errorLoading": "Gabim gjatë ngarkimit të notave"
+}

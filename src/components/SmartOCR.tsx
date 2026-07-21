@@ -48,6 +48,7 @@ export const SmartOCR: React.FC = () => {
   const [targetLanguage, setTargetLanguage] = useState<'auto' | 'mk' | 'en' | 'ru' | 'tr'>('mk');
   const [enableLogicalReconstruction, setEnableLogicalReconstruction] = useState(true);
   const [ocrModel, setOcrModel] = useState<string>('gemini-3.1-pro-preview');
+  const [visualizationMode, setVisualizationMode] = useState<'none' | 'tikz' | 'geogebra' | 'nanobanana'>('geogebra');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
@@ -436,7 +437,8 @@ export const SmartOCR: React.FC = () => {
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">Визуелизација:</span>
             <select
-              defaultValue="geogebra"
+              value={visualizationMode}
+              onChange={(e) => setVisualizationMode(e.target.value as typeof visualizationMode)}
               title="Визуелизација"
               aria-label="Визуелизација"
               className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 dark:text-slate-200 shadow-sm"
@@ -708,6 +710,33 @@ export const SmartOCR: React.FC = () => {
             )}
             
             <div className="flex-1 p-6 overflow-y-auto">
+              {/* Batch Progress Indicator */}
+              {batchProgress && (
+                <div className="mb-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                      Обработка на слики...
+                    </span>
+                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                      {batchProgress.done} / {batchProgress.total}
+                    </span>
+                  </div>
+                  <div className="w-full bg-indigo-100 dark:bg-indigo-900/50 rounded-full h-2.5">
+                    <div
+                      className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${(batchProgress.done / batchProgress.total) * 100}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-2">
+                    {batchProgress.done === 0
+                      ? 'Започнување...'
+                      : batchProgress.done < batchProgress.total
+                        ? `Обработена слика ${batchProgress.done} од ${batchProgress.total}...`
+                        : 'Завршено!'}
+                  </p>
+                </div>
+              )}
+
               {batchTasks.length > 0 && !latexCode ? (
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">

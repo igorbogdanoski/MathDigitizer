@@ -42,6 +42,9 @@ const VirtualWhiteboardPage = lazy(() => import('./components/live/VirtualWhiteb
 const AIPedagogyCritique = lazy(() => import('./components/AIPedagogyCritique').then((m) => ({ default: m.AIPedagogyCritique })));
 const Pricing = lazy(() => import('./components/Pricing').then((m) => ({ default: m.Pricing })));
 const SchoolInquiriesDashboard = lazy(() => import('./components/SchoolInquiriesDashboard').then((m) => ({ default: m.SchoolInquiriesDashboard })));
+const Gradebook = lazy(() => import('./components/Gradebook').then((m) => ({ default: m.Gradebook })));
+const TaskDifferentiation = lazy(() => import('./components/TaskDifferentiation').then((m) => ({ default: m.TaskDifferentiation })));
+const EarlyWarningDashboard = lazy(() => import('./components/EarlyWarningDashboard').then((m) => ({ default: m.EarlyWarningDashboard })));
 const BlogOcrMath = lazy(() => import('./components/blog/BlogOcrMath').then((m) => ({ default: m.BlogOcrMath })));
 const BlogLatexExtraction = lazy(() => import('./components/blog/BlogLatexExtraction').then((m) => ({ default: m.BlogLatexExtraction })));
 const BlogLiveMathKahoot = lazy(() => import('./components/blog/BlogLiveMathKahoot').then((m) => ({ default: m.BlogLiveMathKahoot })));
@@ -124,7 +127,37 @@ const AppRoutes = () => {
               <AnalyticsDashboard />
             </ProtectedRoute>
           } />
-          
+
+          <Route path="gradebook" element={
+            <ProtectedRoute
+              allowedRoles={['teacher']}
+              authFeatureName="Дневник на оцени"
+              authFeatureDescription="Најави се за да управуваш со оценките на твоите ученици."
+            >
+              <Gradebook />
+            </ProtectedRoute>
+          } />
+
+          <Route path="differentiation" element={
+            <ProtectedRoute
+              allowedRoles={['teacher']}
+              authFeatureName="Диференцијација"
+              authFeatureDescription="Најави се за да генерираш диференцирани задачи."
+            >
+              <TaskDifferentiation />
+            </ProtectedRoute>
+          } />
+
+          <Route path="early-warning" element={
+            <ProtectedRoute
+              allowedRoles={['teacher']}
+              authFeatureName="Early Warning"
+              authFeatureDescription="Најави се за да ги видиш учениците во ризик."
+            >
+              <EarlyWarningDashboard />
+            </ProtectedRoute>
+          } />
+
           <Route path="ai-pedagogy" element={
             <ProtectedRoute
               allowedRoles={['teacher']}

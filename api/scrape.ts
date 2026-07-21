@@ -46,10 +46,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // source is commonly embedded as <script type="math/tex">...</script> or
     // similar — losing these left every scraped page with its formulas
     // silently deleted. Pull them out as inline $...$ markers first.
-    $('script[type*="math/tex"], script[type="math/asciimath"]').each((_, el) => {
+    $('script[type*="math/tex"], script[type="math/asciimath"], script[type="math/mml"]').each((_, el) => {
       const tex = $(el).text().trim();
       if (tex) {
         $(el).replaceWith(` $${tex}$ `);
+      }
+    });
+
+    // Also preserve KaTeX rendered math (span.katex elements)
+    $('.katex, .MathJax, .math').each((_, el) => {
+      const annotation = $(el).find('annotation[encoding="application/x-tex"]').text();
+      if (annotation) {
+        $(el).replaceWith(` $${annotation}$ `);
       }
     });
 
