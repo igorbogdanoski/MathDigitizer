@@ -1,0 +1,52 @@
+{
+  "hero": {
+    "title": "Digitize math in seconds",
+    "subtitle": "AI-powered platform for teachers — from scanned textbook to interactive problem",
+    "cta": "Start for free",
+    "watchDemo": "Watch demo"
+  },
+  "features": {
+    "title": "Everything you need for modern teaching",
+    "ocr": {
+      "title": "OCR Extraction",
+      "description": "Extract problems from PDFs, images, or YouTube videos with AI precision"
+    },
+    "grading": {
+      "title": "AI Grading",
+      "description": "Automatic grading of homework and tests with detailed feedback"
+    },
+    "flashcards": {
+      "title": "Flashcards",
+      "description": "Generate and share flashcards with spaced repetition"
+    },
+    "analytics": {
+      "title": "Analytics",
+      "description": "Track student progress with detailed reports"
+    },
+    "materials": {
+      "title": "Material Generation",
+      "description": "Create tests, worksheets, and presentations in a few clicks"
+    },
+    "pedagogy": {
+      "title": "Pedagogical Support",
+      "description": "AI assistant for pedagogical strategies and interventions"
+    }
+  },
+  "stats": {
+    "tasks": "Digitized tasks",
+    "teachers": "Active teachers",
+    "accuracy": "AI accuracy"
+  },
+  "testimonials": {
+    "title": "What teachers say",
+    "quote1": "MathDigitizer saves me hours every week. The OCR extraction is amazing!",
+    "author1": "Ana Jovanovska, math teacher",
+    "quote2": "Finally a tool made for Macedonian teachers. The AI grading is excellent.",
+    "author2": "Marko Petrovski, professor"
+  },
+  "cta": {
+    "title": "Ready to get started?",
+    "subtitle": "Join hundreds of teachers already using the platform",
+    "button": "Start for free today"
+  }
+}

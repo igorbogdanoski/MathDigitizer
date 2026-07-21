@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, GraduationCap, Inbox, Settings as SettingsIcon, Check, Sparkles, TrendingUp, AlertTriangle, Search } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,6 +10,7 @@ import { RoleSelection } from './RoleSelection';
 import { OnboardingWizard } from './OnboardingWizard';
 import { GlobalAITutor } from './GlobalAITutor';
 import { CommandPalette, type CommandPaletteItem } from './CommandPalette';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { SEO } from './SEO';
 import { getRouteSeo } from '../lib/seo';
 import { isOnTrial, trialDaysRemaining, hasProAccess } from '../lib/saas';
@@ -20,15 +22,10 @@ type ToolGroupKey = 'digitize' | 'generate' | 'teach' | 'analyze' | 'admin';
 
 const TOOL_GROUP_ORDER: ToolGroupKey[] = ['digitize', 'generate', 'teach', 'analyze', 'admin'];
 
-const TOOL_GROUP_LABELS: Record<ToolGroupKey, string> = {
-  digitize: 'Дигитализација и стандарди',
-  generate: 'Генерирање материјали',
-  teach: 'Настава и вежбање',
-  analyze: 'Анализа и педагогија',
-  admin: 'Администрација',
-};
+// Tool group labels are translated via useTranslation in the component
 
 export const Layout: React.FC = () => {
+  const { t } = useTranslation('navigation');
   const { user, userProfile, isLoading, setUserProfile } = useAuth();
   const { dyslexiaMode, toggleDyslexiaMode, dyscalculiaMode, toggleDyscalculiaMode } = useAccessibility();
   const location = useLocation();
@@ -92,13 +89,13 @@ export const Layout: React.FC = () => {
   };
 
   const mainNavItems = [
-    { path: '/', icon: HomeIcon, label: 'Почетна', show: true },
-    { path: '/pricing', icon: Zap, label: 'Pricing', show: true },
+    { path: '/', icon: HomeIcon, label: t('home'), show: true },
+    { path: '/pricing', icon: Zap, label: t('pricing'), show: true },
     { path: '/smart-ocr', icon: ScanLine, label: 'Smart OCR', show: !userProfile || userProfile.role === 'teacher' },
-    { path: '/extract', icon: Wand2, label: 'Екстракција', show: !userProfile || userProfile.role === 'teacher' },
-    { path: '/library', icon: LibraryIcon, label: 'Библиотека', show: true },
-    { path: '/student-dashboard', icon: BookOpen, label: 'Мои Задачи', show: userProfile?.role === 'student' },
-    { path: '/dashboard', icon: Trophy, label: 'Профил', show: !!userProfile && userProfile.role !== 'student' },
+    { path: '/extract', icon: Wand2, label: t('extraction'), show: !userProfile || userProfile.role === 'teacher' },
+    { path: '/library', icon: LibraryIcon, label: t('library'), show: true },
+    { path: '/student-dashboard', icon: BookOpen, label: t('studentDashboard'), show: userProfile?.role === 'student' },
+    { path: '/dashboard', icon: Trophy, label: t('dashboard'), show: !!userProfile && userProfile.role !== 'student' },
   ].filter(item => item.show);
 
   const toolItems = [
@@ -118,15 +115,26 @@ export const Layout: React.FC = () => {
     { path: '/school-inquiries', icon: Inbox, label: 'School Leads', show: userProfile?.role === 'teacher', group: 'admin' as ToolGroupKey },
   ].filter(item => item.show);
 
+  const getGroupLabel = (group: ToolGroupKey): string => {
+    const labels: Record<ToolGroupKey, string> = {
+      digitize: t('digitization'),
+      generate: t('generation'),
+      teach: t('teaching'),
+      analyze: t('analysis'),
+      admin: t('administration'),
+    };
+    return labels[group];
+  };
+
   const groupedToolItems = TOOL_GROUP_ORDER.map((groupKey) => ({
     key: groupKey,
-    label: TOOL_GROUP_LABELS[groupKey],
+    label: getGroupLabel(groupKey),
     items: toolItems.filter((item) => item.group === groupKey),
   })).filter((group) => group.items.length > 0);
 
   const commandPaletteItems: CommandPaletteItem[] = [
     ...mainNavItems.map((item) => ({ path: item.path, icon: item.icon, label: item.label, groupLabel: 'Главно' })),
-    ...toolItems.map((item) => ({ path: item.path, icon: item.icon, label: item.label, groupLabel: TOOL_GROUP_LABELS[item.group] })),
+    ...toolItems.map((item) => ({ path: item.path, icon: item.icon, label: item.label, groupLabel: getGroupLabel(item.group) })),
   ];
 
   // Global "go to anything" shortcut — Ctrl/Cmd+K.
@@ -347,6 +355,9 @@ export const Layout: React.FC = () => {
               <span className="hidden 2xl:inline">Пребарај</span>
               <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-[10px] font-bold">Ctrl K</kbd>
             </button>
+
+            {/* Language switcher */}
+            <LanguageSwitcher />
 
             {/* Quick theme toggle (always visible, instant feedback) */}
             <button
