@@ -1626,6 +1626,46 @@ RULES:
   }
 }
 
+/**
+ * Генерира TikZ/LaTeX код за математичка визуелизација
+ */
+export async function generateTikZCode(description: string): Promise<string> {
+  const prompt = `Ти си Експерт за LaTeX/TikZ визуелизација на математика.
+
+Генерирај TikZ код за следниот опис:
+${description}
+
+ПРАВИЛА:
+1. Користи \\begin{tikzpicture}...\\end{tikzpicture}
+2. Вклучи оски, мрежа, и етикети
+3. Користи бои за различни елементи
+4. Додај легенда ако има повеќе елементи
+5. Врати САМО валиден TikZ код, без markdown
+
+Пример формат:
+\\begin{tikzpicture}[scale=0.5]
+  \\draw[->] (-5,0) -- (5,0) node[right] {$x$};
+  \\draw[->] (0,-5) -- (0,5) node[above] {$y$};
+  \\draw[domain=-4:4,smooth,variable=\\x,blue] plot ({\\x},{0.5*\\x*\\x});
+  \\node at (2,2) {$y = \\frac{1}{2}x^2$};
+\\end{tikzpicture}`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: prompt,
+      config: {
+        temperature: 0.3,
+      }
+    });
+
+    return response.text || "";
+  } catch (error) {
+    console.error("Грешка при генерирање TikZ код:", error);
+    throw error;
+  }
+}
+
 export async function generateImage(prompt: string, gradeLevel?: string): Promise<string> {
   try {
     const ageContext = gradeLevel ? ` Designed specifically for students in ${gradeLevel}. ` : '';

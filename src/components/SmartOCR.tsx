@@ -48,6 +48,7 @@ export const SmartOCR: React.FC = () => {
   const [targetLanguage, setTargetLanguage] = useState<'auto' | 'mk' | 'en' | 'ru' | 'tr'>('mk');
   const [enableLogicalReconstruction, setEnableLogicalReconstruction] = useState(true);
   const [ocrModel, setOcrModel] = useState<string>('gemini-3.1-pro-preview');
+  const [visualizationMode, setVisualizationMode] = useState<'none' | 'tikz' | 'geogebra' | 'nanobanana'>('geogebra');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
@@ -436,7 +437,8 @@ export const SmartOCR: React.FC = () => {
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">Визуелизација:</span>
             <select
-              defaultValue="geogebra"
+              value={visualizationMode}
+              onChange={(e) => setVisualizationMode(e.target.value as typeof visualizationMode)}
               title="Визуелизација"
               aria-label="Визуелизација"
               className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 dark:text-slate-200 shadow-sm"
