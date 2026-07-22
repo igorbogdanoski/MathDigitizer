@@ -52,5 +52,12 @@
   "defaults": {
     "testTitle": "Математички Тест / Вежби",
     "teacherName": "Игор Богданоски"
-  }
+  },
+  "ariaExamLink": "Линк за испит",
+  "ariaExamTitle": "Наслов на испит",
+  "ariaQuestionPoints": "Поени за прашање",
+  "ariaBloomTaxonomy": "Блум таксономија",
+  "ariaSectionText": "Текст на секција",
+  "ariaQuestionText": "Текст на прашање",
+  "ariaListItem": "Ставка од листа"
 }

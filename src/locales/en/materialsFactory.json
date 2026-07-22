@@ -73,5 +73,8 @@
     "jsonDownloaded": "The JSON file has been downloaded successfully.",
     "wordDownloaded": "The Word document has been downloaded successfully.",
     "materialReadyDownload": "The material is ready for download."
-  }
+  },
+  "ariaDocumentTitle": "Document title",
+  "ariaAnswerKey": "Answer key",
+  "ariaMaterialPreview": "Material preview"
 }

@@ -17,7 +17,7 @@ function buildReferenceCode(uid: string | undefined, period: BillingPeriod): str
 }
 
 export const Pricing: React.FC = () => {
-  const { t } = useTranslation('pricing');
+  const { t } = useTranslation(['pricing', 'common']);
   const { user } = useAuth();
   const { showToast } = useToast();
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -426,7 +426,7 @@ export const Pricing: React.FC = () => {
                     type="button"
                     onClick={() => handleCopy('Референца', buildReferenceCode(user.uid, billingPeriod))}
                     className="inline-flex items-center gap-1 rounded-md border border-indigo-200 dark:border-indigo-700 px-2.5 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors"
-                    title="Копирај референца"
+                    title={t('common:ariaCopyReference')}
                   >
                     {copiedField === 'Референца' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     {copiedField === 'Референца' ? 'Копирано' : 'Copy'}
@@ -490,7 +490,7 @@ export const Pricing: React.FC = () => {
                 value={receiptForm.paymentChannel}
                 onChange={(event) => handleReceiptFormChange('paymentChannel', event.target.value as 'bank' | 'paypal')}
                 className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2.5 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-indigo-500"
-                title="Избери канал на уплата"
+                title={t('common:ariaSelectPaymentChannel')}
               >
                 <option value="bank">Банкарска трансакција</option>
                 <option value="paypal">PayPal</option>

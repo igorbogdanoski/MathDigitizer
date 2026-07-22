@@ -290,5 +290,6 @@
   "copyGradeLabel": "Одделение:",
   "copyTopicLabel": "Тема:",
   "copyTextLabel": "Текст:",
-  "copyHintsLabel": "Помош:"
+  "copyHintsLabel": "Помош:",
+  "ariaGeneratedVisualization": "Генерирана визуелизација за задачата"
 }

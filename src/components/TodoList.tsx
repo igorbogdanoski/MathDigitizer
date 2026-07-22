@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, orderBy, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { CheckCircle2, Circle, Clock, Plus, Trash2, Calendar as CalendarIcon, Play, Pause, Loader2 } from 'lucide-react';
@@ -22,6 +23,7 @@ interface TodoListProps {
 }
 
 export const TodoList: React.FC<TodoListProps> = ({ user, onTaskComplete }) => {
+  const { t } = useTranslation('common');
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTask, setNewTask] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -177,8 +179,8 @@ export const TodoList: React.FC<TodoListProps> = ({ user, onTaskComplete }) => {
               <CalendarIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="date"
-                title="Краен рок"
-                aria-label="Краен рок"
+                title={t('ariaDeadline')}
+                aria-label={t('ariaDeadline')}
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 className="pl-9 h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700"
@@ -255,7 +257,7 @@ export const TodoList: React.FC<TodoListProps> = ({ user, onTaskComplete }) => {
                     type="button"
                     onClick={() => deleteTodo(todo.id)}
                     className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Избриши"
+                    title={t('ariaDelete')}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

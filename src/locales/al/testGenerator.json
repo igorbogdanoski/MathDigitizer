@@ -52,5 +52,12 @@
   "defaults": {
     "testTitle": "Test Matematike / Ushtrime",
     "teacherName": "Igor Bogdanoski"
-  }
+  },
+  "ariaExamLink": "Linku i provimit",
+  "ariaExamTitle": "Titulli i provimit",
+  "ariaQuestionPoints": "Pikët e pyetjes",
+  "ariaBloomTaxonomy": "Taksonomia e Bloom-it",
+  "ariaSectionText": "Teksti i seksionit",
+  "ariaQuestionText": "Teksti i pyetjes",
+  "ariaListItem": "Element i listës"
 }

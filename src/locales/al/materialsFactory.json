@@ -73,5 +73,8 @@
     "jsonDownloaded": "Skedari JSON u shkarkua me sukses.",
     "wordDownloaded": "Dokumenti Word u shkarkua me sukses.",
     "materialReadyDownload": "Materiali është gati për shkarkim."
-  }
+  },
+  "ariaDocumentTitle": "Titulli i dokumentit",
+  "ariaAnswerKey": "Çelësi i përgjigjeve",
+  "ariaMaterialPreview": "Pamja paraprake e materialit"
 }

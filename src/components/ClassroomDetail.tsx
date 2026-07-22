@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import { TaskSolveModal } from './student/TaskSolveModal';
@@ -21,6 +22,7 @@ const classMasteryData = [
 ];
 
 export const ClassroomDetail: React.FC = () => {
+  const { t } = useTranslation('common');
   const { id } = useParams<{ id: string }>();
   const { user, userProfile } = useAuth();
   
@@ -498,7 +500,7 @@ export const ClassroomDetail: React.FC = () => {
               </h2>
               <button
                 onClick={() => setIsAssignModalOpen(false)}
-                aria-label="Затвори"
+                aria-label={t('ariaClose')}
                 className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -596,7 +598,7 @@ export const ClassroomDetail: React.FC = () => {
                 <h3 className="font-bold text-slate-800">{assignmentTaskPicker.assignment.title}</h3>
                 <p className="text-xs text-slate-400 mt-0.5">{assignmentTaskPicker.tasks.length} задачи — избери која сакаш да ја решиш</p>
               </div>
-              <button type="button" title="Затвори" aria-label="Затвори" onClick={() => setAssignmentTaskPicker(null)} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400">
+              <button type="button" title={t('ariaClose')} aria-label={t('ariaClose')} onClick={() => setAssignmentTaskPicker(null)} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400">
                 <X className="w-4 h-4" />
               </button>
             </div>

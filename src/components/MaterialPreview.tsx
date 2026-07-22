@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MathRenderer } from './MathRenderer';
 import { Card, CardContent } from './ui/Card';
 import { 
@@ -23,6 +24,7 @@ interface MaterialPreviewProps {
 }
 
 export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, onClose, onDownload }) => {
+  const { t } = useTranslation(['materialsFactory', 'common']);
   const [editedData, setEditedData] = useState<any>(JSON.parse(JSON.stringify(data)));
   const [isEditing, setIsEditing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -328,8 +330,8 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                 <input
                   value={editedData.title}
                   onChange={(e) => updateNestedField('title', e.target.value)}
-                  title="Наслов на документ"
-                  aria-label="Наслов на документ"
+                  title={t('materialsFactory:ariaDocumentTitle')}
+                  aria-label={t('materialsFactory:ariaDocumentTitle')}
                   className="text-3xl font-black text-slate-900 mb-2 border-b border-indigo-200 focus:border-indigo-500 outline-none w-full bg-indigo-50/50"
                   placeholder="Внесете наслов..."
                 />
@@ -425,8 +427,8 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                 <textarea
                   value={editedData.answerKey}
                   onChange={(e) => updateNestedField('answerKey', e.target.value)}
-                  title="Клуч со решенија"
-                  aria-label="Клуч со решенија"
+                  title={t('materialsFactory:ariaAnswerKey')}
+                  aria-label={t('materialsFactory:ariaAnswerKey')}
                   placeholder="Внеси клуч со решенија"
                   className="w-full bg-white border border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-indigo-500 outline-none h-64"
                 />
@@ -447,7 +449,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
       ref={modalRef}
       role="dialog"
       aria-modal="true"
-      aria-label="Преглед на материјал"
+      aria-label={t('materialsFactory:ariaMaterialPreview')}
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md overflow-y-auto"
     >
       <motion.div 
@@ -506,7 +508,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
               {isExporting ? 'Конвертирање...' : 'Зачувај како PDF'}
             </Button>
             
-            <button onClick={onClose} title="Затвори преглед" aria-label="Затвори преглед" className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-200 rounded-xl transition-all ml-2 bg-white">
+            <button onClick={onClose} title={t('common:ariaClosePreview')} aria-label={t('common:ariaClosePreview')} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-200 rounded-xl transition-all ml-2 bg-white">
               <X className="w-5 h-5" />
             </button>
           </div>

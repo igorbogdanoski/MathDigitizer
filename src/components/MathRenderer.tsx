@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -115,6 +116,7 @@ function normalizeLongEquation(latex: string): string {
 const REHYPE_KATEX_OPTIONS = { throwOnError: false, errorColor: '#94a3b8', strict: false } as const;
 
 export const MathRenderer: React.FC<MathRendererProps> = ({ content, className, inline }) => {
+  const { t } = useTranslation('common');
   const containerRef = useRef<HTMLDivElement>(null);
   const [copiedFormula, setCopiedFormula] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<{ formula: string, text: string, isLoading: boolean } | null>(null);
@@ -236,7 +238,7 @@ export const MathRenderer: React.FC<MathRendererProps> = ({ content, className, 
               </div>
               <span className="text-sm font-bold">Објаснување на формула</span>
             </div>
-            <button onClick={() => setExplanation(null)} aria-label="Затвори" title="Затвори" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+            <button onClick={() => setExplanation(null)} aria-label={t('ariaClose')} title={t('ariaClose')} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
               <X className="w-4 h-4" />
             </button>
           </div>

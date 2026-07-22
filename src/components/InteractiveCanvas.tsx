@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Stage, Layer, Line, Rect, Circle, Arrow } from 'react-konva';
 import { Eraser, RotateCcw, Send, PenTool, Square, Circle as CircleIcon, MoveRight, MousePointer2, Trash2 } from 'lucide-react';
 import { Button } from './ui/Button';
@@ -39,9 +40,10 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
   readOnly = false,
   initialShapes = []
 }) => {
+  const { t } = useTranslation('common');
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<any>(null);
-  
+
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [tool, setTool] = useState<ToolType>('pen');
   const [color, setColor] = useState('#2563eb'); // Blue-600
@@ -230,23 +232,23 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
         
         {/* Tools */}
         <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
-          <button onClick={() => setTool('select')} aria-label="Селектирај" className={`p-1.5 rounded-md transition-colors ${tool === 'select' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Селектирај">
+          <button onClick={() => setTool('select')} aria-label={t('ariaSelect')} className={`p-1.5 rounded-md transition-colors ${tool === 'select' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title={t('ariaSelect')}>
             <MousePointer2 className="w-4 h-4" />
           </button>
-          <button onClick={() => setTool('pen')} aria-label="Пенкало" className={`p-1.5 rounded-md transition-colors ${tool === 'pen' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Пенкало">
+          <button onClick={() => setTool('pen')} aria-label={t('ariaPen')} className={`p-1.5 rounded-md transition-colors ${tool === 'pen' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title={t('ariaPen')}>
             <PenTool className="w-4 h-4" />
           </button>
-          <button onClick={() => setTool('eraser')} aria-label="Бришач" className={`p-1.5 rounded-md transition-colors ${tool === 'eraser' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Бришач">
+          <button onClick={() => setTool('eraser')} aria-label={t('ariaEraser')} className={`p-1.5 rounded-md transition-colors ${tool === 'eraser' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title={t('ariaEraser')}>
             <Eraser className="w-4 h-4" />
           </button>
           <div className="w-px h-4 bg-slate-300 dark:bg-slate-600 mx-1"></div>
-          <button onClick={() => setTool('rect')} aria-label="Правоаголник" className={`p-1.5 rounded-md transition-colors ${tool === 'rect' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Правоаголник">
+          <button onClick={() => setTool('rect')} aria-label={t('ariaRectangle')} className={`p-1.5 rounded-md transition-colors ${tool === 'rect' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title={t('ariaRectangle')}>
             <Square className="w-4 h-4" />
           </button>
-          <button onClick={() => setTool('circle')} aria-label="Круг" className={`p-1.5 rounded-md transition-colors ${tool === 'circle' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Круг">
+          <button onClick={() => setTool('circle')} aria-label={t('ariaCircle')} className={`p-1.5 rounded-md transition-colors ${tool === 'circle' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title={t('ariaCircle')}>
             <CircleIcon className="w-4 h-4" />
           </button>
-          <button onClick={() => setTool('arrow')} aria-label="Стрелка" className={`p-1.5 rounded-md transition-colors ${tool === 'arrow' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Стрелка">
+          <button onClick={() => setTool('arrow')} aria-label={t('ariaArrow')} className={`p-1.5 rounded-md transition-colors ${tool === 'arrow' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title={t('ariaArrow')}>
             <MoveRight className="w-4 h-4" />
           </button>
         </div>
@@ -261,7 +263,7 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
                 aria-label={`Боја: ${c}`}
                 className={`w-6 h-6 rounded-full border-2 transition-transform ${color === c ? 'scale-110 border-slate-400' : 'border-transparent hover:scale-110'}`}
                 style={{ backgroundColor: c }}
-                title="Боја"
+                title={t('ariaColor')}
               />
             ))}
           </div>
@@ -273,21 +275,21 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
             value={strokeWidth} 
             onChange={(e) => setStrokeWidth(parseInt(e.target.value))}
             className="w-20 accent-indigo-600"
-            title="Дебелина на линија"
+            title={t('ariaLineThickness')}
           />
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-2">
           {selectedId && (
-            <Button variant="ghost" size="sm" onClick={handleDeleteSelected} className="h-8 px-2 text-red-500 hover:bg-red-50" title="Избриши селектирано">
+            <Button variant="ghost" size="sm" onClick={handleDeleteSelected} className="h-8 px-2 text-red-500 hover:bg-red-50" title={t('ariaDeleteSelected')}>
               <Trash2 className="w-4 h-4" />
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={handleUndo} disabled={shapes.length === 0 || isSubmitting} className="h-8 px-2 text-slate-500 hover:text-slate-700" title="Врати назад">
+          <Button variant="ghost" size="sm" onClick={handleUndo} disabled={shapes.length === 0 || isSubmitting} className="h-8 px-2 text-slate-500 hover:text-slate-700" title={t('ariaUndo')}>
             <RotateCcw className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleClear} disabled={shapes.length === 0 || isSubmitting} className="h-8 px-2 text-red-500 hover:text-red-700 hover:bg-red-50" title="Избриши сè">
+          <Button variant="ghost" size="sm" onClick={handleClear} disabled={shapes.length === 0 || isSubmitting} className="h-8 px-2 text-red-500 hover:text-red-700 hover:bg-red-50" title={t('ariaClearAll')}>
             Избриши
           </Button>
           <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1"></div>

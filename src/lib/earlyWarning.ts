@@ -306,27 +306,27 @@ export function analyzeClassroomRisk(
 export function createIntervention(
   studentId: string,
   studentName: string,
-  classroomId: string,
-  type: Intervention['type'],
+  type: string,
   description: string,
-  assignedBy: string
+  createdBy: string
 ): Omit<Intervention, 'id'> {
+  const now = new Date().toISOString();
   return {
-    studentId,
-    studentName,
-    classroomId,
+    student_id: studentId,
+    student_name: studentName,
     type,
     description,
-    assignedAt: new Date().toISOString(),
-    assignedBy,
     status: 'pending',
+    created_at: now,
+    updated_at: now,
+    created_by: createdBy,
   };
 }
 
 /**
  * Мапирање на типови на интервенции
  */
-export const INTERVENTION_TYPES: Record<Intervention['type'], string> = {
+export const INTERVENTION_TYPES: Record<string, string> = {
   extra_practice: 'Дополнителни вежби',
   one_on_one: 'Индивидуална средба',
   parent_contact: 'Контакт со родител',

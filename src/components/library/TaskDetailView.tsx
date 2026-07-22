@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { MathTask } from '../../lib/schema';
 import { Button } from '../ui/Button';
 import { MathRenderer } from '../MathRenderer';
@@ -18,6 +19,7 @@ interface TaskDetailViewProps {
 }
 
 export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) => {
+  const { t } = useTranslation(['library', 'common']);
   const store = useLibraryStore();
   const actions = useTaskActions();
 
@@ -279,7 +281,7 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
                     <div className="p-2 flex justify-center cursor-zoom-in" onClick={() => store.setZoomedImage(actions.generatedImages[taskId])}>
                       <img
                         src={actions.generatedImages[taskId]}
-                        alt="Генерирана визуелизација за задачата"
+                        alt={t('library:ariaGeneratedVisualization')}
                         className="max-w-full h-auto rounded shadow-sm hover:shadow-md transition-shadow"
                         referrerPolicy="no-referrer"
                       />
@@ -337,7 +339,7 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, taskId }) 
                     type="button"
                     onClick={(e) => { e.stopPropagation(); handleCopyFormula(formula); }}
                     className="absolute right-2 top-2 p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
-                    title="Копирај формула"
+                    title={t('common:ariaCopyFormula')}
                   >
                     {store.copiedFormula === formula ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>

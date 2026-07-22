@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { Brain, Bug, CheckCircle2, ChevronRight, AlertTriangle, Lightbulb, UserCheck, Code, SplitSquareHorizontal, EyeOff, XOctagon, Save, Loader2 } from 'lucide-react';
 import { Button } from './ui/Button';
@@ -77,6 +78,7 @@ export const AIPedagogyCritique: React.FC = () => {
 };
 
 const BugInTheSystem: React.FC = () => {
+  const { t } = useTranslation('common');
   const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState('средно');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -152,8 +154,8 @@ const BugInTheSystem: React.FC = () => {
             <select
               value={difficulty}
               onChange={(e) => setDifficulty(e.target.value)}
-              title="Ниво на тежина"
-              aria-label="Ниво на тежина"
+              title={t('ariaDifficultyLevel')}
+              aria-label={t('ariaDifficultyLevel')}
               className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-violet-500"
             >
               <option value="лесно">Лесно</option>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sparkles, ArrowRight, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { motion, AnimatePresence } from 'motion/react';
@@ -10,6 +11,7 @@ interface StickyBottomCtaProps {
 }
 
 export const StickyBottomCta: React.FC<StickyBottomCtaProps> = ({ isVisible, onDismiss, onSignUp }) => {
+  const { t } = useTranslation('common');
   return (
     <AnimatePresence>
       {isVisible && (
@@ -40,8 +42,8 @@ export const StickyBottomCta: React.FC<StickyBottomCtaProps> = ({ isVisible, onD
             <button
               type="button"
               onClick={onDismiss}
-              aria-label="Затвори ја оваа порака"
-              title="Затвори"
+              aria-label={t('ariaCloseMessage')}
+              title={t('ariaClose')}
               className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
               <X className="w-4 h-4" />

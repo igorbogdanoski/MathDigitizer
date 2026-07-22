@@ -422,16 +422,16 @@ export interface StudentRiskProfile {
 
 /** Интервенција */
 export interface Intervention {
-  id?: string;
-  studentId: string;
-  studentName: string;
-  classroomId: string;
-  type: 'extra_practice' | 'one_on_one' | 'parent_contact' | 'peer_tutoring' | 'modified_tasks';
+  id: string;
+  student_id: string;
+  student_name: string;
+  type: string; // from recommended interventions
   description: string;
-  assignedAt: string;
-  assignedBy: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  completedAt?: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'dismissed';
+  created_at: string;
+  updated_at: string;
+  created_by: string; // teacher uid
+  completed_at?: string;
   notes?: string;
 }
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   BookOpen, Play, Trash2, RefreshCw, Check, Loader2,
   AlertCircle, BarChart2, ChevronDown, ChevronRight,
@@ -58,6 +59,7 @@ function buildTrackStats(): TrackStats[] {
 }
 
 export const CurriculumAdmin: React.FC = () => {
+  const { t } = useTranslation('common');
   const { userProfile } = useAuth();
   const { showToast } = useToast();
 
@@ -160,7 +162,7 @@ export const CurriculumAdmin: React.FC = () => {
                 <Database className="w-4 h-4 text-indigo-500" />
                 Состојба на Firestore
               </div>
-              <button onClick={refreshCount} aria-label="Освежи статистики" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-colors">
+              <button onClick={refreshCount} aria-label={t('ariaRefreshStats')} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-colors">
                 <RefreshCw className="w-4 h-4" />
               </button>
             </div>

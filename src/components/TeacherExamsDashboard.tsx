@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,6 +11,7 @@ import { autoGradeSubmission } from '../lib/gemini';
 import { useToast } from '../contexts/ToastContext';
 
 export const TeacherExamsDashboard = () => {
+  const { t } = useTranslation('common');
   const { user } = useAuth();
   const { showToast } = useToast();
   const [exams, setExams] = useState<SummativeExam[]>([]);
@@ -126,8 +128,8 @@ export const TeacherExamsDashboard = () => {
                  <select
                    value={gradeFilter}
                    onChange={(e) => setGradeFilter(e.target.value)}
-                   title="Филтрирај по одделение"
-                   aria-label="Филтрирај по одделение"
+                   title={t('ariaFilterByGrade')}
+                   aria-label={t('ariaFilterByGrade')}
                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
                  >
                    <option value="all">Сите Одделенија</option>
