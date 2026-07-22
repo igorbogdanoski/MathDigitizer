@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { collection, doc, onSnapshot, orderBy, query, setDoc, updateDoc, where } from 'firebase/firestore';
-import { AlertTriangle, CheckCircle2, Clock3, Download, FileText, Mail, School, Search, Users } from 'lucide-react';
+import { AlertTriangle, Download, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { db } from '../lib/firebase';
 import { sendProActivationEmail } from '../lib/emailService';
@@ -9,197 +9,37 @@ import { SEO } from './SEO';
 import { useToast } from '../contexts/ToastContext';
 import { Button } from './ui/Button';
 import { useAuth } from '../contexts/AuthContext';
-
-type InquiryStatus = 'new' | 'contacted' | 'closed';
-type ReceiptStatus = 'pending' | 'reviewed' | 'approved' | 'rejected';
-type KpiPeriod = 'day' | 'week' | 'month';
-
-interface SchoolInquiry {
-  id: string;
-  contact_name: string;
-  school_name: string;
-  email: string;
-  seat_count?: string;
-  message?: string;
-  requester_uid?: string | null;
-  billing_period_interest: 'monthly' | 'annual';
-  plan_context: string;
-  created_at: string;
-  status: InquiryStatus;
-}
-
-interface PaymentReceipt {
-  id: string;
-  payer_name: string;
-  payer_email: string;
-  payment_channel: 'bank' | 'paypal';
-  reference_code: string;
-  note?: string;
-  amount_label: string;
-  billing_period_interest: 'monthly' | 'annual';
-  plan_context: string;
-  requester_uid: string;
-  created_at: string;
-  status: ReceiptStatus;
-  reviewed_by?: string;
-  reviewed_at?: string;
-  review_note?: string;
-}
-
-interface SalesOpsAlertState {
-  dashboard_id: 'school_inquiries';
-  acknowledged_signature: string | null;
-  acknowledged_by: string | null;
-  acknowledged_at: string | null;
-  updated_at: string;
-}
-
-interface BillingCtaTelemetryEvent {
-  id: string;
-  eventType?: string;
-  createdAt?: string;
-}
-
-type OpsAlertLevel = 'warning' | 'critical';
-
-interface OpsAlert {
-  id: string;
-  message: string;
-  level: OpsAlertLevel;
-}
-
-const STATUS_OPTIONS: InquiryStatus[] = ['new', 'contacted', 'closed'];
-const RECEIPT_STATUS_OPTIONS: ReceiptStatus[] = ['pending', 'reviewed', 'approved', 'rejected'];
-
-const inquiryStatusPriority: Record<InquiryStatus, number> = {
-  new: 0,
-  contacted: 1,
-  closed: 2,
-};
-
-const receiptStatusPriority: Record<ReceiptStatus, number> = {
-  pending: 0,
-  reviewed: 1,
-  approved: 2,
-  rejected: 3,
-};
-
-const statusChipClass = (status: InquiryStatus) => {
-  if (status === 'new') return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200';
-  if (status === 'contacted') return 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200';
-  return 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200';
-};
-
-const receiptStatusChipClass = (status: ReceiptStatus) => {
-  if (status === 'pending') return 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200';
-  if (status === 'reviewed') return 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200';
-  if (status === 'approved') return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200';
-  return 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200';
-};
-
-const toTimestamp = (value?: string) => {
-  if (!value) return 0;
-  const parsed = Date.parse(value);
-  return Number.isNaN(parsed) ? 0 : parsed;
-};
-
-const escapeCsvCell = (value: string | number | null | undefined) => {
-  const asString = String(value ?? '');
-  if (asString.includes('"') || asString.includes(',') || asString.includes('\n')) {
-    return `"${asString.replace(/"/g, '""')}"`;
-  }
-  return asString;
-};
-
-const downloadCsvFile = (fileName: string, headers: string[], rows: Array<Array<string | number | null | undefined>>) => {
-  const csvLines = [headers.map((header) => escapeCsvCell(header)).join(',')];
-
-  rows.forEach((row) => {
-    csvLines.push(row.map((cell) => escapeCsvCell(cell)).join(','));
-  });
-
-  const csvContent = csvLines.join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = fileName;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-  URL.revokeObjectURL(url);
-};
-
-const getPeriodStart = (period: KpiPeriod, now: Date) => {
-  const start = new Date(now);
-
-  if (period === 'day') {
-    start.setHours(0, 0, 0, 0);
-    return start.getTime();
-  }
-
-  if (period === 'week') {
-    const day = start.getDay();
-    const diffToMonday = day === 0 ? 6 : day - 1;
-    start.setDate(start.getDate() - diffToMonday);
-    start.setHours(0, 0, 0, 0);
-    return start.getTime();
-  }
-
-  start.setDate(1);
-  start.setHours(0, 0, 0, 0);
-  return start.getTime();
-};
-
-const readAlertThreshold = (envKey: string, fallback: number) => {
-  const raw = (import.meta as any)?.env?.[envKey];
-  if (typeof raw !== 'string') return fallback;
-  const parsed = Number(raw.trim());
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
-};
-
-const PENDING_ALERT_THRESHOLD = readAlertThreshold('VITE_PENDING_ALERT_THRESHOLD', 8);
-const PENDING_TO_APPROVED_RATIO_ALERT_THRESHOLD = readAlertThreshold('VITE_PENDING_TO_APPROVED_RATIO_ALERT_THRESHOLD', 1);
-const BILLING_CTA_CONVERSION_ALERT_THRESHOLD = readAlertThreshold('VITE_BILLING_CTA_CONVERSION_ALERT_THRESHOLD', 0.8);
-const BILLING_CTA_CONVERSION_CRITICAL_THRESHOLD = readAlertThreshold('VITE_BILLING_CTA_CONVERSION_CRITICAL_THRESHOLD', 0.5);
-
-const buildSparklinePath = (values: number[], width: number, height: number) => {
-  if (values.length === 0) return '';
-  const maxValue = Math.max(...values, 1);
-  const stepX = values.length > 1 ? width / (values.length - 1) : width;
-
-  return values
-    .map((value, index) => {
-      const x = index * stepX;
-      const y = height - (value / maxValue) * height;
-      return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
-    .join(' ');
-};
-
-const getPreviousPeriodRange = (period: KpiPeriod, now: Date) => {
-  const currentStart = getPeriodStart(period, now);
-
-  if (period === 'day') {
-    const previousStart = currentStart - 24 * 60 * 60 * 1000;
-    return { start: previousStart, end: currentStart };
-  }
-
-  if (period === 'week') {
-    const previousStart = currentStart - 7 * 24 * 60 * 60 * 1000;
-    return { start: previousStart, end: currentStart };
-  }
-
-  const currentStartDate = new Date(currentStart);
-  const previousStartDate = new Date(currentStartDate);
-  previousStartDate.setMonth(previousStartDate.getMonth() - 1);
-  return { start: previousStartDate.getTime(), end: currentStart };
-};
-
-const formatDelta = (value: number) => {
-  if (value === 0) return '0';
-  return `${value > 0 ? '+' : ''}${value}`;
-};
+import { InquiryCard } from './school-inquiries/InquiryCard';
+import { ReceiptCard } from './school-inquiries/ReceiptCard';
+import { generateInvoiceHtml } from './school-inquiries/generateInvoice';
+import {
+  STATUS_OPTIONS,
+  BILLING_CTA_CONVERSION_ALERT_THRESHOLD,
+  BILLING_CTA_CONVERSION_CRITICAL_THRESHOLD,
+  PENDING_ALERT_THRESHOLD,
+  PENDING_TO_APPROVED_RATIO_ALERT_THRESHOLD,
+  buildSparklinePath,
+  downloadCsvFile,
+  formatDelta,
+  getKpiPeriodLabels,
+  getPeriodStart,
+  getPreviousPeriodRange,
+  inquiryStatusPriority,
+  receiptStatusPriority,
+  statusLabel,
+  toTimestamp,
+} from './school-inquiries/types';
+import type {
+  BillingCtaTelemetryEvent,
+  InquiryStatus,
+  KpiPeriod,
+  OpsAlert,
+  OpsAlertLevel,
+  PaymentReceipt,
+  ReceiptStatus,
+  SalesOpsAlertState,
+  SchoolInquiry,
+} from './school-inquiries/types';
 
 export const SchoolInquiriesDashboard: React.FC = () => {
   const { t, i18n } = useTranslation('schoolInquiries');
@@ -207,24 +47,8 @@ export const SchoolInquiriesDashboard: React.FC = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
 
-  const statusLabel = (status: InquiryStatus) => {
-    if (status === 'new') return t('statusNew');
-    if (status === 'contacted') return t('statusContacted');
-    return t('statusClosed');
-  };
+  const kpiPeriodLabels = getKpiPeriodLabels(t);
 
-  const receiptStatusLabel = (status: ReceiptStatus) => {
-    if (status === 'pending') return t('receiptStatusPending');
-    if (status === 'reviewed') return t('receiptStatusReviewed');
-    if (status === 'approved') return t('receiptStatusApproved');
-    return t('receiptStatusRejected');
-  };
-
-  const KPI_PERIOD_LABELS: Record<KpiPeriod, string> = {
-    day: t('kpiToday'),
-    week: t('kpiThisWeek'),
-    month: t('kpiThisMonth'),
-  };
   const [inquiries, setInquiries] = useState<SchoolInquiry[]>([]);
   const [receipts, setReceipts] = useState<PaymentReceipt[]>([]);
   const [activeStatusFilter, setActiveStatusFilter] = useState<'all' | InquiryStatus>('all');
@@ -417,7 +241,7 @@ export const SchoolInquiriesDashboard: React.FC = () => {
 
       return {
         period,
-        label: KPI_PERIOD_LABELS[period],
+        label: kpiPeriodLabels[period],
         inquiriesTotal: periodInquiries.length,
         inquiriesDelta: periodInquiries.length - previousInquiries.length,
         inquiryCounts,
@@ -428,7 +252,7 @@ export const SchoolInquiriesDashboard: React.FC = () => {
         approvalRateDelta: approvalRate - previousApprovalRate,
       };
     });
-  }, [inquiries, receipts, KPI_PERIOD_LABELS]);
+  }, [inquiries, receipts, kpiPeriodLabels]);
 
   const sevenDayTrend = useMemo(() => {
     const days = 7;
@@ -687,87 +511,7 @@ export const SchoolInquiriesDashboard: React.FC = () => {
   }, [receiptCounters]);
 
   const handleDownloadInvoice = (receipt: PaymentReceipt) => {
-    const invoiceNumber = `MD-${receipt.id.slice(0, 8).toUpperCase()}`;
-    const issueDate = new Date(receipt.reviewed_at ?? receipt.created_at).toLocaleDateString(dateLocale);
-    const html = `<!DOCTYPE html>
-<html lang="mk">
-<head>
-<meta charset="UTF-8"/>
-<title>${t('invoicePdf')} ${invoiceNumber}</title>
-<style>
-  body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 40px; color: #0f172a; background: #fff; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #4f46e5; padding-bottom: 24px; margin-bottom: 32px; }
-  .brand { font-size: 28px; font-weight: 900; color: #4f46e5; }
-  .brand-sub { font-size: 13px; color: #64748b; margin-top: 4px; }
-  .invoice-meta { text-align: right; }
-  .invoice-meta h1 { font-size: 22px; font-weight: 900; color: #1e293b; margin: 0 0 8px; }
-  .invoice-meta p { margin: 2px 0; font-size: 13px; color: #475569; }
-  .status-badge { display: inline-block; background: #dcfce7; color: #166534; border-radius: 20px; padding: 4px 14px; font-size: 12px; font-weight: 700; margin-top: 8px; }
-  section { margin-bottom: 28px; }
-  h2 { font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 12px; }
-  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .info-item label { display: block; font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
-  .info-item span { font-size: 14px; font-weight: 600; color: #1e293b; }
-  .amount-box { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px 24px; }
-  .amount-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
-  .amount-row:last-child { border-bottom: none; font-size: 18px; font-weight: 900; color: #4f46e5; }
-  .amount-row:last-child .label { color: #1e293b; font-weight: 700; }
-  .footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center; }
-  @media print { body { padding: 20px; } }
-</style>
-</head>
-<body>
-  <div class="header">
-    <div>
-      <div class="brand">MathDigitizer Pro</div>
-      <div class="brand-sub">mathdigitizer.pro · igor.bogdanoski@mismath.net</div>
-      <div class="brand-sub">Игор Богданоски · NLB Bank · IBAN MK07210501596102457 · SWIFT TUTNMK22</div>
-    </div>
-    <div class="invoice-meta">
-      <h1>${t('invoiceTitle')}</h1>
-      <p><strong>${t('invoiceNumber')}</strong> ${invoiceNumber}</p>
-      <p><strong>${t('invoiceDate')}</strong> ${issueDate}</p>
-      <p><strong>${t('invoiceReference')}</strong> ${receipt.reference_code}</p>
-      <div class="status-badge">${t('invoicePaid')}</div>
-    </div>
-  </div>
-
-  <section>
-    <h2>${t('invoiceBuyerInfo')}</h2>
-    <div class="info-grid">
-      <div class="info-item"><label>Ime i prezime</label><span>${receipt.payer_name}</span></div>
-      <div class="info-item"><label>Email</label><span>${receipt.payer_email}</span></div>
-      <div class="info-item"><label>${t('invoicePaymentChannel')}</label><span>${receipt.payment_channel === 'bank' ? t('invoiceBankTransfer') : 'PayPal'}</span></div>
-      <div class="info-item"><label>${t('invoiceReference')}</label><span>${receipt.reference_code}</span></div>
-    </div>
-  </section>
-
-  <section>
-    <h2>${t('invoiceServiceDescription')}</h2>
-    <div class="amount-box">
-      <div class="amount-row">
-        <span class="label">${t('invoiceProduct')}</span>
-        <span>${receipt.plan_context}</span>
-      </div>
-      <div class="amount-row">
-        <span class="label">${t('invoicePeriod')}</span>
-        <span>${receipt.billing_period_interest === 'annual' ? t('invoiceAnnualSubscription') : t('invoiceMonthlySubscription')}</span>
-      </div>
-      ${receipt.review_note ? `<div class="amount-row"><span class="label">${t('invoiceNote')}</span><span>${receipt.review_note}</span></div>` : ''}
-      <div class="amount-row">
-        <span class="label">${t('invoiceTotal')}</span>
-        <span>${receipt.amount_label}</span>
-      </div>
-    </div>
-  </section>
-
-  <div class="footer">
-    ${t('invoiceFooter')} · MathDigitizer Pro © ${new Date().getFullYear()}
-  </div>
-
-  <script>window.onload = function() { window.print(); }</script>
-</body>
-</html>`;
+    const html = generateInvoiceHtml(receipt, t, dateLocale);
 
     const printWindow = window.open('', '_blank', 'width=900,height=700');
     if (printWindow) {
@@ -1132,7 +876,7 @@ export const SchoolInquiriesDashboard: React.FC = () => {
                 onClick={() => setActiveStatusFilter(status)}
                 className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${activeStatusFilter === status ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}
               >
-                {status === 'all' ? t('statusAll') : statusLabel(status)}
+                {status === 'all' ? t('statusAll') : statusLabel(status, t)}
               </button>
             ))}
           </div>
@@ -1165,47 +909,13 @@ export const SchoolInquiriesDashboard: React.FC = () => {
           </div>
         ) : (
           filteredInquiries.map((inquiry) => (
-            <article key={inquiry.id} className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 md:p-6 shadow-sm">
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${statusChipClass(inquiry.status)}`}>
-                      {statusLabel(inquiry.status)}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                      <Clock3 className="w-3.5 h-3.5" />
-                      {inquiry.created_at}
-                    </span>
-                  </div>
-
-                  <h2 className="text-xl font-black text-slate-900 dark:text-white">{inquiry.school_name}</h2>
-
-                  <div className="grid gap-2 text-sm text-slate-700 dark:text-slate-200">
-                    <div className="flex items-center gap-2"><School className="w-4 h-4 text-indigo-500" /> {t('contactLabel')} {inquiry.contact_name}</div>
-                    <div className="flex items-center gap-2"><Mail className="w-4 h-4 text-indigo-500" /> {inquiry.email}</div>
-                    <div className="flex items-center gap-2"><Users className="w-4 h-4 text-indigo-500" /> {t('teachersLabel')} {inquiry.seat_count || 'N/A'}</div>
-                    <div>{t('planLabel')} <span className="font-semibold">{inquiry.plan_context}</span> ({inquiry.billing_period_interest})</div>
-                    {inquiry.message ? <div className="text-slate-600 dark:text-slate-300">{t('messageLabel')} {inquiry.message}</div> : null}
-                  </div>
-                </div>
-
-                <div className="w-full md:w-56 space-y-2">
-                  {STATUS_OPTIONS.map((statusOption) => (
-                    <Button
-                      key={statusOption}
-                      type="button"
-                      variant={inquiry.status === statusOption ? 'default' : 'outline'}
-                      disabled={savingId === inquiry.id || inquiry.status === statusOption}
-                      onClick={() => handleUpdateStatus(inquiry.id, statusOption)}
-                      className="w-full h-10"
-                    >
-                      {inquiry.status === statusOption ? <CheckCircle2 className="w-4 h-4 mr-2" /> : null}
-                      {statusLabel(statusOption)}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </article>
+            <InquiryCard
+              key={inquiry.id}
+              inquiry={inquiry}
+              savingId={savingId}
+              onUpdateStatus={handleUpdateStatus}
+              t={t}
+            />
           ))
         )}
       </section>
@@ -1247,77 +957,16 @@ export const SchoolInquiriesDashboard: React.FC = () => {
           </div>
         ) : (
           filteredReceipts.map((receipt) => (
-            <article key={receipt.id} className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 md:p-6 shadow-sm">
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${receiptStatusChipClass(receipt.status)}`}>
-                      {receiptStatusLabel(receipt.status)}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                      <Clock3 className="w-3.5 h-3.5" />
-                      {receipt.created_at}
-                    </span>
-                  </div>
-
-                  <h3 className="text-xl font-black text-slate-900 dark:text-white">{receipt.payer_name}</h3>
-
-                  <div className="grid gap-2 text-sm text-slate-700 dark:text-slate-200">
-                    <div className="flex items-center gap-2"><Mail className="w-4 h-4 text-indigo-500" /> {receipt.payer_email}</div>
-                    <div>{t('channelLabel')} <span className="font-semibold">{receipt.payment_channel === 'bank' ? t('bankChannel') : 'PayPal'}</span></div>
-                    <div>{t('referenceLabel')} <span className="font-semibold">{receipt.reference_code}</span></div>
-                    <div>{t('amountLabel')} <span className="font-semibold">{receipt.amount_label}</span></div>
-                    <div>{t('planLabel')} <span className="font-semibold">{receipt.plan_context}</span> ({receipt.billing_period_interest})</div>
-                    {receipt.note ? <div className="text-slate-600 dark:text-slate-300">{t('noteLabel')} {receipt.note}</div> : null}
-                  </div>
-                </div>
-
-                <div className="w-full md:w-56 space-y-2">
-                  <label className="block space-y-1 text-xs text-slate-600 dark:text-slate-300">
-                    <span className="font-semibold">{t('reviewNoteLabel')}</span>
-                    <textarea
-                      value={receiptReviewNotes[receipt.id] ?? ''}
-                      onChange={(event) => setReceiptReviewNotes((current) => ({ ...current, [receipt.id]: event.target.value }))}
-                      className="w-full min-h-20 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
-                      placeholder={t('reviewNotePlaceholder')}
-                    />
-                  </label>
-
-                  {RECEIPT_STATUS_OPTIONS.map((statusOption) => (
-                    <Button
-                      key={statusOption}
-                      type="button"
-                      variant={receipt.status === statusOption ? 'default' : 'outline'}
-                      disabled={savingReceiptId === receipt.id || receipt.status === statusOption}
-                      onClick={() => handleUpdateReceiptStatus(receipt, statusOption)}
-                      className="w-full h-10"
-                    >
-                      {receiptStatusLabel(statusOption)}
-                    </Button>
-                  ))}
-
-                  {(receipt.status === 'approved' || receipt.status === 'reviewed') && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => handleDownloadInvoice(receipt)}
-                      className="w-full h-10 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
-                    >
-                      <FileText className="w-4 h-4 mr-2" />
-                      {t('invoicePdf')}
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {(receipt.reviewed_by || receipt.reviewed_at || receipt.review_note) ? (
-                <div className="mt-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3 text-xs text-slate-600 dark:text-slate-300">
-                  <div>{t('reviewedBy')} {receipt.reviewed_by ?? 'N/A'}</div>
-                  <div>{t('reviewedAt')} {receipt.reviewed_at ?? 'N/A'}</div>
-                  <div>{t('reviewNoteResult')} {receipt.review_note || t('noNote')}</div>
-                </div>
-              ) : null}
-            </article>
+            <ReceiptCard
+              key={receipt.id}
+              receipt={receipt}
+              savingReceiptId={savingReceiptId}
+              reviewNote={receiptReviewNotes[receipt.id] ?? ''}
+              onReviewNoteChange={(id, note) => setReceiptReviewNotes((current) => ({ ...current, [id]: note }))}
+              onUpdateStatus={handleUpdateReceiptStatus}
+              onDownloadInvoice={handleDownloadInvoice}
+              t={t}
+            />
           ))
         )}
       </section>
