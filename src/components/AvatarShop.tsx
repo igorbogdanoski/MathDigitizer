@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Lock, CheckCircle2, Shield, Crown, Zap, Flame, Star, StarHalf } from 'lucide-react';
 import { Button } from './ui/Button';
@@ -26,6 +27,7 @@ const AVATARS = [
 ];
 
 export const AvatarShop: React.FC<AvatarShopProps> = ({ isOpen, onClose, currentLevel, currentAvatar }) => {
+  const { t } = useTranslation('common');
   const { showToast } = useToast();
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -80,7 +82,7 @@ export const AvatarShop: React.FC<AvatarShopProps> = ({ isOpen, onClose, current
                 <p className="text-sm text-slate-500 dark:text-slate-400">Отклучувај нови аватари преку левелирање</p>
               </div>
             </div>
-            <button onClick={onClose} aria-label="Затвори" className="p-2 -mr-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            <button onClick={onClose} aria-label={t('ariaClose')} className="p-2 -mr-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
               <X className="w-5 h-5" />
             </button>
           </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useToast } from '../contexts/ToastContext';
@@ -10,6 +11,7 @@ interface VoiceInputButtonProps {
 }
 
 export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({ onResult, lang = 'mk-MK', className = '' }) => {
+  const { t } = useTranslation('common');
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const { showToast } = useToast();
@@ -77,7 +79,7 @@ export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({ onResult, la
       size="sm"
       className={`${isListening ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:text-red-700' : 'text-slate-500 hover:text-indigo-600'} ${className}`}
       onClick={toggleListening}
-      title="Гласовен внес"
+      title={t('ariaVoiceInput')}
     >
       {isListening ? (
         <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Слушам...</>

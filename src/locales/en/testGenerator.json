@@ -52,5 +52,12 @@
   "defaults": {
     "testTitle": "Math Test / Exercises",
     "teacherName": "Igor Bogdanoski"
-  }
+  },
+  "ariaExamLink": "Exam link",
+  "ariaExamTitle": "Exam title",
+  "ariaQuestionPoints": "Question points",
+  "ariaBloomTaxonomy": "Bloom's taxonomy",
+  "ariaSectionText": "Section text",
+  "ariaQuestionText": "Question text",
+  "ariaListItem": "List item"
 }

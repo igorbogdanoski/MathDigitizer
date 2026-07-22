@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Wand2, Library as LibraryIcon, Factory, ChevronRight } from 'lucide-react';
 
@@ -19,10 +20,11 @@ interface WorkflowStepsProps {
  * narrative is reinforced while teachers are actually using it.
  */
 export const WorkflowSteps: React.FC<WorkflowStepsProps> = ({ current }) => {
+  const { t } = useTranslation('common');
   const currentIndex = WORKFLOW_STEPS.findIndex((step) => step.key === current);
 
   return (
-    <nav aria-label="Работен тек" className="flex items-center gap-1 text-sm overflow-x-auto no-scrollbar">
+    <nav aria-label={t('ariaWorkflow')} className="flex items-center gap-1 text-sm overflow-x-auto no-scrollbar">
       {WORKFLOW_STEPS.map((step, index) => {
         const Icon = step.icon;
         const isCurrent = index === currentIndex;

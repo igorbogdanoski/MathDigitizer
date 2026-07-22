@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Activity, X, Maximize2 } from 'lucide-react';
@@ -7,6 +8,7 @@ import { InteractiveCanvas } from './InteractiveCanvas';
 import { useModalA11y } from '../hooks/useModalA11y';
 
 export const LiveClassroomMonitor = () => {
+  const { t } = useTranslation('common');
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const modalRef = useModalA11y<HTMLDivElement>(() => setSelectedSessionId(null), !!selectedSessionId);
@@ -52,7 +54,7 @@ export const LiveClassroomMonitor = () => {
                     <h4 className="font-bold text-sm text-slate-900 dark:text-white line-clamp-1">{session.userName}</h4>
                     <p className="text-[10px] uppercase font-bold text-indigo-500">{session.taskTitle}</p>
                   </div>
-                  <Button size="sm" variant="outline" className="h-7 w-7 p-0" title="Гледај на цел екран" onClick={() => setSelectedSessionId(session.id)}>
+                  <Button size="sm" variant="outline" className="h-7 w-7 p-0" title={t('ariaViewFullscreen')} onClick={() => setSelectedSessionId(session.id)}>
                     <Maximize2 className="w-3 h-3" />
                   </Button>
                 </div>

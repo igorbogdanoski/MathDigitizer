@@ -25,7 +25,7 @@ const TOOL_GROUP_ORDER: ToolGroupKey[] = ['digitize', 'generate', 'teach', 'anal
 // Tool group labels are translated via useTranslation in the component
 
 export const Layout: React.FC = () => {
-  const { t } = useTranslation('navigation');
+  const { t } = useTranslation(['navigation', 'common']);
   const { user, userProfile, isLoading, setUserProfile } = useAuth();
   const { dyslexiaMode, toggleDyslexiaMode, dyscalculiaMode, toggleDyscalculiaMode } = useAccessibility();
   const location = useLocation();
@@ -205,7 +205,7 @@ export const Layout: React.FC = () => {
                 type="button"
                 onClick={() => setTrialExpiredDismissed(true)}
                 className="ml-auto p-1 rounded hover:bg-rose-500 transition-colors"
-                aria-label="Затвори"
+                aria-label={t('common:ariaClose')}
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -351,8 +351,8 @@ export const Layout: React.FC = () => {
               type="button"
               onClick={() => setIsCommandPaletteOpen(true)}
               className="hidden md:flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xs font-medium"
-              title="Брзо пребарување"
-              aria-label="Отвори брзо пребарување"
+              title={t('common:ariaQuickSearch')}
+              aria-label={t('common:ariaOpenQuickSearch')}
             >
               <Search className="w-3.5 h-3.5" />
               <span className="hidden 2xl:inline">Пребарај</span>
@@ -367,7 +367,7 @@ export const Layout: React.FC = () => {
               type="button"
               onClick={toggleTheme}
               className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
-              title={isDarkMode ? "Светла тема" : "Темна тема"}
+              title={isDarkMode ? t('common:ariaLightTheme') : t('common:ariaDarkTheme')}
               aria-label="Toggle theme"
             >
               {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -381,7 +381,7 @@ export const Layout: React.FC = () => {
                 aria-haspopup="menu"
                 aria-expanded={isAccessibilityMenuOpen}
                 className={`p-2 rounded-full transition-colors ${(dyslexiaMode || dyscalculiaMode) ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                title="Пристапност"
+                title={t('common:ariaAccessibility')}
                 aria-label="Accessibility settings"
               >
                 <SettingsIcon className="w-4 h-4" />

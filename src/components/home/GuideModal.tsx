@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Info, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { motion, AnimatePresence } from 'motion/react';
@@ -9,6 +10,7 @@ interface GuideModalProps {
 }
 
 export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
+  const { t } = useTranslation('common');
   return (
     <AnimatePresence>
       {isOpen && (
@@ -27,8 +29,8 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Затвори модал"
-                title="Затвори"
+                aria-label={t('ariaCloseModal')}
+                title={t('ariaClose')}
                 className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               >
                 <X className="w-5 h-5" />

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MakedoTestDocument, MakedoQuestion, SummativeExam } from '../lib/schema';
 import { MathRenderer } from './MathRenderer';
 import { Printer, Edit3, ArrowUp, ArrowDown, Eye, Copy, Check } from 'lucide-react';
@@ -13,6 +14,7 @@ interface MakedoTestViewerProps {
 }
 
 export const MakedoTestViewer: React.FC<MakedoTestViewerProps> = ({ test: initialTest }) => {
+  const { t } = useTranslation('testGenerator');
   const { user } = useAuth();
   const { showToast } = useToast();
   const [test, setTest] = useState<MakedoTestDocument>(initialTest);
@@ -155,7 +157,7 @@ export const MakedoTestViewer: React.FC<MakedoTestViewerProps> = ({ test: initia
              <p className="text-emerald-600 font-medium text-sm">Споделете го овој линк со учениците. Тие ќе можат веднаш да почнат со решавање.</p>
           </div>
           <div className="flex items-center gap-2 bg-white border border-emerald-200 rounded-lg p-1 w-full md:w-auto">
-            <input type="text" readOnly value={examLink} title="Линк за испит" aria-label="Линк за испит" className="bg-transparent border-none focus:ring-0 text-sm font-mono text-slate-600 px-3 w-full md:w-64" />
+            <input type="text" readOnly value={examLink} title={t('ariaExamLink')} aria-label={t('ariaExamLink')} className="bg-transparent border-none focus:ring-0 text-sm font-mono text-slate-600 px-3 w-full md:w-64" />
             <Button size="sm" onClick={copyToClipboard} className="bg-emerald-500 hover:bg-emerald-600 text-white whitespace-nowrap">
                {isCopied ? <><Check className="w-4 h-4 mr-1" /> Копирано</> : <><Copy className="w-4 h-4 mr-1" /> Копирај Линк</>}
             </Button>
@@ -170,8 +172,8 @@ export const MakedoTestViewer: React.FC<MakedoTestViewerProps> = ({ test: initia
               type="text"
               value={test.title}
               onChange={e => setTest({...test, title: e.target.value})}
-              title="Наслов на испит"
-              aria-label="Наслов на испит"
+              title={t('ariaExamTitle')}
+              aria-label={t('ariaExamTitle')}
               className="text-2xl font-black bg-white/10 border border-white/20 rounded px-2 py-1 mb-1 w-full text-white"
             />
           ) : (
@@ -220,8 +222,8 @@ export const MakedoTestViewer: React.FC<MakedoTestViewerProps> = ({ test: initia
                          type="number"
                          value={q.points || 0}
                          onChange={e => updateQuestion(idx, { points: Number(e.target.value) })}
-                         title="Поени за прашање"
-                         aria-label="Поени за прашање"
+                         title={t('ariaQuestionPoints')}
+                         aria-label={t('ariaQuestionPoints')}
                          className="w-16 h-8 border border-slate-300 rounded-md px-2 font-bold text-slate-800 bg-white"
                        />
                     </div>
@@ -230,8 +232,8 @@ export const MakedoTestViewer: React.FC<MakedoTestViewerProps> = ({ test: initia
                        <select
                          value={q.bloom_taxonomy || ''}
                          onChange={e => updateQuestion(idx, { bloom_taxonomy: e.target.value })}
-                         title="Блум таксономија"
-                         aria-label="Блум таксономија"
+                         title={t('ariaBloomTaxonomy')}
+                         aria-label={t('ariaBloomTaxonomy')}
                          className="h-8 border border-slate-300 rounded-md px-2 text-xs font-bold text-slate-700 max-w-28 bg-white"
                        >
                          <option value="">Неодредено</option>
@@ -264,8 +266,8 @@ export const MakedoTestViewer: React.FC<MakedoTestViewerProps> = ({ test: initia
                       type="text"
                       value={q.text}
                       onChange={e => updateQuestion(idx, { text: e.target.value })}
-                      title="Текст на секција"
-                      aria-label="Текст на секција"
+                      title={t('ariaSectionText')}
+                      aria-label={t('ariaSectionText')}
                       className="text-xl font-black text-slate-800 uppercase tracking-widest bg-white border border-blue-200 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
                     />
                   ) : (
@@ -279,8 +281,8 @@ export const MakedoTestViewer: React.FC<MakedoTestViewerProps> = ({ test: initia
                       <textarea
                         value={q.text}
                         onChange={e => updateQuestion(idx, { text: e.target.value })}
-                        title="Текст на прашање"
-                        aria-label="Текст на прашање"
+                        title={t('ariaQuestionText')}
+                        aria-label={t('ariaQuestionText')}
                         className="w-full text-slate-800 bg-white border border-blue-200 rounded-lg p-3 min-h-24 resize-y focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                       />
                     ) : (
@@ -350,7 +352,7 @@ export const MakedoTestViewer: React.FC<MakedoTestViewerProps> = ({ test: initia
                     {q.items.map((it, i) => (
                       <div key={i} className="flex items-center gap-3">
                         <div className="w-2 h-2 rounded-full bg-slate-300"></div>
-                        <input type="text" title="Ставка од листа" aria-label="Ставка од листа" className="flex-1 bg-slate-50 border-b border-slate-200 p-1 focus:border-indigo-500 focus:ring-0" />
+                        <input type="text" title={t('ariaListItem')} aria-label={t('ariaListItem')} className="flex-1 bg-slate-50 border-b border-slate-200 p-1 focus:border-indigo-500 focus:ring-0" />
                       </div>
                     ))}
                   </div>

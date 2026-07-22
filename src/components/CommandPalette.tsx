@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Fuse from 'fuse.js';
 import { Search, CornerDownLeft, X, type LucideIcon } from 'lucide-react';
 
@@ -21,6 +22,7 @@ interface CommandPaletteProps {
  * which of the 20+ tools they want don't have to hunt through nested menus.
  */
 export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, items }) => {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
@@ -77,7 +79,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
       className="fixed inset-0 z-[200] flex items-start justify-center pt-24 px-4 bg-slate-900/60 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-label="Брзо пребарување"
+      aria-label={t('ariaQuickSearch')}
       onClick={onClose}
     >
       <div
@@ -98,7 +100,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
           <button
             type="button"
             onClick={onClose}
-            aria-label="Затвори пребарување"
+            aria-label={t('ariaCloseSearch')}
             className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
           >
             <X className="w-4 h-4" />

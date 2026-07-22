@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, Lock, Zap, BookOpen, BrainCircuit, Star, X } from 'lucide-react';
 import { Card, CardContent } from './ui/Card';
@@ -26,6 +27,7 @@ const KNOWLEDGE_NODES: SkillNode[] = [
 ];
 
 export const StudentSkillTree: React.FC<{ currentXP: number }> = ({ currentXP }) => {
+  const { t } = useTranslation('common');
   const [selectedNode, setSelectedNode] = useState<SkillNode | null>(null);
 
   // Check if a node is unlocked based on XP and dependencies
@@ -151,7 +153,7 @@ export const StudentSkillTree: React.FC<{ currentXP: number }> = ({ currentXP })
                             </span>
                          </div>
                       </div>
-                      <button onClick={() => setSelectedNode(null)} aria-label="Затвори" className="text-slate-500 hover:text-white transition-colors bg-white/5 p-2 rounded-full">
+                      <button onClick={() => setSelectedNode(null)} aria-label={t('ariaClose')} className="text-slate-500 hover:text-white transition-colors bg-white/5 p-2 rounded-full">
                          <X className="w-5 h-5" />
                       </button>
                    </div>

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
@@ -25,6 +26,7 @@ export const useToast = () => {
 };
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { t } = useTranslation('common');
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
@@ -63,10 +65,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               
               <p className="text-sm font-medium flex-1">{toast.message}</p>
               
-              <button 
+              <button
                 onClick={() => removeToast(toast.id)}
-                aria-label="Затвори известување"
-                title="Затвори известување"
+                aria-label={t('ariaCloseNotification')}
+                title={t('ariaCloseNotification')}
                 className="p-1 rounded-md hover:bg-black/5 transition-colors shrink-0"
               >
                 <X className="w-4 h-4 opacity-50 hover:opacity-100" />

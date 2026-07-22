@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { BrainCircuit, ScanLine, Trophy, ArrowRight, X } from 'lucide-react';
@@ -32,6 +33,7 @@ const STEPS = [
 ];
 
 export const OnboardingWizard: React.FC<Props> = ({ userName, onComplete }) => {
+  const { t } = useTranslation('common');
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
   const current = STEPS[step];
@@ -59,7 +61,7 @@ export const OnboardingWizard: React.FC<Props> = ({ userName, onComplete }) => {
         <button
           onClick={onComplete}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-          aria-label="Затвори"
+          aria-label={t('ariaClose')}
         >
           <X className="w-5 h-5" />
         </button>
