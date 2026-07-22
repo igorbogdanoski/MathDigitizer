@@ -23,6 +23,7 @@ import mkGradebook from './locales/mk/gradebook.json';
 import mkDifferentiation from './locales/mk/differentiation.json';
 import mkEarlyWarning from './locales/mk/earlyWarning.json';
 import mkBilling from './locales/mk/billing.json';
+import mkSchoolInquiries from './locales/mk/schoolInquiries.json';
 
 import enCommon from './locales/en/common.json';
 import enNavigation from './locales/en/navigation.json';
@@ -36,6 +37,7 @@ import enGradebook from './locales/en/gradebook.json';
 import enDifferentiation from './locales/en/differentiation.json';
 import enEarlyWarning from './locales/en/earlyWarning.json';
 import enBilling from './locales/en/billing.json';
+import enSchoolInquiries from './locales/en/schoolInquiries.json';
 
 import alCommon from './locales/al/common.json';
 import alNavigation from './locales/al/navigation.json';
@@ -49,6 +51,7 @@ import alGradebook from './locales/al/gradebook.json';
 import alDifferentiation from './locales/al/differentiation.json';
 import alEarlyWarning from './locales/al/earlyWarning.json';
 import alBilling from './locales/al/billing.json';
+import alSchoolInquiries from './locales/al/schoolInquiries.json';
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'mk', name: 'Македонски', flag: '🇲🇰' },
@@ -76,6 +79,7 @@ i18n
         differentiation: mkDifferentiation,
         earlyWarning: mkEarlyWarning,
         billing: mkBilling,
+        schoolInquiries: mkSchoolInquiries,
       },
       en: {
         common: enCommon,
@@ -90,6 +94,7 @@ i18n
         differentiation: enDifferentiation,
         earlyWarning: enEarlyWarning,
         billing: enBilling,
+        schoolInquiries: enSchoolInquiries,
       },
       al: {
         common: alCommon,
@@ -104,11 +109,12 @@ i18n
         differentiation: alDifferentiation,
         earlyWarning: alEarlyWarning,
         billing: alBilling,
+        schoolInquiries: alSchoolInquiries,
       },
     },
     fallbackLng: 'mk',
     defaultNS: 'common',
-    ns: ['common', 'navigation', 'pricing', 'home', 'library', 'extraction', 'dashboard', 'flashcards', 'gradebook', 'differentiation', 'earlyWarning', 'billing'],
+    ns: ['common', 'navigation', 'pricing', 'home', 'library', 'extraction', 'dashboard', 'flashcards', 'gradebook', 'differentiation', 'earlyWarning', 'billing', 'schoolInquiries'],
     
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
