@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BrainCircuit, X, Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const LazyMathRenderer = lazy(() => import('./MathRenderer').then(m => ({ default: m.MathRenderer })));
 
 export const GlobalAITutor: React.FC = () => {
+  const { t } = useTranslation('globalTutor');
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
   const [input, setInput] = useState('');
@@ -37,13 +39,13 @@ export const GlobalAITutor: React.FC = () => {
       setChatSession(session);
       setMessages([{
         role: 'model',
-        text: 'Здраво! Јас сум твојот AI Сократов Асистент. Кој математички концепт сакаш да го совладаме денес?'
+        text: t('welcomeMessage')
       }]);
     } catch (e) {
       console.error("Failed to init chat:", e);
       setMessages([{
         role: 'model',
-        text: 'Има проблем со поврзувањето. Те молам обиди се повторно подоцна.'
+        text: t('connectionError')
       }]);
     } finally {
       setIsLoading(false);
@@ -64,7 +66,7 @@ export const GlobalAITutor: React.FC = () => {
       setMessages(prev => [...prev, { role: 'model', text: response.text }]);
     } catch (error) {
       console.error("Chat error:", error);
-      setMessages(prev => [...prev, { role: 'model', text: "Извини, настана грешка при комуникацијата." }]);
+      setMessages(prev => [...prev, { role: 'model', text: t('chatError') }]);
     } finally {
       setIsLoading(false);
     }
@@ -107,14 +109,14 @@ export const GlobalAITutor: React.FC = () => {
                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border border-slate-950"></div>
                   </div>
                   <div>
-                     <h3 className="text-white font-bold text-sm tracking-wide">Педагошки Асистент</h3>
-                     <p className="text-indigo-400 text-[10px] font-mono uppercase tracking-widest mt-0.5">Socratic Engine Active</p>
+                     <h3 className="text-white font-bold text-sm tracking-wide">{t('title')}</h3>
+                     <p className="text-indigo-400 text-[10px] font-mono uppercase tracking-widest mt-0.5">{t('engineStatus')}</p>
                   </div>
                </div>
                <button 
                  onClick={() => setIsOpen(false)}
-                 aria-label="Затвори асистент"
-                 title="Затвори асистент"
+                 aria-label={t('closeAriaLabel')}
+                 title={t('closeAriaLabel')}
                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors"
                >
                   <X className="w-5 h-5" />
@@ -126,7 +128,7 @@ export const GlobalAITutor: React.FC = () => {
               {messages.length === 0 && isLoading && (
                  <div className="flex items-center justify-center h-full text-slate-400 gap-3">
                    <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
-                   <span className="font-mono text-xs uppercase tracking-widest">Бутирање когнитивен мотор...</span>
+                   <span className="font-mono text-xs uppercase tracking-widest">{t('booting')}</span>
                  </div>
               )}
               {messages.map((msg, idx) => (
@@ -164,15 +166,15 @@ export const GlobalAITutor: React.FC = () => {
                 <input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Внеси математичко прашање..."
+                  placeholder={t('inputPlaceholder')}
                   className="flex-1 h-12 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-indigo-500 bg-slate-50 dark:bg-slate-950 text-sm px-4 outline-none transition-colors"
                   disabled={isLoading || !chatSession}
                 />
                 <button 
                   type="submit" 
                   disabled={isLoading || !input.trim() || !chatSession} 
-                  aria-label="Испрати порака"
-                  title="Испрати порака"
+                  aria-label={t('sendAriaLabel')}
+                  title={t('sendAriaLabel')}
                   className="h-12 w-12 flex items-center justify-center rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 disabled:hover:bg-indigo-600 transition-colors"
                 >
                   <Send className="w-4 h-4 ml-0.5" />

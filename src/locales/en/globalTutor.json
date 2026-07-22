@@ -1,0 +1,11 @@
+{
+  "title": "Pedagogical Assistant",
+  "engineStatus": "Socratic Engine Active",
+  "closeAriaLabel": "Close assistant",
+  "booting": "Booting cognitive engine...",
+  "inputPlaceholder": "Enter a math question...",
+  "sendAriaLabel": "Send message",
+  "welcomeMessage": "Hello! I'm your AI Socratic Assistant. Which math concept would you like to master today?",
+  "connectionError": "There's a connection problem. Please try again later.",
+  "chatError": "Sorry, an error occurred during communication."
+}

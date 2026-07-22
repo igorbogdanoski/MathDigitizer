@@ -7,11 +7,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, PlayCircle, ImageIcon, PlusCircle, CheckCircle, Smartphone } from 'lucide-react';
 import { Button } from './ui/Button';
+import { useTranslation } from 'react-i18next';
 
 export const KahootMaker = () => {
+  const { t } = useTranslation('kahoot');
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [prompt, setPrompt] = useState('Направи математички квиз од 10 прашања базиран на материјалот.');
+  const [prompt, setPrompt] = useState(t('defaultPrompt'));
   const [files, setFiles] = useState<{base64: string, mimeType: string, name: string}[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,11 +40,11 @@ export const KahootMaker = () => {
 
   const handleGenerateAndHost = async () => {
     if (!user) {
-      setError('Мора да сте најавени како наставник за да хостирате квиз.');
+      setError(t('errorMustBeTeacher'));
       return;
     }
     if (files.length === 0) {
-      setError('Ве молиме прикачете барем еден документ или слика.');
+      setError(t('errorNoFiles'));
       return;
     }
 
@@ -63,7 +65,7 @@ export const KahootMaker = () => {
       setDraftQuiz(normalizedQuiz);
     } catch (err: any) {
       console.error(err);
-      setError('Грешка при генерирање: ' + err.message);
+      setError(t('errorGenerating', { message: err.message }));
     } finally {
       setIsGenerating(false);
     }
@@ -87,7 +89,7 @@ export const KahootMaker = () => {
       navigate(`/live/${pin}/host`);
     } catch (err: any) {
       console.error(err);
-      setError('Грешка при пуштање во живо: ' + err.message);
+      setError(t('errorLive', { message: err.message }));
     }
   };
   
@@ -104,11 +106,11 @@ export const KahootMaker = () => {
          <div className="bg-white rounded-5xl shadow-xl p-8 border border-slate-100">
              <div className="flex justify-between items-center mb-8 pb-6 border-b border-slate-100">
                 <div>
-                   <h2 className="text-2xl font-black text-slate-800 tracking-tight">Преглед на Квизот</h2>
-                   <p className="text-slate-500 font-medium mt-1">Овде можете да го прилагодите точното време за решавање на секое прашање.</p>
+                   <h2 className="text-2xl font-black text-slate-800 tracking-tight">{t('quizPreview')}</h2>
+                   <p className="text-slate-500 font-medium mt-1">{t('quizPreviewSub')}</p>
                 </div>
                 <Button onClick={handleStartHost} className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold h-12 px-6 rounded-xl shadow-lg shadow-emerald-500/30">
-                  <PlayCircle className="w-5 h-5 mr-2" /> Започни Игра
+                  <PlayCircle className="w-5 h-5 mr-2" /> {t('startGame')}
                 </Button>
              </div>
              
@@ -129,18 +131,18 @@ export const KahootMaker = () => {
                       </div>
                     </div>
                     <div className="w-40 shrink-0">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Време (секунди)</label>
-                      <select 
-                        value={q.timeLimit} 
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">{t('timeLabel')}</label>
+                      <select
+                        value={q.timeLimit}
                         onChange={(e) => updateQuestionTime(i, Number(e.target.value))}
                         className="w-full h-11 bg-white border border-slate-200 rounded-xl px-4 text-slate-800 font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       >
-                         <option value={15}>15 сек</option>
-                         <option value={30}>30 сек</option>
-                         <option value={60}>1 минута</option>
-                         <option value={90}>1.5 минути</option>
-                         <option value={120}>2 минути</option>
-                         <option value={300}>5 минути</option>
+                         <option value={15}>{t('time15')}</option>
+                         <option value={30}>{t('time30')}</option>
+                         <option value={60}>{t('time60')}</option>
+                         <option value={90}>{t('time90')}</option>
+                         <option value={120}>{t('time120')}</option>
+                         <option value={300}>{t('time300')}</option>
                       </select>
                     </div>
                  </div>
@@ -157,9 +159,9 @@ export const KahootMaker = () => {
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 text-white shadow-xl mb-4">
           <Smartphone className="w-10 h-10" />
         </div>
-        <h2 className="text-3xl font-black text-slate-800 tracking-tight">MathKahoot Генератор</h2>
+        <h2 className="text-3xl font-black text-slate-800 tracking-tight">{t('generatorTitle')}</h2>
         <p className="text-slate-500 max-w-xl mx-auto text-lg leading-relaxed">
-          Прикачете скрипти, тестови или книги. AI-то ќе ги прочита, ќе извлече задачи и веднаш ќе креира интерактивен квиз за вашите ученици.
+          {t('generatorDescription')}
         </p>
       </div>
 
@@ -168,7 +170,7 @@ export const KahootMaker = () => {
           <div>
             <label className="text-sm font-bold text-slate-700 uppercase tracking-widest block mb-4 flex items-center gap-2">
               <ImageIcon className="w-5 h-5 text-indigo-500" />
-              1. Извори за Квизот
+              {t('sourcesLabel')}
             </label>
             <div className="flex gap-4 flex-wrap">
               {files.map((f, i) => (
@@ -179,7 +181,7 @@ export const KahootMaker = () => {
               ))}
               <label className="flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 hover:border-indigo-500 hover:bg-slate-50 px-6 py-2 rounded-xl cursor-pointer transition-colors text-sm font-bold text-slate-500">
                 <PlusCircle className="w-4 h-4" />
-                <span>Додај Фајл</span>
+                <span>{t('addFile')}</span>
                 <input type="file" multiple accept="image/*,application/pdf" className="hidden" onChange={handleFileUpload} />
               </label>
             </div>
@@ -188,13 +190,13 @@ export const KahootMaker = () => {
           <div>
             <label className="text-sm font-bold text-slate-700 uppercase tracking-widest block mb-4 flex items-center gap-2">
               <PlayCircle className="w-5 h-5 text-indigo-500" />
-              2. Промпт и Правила
+              {t('promptLabel')}
             </label>
             <textarea
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
               className="w-full h-32 p-5 text-base bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 resize-none font-medium placeholder:text-slate-400 transition-all"
-              placeholder="пр. Направи 5 прашања од областа на линеарни функции..."
+              placeholder={t('promptPlaceholder')}
             />
           </div>
 
@@ -210,9 +212,9 @@ export const KahootMaker = () => {
             className="w-full h-16 text-lg font-black bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-500/30 transition-all transform hover:scale-[1.01] active:scale-[0.98]"
           >
             {isGenerating ? (
-              <><Loader2 className="w-6 h-6 mr-3 animate-spin" /> Се генерира MathKahoot...</>
+              <><Loader2 className="w-6 h-6 mr-3 animate-spin" /> {t('generating')}</>
             ) : (
-              <><PlayCircle className="w-6 h-6 mr-3" /> Генерирај и Започни Игра!</>
+              <><PlayCircle className="w-6 h-6 mr-3" /> {t('generateAndStart')}</>
             )}
           </Button>
         </div>

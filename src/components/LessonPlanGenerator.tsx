@@ -7,6 +7,7 @@ import { generateLessonPlan } from '../lib/gemini';
 import { exportLessonPlanToWord } from '../lib/export';
 import { useToast } from '../contexts/ToastContext';
 import { useModalA11y } from '../hooks/useModalA11y';
+import { useTranslation } from 'react-i18next';
 
 interface LessonPlanGeneratorProps {
   selectedTasks: MathTask[];
@@ -15,6 +16,7 @@ interface LessonPlanGeneratorProps {
 
 export const LessonPlanGenerator: React.FC<LessonPlanGeneratorProps> = ({ selectedTasks, onClose }) => {
   const { showToast } = useToast();
+  const { t } = useTranslation('lessonPlan');
   const modalRef = useModalA11y<HTMLDivElement>(onClose);
   const [topicName, setTopicName] = useState('Анализа на функции');
   const [gradeLevel, setGradeLevel] = useState('1 година');
@@ -28,7 +30,7 @@ export const LessonPlanGenerator: React.FC<LessonPlanGeneratorProps> = ({ select
       setPlanData(data);
     } catch (error) {
        console.error(error);
-       showToast("Грешка при генерирање на подготовката.", 'error');
+       showToast(t('generateError'), 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -49,11 +51,11 @@ export const LessonPlanGenerator: React.FC<LessonPlanGeneratorProps> = ({ select
               <BookOpen className="w-6 h-6 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
-              <h3 className="font-extrabold text-slate-900 dark:text-white text-xl">Наставна Подготовка</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Креирање план базиран на <span className="text-orange-600 font-bold">{selectedTasks.length}</span> избрани задачи според БРО</p>
+              <h3 className="font-extrabold text-slate-900 dark:text-white text-xl">{t('title')}</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t('subtitle', { count: selectedTasks.length })}</p>
             </div>
           </div>
-          <button type="button" onClick={onClose} aria-label="Затвори" title="Затвори" className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-700 rounded-full shadow-sm hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 transition-colors">
+          <button type="button" onClick={onClose} aria-label={t('closeAriaLabel')} title={t('closeAriaLabel')} className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-700 rounded-full shadow-sm hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -63,20 +65,20 @@ export const LessonPlanGenerator: React.FC<LessonPlanGeneratorProps> = ({ select
           <div className="space-y-6">
             <div className="space-y-4 p-5 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
               <div className="space-y-2">
-                 <label className="text-xs font-bold text-slate-500 tracking-wider uppercase">Автоматски наслов (Тема)</label>
-                 <Input 
-                   value={topicName} 
-                   onChange={(e) => setTopicName(e.target.value)} 
-                   placeholder="Внесете наслов на методската единица..." 
+                 <label className="text-xs font-bold text-slate-500 tracking-wider uppercase">{t('topicLabel')}</label>
+                 <Input
+                   value={topicName}
+                   onChange={(e) => setTopicName(e.target.value)}
+                   placeholder={t('topicPlaceholder')}
                    className="h-11 rounded-xl bg-white dark:bg-slate-800 shadow-inner"
                  />
               </div>
               <div className="space-y-2">
-                 <label className="text-xs font-bold text-slate-500 tracking-wider uppercase">Одделение / Година</label>
-                 <Input 
-                   value={gradeLevel} 
-                   onChange={(e) => setGradeLevel(e.target.value)} 
-                   placeholder="Пр. 8мо одделение..." 
+                 <label className="text-xs font-bold text-slate-500 tracking-wider uppercase">{t('gradeLabel')}</label>
+                 <Input
+                   value={gradeLevel}
+                   onChange={(e) => setGradeLevel(e.target.value)}
+                   placeholder={t('gradePlaceholder')}
                    className="h-11 rounded-xl bg-white dark:bg-slate-800 shadow-inner"
                  />
               </div>
@@ -87,7 +89,7 @@ export const LessonPlanGenerator: React.FC<LessonPlanGeneratorProps> = ({ select
                 className="w-full h-12 bg-orange-600 hover:bg-orange-700 text-white rounded-xl shadow-lg shadow-orange-500/20 font-bold mt-4"
               >
                 {isGenerating ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Sparkles className="w-5 h-5 mr-2" />}
-                {isGenerating ? "Генерирање методички план..." : "Генерирај Подготовка"}
+                {isGenerating ? t('generating') : t('generate')}
               </Button>
             </div>
             
@@ -97,7 +99,7 @@ export const LessonPlanGenerator: React.FC<LessonPlanGeneratorProps> = ({ select
                 className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg border-none font-bold text-lg"
               >
                  <FileText className="w-6 h-6 mr-2" />
-                 Преземи како Word (.docx)
+                 {t('downloadWord')}
               </Button>
             )}
           </div>
@@ -107,40 +109,40 @@ export const LessonPlanGenerator: React.FC<LessonPlanGeneratorProps> = ({ select
             {!planData ? (
                <div className="h-full flex flex-col items-center justify-center text-slate-400 text-center opacity-60">
                  <BookOpen className="w-16 h-16 mb-4" />
-                 <p>Пополнете ги податоците лево и кликнете<br/>"Генерирај Подготовка" за AI анализа.</p>
+                 <p>{t('emptyState')}</p>
                </div>
             ) : (
                <div className="space-y-6 animate-in fade-in duration-500">
                  <div className="text-center pb-4 border-b border-slate-100 dark:border-slate-700">
-                    <h2 className="text-lg font-black uppercase">Дневна Подготовка</h2>
-                    <p className="opacity-80">Тема: {planData.topic} | Одд: {planData.grade}</p>
+                    <h2 className="text-lg font-black uppercase">{t('dailyPlan')}</h2>
+                    <p className="opacity-80">{t('topic')} {planData.topic} | {t('grade')} {planData.grade}</p>
                  </div>
                  
                  <div>
-                    <h3 className="font-bold text-indigo-600 dark:text-indigo-400 mb-2">Цели на часот</h3>
+                    <h3 className="font-bold text-indigo-600 dark:text-indigo-400 mb-2">{t('objectives')}</h3>
                     <ul className="list-disc pl-5 space-y-1">
                       {planData.objectives?.map((obj: string, i: number) => <li key={i}>{obj}</li>)}
                     </ul>
                  </div>
 
                  <div>
-                    <h3 className="font-bold text-emerald-600 dark:text-emerald-400 mb-2">Очекувани исходи</h3>
+                    <h3 className="font-bold text-emerald-600 dark:text-emerald-400 mb-2">{t('outcomes')}</h3>
                     <ul className="list-disc pl-5 space-y-1">
                       {planData.outcomes?.map((obj: string, i: number) => <li key={i}>{obj}</li>)}
                     </ul>
                  </div>
 
                  <div>
-                    <h3 className="font-bold text-amber-600 dark:text-amber-400 mb-2">Тек на часот</h3>
+                    <h3 className="font-bold text-amber-600 dark:text-amber-400 mb-2">{t('lessonFlow')}</h3>
                     <div className="space-y-3">
-                       <p><strong className="opacity-80 block mb-1">Воведен дел:</strong> {planData.intro}</p>
-                       <p><strong className="opacity-80 block mb-1">Главен дел:</strong> {planData.main}</p>
-                       <p><strong className="opacity-80 block mb-1">Завршен дел:</strong> {planData.outro}</p>
+                       <p><strong className="opacity-80 block mb-1">{t('introPart')}</strong> {planData.intro}</p>
+                       <p><strong className="opacity-80 block mb-1">{t('mainPart')}</strong> {planData.main}</p>
+                       <p><strong className="opacity-80 block mb-1">{t('outroPart')}</strong> {planData.outro}</p>
                     </div>
                  </div>
 
                  <div>
-                    <h3 className="font-bold text-purple-600 dark:text-purple-400 mb-2">Формативно оценување</h3>
+                    <h3 className="font-bold text-purple-600 dark:text-purple-400 mb-2">{t('formativeAssessment')}</h3>
                     <p>{planData.assessment}</p>
                  </div>
                </div>

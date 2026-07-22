@@ -10,10 +10,12 @@ import { KnowledgePath } from './student/KnowledgePath';
 import { SEO } from './SEO';
 import { Link } from 'react-router-dom';
 import { BookOpen, CheckCircle2, Zap, Flame, Trophy, ClipboardList, TrendingUp, Map, Loader2, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 type Tab = 'assignments' | 'progress' | 'knowledge';
 
 export const StudentDashboard: React.FC = () => {
+  const { t } = useTranslation('studentDashboard');
   const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState<Tab>('assignments');
@@ -136,9 +138,9 @@ export const StudentDashboard: React.FC = () => {
   }, [completedAttempts]);
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'assignments', label: 'Мои Задачи', icon: <ClipboardList className="w-4 h-4" /> },
-    { id: 'progress', label: 'Мој Напредок', icon: <TrendingUp className="w-4 h-4" /> },
-    { id: 'knowledge', label: 'Знаење Пат', icon: <Map className="w-4 h-4" /> },
+    { id: 'assignments', label: t('tabAssignments'), icon: <ClipboardList className="w-4 h-4" /> },
+    { id: 'progress', label: t('tabProgress'), icon: <TrendingUp className="w-4 h-4" /> },
+    { id: 'knowledge', label: t('tabKnowledge'), icon: <Map className="w-4 h-4" /> },
   ];
 
   if (isLoading) {
@@ -151,7 +153,7 @@ export const StudentDashboard: React.FC = () => {
 
   return (
     <>
-      <SEO title="Студентска Табла" description="Управувај со твоите задачи и следи го напредокот." keywords="ученик, задачи, напредок, математика" />
+      <SEO title={t('seoTitle')} description={t('seoDescription')} keywords={t('seoKeywords')} />
 
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
 
@@ -159,25 +161,25 @@ export const StudentDashboard: React.FC = () => {
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
           <div className="flex items-center gap-3">
             {user?.photoURL && (
-              <img src={user.photoURL} alt="Профил" className="w-10 h-10 rounded-full border-2 border-indigo-200 shrink-0" referrerPolicy="no-referrer" />
+              <img src={user.photoURL} alt={t('profileAlt')} className="w-10 h-10 rounded-full border-2 border-indigo-200 shrink-0" referrerPolicy="no-referrer" />
             )}
-            <h1 className="text-2xl font-black text-slate-800">Добредојде назад! 👋</h1>
+            <h1 className="text-2xl font-black text-slate-800">{t('welcomeBack')}</h1>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-indigo-50 rounded-2xl p-4 border border-indigo-100 text-center">
               <Zap className="w-5 h-5 text-indigo-500 mx-auto mb-1" />
               <p className="text-xl font-black text-indigo-700">{userStats?.xp ?? 0}</p>
-              <p className="text-xs text-indigo-500 font-medium">XP</p>
+              <p className="text-xs text-indigo-500 font-medium">{t('xp')}</p>
             </div>
             <div className="bg-orange-50 rounded-2xl p-4 border border-orange-100 text-center">
               <Flame className="w-5 h-5 text-orange-500 mx-auto mb-1" />
               <p className="text-xl font-black text-orange-700">{userStats?.streak ?? 0}</p>
-              <p className="text-xs text-orange-500 font-medium">Стрик</p>
+              <p className="text-xs text-orange-500 font-medium">{t('streak')}</p>
             </div>
             <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 text-center">
               <Trophy className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
               <p className="text-xl font-black text-emerald-700">{completedTaskIdSet.size}</p>
-              <p className="text-xs text-emerald-500 font-medium">Решени</p>
+              <p className="text-xs text-emerald-500 font-medium">{t('solved')}</p>
             </div>
           </div>
         </motion.div>
@@ -206,17 +208,17 @@ export const StudentDashboard: React.FC = () => {
             {classrooms.length === 0 ? (
               <div className="text-center py-16 space-y-3">
                 <BookOpen className="w-12 h-12 text-slate-300 mx-auto" />
-                <p className="font-semibold text-slate-500">Не си во ниту еден клас.</p>
-                <p className="text-sm text-slate-400">Побарај покана код од твојот наставник.</p>
+                <p className="font-semibold text-slate-500">{t('noClassrooms')}</p>
+                <p className="text-sm text-slate-400">{t('noClassroomsSub')}</p>
                 <Link to="/classrooms" className="inline-block mt-2 text-sm text-indigo-600 font-semibold hover:underline">
-                  Придружи се на клас →
+                  {t('joinClassLink')}
                 </Link>
               </div>
             ) : pendingAssignments.length === 0 ? (
               <div className="text-center py-16 space-y-3">
                 <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
-                <p className="font-semibold text-slate-700">Сè е завршено! Одлична работа! 🎉</p>
-                <p className="text-sm text-slate-400">Нема нерешени задачи.</p>
+                <p className="font-semibold text-slate-700">{t('allDone')}</p>
+                <p className="text-sm text-slate-400">{t('noPendingTasks')}</p>
               </div>
             ) : (
               pendingAssignments.map(assignment => {
@@ -236,7 +238,9 @@ export const StudentDashboard: React.FC = () => {
             )}
             {completedAssignmentsCount > 0 && (
               <p className="text-center text-sm text-slate-400 pt-2">
-                + {completedAssignmentsCount} завршен{completedAssignmentsCount === 1 ? 'о' : 'и'} задани{completedAssignmentsCount === 1 ? 'е' : 'ја'}
+                {completedAssignmentsCount === 1
+                  ? t('completedAssignmentSingular', { count: completedAssignmentsCount })
+                  : t('completedAssignments', { count: completedAssignmentsCount })}
               </p>
             )}
           </motion.div>
@@ -249,15 +253,15 @@ export const StudentDashboard: React.FC = () => {
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-center">
                 <p className="text-2xl font-black text-slate-700">{completedAttempts.length}</p>
-                <p className="text-xs text-slate-500 font-medium mt-1">Обиди</p>
+                <p className="text-xs text-slate-500 font-medium mt-1">{t('attempts')}</p>
               </div>
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-center">
                 <p className="text-2xl font-black text-slate-700">{avgMistakes}</p>
-                <p className="text-xs text-slate-500 font-medium mt-1">Просечни грешки</p>
+                <p className="text-xs text-slate-500 font-medium mt-1">{t('avgMistakes')}</p>
               </div>
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-center">
                 <p className="text-sm font-bold text-slate-700 leading-tight line-clamp-2" title={favTopic ?? ''}>{favTopic ?? '—'}</p>
-                <p className="text-xs text-slate-500 font-medium mt-1">Омилена тема</p>
+                <p className="text-xs text-slate-500 font-medium mt-1">{t('favTopic')}</p>
               </div>
             </div>
 
@@ -265,19 +269,19 @@ export const StudentDashboard: React.FC = () => {
             <Link to="/flashcards" className="flex items-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl p-4 transition-colors">
               <BookOpen className="w-5 h-5 shrink-0" />
               <div>
-                <p className="font-bold text-sm">Повтори со Флешкарти</p>
-                <p className="text-xs text-indigo-200">Вежбај со спасед репетишн систем</p>
+                <p className="font-bold text-sm">{t('flashcardsCta')}</p>
+                <p className="text-xs text-indigo-200">{t('flashcardsCtaSub')}</p>
               </div>
             </Link>
 
             {/* Attempts list */}
             {completedAttempts.length === 0 ? (
               <div className="text-center py-10 text-slate-400 text-sm">
-                Нема завршени задачи уште. Реши некоја задача за да видиш напредок!
+                {t('noCompletedTasks')}
               </div>
             ) : (
               <div className="space-y-2">
-                <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wider">Последни обиди</h3>
+                <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wider">{t('recentAttempts')}</h3>
                 {completedAttempts.map((attempt, i) => {
                   const taskInfo = attempt.task_id ? tasks[attempt.task_id] : null;
                   const date = attempt.end_time ? new Date(attempt.end_time).toLocaleDateString('mk-MK', { day: 'numeric', month: 'short' }) : '';
@@ -295,7 +299,7 @@ export const StudentDashboard: React.FC = () => {
                       <div className="flex items-center gap-3 shrink-0 ml-2">
                         {attempt.mistake_count !== undefined && (
                           <span className={`text-xs font-bold ${attempt.mistake_count === 0 ? 'text-emerald-600' : 'text-orange-500'}`}>
-                            {attempt.mistake_count === 0 ? '✓ Без грешки' : `${attempt.mistake_count} грешки`}
+                            {attempt.mistake_count === 0 ? t('noMistakes') : t('mistakesCount', { count: attempt.mistake_count })}
                           </span>
                         )}
                       </div>
@@ -320,7 +324,7 @@ export const StudentDashboard: React.FC = () => {
             onClick={loadData}
             className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-600 transition-colors"
           >
-            <RefreshCw className="w-3 h-3" /> Освежи
+            <RefreshCw className="w-3 h-3" /> {t('refresh')}
           </button>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { collection, query, onSnapshot, addDoc, serverTimestamp, orderBy, delete
 import { db, auth } from '../lib/firebase';
 import { Pen, Eraser, Trash2, Undo2 } from 'lucide-react';
 import { Button } from './ui/Button';
+import { useTranslation } from 'react-i18next';
 
 interface Stroke {
   id: string;
@@ -19,6 +20,7 @@ interface LiveCanvasProps {
 }
 
 export const LiveCanvas: React.FC<LiveCanvasProps> = ({ classroomId }) => {
+  const { t } = useTranslation('liveCanvas');
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState<'pen' | 'eraser'>('pen');
@@ -137,7 +139,7 @@ export const LiveCanvas: React.FC<LiveCanvasProps> = ({ classroomId }) => {
   };
 
   const handleClear = async () => {
-    if (window.confirm('Дали сте сигурни дека сакате да ја избришете целата табла?')) {
+    if (window.confirm(t('confirmClear'))) {
       // Optimistic update
       setStrokes([]);
       
@@ -163,14 +165,14 @@ export const LiveCanvas: React.FC<LiveCanvasProps> = ({ classroomId }) => {
             <button
               onClick={() => setTool('pen')}
               className={`p-2 rounded-md transition-colors ${tool === 'pen' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'}`}
-              title="Пенкало"
+              title={t('pen')}
             >
               <Pen className="w-5 h-5" />
             </button>
             <button
               onClick={() => setTool('eraser')}
               className={`p-2 rounded-md transition-colors ${tool === 'eraser' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'}`}
-              title="Бришач"
+              title={t('eraser')}
             >
               <Eraser className="w-5 h-5" />
             </button>
@@ -198,7 +200,7 @@ export const LiveCanvas: React.FC<LiveCanvasProps> = ({ classroomId }) => {
             value={strokeWidth}
             onChange={(e) => setStrokeWidth(parseInt(e.target.value))}
             className="w-24 accent-indigo-600"
-            title="Дебелина"
+            title={t('thickness')}
           />
         </div>
 
@@ -209,16 +211,16 @@ export const LiveCanvas: React.FC<LiveCanvasProps> = ({ classroomId }) => {
             onClick={handleUndo}
             disabled={strokes.filter(s => s.userId === auth.currentUser?.uid).length === 0}
             className="text-slate-600 border-slate-200 hover:bg-slate-100"
-            title="Врати назад (Undo)"
+            title={t('undo')}
           >
             <Undo2 className="w-4 h-4" />
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleClear}
             className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-            title="Избриши сè"
+            title={t('clearAll')}
           >
             <Trash2 className="w-4 h-4" />
           </Button>

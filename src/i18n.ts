@@ -32,6 +32,16 @@ import mkPedagogue from './locales/mk/pedagogue.json';
 import mkMaterialsFactory from './locales/mk/materialsFactory.json';
 import mkTutorChat from './locales/mk/tutorChat.json';
 import mkAdaptiveTest from './locales/mk/adaptiveTest.json';
+import mkClassrooms from './locales/mk/classrooms.json';
+import mkTeacherDashboard from './locales/mk/teacherDashboard.json';
+import mkStudentDashboard from './locales/mk/studentDashboard.json';
+import mkKahoot from './locales/mk/kahoot.json';
+import mkLiveCanvas from './locales/mk/liveCanvas.json';
+import mkInteractiveSolver from './locales/mk/interactiveSolver.json';
+import mkLessonPlan from './locales/mk/lessonPlan.json';
+import mkCurriculumFactory from './locales/mk/curriculumFactory.json';
+import mkTestGenerator from './locales/mk/testGenerator.json';
+import mkGlobalTutor from './locales/mk/globalTutor.json';
 
 import enCommon from './locales/en/common.json';
 import enNavigation from './locales/en/navigation.json';
@@ -54,6 +64,16 @@ import enPedagogue from './locales/en/pedagogue.json';
 import enMaterialsFactory from './locales/en/materialsFactory.json';
 import enTutorChat from './locales/en/tutorChat.json';
 import enAdaptiveTest from './locales/en/adaptiveTest.json';
+import enClassrooms from './locales/en/classrooms.json';
+import enTeacherDashboard from './locales/en/teacherDashboard.json';
+import enStudentDashboard from './locales/en/studentDashboard.json';
+import enKahoot from './locales/en/kahoot.json';
+import enLiveCanvas from './locales/en/liveCanvas.json';
+import enInteractiveSolver from './locales/en/interactiveSolver.json';
+import enLessonPlan from './locales/en/lessonPlan.json';
+import enCurriculumFactory from './locales/en/curriculumFactory.json';
+import enTestGenerator from './locales/en/testGenerator.json';
+import enGlobalTutor from './locales/en/globalTutor.json';
 
 import alCommon from './locales/al/common.json';
 import alNavigation from './locales/al/navigation.json';
@@ -76,6 +96,16 @@ import alPedagogue from './locales/al/pedagogue.json';
 import alMaterialsFactory from './locales/al/materialsFactory.json';
 import alTutorChat from './locales/al/tutorChat.json';
 import alAdaptiveTest from './locales/al/adaptiveTest.json';
+import alClassrooms from './locales/al/classrooms.json';
+import alTeacherDashboard from './locales/al/teacherDashboard.json';
+import alStudentDashboard from './locales/al/studentDashboard.json';
+import alKahoot from './locales/al/kahoot.json';
+import alLiveCanvas from './locales/al/liveCanvas.json';
+import alInteractiveSolver from './locales/al/interactiveSolver.json';
+import alLessonPlan from './locales/al/lessonPlan.json';
+import alCurriculumFactory from './locales/al/curriculumFactory.json';
+import alTestGenerator from './locales/al/testGenerator.json';
+import alGlobalTutor from './locales/al/globalTutor.json';
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'mk', name: 'Македонски', flag: '🇲🇰' },
@@ -112,6 +142,16 @@ i18n
         materialsFactory: mkMaterialsFactory,
         tutorChat: mkTutorChat,
         adaptiveTest: mkAdaptiveTest,
+        classrooms: mkClassrooms,
+        teacherDashboard: mkTeacherDashboard,
+        studentDashboard: mkStudentDashboard,
+        kahoot: mkKahoot,
+        liveCanvas: mkLiveCanvas,
+        interactiveSolver: mkInteractiveSolver,
+        lessonPlan: mkLessonPlan,
+        curriculumFactory: mkCurriculumFactory,
+        testGenerator: mkTestGenerator,
+        globalTutor: mkGlobalTutor,
       },
       en: {
         common: enCommon,
@@ -135,6 +175,16 @@ i18n
         materialsFactory: enMaterialsFactory,
         tutorChat: enTutorChat,
         adaptiveTest: enAdaptiveTest,
+        classrooms: enClassrooms,
+        teacherDashboard: enTeacherDashboard,
+        studentDashboard: enStudentDashboard,
+        kahoot: enKahoot,
+        liveCanvas: enLiveCanvas,
+        interactiveSolver: enInteractiveSolver,
+        lessonPlan: enLessonPlan,
+        curriculumFactory: enCurriculumFactory,
+        testGenerator: enTestGenerator,
+        globalTutor: enGlobalTutor,
       },
       al: {
         common: alCommon,
@@ -158,11 +208,21 @@ i18n
         materialsFactory: alMaterialsFactory,
         tutorChat: alTutorChat,
         adaptiveTest: alAdaptiveTest,
+        classrooms: alClassrooms,
+        teacherDashboard: alTeacherDashboard,
+        studentDashboard: alStudentDashboard,
+        kahoot: alKahoot,
+        liveCanvas: alLiveCanvas,
+        interactiveSolver: alInteractiveSolver,
+        lessonPlan: alLessonPlan,
+        curriculumFactory: alCurriculumFactory,
+        testGenerator: alTestGenerator,
+        globalTutor: alGlobalTutor,
       },
     },
     fallbackLng: 'mk',
     defaultNS: 'common',
-    ns: ['common', 'navigation', 'pricing', 'home', 'library', 'extraction', 'dashboard', 'flashcards', 'gradebook', 'differentiation', 'earlyWarning', 'billing', 'schoolInquiries', 'smartOcr', 'smartGrader', 'graphDigitizer', 'analytics', 'pedagogue', 'materialsFactory', 'tutorChat', 'adaptiveTest'],
+    ns: ['common', 'navigation', 'pricing', 'home', 'library', 'extraction', 'dashboard', 'flashcards', 'gradebook', 'differentiation', 'earlyWarning', 'billing', 'schoolInquiries', 'smartOcr', 'smartGrader', 'graphDigitizer', 'analytics', 'pedagogue', 'materialsFactory', 'tutorChat', 'adaptiveTest', 'classrooms', 'teacherDashboard', 'studentDashboard', 'kahoot', 'liveCanvas', 'interactiveSolver', 'lessonPlan', 'curriculumFactory', 'testGenerator', 'globalTutor'],
     
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],

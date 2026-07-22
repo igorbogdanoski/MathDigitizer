@@ -1,0 +1,56 @@
+{
+  "title": "Gjenerues i Testeve",
+  "selectedTasks": "Detyrat e zgjedhura:",
+  "closeAriaLabel": "Mbyll gjeneruesin",
+  "randomTest": {
+    "title": "Gjenero Test të Rastësishëm",
+    "taskCount": "Numri i detyrave",
+    "difficulty": "Vështirësia",
+    "allDifficulties": "Të gjitha",
+    "easy": "Të lehta",
+    "medium": "Mesatare",
+    "hard": "Të vështira",
+    "grade": "Klasa",
+    "allGrades": "Të gjitha klasat",
+    "selectRandom": "Zgjidh Detyra të Rastësishme"
+  },
+  "documentParams": {
+    "title": "Parametrat e dokumentit",
+    "testTitle": "Titulli i testit",
+    "testTitlePlaceholder": "Shkruani titullin...",
+    "school": "Shkolla / Institucioni",
+    "schoolPlaceholder": "Emri i shkollës...",
+    "teacher": "Mësuesi",
+    "teacherPlaceholder": "Emri i mësuesit...",
+    "includeSolutions": "Përfshi zgjidhjet në fund të dokumentit",
+    "fontSize": "Madhësia e shkronjave",
+    "fontSmall": "E vogël",
+    "fontMedium": "Mesatare",
+    "fontLarge": "E madhe",
+    "taskSpacing": "Hapësira për zgjidhje",
+    "spacingSmall": "E vogël (për detyra të shkurtra)",
+    "spacingMedium": "Mesatare (standarde)",
+    "spacingLarge": "E madhe (për detyra të gjata)"
+  },
+  "actions": {
+    "printed": "Printuar / Shkarkuar!",
+    "savePdf": "Ruaj si PDF"
+  },
+  "preview": {
+    "defaultTitle": "Titulli i testit",
+    "defaultSchool": "Shkolla / Institucioni",
+    "date": "Data: ________________",
+    "student": "Nxënësi: __________________________",
+    "teacher": "Mësuesi:",
+    "points": "Pikët: ________ / ________",
+    "noTasks": "Nuk ka detyra të zgjedhura. Zgjidhni detyra nga biblioteka ose gjeneroni një test të rastësishëm.",
+    "task": "Detyra {{index}}.",
+    "solutionKey": "Çelësi i zgjidhjeve",
+    "solution": "Detyra {{index}} - Zgjidhja:",
+    "footer": "Gjeneruar me MathDigitizer Pro | Autor: Igor Bogdanoski"
+  },
+  "defaults": {
+    "testTitle": "Test Matematike / Ushtrime",
+    "teacherName": "Igor Bogdanoski"
+  }
+}

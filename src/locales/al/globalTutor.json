@@ -1,0 +1,11 @@
+{
+  "title": "Asistenti Pedagogjik",
+  "engineStatus": "Socratic Engine Active",
+  "closeAriaLabel": "Mbyll asistentin",
+  "booting": "Duke nisur motorin kognitiv...",
+  "inputPlaceholder": "Shkruani një pyetje matematike...",
+  "sendAriaLabel": "Dërgo mesazh",
+  "welcomeMessage": "Përshëndetje! Unë jam Asistenti juaj AI Sokratik. Cilin koncept matematikor dëshironi të zotërojmë sot?",
+  "connectionError": "Ka një problem me lidhjen. Ju lutemi provoni përsëri më vonë.",
+  "chatError": "Na vjen keq, ndodhi një gabim gjatë komunikimit."
+}

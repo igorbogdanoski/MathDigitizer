@@ -13,6 +13,7 @@ import { db } from '../lib/firebase';
 import { InteractiveCanvas } from './InteractiveCanvas';
 import { GeoGebraViewer } from './GeoGebraViewer';
 import { useModalA11y } from '../hooks/useModalA11y';
+import { useTranslation } from 'react-i18next';
 
 interface InteractiveSolverProps {
   task: MathTask;
@@ -22,6 +23,7 @@ interface InteractiveSolverProps {
 
 export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onClose, onComplete }) => {
   const { user } = useAuth();
+  const { t } = useTranslation('interactiveSolver');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   
   const [liveSyncId, setLiveSyncId] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
 
             setDoc(doc(db, 'active_user_sessions', newSyncId), {
                userId: user.uid,
-               userName: profile.displayName || user.email || 'Непознат',
+               userName: profile.displayName || user.email || t('unknownUser'),
                taskId: task.id,
                taskTitle: task.title || task.curriculum_topic,
                startedAt: new Date().toISOString(),
@@ -103,7 +105,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
       setImageFeedback(result);
     } catch (err) {
       console.error("Error analyzing image:", err);
-      setFeedback({ isCorrect: false, message: "Грешка при анализа на сликата." });
+      setFeedback({ isCorrect: false, message: t('imageAnalysisError') });
     } finally {
       setIsAnalyzingImage(false);
       setTimeout(() => {
@@ -175,7 +177,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
       }
     } catch (err) {
       console.error("Error verifying step:", err);
-      setFeedback({ isCorrect: false, message: "Настана грешка при верификација на чекорот." });
+      setFeedback({ isCorrect: false, message: t('stepVerificationError') });
     } finally {
       setIsVerifying(false);
       setTimeout(() => {
@@ -203,7 +205,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
           setImageFeedback(result);
         } catch (err) {
           console.error("Error analyzing image:", err);
-          setFeedback({ isCorrect: false, message: "Грешка при анализа на сликата." });
+          setFeedback({ isCorrect: false, message: t('imageAnalysisError') });
         } finally {
           setIsAnalyzingImage(false);
           setTimeout(() => {
@@ -283,7 +285,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
       ref={modalRef}
       role="dialog"
       aria-modal="true"
-      aria-label="Интерактивно Решавање"
+      aria-label={t('title')}
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
     >
       <motion.div 
@@ -299,11 +301,11 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
               <Sparkles className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white">Интерактивно Решавање</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Решавај чекор-по-чекор со AI верификација</p>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t('title')}</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('subtitle')}</p>
             </div>
           </div>
-          <button onClick={handleManualClose} aria-label="Затвори решавач" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+          <button onClick={handleManualClose} aria-label={t('closeAriaLabel')} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -311,7 +313,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           {/* Left: Task Content */}
           <div className="w-full lg:w-1/3 p-6 border-r border-slate-100 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-800/20 overflow-y-auto">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Текст на задачата</h4>
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">{t('taskTextLabel')}</h4>
             <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm mb-6">
               <MathRenderer content={task.original_text} className="text-slate-800 dark:text-slate-200 leading-relaxed" />
             </div>
@@ -319,10 +321,10 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
             {task.geogebra_commands && task.geogebra_commands.length > 0 && (
                <div className="mb-6 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-2">
                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex justify-between items-center mb-2 pl-2">
-                     <span>Интерактивен График</span>
+                     <span>{t('interactiveGraph')}</span>
                      {Object.keys(ggbState).length > 0 && (
                         <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-[9px] normal-case animate-pulse flex items-center gap-1">
-                           <Activity className="w-3 h-3" /> Живо читање на координати
+                           <Activity className="w-3 h-3" /> {t('liveCoordinateReading')}
                         </span>
                      )}
                   </h4>
@@ -335,11 +337,11 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
                 <div className={`w-2 h-2 rounded-full ${task.difficulty === 'easy' ? 'bg-green-500' : task.difficulty === 'medium' ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
-                Тежина: <span className="capitalize">{task.difficulty}</span>
+                {t('difficulty')} <span className="capitalize">{task.difficulty}</span>
               </div>
               <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
                 <Target className="w-3 h-3" />
-                DoK Ниво: {task.dok_level}
+                {t('dokLevel')} {task.dok_level}
               </div>
             </div>
           </div>
@@ -352,7 +354,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
                   <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                     <ArrowRight className="w-8 h-8 text-slate-400" />
                   </div>
-                  <p className="text-slate-500">Започнете со вашиот прв чекор подолу.</p>
+                  <p className="text-slate-500">{t('emptyState')}</p>
                 </div>
               )}
 
@@ -403,7 +405,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
                   <div className="flex items-start gap-3 mb-4">
                     <Camera className="w-5 h-5 text-indigo-600 mt-0.5" />
                     <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">Анализа на ракописно решение</h4>
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">{t('handwritingAnalysis')}</h4>
                       <MathRenderer content={imageFeedback.analysis} className="text-sm text-slate-700 dark:text-slate-300 mt-1" />
                     </div>
                   </div>
@@ -411,7 +413,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
                   {imageFeedback.errorsFound.length > 0 && (
                     <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-900/30">
                       <h5 className="text-xs font-bold text-red-800 dark:text-red-400 flex items-center gap-1 mb-2">
-                        <AlertTriangle className="w-3 h-3" /> Детектирани грешки
+                        <AlertTriangle className="w-3 h-3" /> {t('detectedErrors')}
                       </h5>
                       <ul className="list-disc pl-5 text-sm text-red-700 dark:text-red-300 space-y-1">
                         {imageFeedback.errorsFound.map((err, i) => (
@@ -424,7 +426,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
                   {imageFeedback.suggestions.length > 0 && (
                     <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
                       <h5 className="text-xs font-bold text-blue-800 dark:text-blue-400 flex items-center gap-1 mb-2">
-                        <Lightbulb className="w-3 h-3" /> Насоки за подобрување
+                        <Lightbulb className="w-3 h-3" /> {t('improvementSuggestions')}
                       </h5>
                       <ul className="list-disc pl-5 text-sm text-blue-700 dark:text-blue-300 space-y-1">
                         {imageFeedback.suggestions.map((sugg, i) => (
@@ -462,22 +464,22 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
                           handleVerifyStep();
                         }
                       }}
-                      placeholder="Внесете го вашиот следен чекор (пр. x + 5 = 10)..."
+                      placeholder={t('inputPlaceholder')}
                       className="w-full p-4 pr-12 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none resize-none h-20 transition-all"
                       disabled={isVerifying || isAnalyzingImage}
                     />
                     <div className="absolute right-3 bottom-3 text-[10px] text-slate-400 font-mono flex items-center gap-2">
                       <button onClick={() => setIsDrawingMode(true)} className="hover:text-indigo-500 transition-colors flex items-center gap-1" disabled={isVerifying || isAnalyzingImage}>
                         <PenTool className="w-3 h-3" />
-                        <span>Цртај</span>
+                        <span>{t('draw')}</span>
                       </button>
                       <span>|</span>
                       <label className="cursor-pointer flex items-center gap-1 hover:text-indigo-500 transition-colors">
                         {isAnalyzingImage ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3" />}
-                        <span>Слика</span>
+                        <span>{t('image')}</span>
                         <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isVerifying || isAnalyzingImage} />
                       </label>
-                      <span>| LaTeX</span>
+                      <span>{t('latex')}</span>
                     </div>
                   </div>
                   <Button 
@@ -486,7 +488,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
                     className="h-20 w-20 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white flex flex-col items-center justify-center gap-1 shadow-lg shadow-indigo-200 dark:shadow-none"
                   >
                     {isVerifying ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-6 h-6" />}
-                    <span className="text-[10px] font-bold uppercase tracking-tighter">Провери</span>
+                    <span className="text-[10px] font-bold uppercase tracking-tighter">{t('verify')}</span>
                   </Button>
                 </div>
               )}
@@ -494,7 +496,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
                 <div className="mt-4 flex justify-between items-center">
                   <div className="flex gap-2">
                     <Button variant="ghost" size="sm" onClick={() => setUserSteps([])} className="text-xs text-slate-500">
-                      <RotateCcw className="w-3 h-3 mr-1" /> Ресетирај
+                      <RotateCcw className="w-3 h-3 mr-1" /> {t('reset')}
                     </Button>
                     <Button 
                       variant="ghost" 
@@ -507,7 +509,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
                       className="text-xs text-amber-600 dark:text-amber-400"
                       disabled={isVerifying || isAnalyzingImage}
                     >
-                      <Lightbulb className="w-3 h-3 mr-1" /> Побарај Насока
+                      <Lightbulb className="w-3 h-3 mr-1" /> {t('requestHint')}
                     </Button>
                   </div>
                   <Button 
@@ -515,7 +517,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
                     className="bg-emerald-600 hover:bg-emerald-700 text-white px-6"
                     disabled={!isFinished}
                   >
-                    Заврши решавање
+                    {t('finishSolving')}
                   </Button>
                 </div>
             </div>

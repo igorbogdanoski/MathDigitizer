@@ -1,0 +1,22 @@
+{
+  "featureName": "Mass Curriculum Factory",
+  "featureDescription": "Përpunimi në grup i kurrikulës është një aftësi Pro. Zhbllokojeni për flukse të mëdha të PDF/librave shkollorë.",
+  "title": "Fabrika e Kurrikulës (Mass-Batch)",
+  "description": "Ngarkoni një libër shkollor të plotë PDF. Sistemi agjentik do ta ndajë automatikisht në mësime, teori, detyra për orë, detyra shtëpie dhe teste diagnostikuese.",
+  "uploadTitle": "Ngarko skedar (PDF)",
+  "uploadHint": "Klikoni ose tërhiqni librin shkollor këtu për të filluar nxjerrjen masive.",
+  "processing": "Duke çmontuar librin shkollor...",
+  "processCurriculum": "Përpuno Kurrikulën",
+  "agent1": "Agjenti 1: OCR dhe transkriptim i PDF...",
+  "agent2": "Agjenti 2 (Matematicien): Verifikimi i logjikës dhe llogaritjeve...",
+  "agent3": "Agjenti 3 (Pedagog): Shtimi i diferencimit dhe Taksonomisë së Bloom-it...",
+  "agent4": "Agjenti 4 (Programues): Shkrimi i kodit GeoGebra pa gabime...",
+  "saveToLibrary": "Ruaj në Bibliotekë",
+  "lesson": "Mësimi {{index}}:",
+  "classTasks": "Detyra për orë",
+  "homework": "Detyra shtëpie",
+  "exitTicket": "Exit Ticket",
+  "successToast": "Kurrikula u gjenerua me sukses!",
+  "errorToast": "Gabim gjatë gjenerimit.",
+  "savedToast": "Të gjitha materialet u ruajtën në Bibliotekë!"
+}

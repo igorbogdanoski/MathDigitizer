@@ -7,8 +7,10 @@ import { Users, Plus, KeyRound, Loader2, BookOpen, ChevronRight } from 'lucide-r
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export const Classrooms: React.FC = () => {
+  const { t } = useTranslation('classrooms');
   const { user, userProfile } = useAuth();
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,7 +76,7 @@ export const Classrooms: React.FC = () => {
       setNewClassName('');
       setNewClassDesc('');
     } catch (error: any) {
-      setErrorMsg(error.message || "Грешка при креирање на училница.");
+      setErrorMsg(error.message || t('errorCreate'));
     } finally {
       setIsSubmitting(false);
     }
@@ -87,9 +89,9 @@ export const Classrooms: React.FC = () => {
     try {
       const q = query(collection(db, 'classrooms'), where('inviteCode', '==', inviteCode.trim().toUpperCase()));
       const snapshot = await getDocs(q);
-      
+
       if (snapshot.empty) {
-        setErrorMsg("Невалиден код за покана.");
+        setErrorMsg(t('errorInvalidCode'));
         setIsSubmitting(false);
         return;
       }
@@ -98,7 +100,7 @@ export const Classrooms: React.FC = () => {
       const classData = classDoc.data() as Classroom;
 
       if (classData.studentIds.includes(user.uid)) {
-        setErrorMsg("Веќе сте член на оваа училница.");
+        setErrorMsg(t('errorAlreadyMember'));
         setIsSubmitting(false);
         return;
       }
@@ -111,7 +113,7 @@ export const Classrooms: React.FC = () => {
       setShowJoinModal(false);
       setInviteCode('');
     } catch (error: any) {
-      setErrorMsg(error.message || "Грешка при приклучување.");
+      setErrorMsg(error.message || t('errorJoin'));
     } finally {
       setIsSubmitting(false);
     }
@@ -121,7 +123,7 @@ export const Classrooms: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
-        <p className="text-slate-500">Се вчитуваат училниците...</p>
+        <p className="text-slate-500">{t('loading')}</p>
       </div>
     );
   }
@@ -132,24 +134,24 @@ export const Classrooms: React.FC = () => {
         <div>
           <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white flex items-center gap-3">
             <Users className="w-8 h-8 text-indigo-600" />
-            Виртуелни Училници
+            {t('title')}
           </h2>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            {userProfile?.role === 'teacher' 
-              ? 'Управувајте со вашите ученици и доделувајте задачи.' 
-              : 'Придружете се на училница и решавајте ги задачите од вашиот наставник.'}
+            {userProfile?.role === 'teacher'
+              ? t('subtitleTeacher')
+              : t('subtitleStudent')}
           </p>
         </div>
         <div className="flex gap-3">
           {userProfile?.role === 'teacher' ? (
             <Button onClick={() => setShowCreateModal(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white">
               <Plus className="w-4 h-4 mr-2" />
-              Креирај Училница
+              {t('createClassroom')}
             </Button>
           ) : (
             <Button onClick={() => setShowJoinModal(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white">
               <KeyRound className="w-4 h-4 mr-2" />
-              Придружи се
+              {t('joinClassroom')}
             </Button>
           )}
         </div>
@@ -158,11 +160,11 @@ export const Classrooms: React.FC = () => {
       {classrooms.length === 0 ? (
         <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm">
           <BookOpen className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Немате активни училници</h3>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{t('emptyTitle')}</h3>
           <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-            {userProfile?.role === 'teacher' 
-              ? 'Креирајте ја вашата прва училница за да започнете со работа со вашите ученици.' 
-              : 'Побарајте код за покана од вашиот наставник за да се придружите.'}
+            {userProfile?.role === 'teacher'
+              ? t('emptyTeacher')
+              : t('emptyStudent')}
           </p>
         </div>
       ) : (
@@ -180,7 +182,7 @@ export const Classrooms: React.FC = () => {
                   </div>
                   {userProfile?.role === 'teacher' && (
                     <span className="text-xs font-mono bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-md">
-                      Код: {cls.inviteCode}
+                      {t('inviteCodeLabel', { code: cls.inviteCode })}
                     </span>
                   )}
                 </div>
@@ -188,13 +190,13 @@ export const Classrooms: React.FC = () => {
                   {cls.name}
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mb-4">
-                  {cls.description || 'Нема опис'}
+                  {cls.description || t('noDescription')}
                 </p>
               </div>
               <div className="pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between mt-auto">
                 <div className="flex items-center text-sm text-slate-500 dark:text-slate-400">
                   <Users className="w-4 h-4 mr-1.5" />
-                  {cls.studentIds.length} ученици
+                  {t('studentsCount', { count: cls.studentIds.length })}
                 </div>
                 <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
               </div>
@@ -207,27 +209,27 @@ export const Classrooms: React.FC = () => {
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700">
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Креирај Училница</h3>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">{t('createModalTitle')}</h3>
             {errorMsg && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg">{errorMsg}</div>}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Име на училницата</label>
-                <Input value={newClassName} onChange={e => setNewClassName(e.target.value)} placeholder="на пр. Математика 8мо одд." />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('nameLabel')}</label>
+                <Input value={newClassName} onChange={e => setNewClassName(e.target.value)} placeholder={t('namePlaceholder')} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Опис (опционално)</label>
-                <textarea 
-                  value={newClassDesc} 
-                  onChange={e => setNewClassDesc(e.target.value)} 
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('descLabel')}</label>
+                <textarea
+                  value={newClassDesc}
+                  onChange={e => setNewClassDesc(e.target.value)}
                   className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none resize-none h-24 text-sm"
-                  placeholder="Краток опис за училницата..."
+                  placeholder={t('descPlaceholder')}
                 />
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-3">
-              <Button variant="ghost" onClick={() => setShowCreateModal(false)}>Откажи</Button>
+              <Button variant="ghost" onClick={() => setShowCreateModal(false)}>{t('cancel')}</Button>
               <Button onClick={handleCreateClassroom} disabled={isSubmitting || !newClassName.trim()} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Креирај'}
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('create')}
               </Button>
             </div>
           </div>
@@ -238,22 +240,22 @@ export const Classrooms: React.FC = () => {
       {showJoinModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700">
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Придружи се на Училница</h3>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">{t('joinModalTitle')}</h3>
             {errorMsg && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg">{errorMsg}</div>}
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Код за покана</label>
-              <Input 
-                value={inviteCode} 
-                onChange={e => setInviteCode(e.target.value.toUpperCase())} 
-                placeholder="Внесете го 6-цифрениот код" 
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('inviteCodeInputLabel')}</label>
+              <Input
+                value={inviteCode}
+                onChange={e => setInviteCode(e.target.value.toUpperCase())}
+                placeholder={t('inviteCodePlaceholder')}
                 className="font-mono uppercase text-center text-lg tracking-widest"
                 maxLength={6}
               />
             </div>
             <div className="mt-6 flex justify-end gap-3">
-              <Button variant="ghost" onClick={() => setShowJoinModal(false)}>Откажи</Button>
+              <Button variant="ghost" onClick={() => setShowJoinModal(false)}>{t('cancel')}</Button>
               <Button onClick={handleJoinClassroom} disabled={isSubmitting || inviteCode.length < 6} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Придружи се'}
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('join')}
               </Button>
             </div>
           </div>
