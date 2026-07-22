@@ -1,0 +1,77 @@
+{
+  "gate": {
+    "description": "The Materials Factory is a Pro module. Unlock it to generate worksheets, tests and presentations at production level."
+  },
+  "hero": {
+    "badge": "World-Class AI Materials",
+    "subtitle": "Transform your task library into professional worksheets, quizzes or presentations in seconds with the help of artificial intelligence.",
+    "availableTasks": "Available tasks",
+    "selected": "Selected"
+  },
+  "types": {
+    "worksheet": { "name": "Worksheet", "description": "Practice tasks for class or homework" },
+    "test": { "name": "Test / Assessment", "description": "Grading with points and solutions for the teacher" },
+    "collection": { "name": "Task Collection", "description": "Comprehensive collection divided by topic and difficulty" },
+    "quiz": { "name": "Interactive Quiz", "description": "Live quiz for students (Kahoot style)" },
+    "presentation": { "name": "Presentation", "description": "Slides with theory and tasks for class" },
+    "flashcards": { "name": "Flashcards", "description": "Cards for quick review of concepts" },
+    "homework": { "name": "Homework", "description": "Tasks for independent work at home" },
+    "study_guide": { "name": "Study Guide", "description": "Detailed overview of theory and key tasks" }
+  },
+  "settings": {
+    "language": "Language:",
+    "languageTitle": "Select language",
+    "grade": "Grade / Year:",
+    "gradeTitle": "Select grade"
+  },
+  "step1": {
+    "title": "1. Material preparation"
+  },
+  "step2": {
+    "title": "2. Select tasks from the library",
+    "generating": "Generating...",
+    "generate": "Generate Material",
+    "searchPlaceholder": "Search tasks by title or text...",
+    "filters": "Filters",
+    "selectAll": "Select all",
+    "clear": "Clear",
+    "diffTestTitle": "Differentiated Test",
+    "loading": "Loading the library...",
+    "emptyTitle": "The library is empty",
+    "emptyDesc": "To create educational materials, you first need to digitize tasks using AI extraction.",
+    "startExtraction": "Start Extraction",
+    "taskSingular": "task",
+    "taskPlural": "tasks",
+    "editTaskTitle": "Edit task"
+  },
+  "difficulty": {
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard"
+  },
+  "diff": {
+    "badge": "Differentiated Instruction",
+    "title": "Differentiated Test",
+    "subtitle": "AI generated 3 versions of your test based on the cognitive readiness of different groups of students.",
+    "print": "Print (PDF)",
+    "exportWord": "Export (Word)",
+    "closeAria": "Close differentiated test",
+    "closeTitle": "Close",
+    "groupA": "Knowledge and Comprehension",
+    "groupB": "Application",
+    "groupC": "Analysis and Synthesis",
+    "level1": "Bloom's Taxonomy - Level 1",
+    "level2": "Bloom's Taxonomy - Level 2",
+    "level3": "Bloom's Taxonomy - Level 3",
+    "solution": "Solution"
+  },
+  "toasts": {
+    "selectAtLeastOne": "Please select at least one task from the library.",
+    "materialGenerated": "The material has been generated successfully!",
+    "generateError": "An error occurred during generation. Please try again.",
+    "diffTestGenerated": "The differentiated test has been generated successfully!",
+    "jsonDownloaded": "The JSON file has been downloaded successfully.",
+    "wordDownloaded": "The Word document has been downloaded successfully.",
+    "materialReadyDownload": "The material is ready for download."
+  }
+}

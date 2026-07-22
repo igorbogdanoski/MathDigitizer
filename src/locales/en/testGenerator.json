@@ -1,0 +1,56 @@
+{
+  "title": "Test Generator",
+  "selectedTasks": "Selected tasks:",
+  "closeAriaLabel": "Close generator",
+  "randomTest": {
+    "title": "Generate Random Test",
+    "taskCount": "Number of tasks",
+    "difficulty": "Difficulty",
+    "allDifficulties": "All",
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard",
+    "grade": "Grade",
+    "allGrades": "All grades",
+    "selectRandom": "Select Random Tasks"
+  },
+  "documentParams": {
+    "title": "Document Parameters",
+    "testTitle": "Test title",
+    "testTitlePlaceholder": "Enter title...",
+    "school": "School / Institution",
+    "schoolPlaceholder": "School name...",
+    "teacher": "Teacher",
+    "teacherPlaceholder": "Teacher name...",
+    "includeSolutions": "Include solutions at the end of the document",
+    "fontSize": "Font size",
+    "fontSmall": "Small",
+    "fontMedium": "Medium",
+    "fontLarge": "Large",
+    "taskSpacing": "Solving space",
+    "spacingSmall": "Small (for short tasks)",
+    "spacingMedium": "Medium (standard)",
+    "spacingLarge": "Large (for long tasks)"
+  },
+  "actions": {
+    "printed": "Printed / Downloaded!",
+    "savePdf": "Save as PDF"
+  },
+  "preview": {
+    "defaultTitle": "Test title",
+    "defaultSchool": "School / Institution",
+    "date": "Date: ________________",
+    "student": "Student: __________________________",
+    "teacher": "Teacher:",
+    "points": "Points: ________ / ________",
+    "noTasks": "No tasks selected. Select tasks from the library or generate a random test.",
+    "task": "Task {{index}}.",
+    "solutionKey": "Solution Key",
+    "solution": "Task {{index}} - Solution:",
+    "footer": "Generated with MathDigitizer Pro | Author: Igor Bogdanoski"
+  },
+  "defaults": {
+    "testTitle": "Math Test / Exercises",
+    "teacherName": "Igor Bogdanoski"
+  }
+}

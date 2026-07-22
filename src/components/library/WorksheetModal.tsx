@@ -6,6 +6,7 @@ import { Input } from '../ui/Input';
 import { motion } from 'motion/react';
 import { X, Download, Loader2, FileSpreadsheet, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
+import { useTranslation } from 'react-i18next';
 
 interface WorksheetModalProps {
   tasks: MathTask[];
@@ -14,7 +15,8 @@ interface WorksheetModalProps {
 
 export const WorksheetModal: React.FC<WorksheetModalProps> = ({ tasks, onClose }) => {
   const { showToast } = useToast();
-  const [title, setTitle] = useState('Работен Лист');
+  const { t } = useTranslation('library');
+  const [title, setTitle] = useState(t('worksheetDefaultTitle'));
   const [schoolName, setSchoolName] = useState('');
   const [className, setClassName] = useState('');
   const [showSolutions, setShowSolutions] = useState(false);
@@ -52,10 +54,10 @@ export const WorksheetModal: React.FC<WorksheetModalProps> = ({ tasks, onClose }
       }
 
       pdf.save(`${title.replace(/\s+/g, '_')}_${today.replace(/\./g, '-')}.pdf`);
-      showToast('Работниот лист е зачуван!', 'success');
+      showToast(t('worksheetSaved'), 'success');
     } catch (e) {
       console.error(e);
-      showToast('Грешка при генерирање на PDF.', 'error');
+      showToast(t('pdfGenerationError'), 'error');
     } finally {
       setIsExporting(false);
     }
@@ -72,12 +74,12 @@ export const WorksheetModal: React.FC<WorksheetModalProps> = ({ tasks, onClose }
         <div className="flex justify-between items-center p-5 border-b bg-slate-50">
           <div className="flex items-center gap-2 text-indigo-700">
             <FileSpreadsheet className="w-5 h-5" />
-            <h2 className="text-lg font-bold">Генератор на Работни Листови</h2>
+            <h2 className="text-lg font-bold">{t('worksheetGeneratorTitle')}</h2>
           </div>
           <button
             type="button"
-            aria-label="Затвори"
-            title="Затвори"
+            aria-label={t('close')}
+            title={t('close')}
             onClick={onClose}
             className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200 transition-colors"
           >
@@ -88,36 +90,36 @@ export const WorksheetModal: React.FC<WorksheetModalProps> = ({ tasks, onClose }
         <div className="flex flex-col lg:flex-row">
           {/* Left: Settings */}
           <div className="lg:w-72 p-5 border-b lg:border-b-0 lg:border-r bg-slate-50 space-y-4 flex-shrink-0">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Поставки</h3>
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('settings')}</h3>
 
             <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">Наслов</label>
+              <label className="text-xs font-medium text-slate-600 block mb-1">{t('csvTitle')}</label>
               <Input
-                title="Наслов на работниот лист"
-                aria-label="Наслов на работниот лист"
+                title={t('worksheetTitleLabel')}
+                aria-label={t('worksheetTitleLabel')}
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                placeholder="пр. Работен лист — Равенки"
+                placeholder={t('worksheetTitlePlaceholder')}
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">Училиште</label>
+              <label className="text-xs font-medium text-slate-600 block mb-1">{t('school')}</label>
               <Input
-                title="Училиште"
-                aria-label="Училиште"
+                title={t('school')}
+                aria-label={t('school')}
                 value={schoolName}
                 onChange={e => setSchoolName(e.target.value)}
-                placeholder="пр. ОУ Кирил и Методиј"
+                placeholder={t('schoolPlaceholder')}
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">Одделение / Клас</label>
+              <label className="text-xs font-medium text-slate-600 block mb-1">{t('gradeClass')}</label>
               <Input
-                title="Одделение"
-                aria-label="Одделение"
+                title={t('grade')}
+                aria-label={t('grade')}
                 value={className}
                 onChange={e => setClassName(e.target.value)}
-                placeholder="пр. VII-2"
+                placeholder={t('gradeClassPlaceholder')}
               />
             </div>
 
@@ -132,14 +134,14 @@ export const WorksheetModal: React.FC<WorksheetModalProps> = ({ tasks, onClose }
                 }`}
               >
                 <span className="text-sm font-semibold">
-                  {showSolutions ? 'Со решенија (наставник)' : 'Само задачи (ученик)'}
+                  {showSolutions ? t('withSolutionsTeacher') : t('tasksOnlyStudent')}
                 </span>
                 {showSolutions ? <Eye className="w-4 h-4 flex-shrink-0" /> : <EyeOff className="w-4 h-4 flex-shrink-0" />}
               </button>
             </div>
 
             <p className="text-xs text-slate-400 pt-1">
-              {tasks.length} {tasks.length === 1 ? 'задача избрана' : 'задачи избрани'}
+              {tasks.length} {tasks.length === 1 ? t('taskSelected') : t('tasksSelected')}
             </p>
           </div>
 
@@ -168,7 +170,7 @@ export const WorksheetModal: React.FC<WorksheetModalProps> = ({ tasks, onClose }
                   {title}
                 </h1>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '8px' }}>
-                  <span>Ime i Prezime: ___________________________________</span>
+                  <span>{t('nameAndSurname')}</span>
                   <span>{className && `${className} • `}{today}</span>
                 </div>
               </div>
@@ -197,7 +199,7 @@ export const WorksheetModal: React.FC<WorksheetModalProps> = ({ tasks, onClose }
                         {showSolutions && task.solution_steps && task.solution_steps.length > 0 && (
                           <div style={{ marginTop: '10px', padding: '8px 12px', background: '#f5f5f5', borderLeft: '3px solid #4f46e5', borderRadius: '4px' }}>
                             <p style={{ fontSize: '10px', fontWeight: 700, color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>
-                              Решение:
+                              {t('solutionLabel')}
                             </p>
                             {task.solution_steps.map((step, sIdx) => (
                               <div key={sIdx} style={{ fontSize: '12px', marginBottom: '4px', display: 'flex', gap: '6px' }}>
@@ -224,7 +226,7 @@ export const WorksheetModal: React.FC<WorksheetModalProps> = ({ tasks, onClose }
 
         {/* Footer actions */}
         <div className="p-4 bg-slate-50 border-t flex justify-end gap-3">
-          <Button type="button" variant="ghost" onClick={onClose}>Откажи</Button>
+          <Button type="button" variant="ghost" onClick={onClose}>{t('cancel')}</Button>
           <Button
             type="button"
             onClick={handleExportPDF}
@@ -232,8 +234,8 @@ export const WorksheetModal: React.FC<WorksheetModalProps> = ({ tasks, onClose }
             className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6"
           >
             {isExporting
-              ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Генерирање PDF...</>
-              : <><Download className="w-4 h-4 mr-2" /> Зачувај PDF</>
+              ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('generatingPdf')}</>
+              : <><Download className="w-4 h-4 mr-2" /> {t('savePdf')}</>
             }
           </Button>
         </div>

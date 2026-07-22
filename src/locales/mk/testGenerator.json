@@ -1,0 +1,56 @@
+{
+  "title": "Генератор на Тестови",
+  "selectedTasks": "Селектирани задачи:",
+  "closeAriaLabel": "Затвори генератор",
+  "randomTest": {
+    "title": "Генерирај Случаен Тест",
+    "taskCount": "Број на задачи",
+    "difficulty": "Тежина",
+    "allDifficulties": "Сите",
+    "easy": "Лесни",
+    "medium": "Средни",
+    "hard": "Тешки",
+    "grade": "Одделение",
+    "allGrades": "Сите одделенија",
+    "selectRandom": "Избери Случајни Задачи"
+  },
+  "documentParams": {
+    "title": "Параметри на документот",
+    "testTitle": "Наслов на тестот",
+    "testTitlePlaceholder": "Внесете наслов...",
+    "school": "Училиште / Институција",
+    "schoolPlaceholder": "Име на училиштето...",
+    "teacher": "Наставник",
+    "teacherPlaceholder": "Име на наставникот...",
+    "includeSolutions": "Вклучи решенија на крајот од документот",
+    "fontSize": "Големина на фонт",
+    "fontSmall": "Мал",
+    "fontMedium": "Среден",
+    "fontLarge": "Голем",
+    "taskSpacing": "Простор за решавање",
+    "spacingSmall": "Мал (за кратки задачи)",
+    "spacingMedium": "Среден (стандарден)",
+    "spacingLarge": "Голем (за долги задачи)"
+  },
+  "actions": {
+    "printed": "Испечатено / Преземено!",
+    "savePdf": "Зачувај како PDF"
+  },
+  "preview": {
+    "defaultTitle": "Наслов на тестот",
+    "defaultSchool": "Училиште / Институција",
+    "date": "Датум: ________________",
+    "student": "Ученик: __________________________",
+    "teacher": "Наставник:",
+    "points": "Поени: ________ / ________",
+    "noTasks": "Нема избрани задачи. Изберете задачи од библиотеката или генерирајте случаен тест.",
+    "task": "Задача {{index}}.",
+    "solutionKey": "Клуч со решенија",
+    "solution": "Задача {{index}} - Решение:",
+    "footer": "Генерирано со MathDigitizer Pro | Автор: Игор Богданоски"
+  },
+  "defaults": {
+    "testTitle": "Математички Тест / Вежби",
+    "teacherName": "Игор Богданоски"
+  }
+}

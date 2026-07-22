@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Send, Bot, User, X, Loader2, Lightbulb, Camera, PenTool, Volume2, VolumeX, Brain, Target, Compass } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
@@ -18,6 +19,7 @@ interface TutorChatProps {
 
 export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
   const modalRef = useModalA11y<HTMLDivElement>(onClose);
+  const { t } = useTranslation('tutorChat');
   const store = useLibraryStore();
   const [messages, setMessages] = useState<{role: 'user' | 'model', text: string}[]>([]);
   const [input, setInput] = useState('');
@@ -31,15 +33,15 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
   const relatedTasks = React.useMemo(() => {
     if (!task.embedding || !store.tasks) return [];
     return store.tasks
-      .filter(t => t.id !== task.id && t.embedding)
-      .map(t => ({
-        task: t,
-        score: cosineSimilarity(task.embedding!, t.embedding!)
+      .filter(rt => rt.id !== task.id && rt.embedding)
+      .map(rt => ({
+        task: rt,
+        score: cosineSimilarity(task.embedding!, rt.embedding!)
       }))
-      .filter(t => t.score > 0.4)
+      .filter(rt => rt.score > 0.4)
       .sort((a, b) => b.score - a.score)
       .slice(0, 2)
-      .map(t => t.task);
+      .map(rt => rt.task);
   }, [task, store.tasks]);
 
   // TTS State
@@ -56,7 +58,7 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
       setChatSession(session);
       setMessages([{
         role: 'model',
-        text: `Здраво! Јас сум твојот AI тутор. Ајде заедно да ја решиме оваа задача:\n\n**Да се потсетиме на правилата:** Не го давам крајниот резултат веднаш, туку ќе те водам чекор по чекор. \n\nШто мислиш, кој е првиот чекор за нејзино решавање?`
+        text: t('welcome')
       }]);
     };
     initChat();
@@ -89,7 +91,7 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
       if (activePedagogyStep < 3) setActivePedagogyStep(prev => prev + 1);
     } catch (error) {
       captureError(error, { name: 'tutor-chat.send-message', path: '/tutor-chat', details: { taskId: task.id } });
-      setMessages(prev => [...prev, { role: 'model', text: "Извини, настана комуникациска грешка. Можеш ли да повториш?" }]);
+      setMessages(prev => [...prev, { role: 'model', text: t('commError') }]);
     } finally {
       setIsLoading(false);
     }
@@ -103,17 +105,17 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
     try {
       const result = await analyzeSolutionImage(task, base64Image, mimeType);
       
-      let analysisText = `**Анализа (SmartVision):**\n\n${result.analysis}\n\n`;
+      let analysisText = `${t('analysisHeader')}${result.analysis}\n\n`;
       if (result.errorsFound.length > 0) {
-        analysisText += `**Пронајдени грешки:**\n${result.errorsFound.map(e => `- ${e}`).join('\n')}\n\n`;
+        analysisText += `${t('errorsHeader')}${result.errorsFound.map(e => `- ${e}`).join('\n')}\n\n`;
       }
-      analysisText += `**Препораки за следни чекори:**\n${result.suggestions.map(s => `- ${s}`).join('\n')}`;
+      analysisText += `${t('suggestionsHeader')}${result.suggestions.map(s => `- ${s}`).join('\n')}`;
       
       setMessages(prev => [...prev, { role: 'model', text: analysisText }]);
       if (activePedagogyStep < 3) setActivePedagogyStep(prev => prev + 1);
     } catch (err) {
       captureError(err, { name: 'tutor-chat.image-analysis', path: '/tutor-chat', details: { taskId: task.id, mimeType } });
-      setMessages(prev => [...prev, { role: 'model', text: "Извини, не успеав да ја дешифрирам сликата. Обиди се со појасен агол." }]);
+      setMessages(prev => [...prev, { role: 'model', text: t('imageDecodeError') }]);
     } finally {
       setIsAnalyzingImage(false);
     }
@@ -127,7 +129,7 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
       const reader = new FileReader();
       reader.onload = async (event) => {
         const base64Image = (event.target?.result as string).split(',')[1];
-        await processImageSubmission(base64Image, file.type, "Прикачив слика/цртеж. Дали сум на добар пат?");
+        await processImageSubmission(base64Image, file.type, t('userMessages.imageUpload'));
       };
       reader.readAsDataURL(file);
     } catch (err) {
@@ -136,20 +138,20 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
   };
 
   const handleCanvasSend = async (base64Image: string) => {
-    await processImageSubmission(base64Image, 'image/jpeg', "Користам дигитална табла за пресметка. Мислење?");
+    await processImageSubmission(base64Image, 'image/jpeg', t('userMessages.canvas'));
   };
 
   const handleGetHint = async () => {
     if (!chatSession || isLoading) return;
     
     setIsLoading(true);
-    setMessages(prev => [...prev, { role: 'user', text: "Ми треба психолошка/техничка помош (Scaffolding Hint)." }]);
+    setMessages(prev => [...prev, { role: 'user', text: t('userMessages.hintRequest') }]);
     
     try {
       const response = await chatSession.sendMessage({ message: "Ученикот бара помош според теоријата на Скелиња (Scaffolding). Дај му мала, многу индиректна насока кон следниот чекор." });
       setMessages(prev => [...prev, { role: 'model', text: response.text }]);
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'model', text: "Грешка при коннекција за сугестии." }]);
+      setMessages(prev => [...prev, { role: 'model', text: t('hintConnError') }]);
     } finally {
       setIsLoading(false);
     }
@@ -219,7 +221,7 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
            {/* Pedagogical Scaffolding UI (ZPD Map) */}
            <div className="mt-auto space-y-4">
               <h3 className="font-bold text-slate-600 dark:text-slate-400 text-sm flex items-center gap-2 uppercase tracking-wider mb-4">
-                 <Compass className="w-4 h-4" /> Фази на Когниција
+                 <Compass className="w-4 h-4" /> {t('phases.title')}
               </h3>
               
               <div className="space-y-3 relative">
@@ -227,20 +229,20 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
                  
                  <div className={`relative pl-10 transition-opacity ${activePedagogyStep >= 1 ? 'opacity-100' : 'opacity-40'}`}>
                     <div className={`absolute left-2.5 top-0 w-3.5 h-3.5 rounded-full bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 ring-2 ${activePedagogyStep >= 1 ? 'ring-indigo-500 bg-indigo-500' : 'ring-slate-300'}`}></div>
-                    <div className="font-bold text-slate-800 dark:text-slate-200">1. Идентификација</div>
-                    <div className="text-sm text-slate-500">Разбирање на барањето</div>
+                    <div className="font-bold text-slate-800 dark:text-slate-200">{t('phases.phase1Title')}</div>
+                    <div className="text-sm text-slate-500">{t('phases.phase1Desc')}</div>
                  </div>
                  
                  <div className={`relative pl-10 transition-opacity ${activePedagogyStep >= 2 ? 'opacity-100' : 'opacity-40'}`}>
                     <div className={`absolute left-2.5 top-0 w-3.5 h-3.5 rounded-full bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 ring-2 ${activePedagogyStep >= 2 ? 'ring-amber-500 bg-amber-500' : 'ring-slate-300'}`}></div>
-                    <div className="font-bold text-slate-800 dark:text-slate-200">2. Стратегија</div>
-                    <div className="text-sm text-slate-500">Поставување метод</div>
+                    <div className="font-bold text-slate-800 dark:text-slate-200">{t('phases.phase2Title')}</div>
+                    <div className="text-sm text-slate-500">{t('phases.phase2Desc')}</div>
                  </div>
 
                  <div className={`relative pl-10 transition-opacity ${activePedagogyStep >= 3 ? 'opacity-100' : 'opacity-40'}`}>
                     <div className={`absolute left-2.5 top-0 w-3.5 h-3.5 rounded-full bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 ring-2 ${activePedagogyStep >= 3 ? 'ring-emerald-500 bg-emerald-500' : 'ring-slate-300'}`}></div>
-                    <div className="font-bold text-slate-800 dark:text-slate-200">3. Апстракција</div>
-                    <div className="text-sm text-slate-500">Егзекуција и анализа</div>
+                    <div className="font-bold text-slate-800 dark:text-slate-200">{t('phases.phase3Title')}</div>
+                    <div className="text-sm text-slate-500">{t('phases.phase3Desc')}</div>
                  </div>
               </div>
            </div>
@@ -251,14 +253,14 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
           {/* Mobile Header Overrides */}
           <div className="md:hidden p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-between items-center shrink-0">
              <div className="font-bold truncate pr-4 text-slate-800 dark:text-white"><Brain className="w-4 h-4 inline mr-2 text-indigo-500"/>{task.title}</div>
-             <button onClick={onClose} aria-label="Затвори тутор" title="Затвори тутор" className="p-2 text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-full"><X className="w-5 h-5"/></button>
+             <button onClick={onClose} aria-label={t('controls.closeTutor')} title={t('controls.closeTutor')} className="p-2 text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-full"><X className="w-5 h-5"/></button>
           </div>
 
           <div className="absolute top-4 right-4 hidden md:flex items-center gap-2 z-10">
              <Button variant="outline" size="sm" onClick={handleGetHint} disabled={isLoading || !chatSession} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-sm text-amber-600 hover:text-amber-700">
                <Lightbulb className="w-4 h-4 mr-2" /> Scaffolding Hint
              </Button>
-             <button onClick={onClose} aria-label="Затвори тутор" title="Затвори тутор" className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-slate-400 hover:text-red-500 border border-slate-200 dark:border-slate-700 shadow-sm rounded-full transition-colors">
+             <button onClick={onClose} aria-label={t('controls.closeTutor')} title={t('controls.closeTutor')} className="p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm text-slate-400 hover:text-red-500 border border-slate-200 dark:border-slate-700 shadow-sm rounded-full transition-colors">
                <X className="w-5 h-5" />
              </button>
           </div>
@@ -298,7 +300,7 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
                 <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl rounded-tl-md p-5 shadow-sm flex items-center gap-3">
                   <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />
                   <span className="text-emerald-700 dark:text-emerald-400 font-medium tracking-wide">
-                    {isAnalyzingImage ? 'Обработка на слика/дијаграм...' : 'Туторот синтетизира одговор...'}
+                    {isAnalyzingImage ? t('loading.processingImage') : t('loading.synthesizing')}
                   </span>
                 </div>
               </div>
@@ -320,17 +322,17 @@ export const TutorChat: React.FC<TutorChatProps> = ({ task, onClose }) => {
           ) : (
             <div className="p-4 md:p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0">
               <form onSubmit={handleSend} className="flex gap-2 relative">
-                <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" aria-label="Прикачи слика" title="Прикачи слика" />
-                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isLoading || isAnalyzingImage} className="h-14 w-14 rounded-2xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 shrink-0" title="Прикачи слика">
+                <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" aria-label={t('controls.attachImage')} title={t('controls.attachImage')} />
+                <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isLoading || isAnalyzingImage} className="h-14 w-14 rounded-2xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 shrink-0" title={t('controls.attachImage')}>
                   <Camera className="w-5 h-5 text-slate-500" />
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setIsDrawingMode(true)} disabled={isLoading || isAnalyzingImage} className="h-14 w-14 rounded-2xl border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 shrink-0" title="Математичка Табла">
+                <Button type="button" variant="outline" onClick={() => setIsDrawingMode(true)} disabled={isLoading || isAnalyzingImage} className="h-14 w-14 rounded-2xl border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 shrink-0" title={t('controls.mathBoard')}>
                   <PenTool className="w-5 h-5" />
                 </Button>
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Внеси твое размислување или формула овде..."
+                  placeholder={t('controls.inputPlaceholder')}
                   className="flex-1 h-14 rounded-2xl border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-500 bg-slate-50 dark:bg-slate-800 text-lg px-6"
                   disabled={isLoading || isAnalyzingImage || !chatSession}
                 />

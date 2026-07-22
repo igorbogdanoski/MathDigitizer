@@ -4,6 +4,7 @@ import { X, ExternalLink } from 'lucide-react';
 import { MathTask } from '../../lib/schema';
 import { KnowledgeModelSolver } from './KnowledgeModelSolver';
 import { useModalA11y } from '../../hooks/useModalA11y';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   task: MathTask | null;
@@ -12,6 +13,7 @@ interface Props {
 
 export const KnowledgeModelModal: React.FC<Props> = ({ task, onClose }) => {
   const modalRef = useModalA11y<HTMLDivElement>(onClose);
+  const { t } = useTranslation('library');
 
   if (!task) return null;
 
@@ -42,7 +44,7 @@ export const KnowledgeModelModal: React.FC<Props> = ({ task, onClose }) => {
           <div className="absolute top-4 right-4 z-10 flex gap-2">
             <button
               onClick={onClose}
-              aria-label="Затвори"
+              aria-label={t('close')}
               className="p-2 bg-white/10 hover:bg-white/20 backdrop-blur text-white rounded-full transition-colors"
             >
               <X className="w-5 h-5" />

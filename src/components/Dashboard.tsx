@@ -1,6 +1,7 @@
 import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { Trophy, Star, Zap, Target, Award, TrendingUp, Users, Loader2, ChevronRight, Medal, Brain, PieChart as PieChartIcon, CheckCircle2, Circle, Activity, Paintbrush, ScanLine, Library as LibraryIcon, Wand2, Layers, AlertTriangle, Info, CreditCard } from 'lucide-react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Trophy, Zap, TrendingUp, Loader2, Brain, PieChart as PieChartIcon, Activity } from 'lucide-react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { useTranslation, Trans } from 'react-i18next';
 import { Button } from './ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { db, auth } from '../lib/firebase';
@@ -11,6 +12,12 @@ import { Skeleton } from './ui/Skeleton';
 import { SEO } from './SEO';
 import { useToast } from '../contexts/ToastContext';
 import { captureError } from '../lib/observability';
+import { BillingHealthSection } from './dashboard/BillingHealthSection';
+import { XPLevelHeader } from './dashboard/XPLevelHeader';
+import { DailyQuestsSection } from './dashboard/DailyQuestsSection';
+import { BadgesGrid } from './dashboard/BadgesGrid';
+import { LeaderboardPanel } from './dashboard/LeaderboardPanel';
+import { QuickAccessGrid } from './dashboard/QuickAccessGrid';
 
 // Lazy-loaded: Dashboard.tsx is a single route-level component, but a given
 // visit only ever needs ONE of these three (teacher branch returns early;
@@ -31,8 +38,11 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
+  const { t, i18n } = useTranslation('dashboard');
   const navigate = useNavigate();
   const { showToast } = useToast();
+
+  const dateLocale = i18n.language === 'al' ? 'sq-AL' : i18n.language === 'en' ? 'en-US' : 'mk-MK';
   const [stats, setStats] = useState<UserStats | null>(null);
   const [leaderboard, setLeaderboard] = useState<(UserStats & { displayName?: string, photoURL?: string })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -103,7 +113,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
           if (hasInitializedReceiptFeedRef.current) {
             const previousStatus = previousReceiptStatusesRef.current[receiptDoc.id];
             if (status === 'approved' && previousStatus !== 'approved') {
-              showToast('Вашата уплата е одобрена. Pro пристапот е активиран.', 'success');
+              showToast(t('paymentApproved'), 'success');
             }
           }
 
@@ -149,7 +159,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
     const parsed = new Date(iso);
     if (Number.isNaN(parsed.getTime())) return iso;
 
-    return parsed.toLocaleString('mk-MK', {
+    return parsed.toLocaleString(dateLocale, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -158,98 +168,91 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
     });
   };
 
-  const getLevelProgress = () => {
-    if (!stats) return 0;
-    const xpForNextLevel = stats.level * 1000;
-    const xpInCurrentLevel = stats.xp % 1000;
-    return (xpInCurrentLevel / 1000) * 100;
-  };
-
   const masteryData = [
-    { subject: 'Алгебра', A: 85, fullMark: 100 },
-    { subject: 'Геометрија', A: 65, fullMark: 100 },
-    { subject: 'Тригонометрија', A: 45, fullMark: 100 },
-    { subject: 'Статистика', A: 70, fullMark: 100 },
-    { subject: 'Логика', A: 90, fullMark: 100 },
-    { subject: 'Анализа', A: 55, fullMark: 100 },
+    { subject: t('masteryAlgebra'), A: 85, fullMark: 100 },
+    { subject: t('masteryGeometry'), A: 65, fullMark: 100 },
+    { subject: t('masteryTrigonometry'), A: 45, fullMark: 100 },
+    { subject: t('masteryStatistics'), A: 70, fullMark: 100 },
+    { subject: t('masteryLogic'), A: 90, fullMark: 100 },
+    { subject: t('masteryAnalysis'), A: 55, fullMark: 100 },
   ];
 
   const billingHealthBadge = useMemo(() => {
     if (latestApprovedReceiptAt) {
       return {
-        label: 'Billing: Pro active',
+        label: t('billingProActive'),
         className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300',
       };
     }
 
     if (hasPendingReceipt) {
       return {
-        label: 'Billing: Pending review',
+        label: t('billingPendingReview'),
         className: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
       };
     }
 
     if (hasReviewedReceipt) {
       return {
-        label: 'Billing: In review stage',
+        label: t('billingInReview'),
         className: 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300',
       };
     }
 
     if (hasRejectedReceipt) {
       return {
-        label: 'Billing: Needs action',
+        label: t('billingNeedsAction'),
         className: 'bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300',
       };
     }
 
     return {
-      label: 'Billing: No receipt submitted',
+      label: t('billingNoReceipt'),
       className: 'bg-slate-200 text-slate-700 dark:bg-white/10 dark:text-slate-300',
     };
-  }, [hasPendingReceipt, hasRejectedReceipt, hasReviewedReceipt, latestApprovedReceiptAt]);
+  }, [hasPendingReceipt, hasRejectedReceipt, hasReviewedReceipt, latestApprovedReceiptAt, t]);
 
   const billingCtaLabel = useMemo(() => {
     if (latestApprovedReceiptAt) return null;
-    if (hasRejectedReceipt) return 'Повторно испрати доказ';
-    if (hasPendingReceipt || hasReviewedReceipt) return 'Провери billing детали';
-    return 'Активирај Pro и испрати доказ';
-  }, [hasPendingReceipt, hasRejectedReceipt, hasReviewedReceipt, latestApprovedReceiptAt]);
+    if (hasRejectedReceipt) return t('resubmitProof');
+    if (hasPendingReceipt || hasReviewedReceipt) return t('checkBillingDetails');
+    return t('activateProAndSubmit');
+  }, [hasPendingReceipt, hasRejectedReceipt, hasReviewedReceipt, latestApprovedReceiptAt, t]);
 
   const billingGuideItems = useMemo(() => {
     return [
       {
         key: 'pending',
-        title: 'Pending review',
-        description: 'Тимот ја чека првата валидација.',
+        title: t('billingGuide.pending.title'),
+        description: t('billingGuide.pending.description'),
         isActive: hasPendingReceipt,
       },
       {
         key: 'reviewed',
-        title: 'In review stage',
-        description: 'Потврдата е проверена и е во финална обработка.',
+        title: t('billingGuide.reviewed.title'),
+        description: t('billingGuide.reviewed.description'),
         isActive: !hasPendingReceipt && hasReviewedReceipt,
       },
       {
         key: 'rejected',
-        title: 'Needs action',
-        description: 'Потребна е корекција или повторно праќање доказ.',
+        title: t('billingGuide.rejected.title'),
+        description: t('billingGuide.rejected.description'),
         isActive: !hasPendingReceipt && !hasReviewedReceipt && hasRejectedReceipt,
       },
       {
         key: 'none',
-        title: 'No receipt submitted',
-        description: 'Избери Pro план и испрати платежен доказ за активација.',
+        title: t('billingGuide.none.title'),
+        description: t('billingGuide.none.description'),
         isActive: !latestApprovedReceiptAt && !hasPendingReceipt && !hasReviewedReceipt && !hasRejectedReceipt,
       },
       {
         key: 'approved',
-        title: 'Pro active',
-        description: 'Се е успешно верификувано, пристапот е активен.',
+        title: t('billingGuide.approved.title'),
+        description: t('billingGuide.approved.description'),
         isActive: Boolean(latestApprovedReceiptAt),
       },
     ];
-  }, [hasPendingReceipt, hasRejectedReceipt, hasReviewedReceipt, latestApprovedReceiptAt]);
+  }, [hasPendingReceipt, hasRejectedReceipt, hasReviewedReceipt, latestApprovedReceiptAt, t]);
 
   const activeGuideItem = useMemo(() => {
     return billingGuideItems.find((item) => item.isActive) ?? billingGuideItems[0];
@@ -286,12 +289,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
         <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-500/15 rounded-full flex items-center justify-center mb-4">
           <Activity className="w-8 h-8 text-indigo-600 dark:text-indigo-300" />
         </div>
-        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Грешка при вчитување на статистиките</h3>
+        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{t('statsErrorTitle')}</h3>
         <p className="text-slate-500 dark:text-slate-400 max-w-sm mb-6">
-          Вашите телеметриски податоци не може да се пронајдат. Обидете се да ја освежите страницата или да решите задача за да активирате запис.
+          {t('statsErrorDescription')}
         </p>
         <Button onClick={() => window.location.reload()}>
-          Освежи Страница
+          {t('refreshPage')}
         </Button>
       </div>
     );
@@ -317,150 +320,38 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
     }
   };
 
+  const handleBillingCtaClick = () => {
+    void trackBillingCtaClick();
+    navigate('/pricing');
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <SEO 
-        title="Телеметрија и Напредок" 
-        description="Следете го вашиот личен напредок, нивоа, значки и образовни перформанси преку напредна DOK телеметрија." 
-        keywords="телеметрија, математика, dashboard, напредок, значки, xp, едукација"
+      <SEO
+        title={t('seoTitle')}
+        description={t('seoDescription')}
+        keywords={t('seoKeywords')}
       />
 
-      {latestApprovedReceiptAt ? (
-        <section className="rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 p-4 md:p-5">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-            <div>
-              <div className="text-sm font-black text-emerald-800 dark:text-emerald-200">Pro е активиран</div>
-              <p className="text-sm text-emerald-700 dark:text-emerald-300">Вашата уплата е одобрена и Pro пристапот е активен.</p>
-            </div>
-            <div className="text-xs font-semibold text-emerald-800 dark:text-emerald-200">
-              Активирано: {formatReceiptTimestamp(latestApprovedReceiptAt)}
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      {!latestApprovedReceiptAt && hasPendingReceipt ? (
-        <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-4 md:p-5">
-          <div className="text-sm font-black text-amber-800 dark:text-amber-200">Уплатата е во review</div>
-          <p className="text-sm text-amber-700 dark:text-amber-300">Тимот ја проверува доставената потврда. Pro ќе се активира веднаш по одобрување.</p>
-        </section>
-      ) : null}
-
-      <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
-            <AlertTriangle className="w-4 h-4 text-slate-500 dark:text-slate-300" />
-            Billing Health
-          </div>
-          <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${billingHealthBadge.className}`}>
-              {billingHealthBadge.label}
-            </span>
-            {billingCtaLabel ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-8 px-3 dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/5"
-                onClick={() => {
-                  void trackBillingCtaClick();
-                  navigate('/pricing');
-                }}
-              >
-                {billingCtaLabel}
-              </Button>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="mt-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-3">
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 mb-2">
-            <Info className="w-3.5 h-3.5" />
-            Status guide
-          </div>
-          <div className="text-xs text-slate-700 dark:text-slate-200 mb-2">
-            <span className="font-semibold">Current focus:</span> {activeGuideItem.title} - {activeGuideItem.description}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-            {billingGuideItems.map((item) => (
-              <div
-                key={item.key}
-                className={`rounded-lg px-2.5 py-2 border ${item.isActive ? 'border-indigo-300 dark:border-indigo-400/30 bg-indigo-50 dark:bg-indigo-500/15 text-indigo-900 dark:text-indigo-300' : 'border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/5 text-slate-600 dark:text-slate-400'}`}
-              >
-                <span className="font-semibold">{item.title}:</span> {item.description}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <BillingHealthSection
+        billingHealthBadge={billingHealthBadge}
+        billingCtaLabel={billingCtaLabel}
+        billingGuideItems={billingGuideItems}
+        activeGuideItem={activeGuideItem}
+        latestApprovedReceiptAt={latestApprovedReceiptAt}
+        hasPendingReceipt={hasPendingReceipt}
+        formatReceiptTimestamp={formatReceiptTimestamp}
+        onTrackBillingCta={handleBillingCtaClick}
+        t={t}
+      />
 
       {/* Header / XP Bar */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-8 shadow-xl">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="relative group">
-              <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner overflow-hidden cursor-pointer" onClick={() => setIsAvatarShopOpen(true)}>
-                {auth.currentUser?.photoURL ? (
-                  <img src={auth.currentUser.photoURL} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-3xl font-black">{stats.level}</span>
-                )}
-              </div>
-              <div 
-                className="absolute -bottom-2 -right-2 bg-indigo-500 rounded-full p-1.5 border border-white/30 cursor-pointer hover:bg-indigo-400 transition-colors shadow-lg"
-                onClick={() => setIsAvatarShopOpen(true)}
-              >
-                <Paintbrush className="w-4 h-4 text-white" />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <h2 className="text-2xl font-bold">Ниво {stats.level}</h2>
-                {userProfile && (
-                  <span className="px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-white/20 text-white border border-white/30">
-                    {String(userProfile.role) === 'teacher' ? 'Наставник' : 'Ученик'}
-                  </span>
-                )}
-              </div>
-              <p className="text-indigo-100">Вкупно XP: {stats.xp.toLocaleString()}</p>
-            </div>
-          </div>
-          
-          <div className="flex-1 max-w-md">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="font-medium">Прогрес до Ниво {stats.level + 1}</span>
-              <span>{stats.xp % 1000} / 1000 XP</span>
-            </div>
-            <div className="h-4 bg-black/20 rounded-full overflow-hidden border border-white/10">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${getLevelProgress()}%` }}
-                className="h-full bg-gradient-to-r from-yellow-400 to-orange-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]"
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <div className="text-center">
-              <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm border border-white/10">
-                <Zap className="w-6 h-6 text-yellow-400 mx-auto mb-1" />
-                <div className="text-xl font-bold">{stats.streak}</div>
-                <div className="text-[10px] uppercase tracking-wider text-indigo-200">Дневен Streak</div>
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm border border-white/10">
-                <Target className="w-6 h-6 text-emerald-400 mx-auto mb-1" />
-                <div className="text-xl font-bold">{stats.tasks_completed}</div>
-                <div className="text-[10px] uppercase tracking-wider text-indigo-200">Решени задачи</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Background Decorative Elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-400/10 rounded-full -ml-24 -mb-24 blur-2xl"></div>
-      </section>
+      <XPLevelHeader
+        stats={stats}
+        userProfile={userProfile}
+        onOpenAvatarShop={() => setIsAvatarShopOpen(true)}
+        t={t}
+      />
 
       {/* Interactive Mathematics Skill Tree */}
       <section className="mb-8">
@@ -473,61 +364,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
         <div className="lg:col-span-2 space-y-8">
           
           {/* Daily Quests Section */}
-          <Card className="border-slate-200 dark:border-white/10 dark:bg-slate-900/60 dark:backdrop-blur-xl overflow-hidden">
-            <CardHeader className="border-b border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-white/5">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Target className="w-5 h-5 text-orange-500" />
-                Дневни Предизвици
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              {stats.quests && stats.quests.date === new Date().toISOString().split('T')[0] ? (
-                <div className="space-y-4">
-                  {stats.quests.items.map((quest) => (
-                    <div key={quest.id} className="bg-slate-50 dark:bg-white/5 rounded-xl p-4 border border-slate-100 dark:border-white/10">
-                      <div className="flex justify-between items-center mb-2">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${quest.completed ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-slate-200 text-slate-500 dark:bg-white/10 dark:text-slate-400'}`}>
-                            {quest.completed ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
-                          </div>
-                          <span className={`font-semibold ${quest.completed ? 'text-slate-900 dark:text-white line-through opacity-70' : 'text-slate-900 dark:text-white'}`}>
-                            {quest.title}
-                          </span>
-                        </div>
-                        <span className="text-sm font-bold text-orange-500 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded-md">
-                          +{quest.xpReward} XP
-                        </span>
-                      </div>
-                      <div className="pl-11">
-                        <div className="flex justify-between text-xs text-slate-500 mb-1">
-                          <span>Прогрес</span>
-                          <span>{quest.progress} / {quest.target}</span>
-                        </div>
-                        <div className="h-2 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${(quest.progress / quest.target) * 100}%` }}
-                            className={`h-full ${quest.completed ? 'bg-emerald-500' : 'bg-orange-500'}`}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                  <p>Дневните предизвици се освежуваат...</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <DailyQuestsSection stats={stats} t={t} />
 
           {/* Mastery Radar Chart */}
           <Card className="border-slate-200 dark:border-white/10 dark:bg-slate-900/60 dark:backdrop-blur-xl overflow-hidden">
             <CardHeader className="border-b border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-white/5">
               <CardTitle className="text-lg flex items-center gap-2">
                 <PieChartIcon className="w-5 h-5 text-indigo-600" />
-                Мастерство по Теми
+                {t('masteryByTopics')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
@@ -538,10 +382,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
                   </Suspense>
                 </div>
                 <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">Анализа на вештини</h4>
+                  <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('skillAnalysis')}</h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    Вашиот најсилен предмет е <span className="font-bold text-indigo-600">Логика</span>. 
-                    Потребно е повеќе вежбање во областа на <span className="font-bold text-amber-600">Тригонометрија</span>.
+                    <Trans i18nKey="skillAnalysisText" ns="dashboard" components={{ strong: <strong className="font-bold" /> }} />
                   </p>
                   <div className="space-y-2">
                     {masteryData.slice(0, 3).map((item, idx) => (
@@ -562,50 +405,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
                   </div>
                   <Button 
                     className="w-full mt-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/50"
-                    onClick={() => showToast("AI Tutor генерира адаптивна задача по Тригонометрија...", 'info')}
+                    onClick={() => showToast(t('aiTutorGenerating'), 'info')}
                   >
                     <Brain className="w-4 h-4 mr-2" />
-                    Генерирај Адаптивна Задача
+                    {t('generateAdaptiveTask')}
                   </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Award className="w-6 h-6 text-indigo-600" />
-            Вашите Значки
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {stats.badges.map((badge, idx) => (
-              <motion.div 
-                key={idx}
-                whileHover={{ scale: 1.05 }}
-                className="bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl p-4 rounded-2xl border border-slate-200 dark:border-white/10 text-center shadow-sm hover:shadow-md transition-all"
-              >
-                <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/15 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Medal className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-                </div>
-                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{badge}</div>
-              </motion.div>
-            ))}
-            {/* Locked Badges Placeholder */}
-            {[1, 2, 3].map((_, idx) => (
-              <div key={idx} className="bg-slate-50 dark:bg-white/5 p-4 rounded-2xl border border-dashed border-slate-200 dark:border-white/10 text-center opacity-50">
-                <div className="w-12 h-12 bg-slate-100 dark:bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Star className="w-6 h-6 text-slate-300" />
-                </div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Заклучено</div>
-              </div>
-            ))}
-          </div>
+          <BadgesGrid stats={stats} t={t} />
 
           {/* Recent Activity Placeholder */}
           <Card className="border-slate-200 dark:border-white/10 dark:bg-slate-900/60 dark:backdrop-blur-xl">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-emerald-500" />
-                Неодамнешен Напредок
+                {t('recentProgress')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -616,8 +433,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
                       <Zap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                      <div className="text-sm font-bold text-slate-800 dark:text-slate-100">Генерирана слична задача</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Пред 2 часа</div>
+                      <div className="text-sm font-bold text-slate-800 dark:text-slate-100">{t('generatedSimilarTask')}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-tighter">{t('twoHoursAgo')}</div>
                     </div>
                   </div>
                   <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">+50 XP</div>
@@ -628,8 +445,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
                       <Brain className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     </div>
                     <div>
-                      <div className="text-sm font-bold text-slate-800 dark:text-slate-100">Завршена сесија со картички</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Пред 5 часа</div>
+                      <div className="text-sm font-bold text-slate-800 dark:text-slate-100">{t('completedFlashcardSession')}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-tighter">{t('fiveHoursAgo')}</div>
                     </div>
                   </div>
                   <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">+120 XP</div>
@@ -640,88 +457,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ userProfile }) => {
         </div>
 
         {/* Leaderboard Section */}
-        <div className="space-y-6">
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Users className="w-6 h-6 text-blue-600" />
-            Лидерска Табла
-          </h3>
-          <Card className="border-slate-200 dark:border-white/10 dark:bg-slate-900/60 dark:backdrop-blur-xl overflow-hidden">
-            <div className="bg-slate-50 dark:bg-white/5 p-4 border-b border-slate-200 dark:border-white/10">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                <span>Ранг / Корисник</span>
-                <span>XP</span>
-              </div>
-            </div>
-            <CardContent className="p-0">
-              {leaderboard.map((leader, idx) => (
-                <div 
-                  key={idx} 
-                  className={`flex items-center justify-between p-4 border-b border-slate-100 dark:border-white/10 last:border-0 ${
-                    leader.uid === auth.currentUser?.uid ? 'bg-blue-50/50 dark:bg-blue-500/10' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      idx === 0 ? 'bg-yellow-400 text-white' :
-                      idx === 1 ? 'bg-slate-300 text-white' :
-                      idx === 2 ? 'bg-orange-400 text-white' :
-                      'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400'
-                    }`}>
-                      {idx + 1}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
-                        {leader.photoURL ? (
-                          <img src={leader.photoURL} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                            {leader.displayName?.charAt(0) || '?'}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate max-w-[100px]">
-                        {leader.uid === auth.currentUser?.uid ? 'Вие' : (leader.displayName || 'Корисник')}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-sm font-black text-indigo-600 dark:text-indigo-400">
-                    {leader.xp.toLocaleString()}
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-            <div className="p-4 bg-slate-50 dark:bg-white/5 text-center">
-              <Button variant="ghost" size="sm" className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
-                Види ја целата табла <ChevronRight className="w-3 h-3 ml-1" />
-              </Button>
-            </div>
-          </Card>
-        </div>
+        <LeaderboardPanel
+          leaderboard={leaderboard}
+          currentUid={auth.currentUser?.uid}
+          t={t}
+        />
       </div>
-      <div className="mt-8 mb-4 flex items-center justify-between">
-        <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          <Zap className="w-5 h-5 text-indigo-500" />
-          Брз Пристап на Екосистемот
-        </h3>
-        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Сите алатки на едно место</span>
-      </div>
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-12">
-        {[
-          { title: "Smart OCR", desc: "Скенирај задачи", icon: <ScanLine className="w-5 h-5 text-blue-500" />, to: "/smart-ocr", bg: "bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20", borderColor: "border-blue-100 dark:border-blue-800/50" },
-          { title: "Библиотека", desc: "Банка на знаење", icon: <LibraryIcon className="w-5 h-5 text-emerald-500" />, to: "/library", bg: "bg-emerald-50 dark:bg-emerald-900/10 hover:bg-emerald-100 dark:hover:bg-emerald-900/20", borderColor: "border-emerald-100 dark:border-emerald-800/50" },
-          { title: "Модул Екстракција", desc: "Од YouTube видеа", icon: <Wand2 className="w-5 h-5 text-purple-500" />, to: "/extract", bg: "bg-purple-50 dark:bg-purple-900/10 hover:bg-purple-100 dark:hover:bg-purple-900/20", borderColor: "border-purple-100 dark:border-purple-800/50" },
-          { title: "Тест Фабрика", desc: "Генерирај тестови во секунда", icon: <Layers className="w-5 h-5 text-rose-500" />, to: "/mass-factory", bg: "bg-rose-50 dark:bg-rose-900/10 hover:bg-rose-100 dark:hover:bg-rose-900/20", borderColor: "border-rose-100 dark:border-rose-800/50" },
-          { title: "Billing", desc: "Претплата и плаќања", icon: <CreditCard className="w-5 h-5 text-indigo-500" />, to: "/billing", bg: "bg-indigo-50 dark:bg-indigo-900/10 hover:bg-indigo-100 dark:hover:bg-indigo-900/20", borderColor: "border-indigo-100 dark:border-indigo-800/50" }
-        ].map((item, idx) => (
-          <Link key={idx} to={item.to} className={`flex flex-col p-4 rounded-2xl border transition-all ${item.bg} ${item.borderColor}`}>
-            <div className="bg-white dark:bg-white/10 p-2.5 rounded-xl w-max shadow-sm mb-3">
-              {item.icon}
-            </div>
-            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm mb-1">{item.title}</h4>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{item.desc}</p>
-          </Link>
-        ))}
-      </div>
+
+      <QuickAccessGrid t={t} />
 
       {isAvatarShopOpen && (
         <Suspense fallback={null}>

@@ -36,5 +36,102 @@
   "sinceLastWeek": "since last week",
   "viewDetails": "View details",
   "exportReport": "Export report",
-  "shareProgress": "Share progress"
+  "shareProgress": "Share progress",
+
+  "seoTitle": "Telemetry & Progress",
+  "seoDescription": "Track your personal progress, levels, badges and educational performance through advanced DOK telemetry.",
+  "seoKeywords": "telemetry, mathematics, dashboard, progress, badges, xp, education",
+
+  "paymentApproved": "Your payment has been approved. Pro access is activated.",
+  "statsErrorTitle": "Error loading statistics",
+  "statsErrorDescription": "Your telemetry data could not be found. Try refreshing the page or solving a task to activate a record.",
+  "refreshPage": "Refresh Page",
+
+  "proActivated": "Pro is activated",
+  "proActivatedDesc": "Your payment has been approved and Pro access is active.",
+  "activatedAt": "Activated:",
+  "paymentInReview": "Payment is in review",
+  "paymentInReviewDesc": "The team is reviewing the submitted receipt. Pro will be activated immediately upon approval.",
+
+  "billingHealth": "Billing Health",
+  "statusGuide": "Status guide",
+  "currentFocus": "Current focus:",
+  "billingProActive": "Billing: Pro active",
+  "billingPendingReview": "Billing: Pending review",
+  "billingInReview": "Billing: In review stage",
+  "billingNeedsAction": "Billing: Needs action",
+  "billingNoReceipt": "Billing: No receipt submitted",
+  "resubmitProof": "Resubmit proof",
+  "checkBillingDetails": "Check billing details",
+  "activateProAndSubmit": "Activate Pro & submit proof",
+
+  "billingGuide": {
+    "pending": {
+      "title": "Pending review",
+      "description": "The team is awaiting the first validation."
+    },
+    "reviewed": {
+      "title": "In review stage",
+      "description": "The receipt has been checked and is in final processing."
+    },
+    "rejected": {
+      "title": "Needs action",
+      "description": "A correction or resubmission of proof is required."
+    },
+    "none": {
+      "title": "No receipt submitted",
+      "description": "Choose a Pro plan and submit payment proof for activation."
+    },
+    "approved": {
+      "title": "Pro active",
+      "description": "Everything has been successfully verified, access is active."
+    }
+  },
+
+  "teacher": "Teacher",
+  "student": "Student",
+  "totalXp": "Total XP:",
+  "progressToLevel": "Progress to Level {{level}}",
+  "dailyStreak": "Daily Streak",
+  "solvedTasks": "Solved Tasks",
+
+  "dailyQuests": "Daily Quests",
+  "questsRefreshing": "Daily quests are refreshing...",
+
+  "masteryByTopics": "Mastery by Topics",
+  "skillAnalysis": "Skill Analysis",
+  "skillAnalysisText": "Your strongest subject is <strong>Logic</strong>. More practice is needed in the area of <strong>Trigonometry</strong>.",
+  "generateAdaptiveTask": "Generate Adaptive Task",
+  "aiTutorGenerating": "AI Tutor is generating an adaptive task on Trigonometry...",
+
+  "masteryAlgebra": "Algebra",
+  "masteryGeometry": "Geometry",
+  "masteryTrigonometry": "Trigonometry",
+  "masteryStatistics": "Statistics",
+  "masteryLogic": "Logic",
+  "masteryAnalysis": "Analysis",
+
+  "yourBadges": "Your Badges",
+
+  "recentProgress": "Recent Progress",
+  "generatedSimilarTask": "Generated similar task",
+  "twoHoursAgo": "2 hours ago",
+  "completedFlashcardSession": "Completed flashcard session",
+  "fiveHoursAgo": "5 hours ago",
+
+  "rankUser": "Rank / User",
+  "you": "You",
+  "user": "User",
+  "viewFullLeaderboard": "View full leaderboard",
+
+  "quickAccess": "Ecosystem Quick Access",
+  "allToolsOnePlace": "All tools in one place",
+  "scanTasks": "Scan tasks",
+  "library": "Library",
+  "knowledgeBank": "Knowledge bank",
+  "extractionModule": "Extraction Module",
+  "fromYouTubeVideos": "From YouTube videos",
+  "testFactory": "Test Factory",
+  "generateTestsInSecond": "Generate tests in seconds",
+  "subscriptionAndPayments": "Subscription & payments"
 }

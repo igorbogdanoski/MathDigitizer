@@ -1,0 +1,22 @@
+{
+  "featureName": "Mass Curriculum Factory",
+  "featureDescription": "Batch curriculum processing is a Pro capability. Unlock it for large PDF/textbook ingestion workflows.",
+  "title": "Curriculum Factory (Mass-Batch)",
+  "description": "Upload an entire PDF textbook. The agentic system will automatically break it down into lessons, theory, class tasks, homework, and diagnostic tests.",
+  "uploadTitle": "Upload file (PDF)",
+  "uploadHint": "Click or drag the textbook here to start mass extraction.",
+  "processing": "Disassembling textbook...",
+  "processCurriculum": "Process Curriculum",
+  "agent1": "Agent 1: OCR and PDF transcription...",
+  "agent2": "Agent 2 (Mathematician): Verifying logic and calculations...",
+  "agent3": "Agent 3 (Pedagogue): Adding differentiation and Bloom's Taxonomy...",
+  "agent4": "Agent 4 (Programmer): Writing error-free GeoGebra code...",
+  "saveToLibrary": "Save to Library",
+  "lesson": "Lesson {{index}}:",
+  "classTasks": "Class Tasks",
+  "homework": "Homework",
+  "exitTicket": "Exit Ticket",
+  "successToast": "Curriculum generated successfully!",
+  "errorToast": "Error generating curriculum.",
+  "savedToast": "All materials saved to the Library!"
+}

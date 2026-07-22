@@ -1,0 +1,107 @@
+{
+  "seo": {
+    "title": "Smart OCR & Njohja e shkrimit të dorës",
+    "description": "Model i specializuar për njohjen e shkrimit të dorës maqedonase dhe teksteve të vjetra cirilike. Teknologji e avancuar AI OCR.",
+    "keywords": "ocr, matematikë, shkrim dore, skanim, gemini vision, ai, OCR matematikë maqedonase"
+  },
+  "header": {
+    "title": "Advanced Vision OCR",
+    "subtitle": "I specializuar për shkrim dore, tekst të dëmtuar dhe tekste të vjetra"
+  },
+  "tabs": {
+    "upload": "Imazh / PDF",
+    "draw": "Shkrim dore"
+  },
+  "settings": {
+    "outputLanguage": "Gjuha e daljes:",
+    "outputLanguageTitle": "Gjuha e daljes",
+    "langAuto": "Automatik (Origjinal)",
+    "langMk": "Maqedonisht",
+    "langEn": "English (Anglisht)",
+    "langTr": "Türkçe (Turqisht)",
+    "langRu": "Русский (Rusisht)",
+    "visualization": "Vizualizimi:",
+    "visualizationTitle": "Vizualizimi",
+    "vizNone": "Pa diagram",
+    "vizTikz": "LaTeX (TikZ)",
+    "vizGeogebra": "GeoGebra (Interaktiv)",
+    "vizNanobanana": "Imazh kontekstual AI",
+    "model": "Modeli:",
+    "modelTitle": "Modeli OCR",
+    "modelPro": "Gemini 3.1 Pro (World-Class)",
+    "modelFlash": "Gemini 3 Flash (Fast)",
+    "logicalReconstruction": "Rindërtimi logjik:",
+    "enabled": "I aktivizuar",
+    "disabled": "I çaktivizuar"
+  },
+  "crop": {
+    "originalImage": "Imazhi origjinal",
+    "drawingBoard": "Tabela për vizatim",
+    "extractCrop": "Nxirr (Crop & OCR)",
+    "ocrHandwriting": "OCR shkrim dore",
+    "clear": "Pastro",
+    "batchInProgress": "Batch OCR në progres...",
+    "batchImagesProcessed": "{{done}} / {{total}} imazhe të përpunuara",
+    "dropzoneTitle": "Tërhiq imazh/PDF ose ngjit (CTRL+V)",
+    "dropzoneFormats": "Formatet e mbështetura: JPG, PNG, PDF",
+    "dropzoneBatchHint": "Zgjidhni disa skedarë njëkohësisht për përpunim batch",
+    "attachedTask": "Detyra e bashkëngjitur",
+    "scanningTitle": "Gemini 3.1 Pro OCR...",
+    "scanningSubtitle": "Analiza e pikselave në progres",
+    "drawHint": "Vizatoni këtu...",
+    "attachImageOrPdf": "Bashkëngjit imazh ose PDF"
+  },
+  "palette": {
+    "insertSymbol": "Fut simbolin {{label}}"
+  },
+  "result": {
+    "evidenceFound": "U gjet dëshmi: \"{{quote}}\"",
+    "aiMetadata": "Meta të dhëna AI",
+    "pedagogicalEnrichment": "Pasurim pedagogjik",
+    "difficulty": "Vështirësia:",
+    "topic": "Tema:",
+    "type": "Lloji:",
+    "language": "Gjuha:",
+    "commonPitfalls": "Gabime të mundshme",
+    "socraticQuestions": "Pyetje udhëzuese",
+    "modelingScenario": "Modelim matematikor",
+    "modernizationSuggestion": "Sugjerim për modernizim",
+    "openInGeogebra": "Hap në GeoGebra",
+    "geogebraReady": "Ky kod është gati për ngarkim automatik të GeoGebra Applet."
+  },
+  "batch": {
+    "results": "Rezultatet Batch: {{count}} detyra",
+    "saveAll": "Ruaj të gjitha",
+    "copyLatex": "Kopjo LaTeX"
+  },
+  "view": {
+    "preview": "Parashikim",
+    "latexCode": "Kodi LaTeX",
+    "copied": "U kopjua",
+    "copy": "Kopjo",
+    "save": "Ruaj",
+    "processingImages": "Përpunimi i imazheve...",
+    "starting": "Duke filluar...",
+    "processedImage": "U përpunua imazhi {{done}} nga {{total}}...",
+    "done": "Përfunduar!",
+    "emptyState": "Teksti i dixhitalizuar do të shfaqet këtu",
+    "mathEditorHint": "Editor i avancuar matematikor (Për të futur ekuacione në kod, kopjoni rezultatin këtu dhe futeni me $\\dots$):",
+    "loadingMathEditor": "Duke ngarkuar editorin matematikor...",
+    "latexPlaceholder": "Kodi LaTeX do të shfaqet këtu..."
+  },
+  "toasts": {
+    "invalidFile": "Ju lutemi bashkëngjitni një imazh (JPG, PNG), PDF ose dokument Word (.docx).",
+    "batchSuccess": "Batch: {{count}} detyra të nxjerra nga {{total}} imazhe",
+    "batchEmpty": "Nuk u gjetën detyra në asnjë imazh.",
+    "batchSaved": "{{count}} detyra u ruajtën në Bibliotekë!",
+    "saveError": "Gabim gjatë ruajtjes.",
+    "noTasksFound": "Nuk u gjetën detyra në këtë imazh.",
+    "scanSuccess": "Imazhi u dixhitalizua me sukses!",
+    "scanError": "Ndodhi një gabim gjatë skanimit. Provoni me një imazh më të qartë.",
+    "codeCopied": "Kodi u kopjua në clipboard.",
+    "taskSaved": "Detyra u ruajt me sukses në Bibliotekë!",
+    "taskSaveError": "Ndodhi një gabim gjatë ruajtjes.",
+    "enrichSuccess": "Elementet pedagogjike u gjeneruan me sukses!",
+    "enrichError": "Ndodhi një gabim gjatë gjenerimit të pedagogjisë."
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "header": {
+    "badge": "Pedagogical Laboratory (Mastery Layer)",
+    "title": "Cognitive Analysis & ZPD",
+    "description": "Theoretically grounded mathematical diagnostics based on the expert framework \"Adding It Up\" by the National Research Council.",
+    "trackedSubjects": "Tracked Subjects",
+    "globalIndex": "Global Index"
+  },
+  "loading": "Analyzing cognitive space...",
+  "noData": {
+    "title": "Absence of empirical data",
+    "description": "The Center for Mathematical Pedagogy requires initial input of evaluations through the Smart Grader module to construct cognitive profiles of students."
+  },
+  "strands": {
+    "conceptual": "Conceptual",
+    "conceptualFull": "Conceptual Understanding",
+    "procedural": "Procedural",
+    "proceduralFull": "Procedural Fluency",
+    "strategic": "Strategic",
+    "strategicFull": "Strategic Competence",
+    "adaptive": "Adaptive",
+    "adaptiveFull": "Adaptive Reasoning",
+    "productive": "Disposition",
+    "productiveFull": "Productive Disposition"
+  },
+  "momentum": {
+    "title": "Cognitive Momentum",
+    "deltaFromStart": "Delta from starting point"
+  },
+  "metacognitive": {
+    "title": "Metacognitive Status",
+    "criticalAlarm": "Critical Alarm",
+    "optimalAssimilation": "Optimal Assimilation"
+  },
+  "loadStates": {
+    "optimal": "Optimal load (ZPD)",
+    "underestimated": "Cognitively Underestimated",
+    "overloaded": "Cognitive Overload"
+  },
+  "zpd": {
+    "title": "Interactive ZPD Calculator",
+    "currentAverage": "Current Average ({{value}}%)",
+    "momentum": "Progress / Momentum ({{value}})",
+    "scenarioHint": "Change the values to simulate different scenarios and check the recommended pedagogical steps for your next intervention.",
+    "targetCapacity": "Target Capacity (ZPD)",
+    "nextSteps": "Suggested next steps",
+    "resetToReal": "Reset to real data"
+  },
+  "zpdSteps": {
+    "step1": "Return to basic concepts. Focus on consolidating prior knowledge through diagnostic tasks.",
+    "step2": "Consolidation with same-type tasks (Scaffolding). Dose assistance until autonomy increases.",
+    "step3": "Introducing a new concept (Weak zone of proximal development). Encourage transition to abstract solving.",
+    "step4": "Advanced extension! Tasks should include real scenarios, high critical thinking and self-evaluation."
+  },
+  "radar": {
+    "deficit": "\"Adding It Up\" Deficit",
+    "primaryFocus": "Primary focus:",
+    "description": "A deficit has been identified in the mathematical competence framework. Activate the Socratic Intervention Mechanism to generate a precise ZPD plan.",
+    "generating": "Generating Metacognitive Plan...",
+    "constructPlan": "Construct Intervention Plan",
+    "proficiency": "Proficiency"
+  },
+  "leaderboard": {
+    "title": "Analytics Leaderboard",
+    "description": "Global ranking by Conceptual Mastery (Average Score) and Momentum",
+    "average": "Average (0-100)",
+    "totalEvaluations": "Total Evaluations",
+    "cognitiveZpdTarget": "Cognitive ZPD Target:"
+  },
+  "sidebar": {
+    "title": "Cognitive Profiles",
+    "selectSubject": "Select a subject for in-depth analysis",
+    "evaluations": "Evaluations:"
+  },
+  "longitudinal": {
+    "title": "Longitudinal Cognitive Trajectory",
+    "conceptualUnderstanding": "Conceptual Understanding",
+    "proceduralFluency": "Procedural Fluency",
+    "momentumVelocity": "Momentum (Velocity)"
+  },
+  "gaps": {
+    "title": "Chronological Knowledge Gaps",
+    "granularAnalysis": "Granular Error Analysis",
+    "incidents": "{{count}} incidents",
+    "noGaps": "The system does not detect structural errors."
+  },
+  "modal": {
+    "title": "Socratic Intervention Plan (ZPD)",
+    "subject": "Subject:",
+    "didacticScript": "Didactic Script",
+    "methodologyEngine": "Methodology Engine (Gemini 3.1 Pro)",
+    "closePlan": "Close plan",
+    "exportPdf": "Export as .PDF",
+    "closeAria": "Close intervention plan"
+  },
+  "interventionError": "Error generating intervention.",
+  "proGate": {
+    "featureName": "Advanced Analytics",
+    "description": "This analytics is part of the Pro plan. Unlock it for deeper pedagogical signals, cognitive indicators and intervention plans."
+  }
+}

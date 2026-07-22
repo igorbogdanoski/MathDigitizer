@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Upload, CheckCircle2, AlertTriangle, FileWarning, Search,
@@ -55,6 +56,7 @@ export const SmartGrader: React.FC = () => {
   const { tasks } = useLibraryStore();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation('smartGrader');
   
   const [gradingMode, setGradingMode] = useState<'single' | 'batch'>('single');
   const [selectedTask, setSelectedTask] = useState<MathTask | null>(null);
@@ -80,7 +82,7 @@ export const SmartGrader: React.FC = () => {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      showToast("Сликата е премногу голема. Ве молиме прикачете слика помала од 5MB.", 'error');
+      showToast(t('toasts.imageTooLarge'), 'error');
       return;
     }
 
@@ -118,7 +120,7 @@ export const SmartGrader: React.FC = () => {
       setPracticeTasks(prev => ({...prev, [index]: generated}));
     } catch (e) {
        console.error("Failed to generate practice", e);
-       showToast("Настана грешка при генерирање на задачите.", 'error');
+       showToast(t('toasts.practiceGenError'), 'error');
     } finally {
        setIsGeneratingPractice(false);
     }
@@ -129,7 +131,7 @@ export const SmartGrader: React.FC = () => {
     if (!selectedImage) return;
     
     if (!studentIdentifier.trim()) {
-       showToast("Внесете име или идентификатор на ученикот за да се зачува аналитиката.", 'error');
+       showToast(t('toasts.enterStudentId'), 'error');
        return;
     }
 
@@ -193,7 +195,7 @@ Feedback: ${doc.feedback_summary}`;
                  user.uid,
                  'test'
                );
-               showToast('Оценката е зачувана во дневникот', 'success');
+               showToast(t('toasts.gradeSaved'), 'success');
              }
            } catch (dbErr) {
              console.error("Failed to save student analytic profiling:", dbErr);
@@ -237,14 +239,14 @@ Feedback: ${doc.feedback_summary}`;
              }
           }
           if (studentIdentifier.trim()) {
-            showToast(`${batchAnalysis.length} оцени се зачувани во дневникот`, 'success');
+            showToast(t('toasts.batchGradesSaved', { count: batchAnalysis.length }), 'success');
           }
         }
       }
       
     } catch (error) {
       console.error("Grader Analysis Error:", error);
-      showToast("Настана грешка при анализата. Обидете се повторно.", 'error');
+      showToast(t('toasts.analysisError'), 'error');
     } finally {
       setIsAnalyzing(false);
     }
@@ -261,16 +263,11 @@ Feedback: ${doc.feedback_summary}`;
       create: 'bg-rose-100 text-rose-800 border-rose-200'
     };
     
-    const mkLabels: Record<string, string> = {
-      remember: 'Запомнување', understand: 'Разбирање', apply: 'Примена',
-      analyze: 'Анализирање', evaluate: 'Евалуација', create: 'Креирање'
-    };
-
     const colorClass = colors[level] || 'bg-slate-100 text-slate-800 border-slate-200';
-    
+
     return (
       <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${colorClass}`}>
-        Bloom: {mkLabels[level] || level}
+        {t('bloom.label', { level: t(`bloom.${level}`, { defaultValue: level }) })}
       </span>
     );
   };
@@ -282,8 +279,8 @@ Feedback: ${doc.feedback_summary}`;
         
         {gradingMode === 'batch' && (
           <div className="bg-slate-100 dark:bg-slate-700/50 p-4 rounded-xl mb-6">
-            <h3 className="font-bold text-slate-800 dark:text-white mb-2">Детектирана Задача {index + 1}</h3>
-            <MathRenderer content={res.extracted_task_text || "Не е пронајден текст на задача."} />
+            <h3 className="font-bold text-slate-800 dark:text-white mb-2">{t('result.detectedTask', { index: index + 1 })}</h3>
+            <MathRenderer content={res.extracted_task_text || t('result.noTaskText')} />
           </div>
         )}
 
@@ -295,10 +292,10 @@ Feedback: ${doc.feedback_summary}`;
             'bg-red-50 border-red-200 text-red-700'
           }`}>
             <span className="text-2xl font-black">{res.score}</span>
-            <span className="text-[10px] font-bold uppercase tracking-wide">на 100</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide">{t('result.outOf100')}</span>
           </div>
           <div>
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Статус на решавање</h3>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">{t('result.solvingStatus')}</h3>
             {res.pedagogical_evaluation ? (
               <div className="flex flex-col gap-2">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
@@ -306,7 +303,7 @@ Feedback: ${doc.feedback_summary}`;
                   {res.pedagogical_evaluation.framework.toUpperCase()}: {res.pedagogical_evaluation.level}
                 </div>
                 <p className="text-xs text-slate-500 max-w-sm leading-relaxed">
-                  <strong className="text-slate-700">Избрана метрика:</strong> {res.pedagogical_evaluation.reason}
+                  <strong className="text-slate-700">{t('result.selectedMetric')}</strong> {res.pedagogical_evaluation.reason}
                 </p>
               </div>
             ) : (
@@ -319,7 +316,7 @@ Feedback: ${doc.feedback_summary}`;
         {res.errorsFound?.length > 0 ? (
           <div className="space-y-3">
             <h4 className="font-bold text-red-600 flex items-center gap-2 text-sm uppercase tracking-wider">
-              <FileWarning className="w-4 h-4" /> Идентификувани Грашки
+              <FileWarning className="w-4 h-4" /> {t('result.identifiedErrors')}
             </h4>
             <ul className="space-y-2">
               {res.errorsFound.map((err: string, i: number) => (
@@ -332,7 +329,7 @@ Feedback: ${doc.feedback_summary}`;
         ) : (
           <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 p-4 rounded-xl flex items-center gap-3 border border-emerald-100 dark:border-emerald-900/30">
             <CheckCircle2 className="w-5 h-5" />
-            <span className="font-medium text-sm">Не се најдени грешки. Задачта е точно решена.</span>
+            <span className="font-medium text-sm">{t('result.noErrors')}</span>
           </div>
         )}
 
@@ -340,14 +337,14 @@ Feedback: ${doc.feedback_summary}`;
         {res.rubric_breakdown && (
           <div className="space-y-4">
             <h4 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 text-sm uppercase tracking-wider">
-              <BrainCircuit className="w-4 h-4 text-indigo-500" /> Формативна Рубрика
+              <BrainCircuit className="w-4 h-4 text-indigo-500" /> {t('result.formativeRubric')}
             </h4>
             <div className="grid grid-cols-1 gap-4">
               {/* Concept */}
               <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex-shrink-0 text-center sm:text-left min-w-[80px]">
                    <div className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{res.rubric_breakdown.concept.score}</div>
-                   <div className="text-[10px] uppercase font-bold text-slate-500">Концепт</div>
+                   <div className="text-[10px] uppercase font-bold text-slate-500">{t('result.concept')}</div>
                 </div>
                 <div className="w-full sm:w-auto h-px sm:h-auto sm:w-px bg-slate-200 dark:bg-slate-700 self-stretch"></div>
                 <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -359,7 +356,7 @@ Feedback: ${doc.feedback_summary}`;
               <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex-shrink-0 text-center sm:text-left min-w-[80px]">
                    <div className="text-2xl font-black text-amber-600 dark:text-amber-400">{res.rubric_breakdown.execution.score}</div>
-                   <div className="text-[10px] uppercase font-bold text-slate-500">Егзекуција</div>
+                   <div className="text-[10px] uppercase font-bold text-slate-500">{t('result.execution')}</div>
                 </div>
                 <div className="w-full sm:w-auto h-px sm:h-auto sm:w-px bg-slate-200 dark:bg-slate-700 self-stretch"></div>
                 <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -371,7 +368,7 @@ Feedback: ${doc.feedback_summary}`;
               <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex-shrink-0 text-center sm:text-left min-w-[80px]">
                    <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{res.rubric_breakdown.presentation.score}</div>
-                   <div className="text-[10px] uppercase font-bold text-slate-500">Комуникација</div>
+                   <div className="text-[10px] uppercase font-bold text-slate-500">{t('result.communication')}</div>
                 </div>
                 <div className="w-full sm:w-auto h-px sm:h-auto sm:w-px bg-slate-200 dark:bg-slate-700 self-stretch"></div>
                 <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -385,7 +382,7 @@ Feedback: ${doc.feedback_summary}`;
         {/* General Feedback */}
         <div className="space-y-3">
           <h4 className="font-bold text-indigo-600 flex items-center gap-2 text-sm uppercase tracking-wider">
-            <Brain className="w-4 h-4" /> Инспиративен AI Ментор
+            <Brain className="w-4 h-4" /> {t('result.inspirationalMentor')}
           </h4>
           <div className="bg-gradient-to-r from-indigo-50 to-slate-50 dark:from-indigo-900/20 dark:to-slate-900/20 p-5 rounded-2xl text-sm text-slate-700 dark:text-slate-300 leading-relaxed border border-indigo-100 dark:border-indigo-800/30 shadow-inner">
              <MathRenderer content={res.analysis} inline/>
@@ -398,7 +395,7 @@ Feedback: ${doc.feedback_summary}`;
           {res.good_sides && res.good_sides.length > 0 && (
             <div className="space-y-3 bg-emerald-50 dark:bg-emerald-900/10 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
               <h4 className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2 text-sm uppercase tracking-wider">
-                Што е направено ОДЛИЧНО
+                {t('result.doneWell')}
               </h4>
               <ul className="space-y-2 text-sm text-emerald-800 dark:text-emerald-300">
                 {res.good_sides.map((good: string, i: number) => (
@@ -415,7 +412,7 @@ Feedback: ${doc.feedback_summary}`;
           {res.bad_sides && res.bad_sides.length > 0 && (
             <div className="space-y-3 bg-rose-50 dark:bg-rose-900/10 p-5 rounded-2xl border border-rose-100 dark:border-rose-900/30">
               <h4 className="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-2 text-sm uppercase tracking-wider">
-                Каде алгоритмот се крши
+                {t('result.whereBreaks')}
               </h4>
               <ul className="space-y-2 text-sm text-rose-800 dark:text-rose-300">
                 {res.bad_sides.map((bad: string, i: number) => (
@@ -433,7 +430,7 @@ Feedback: ${doc.feedback_summary}`;
         {res.suggestions?.length > 0 && (
           <div className="space-y-3">
             <h4 className="font-bold text-amber-600 flex items-center gap-2 text-sm uppercase tracking-wider">
-              <AlertTriangle className="w-4 h-4" /> Препораки
+              <AlertTriangle className="w-4 h-4" /> {t('result.suggestions')}
             </h4>
             <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
               {res.suggestions.map((sug: string, i: number) => (
@@ -452,10 +449,10 @@ Feedback: ${doc.feedback_summary}`;
             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between bg-indigo-50 dark:bg-indigo-900/10 p-5 rounded-2xl border border-indigo-100 dark:border-indigo-800/30">
               <div>
                 <h4 className="font-bold text-indigo-700 dark:text-indigo-400 text-sm uppercase tracking-wider mb-1">
-                  Генерирај Задачи за Вежбање
+                  {t('result.generatePractice')}
                 </h4>
                 <p className="text-xs text-indigo-600/80 dark:text-indigo-400/80">
-                  Креирај персонализирани задачи фокусирани на: <span className="font-bold">{res.identified_weaknesses.join(', ')}</span>
+                  {t('result.createPersonalized')} <span className="font-bold">{res.identified_weaknesses.join(', ')}</span>
                 </p>
               </div>
               <Button
@@ -463,17 +460,17 @@ Feedback: ${doc.feedback_summary}`;
                 disabled={isGeneratingPractice}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0 shadow-lg shadow-indigo-500/20"
               >
-                 {isGeneratingPractice ? 'Се генерираат задачи...' : 'Генерирај Домашна'}
+                 {isGeneratingPractice ? t('result.generatingTasks') : t('result.generateHomework')}
               </Button>
             </div>
 
             {practiceTasks[index] && practiceTasks[index].length > 0 && (
               <div className="space-y-4">
-                <h4 className="font-bold text-slate-800 dark:text-slate-200">Персонализирани Задачи:</h4>
+                <h4 className="font-bold text-slate-800 dark:text-slate-200">{t('result.personalizedTasks')}</h4>
                 {practiceTasks[index].map((pt, i) => (
                   <div key={i} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase px-2 py-1 rounded">Задача {i + 1}</span>
+                      <span className="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase px-2 py-1 rounded">{t('result.taskNumber', { index: i + 1 })}</span>
                       <span className="text-xs font-semibold text-slate-700 dark:text-white">{pt.title}</span>
                     </div>
                     <div className="text-sm text-slate-600 dark:text-slate-300">
@@ -496,11 +493,11 @@ Feedback: ${doc.feedback_summary}`;
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-wider mb-4 border border-emerald-500/30">
             <BrainCircuit className="w-4 h-4" />
-            Високо-платен Специјализиран Ментор
+            {t('header.badge')}
           </div>
-          <h1 className="text-4xl font-black mb-4">AI Tutor & Smart Grader</h1>
+          <h1 className="text-4xl font-black mb-4">{t('header.title')}</h1>
           <p className="text-slate-400 text-lg">
-            Автоматска визуелна анализа на ракописи која работи како Валиден Експертски Ментор. Покажува добри и лоши страни, ги детектира грешките и генерира формат за поени.
+            {t('header.subtitle')}
           </p>
         </div>
         <div className="relative z-10 bg-white/10 p-6 rounded-2xl backdrop-blur-md border border-white/10 shrink-0">
@@ -514,7 +511,7 @@ Feedback: ${doc.feedback_summary}`;
           <div className="flex items-center justify-between">
              <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800 dark:text-white">
                <span className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-black">1</span>
-               Режим на Оценување
+               {t('mode.title')}
              </h2>
           </div>
           
@@ -524,13 +521,13 @@ Feedback: ${doc.feedback_summary}`;
                  onClick={() => setGradingMode('single')}
                  className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${gradingMode === 'single' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                >
-                 Една Задача
+                 {t('mode.singleTask')}
                </button>
                <button 
                  onClick={() => setGradingMode('batch')}
                  className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${gradingMode === 'batch' ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                >
-                 Бач (Цел Тест)
+                 {t('mode.batchWholeTest')}
                </button>
             </div>
 
@@ -540,7 +537,7 @@ Feedback: ${doc.feedback_summary}`;
                   <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input 
                     type="text" 
-                    placeholder="Пребарувај во библиотека..."
+                    placeholder={t('mode.searchLibrary')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-indigo-500 outline-none text-sm transition-all"
@@ -574,10 +571,9 @@ Feedback: ${doc.feedback_summary}`;
             ) : (
               <div className="flex flex-col items-center justify-center text-center h-full px-4 text-slate-500">
                  <ScanLine className="w-16 h-16 mb-4 text-indigo-300 dark:text-indigo-700 opacity-50" />
-                 <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-2">Автоматско Сегментирање</h3>
+                 <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-2">{t('mode.autoSegmenting')}</h3>
                  <p className="text-sm">
-                   Не мора да избирате конкретна задача. Сликајте цела страница од тестот на ученикот. 
-                   Алгоритамот ќе ги детектира сите задачи, ќе ги сегментира и ќе ги оцени една по една автоматски.
+                   {t('mode.autoSegmentingDesc')}
                  </p>
               </div>
             )}
@@ -588,7 +584,7 @@ Feedback: ${doc.feedback_summary}`;
         <div className="lg:col-span-1 space-y-6">
           <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800 dark:text-white">
             <span className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-black">2</span>
-            Слика од ракопис
+            {t('upload.title')}
           </h2>
           
           <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm h-[600px] flex flex-col items-center justify-center relative overflow-hidden">
@@ -597,17 +593,17 @@ Feedback: ${doc.feedback_summary}`;
               accept="image/*" 
               ref={fileInputRef}
               onChange={handleImageSelect}
-              aria-label="Избери слика за оценување"
+              aria-label={t('upload.selectImageAria')}
               className="hidden" 
             />
             
             {selectedImage ? (
               <div className="relative w-full h-full flex flex-col group gap-4">
                 <div className="relative w-full h-[85%]">
-                  <img src={selectedImage} alt="Student Work" className="w-full h-full object-contain rounded-xl" />
+                  <img src={selectedImage} alt={t('upload.studentWorkAlt')} className="w-full h-full object-contain rounded-xl" />
                   <div className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
                     <Button onClick={() => fileInputRef.current?.click()} className="bg-white text-slate-900 hover:bg-slate-100">
-                      <Camera className="w-4 h-4 mr-2" /> Промени Слика
+                      <Camera className="w-4 h-4 mr-2" /> {t('upload.changeImage')}
                     </Button>
                   </div>
                 </div>
@@ -617,7 +613,7 @@ Feedback: ${doc.feedback_summary}`;
                    <User className="text-indigo-400 w-5 h-5 shrink-0" />
                    <input
                      type="text"
-                     placeholder="Внеси име на ученик (пр. Марко М.)"
+                     placeholder={t('upload.enterStudentName')}
                      value={studentIdentifier}
                      onChange={e => setStudentIdentifier(e.target.value)}
                      className="w-full bg-transparent border-none outline-none text-sm font-semibold text-slate-700 dark:text-slate-200"
@@ -629,10 +625,10 @@ Feedback: ${doc.feedback_summary}`;
                 <div className="w-24 h-24 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-6">
                   <ImageIcon className="w-10 h-10 text-slate-400" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200 mb-2">Прикачете ракопис</h3>
-                <p className="text-sm text-slate-500 max-w-[250px] mx-auto mb-6">Сликајте го тестот или тетратката на ученикот за автоматска проверка.</p>
+                <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200 mb-2">{t('upload.attachHandwriting')}</h3>
+                <p className="text-sm text-slate-500 max-w-[250px] mx-auto mb-6">{t('upload.attachDesc')}</p>
                 <Button onClick={() => fileInputRef.current?.click()} size="lg" className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl">
-                  <Upload className="w-5 h-5 mr-2" /> Избери Фајл
+                  <Upload className="w-5 h-5 mr-2" /> {t('upload.selectFile')}
                 </Button>
               </div>
             )}
@@ -644,14 +640,14 @@ Feedback: ${doc.feedback_summary}`;
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800 dark:text-white">
               <span className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black">3</span>
-              Анализа
+              {t('analysis.title')}
             </h2>
             <Button 
               onClick={runAnalysis}
               disabled={(!selectedTask && gradingMode === 'single') || !selectedImage || isAnalyzing}
               className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20"
             >
-              {isAnalyzing ? <span className="flex items-center"><ScanLine className="w-4 h-4 mr-2 animate-pulse" /> Анализирам...</span> : <span className="flex items-center"><Brain className="w-4 h-4 mr-2" /> Оцени ракопис</span>}
+              {isAnalyzing ? <span className="flex items-center"><ScanLine className="w-4 h-4 mr-2 animate-pulse" /> {t('analysis.analyzing')}</span> : <span className="flex items-center"><Brain className="w-4 h-4 mr-2" /> {t('analysis.gradeHandwriting')}</span>}
             </Button>
           </div>
           
@@ -659,7 +655,7 @@ Feedback: ${doc.feedback_summary}`;
             {!result && !batchResults && !isAnalyzing && (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 text-center px-6">
                 <Calculator className="w-16 h-16 mb-4 opacity-20" />
-                <p>Изберете слика за да генерирате автоматски фидбек и оценка базирана на Блумовата Таксономија.</p>
+                <p>{t('analysis.emptyState')}</p>
               </div>
             )}
 
@@ -671,8 +667,8 @@ Feedback: ${doc.feedback_summary}`;
                   <BrainCircuit className="absolute inset-0 m-auto w-8 h-8 text-emerald-500 animate-pulse" />
                 </div>
                 <div className="text-center space-y-2">
-                  <p className="font-bold text-slate-700 dark:text-slate-200">Ги читам чекорите...</p>
-                  <p className="text-sm text-slate-500">Го споредувам ракописот со алгоритмот</p>
+                  <p className="font-bold text-slate-700 dark:text-slate-200">{t('analysis.readingSteps')}</p>
+                  <p className="text-sm text-slate-500">{t('analysis.comparingHandwriting')}</p>
                 </div>
               </div>
             )}
@@ -684,9 +680,9 @@ Feedback: ${doc.feedback_summary}`;
                 <div className="mb-6 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-300 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/30">
                   <h3 className="font-bold text-lg mb-1 flex items-center gap-2">
                     <CheckCircle2 className="w-5 h-5 text-indigo-500" />
-                    Успешна Бач Анализа
+                    {t('analysis.batchSuccess')}
                   </h3>
-                  <p className="text-sm">Алгоритмот детектираше и оцени вкупно <span className="font-bold">{batchResults.length}</span> задачи од сликата.</p>
+                  <p className="text-sm"><Trans i18nKey="analysis.batchDetected" ns="smartGrader" values={{ count: batchResults.length }} components={{ strong: <span className="font-bold" /> }} /></p>
                 </div>
                 {batchResults.map((res, index) => renderAnalysisResult(res, index))}
               </div>

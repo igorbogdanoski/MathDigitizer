@@ -1,0 +1,129 @@
+{
+  "title": "Graph Digitizer",
+  "subtitle": "Bashkëngjit një grafik nga libri shkollor → kalibro boshtet → lexo koordinatat → gjenero detyra me AI",
+  "newImage": "Imazh i ri",
+  "steps": {
+    "upload": "Imazh",
+    "setup": "Boshte",
+    "calibrate": "Kalib.",
+    "digitize": "Pika",
+    "analyze": "AI",
+    "export": "Eksport"
+  },
+  "stats": {
+    "points": "Pika",
+    "datasets": "Sete të dhënash",
+    "questions": "Pyetje"
+  },
+  "upload": {
+    "attachGraph": "Bashkëngjit grafik",
+    "formats": "JPG, PNG, SVG, BMP, WebP",
+    "dragDrop": "ose tërhiq dhe lësho"
+  },
+  "axisSetup": {
+    "configTitle": "Konfigurimi i boshteve",
+    "horizontal": "X — Horizontale",
+    "vertical": "Y — Vertikale",
+    "axisNamePlaceholder": "Emri i boshtit (p.sh. Koha, Çmimi)",
+    "min": "Min",
+    "max": "Maks",
+    "linear": "Lineare",
+    "log": "Logaritmike",
+    "nextCalibration": "Tjetër: Kalibrimi"
+  },
+  "calibrate": {
+    "title": "Kalibrim me 2 pika",
+    "description": "Klikoni në 2 pika koordinatat e të cilave i dini (p.sh. kryqëzimi i boshteve, shenjat e rrjetës). Kjo përcakton koordinatat reale për të gjitha pikat e tjera.",
+    "point1": "Pika 1",
+    "point2": "Pika 2",
+    "clickOnImage": "Klikoni në imazh →",
+    "waiting": "Duke pritur...",
+    "digitizePoints": "Dixhitalizo pikat",
+    "setBothPoints": "Vendosni të dyja pikat"
+  },
+  "digitize": {
+    "title": "Dixhitalizo",
+    "pointsCount": "{{count}} pika",
+    "add": "Shto",
+    "delete": "Fshi",
+    "newDataset": "Set i ri të dhënash",
+    "pointsShort": "p.",
+    "aiAnalysis": "Analiza AI"
+  },
+  "analyze": {
+    "title": "Analiza Pedagogjike AI",
+    "description": "Gemini do të analizojë grafikun, do të zbulojë llojin, funksionin dhe do të gjenerojë pyetje pedagogjike me nivele DoK.",
+    "analyzing": "Duke analizuar...",
+    "analyzeWithGemini": "Analizo me Gemini",
+    "grade": "Klasa {{grade}}",
+    "pedagogicalQuestions": "Pyetje pedagogjike",
+    "export": "Eksport"
+  },
+  "export": {
+    "title": "Eksporti i të dhënave",
+    "exportCSV": "Eksporto CSV",
+    "geogebraCommands": "Komandat GeoGebra",
+    "copied": "U kopjua!",
+    "autoSave": "Ruajtje automatike pas analizës",
+    "saving": "Duke ruajtur...",
+    "savedToLibrary": "U ruajt në Bibliotekë",
+    "saveToLibrary": "Ruaj në Bibliotekë",
+    "taskAvailable": "Detyra është e disponueshme në Bibliotekën tuaj."
+  },
+  "canvas": {
+    "attachImageToStart": "Bashkëngjit një imazh për të filluar",
+    "lens": "Lupa ×{{zoom}}",
+    "addPointHint": "Klikoni në grafik për të shtuar një pikë.",
+    "deletePointHint": "Klikoni në një pikë për ta fshirë (ose përdorni × në tabelë).",
+    "graphAlt": "Grafik për dixhitalizim"
+  },
+  "calibDialog": {
+    "enterCoords": "Vendos koordinatat për {{point}}",
+    "clickedPosition": "Klikuat në pozicionin (px: {{px}}, py: {{py}}). Vendosni koordinatat reale që dini për këtë pikë.",
+    "value": "Vlera {{label}}",
+    "cancel": "Anulo",
+    "confirm": "Konfirmo"
+  },
+  "toasts": {
+    "onlyImages": "Vetëm imazhe mbështeten (JPG, PNG, SVG...)",
+    "calibrateFirst": "Kalibroni boshtet fillimisht",
+    "aiComplete": "Analiza AI përfundoi!",
+    "aiError": "Gabim gjatë analizës AI",
+    "csvExported": "CSV u eksportua",
+    "geogebraCopied": "Komandat GeoGebra u kopjuan!",
+    "loginToSave": "Identifikohuni për të ruajtur",
+    "savedToLibrary": "U ruajt në Bibliotekë!",
+    "errorSaving": "Gabim gjatë ruajtjes"
+  },
+  "dataset": {
+    "default": "Seti {{num}}"
+  },
+  "dok": {
+    "1": "Recall",
+    "2": "Skill",
+    "3": "Strategic",
+    "4": "Extended"
+  },
+  "bloom": {
+    "remember": "Kujto",
+    "understand": "Kupto",
+    "apply": "Apliko",
+    "analyze": "Analizo",
+    "evaluate": "Vlerëso",
+    "create": "Krijo"
+  },
+  "seo": {
+    "description": "Dixhitalizoni grafikë nga librat shkollorë — nxirrni koordinata dhe gjeneroni detyra me AI"
+  },
+  "library": {
+    "graphPrefix": "Grafik:",
+    "digitizedGraph": "Grafik i Dixhitalizuar ({{count}} pika)",
+    "digitizedDesc": "Grafik i dixhitalizuar me {{count}} pika.",
+    "tags": {
+      "graph": "grafik",
+      "coordinates": "koordinata",
+      "digitization": "dixhitalizim"
+    },
+    "coordSystem": "Sistem koordinativ"
+  }
+}

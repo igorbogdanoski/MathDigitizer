@@ -1,0 +1,75 @@
+{
+  "header": {
+    "title": "PEDAGOGUE COMMAND CENTER",
+    "version": "v4.0.0",
+    "subtitle": "Mastery Layer Activation Ready"
+  },
+  "tabs": {
+    "knowledgeMap": "Harta e Njohurive",
+    "cognitiveFingerprint": "Gjurma Konjitive",
+    "lessonArchitect": "Arkitekti i Mësimit",
+    "socraticSim": "Simulimi Sokratik"
+  },
+  "close": "Mbyll qendrën e komandës",
+  "sidebar": {
+    "targetDataSource": "BURIMI I TË DHËNAVE",
+    "pedagogicalFidelity": "Besnikëria Pedagogjike",
+    "cognitiveLoadFactor": "Faktori i Ngarkesës Konjitive",
+    "high": "I Lartë",
+    "metadataStream": "Metadata Stream",
+    "active": "AKTIV",
+    "selectTask": "Zgjidhni detyrën për të inicializuar hartimin neural",
+    "intelligenceBroadcast": "Transmetim Inteligjence",
+    "collapsePanel": "Palos panelin e detajeve",
+    "expandPanel": "Zgjero panelin e detajeve",
+    "loading": "Duke ngarkuar..."
+  },
+  "fingerprint": {
+    "title": "Analiza e Gjurmës Konjitive",
+    "description": "Çdo detyrë ka një nënshkrim unik pedagogjik. Motori ynë AI dekodon kompleksitetin shumëdimensional të arsyetimit abstrakt.",
+    "analyzing": "Duke dekoduar ADN-në...",
+    "performAutopsy": "Kryej Autopsi Konjitive",
+    "awaitingAnalysis": "Duke pritur Analizën...",
+    "rigor": "Rigor",
+    "abstraction": "Abstraksion",
+    "connectivity": "Lidhshmëri",
+    "context": "Kontekst",
+    "effort": "Përpjekje"
+  },
+  "architect": {
+    "title": "Arkitekti i Mësimit",
+    "description": "Skript metodologjik i gjeneruar nga AI specifik për detyrën e zgjedhur.",
+    "regenerate": "Rigjenero",
+    "generateScript": "Gjenero skript",
+    "selectTask": "Zgjidhni një detyrë për të gjeneruar skript metodologjik",
+    "composing": "Duke kompozuar skriptin metodologjik...",
+    "clickToGenerate": "Klikoni \"Gjenero skript\" për të marrë një Socratic hook, analogji dhe sekuencë instruksionale për këtë detyrë.",
+    "socraticHook": "Socratic Hook",
+    "metaphoricBridge": "Metaphoric Bridge",
+    "instructionalSequence": "Instructional Sequence",
+    "saved": "U ruajt",
+    "saveScript": "Ruaj Skriptin"
+  },
+  "simulation": {
+    "socraticStudent": "Socratic AI Student: SIM-01",
+    "persona": "PERSONA:",
+    "selectTask": "Zgjidhni një detyrë për të nisur simulimin",
+    "practiceDescription": "Praktikoni ridrejtimin Sokratik me një nxënës virtual që po e \"zgjdhon\" detyrën e zgjedhur, me personën e zgjedhur.",
+    "startSimulation": "Nis simulimin",
+    "restartSimulation": "Rinis simulimin",
+    "inputPlaceholder": "Praktikoni ridrejtimin tuaj Sokratik këtu...",
+    "inputHint": "Vendosni përgjigjen tuaj për të drejtuar intuitën e nxënësit virtual",
+    "sendResponse": "Dërgo përgjigjen"
+  },
+  "personas": {
+    "strugglingAbstraction": "Vështirësi me abstraksionin",
+    "quickCareless": "I shpejtë por i pakujdesshëm",
+    "mathAnxious": "Ankth matematikor"
+  },
+  "knowledgeMap": {
+    "legend": "LEGJENDA E GRAFIKUT",
+    "primaryTaskNode": "NYJA KRYESORE E DETYRËS",
+    "relationshipConnection": "LIDHJA E MARRËDHËNIES",
+    "prerequisiteDependency": "VARËSIA PARAKUSHT"
+  }
+}

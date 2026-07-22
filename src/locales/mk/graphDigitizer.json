@@ -1,0 +1,129 @@
+{
+  "title": "Graph Digitizer",
+  "subtitle": "Прикачи график од учебник → калибрирај оски → прочитај координати → генерирај задачи со AI",
+  "newImage": "Нова слика",
+  "steps": {
+    "upload": "Слика",
+    "setup": "Оски",
+    "calibrate": "Калиб.",
+    "digitize": "Точки",
+    "analyze": "AI",
+    "export": "Извоз"
+  },
+  "stats": {
+    "points": "Точки",
+    "datasets": "Датасети",
+    "questions": "Прашања"
+  },
+  "upload": {
+    "attachGraph": "Прикачи график",
+    "formats": "JPG, PNG, SVG, BMP, WebP",
+    "dragDrop": "или повлечи и пусти"
+  },
+  "axisSetup": {
+    "configTitle": "Конфигурација на оски",
+    "horizontal": "X — Хоризонтална",
+    "vertical": "Y — Вертикална",
+    "axisNamePlaceholder": "Назив на оска (пр. Време, Цена)",
+    "min": "Мин",
+    "max": "Макс",
+    "linear": "Линеарна",
+    "log": "Логаритамска",
+    "nextCalibration": "Следно: Калибрација"
+  },
+  "calibrate": {
+    "title": "2-точкова калибрација",
+    "description": "Кликни на 2 точки чии координати ги знаеш (пр. пресечиште на оски, ознаки на мрежа). Тоа ги дефинира вистинските координати за сите останати точки.",
+    "point1": "Точка 1",
+    "point2": "Точка 2",
+    "clickOnImage": "Кликни на сликата →",
+    "waiting": "Чека...",
+    "digitizePoints": "Дигитализирај точки",
+    "setBothPoints": "Поставете ги двете точки"
+  },
+  "digitize": {
+    "title": "Дигитализирај",
+    "pointsCount": "{{count}} точки",
+    "add": "Додај",
+    "delete": "Бриши",
+    "newDataset": "Нов датасет",
+    "pointsShort": "т.",
+    "aiAnalysis": "AI Анализа"
+  },
+  "analyze": {
+    "title": "AI Педагошка Анализа",
+    "description": "Gemini ќе го анализира графикот, ќе детектира тип, функција и ќе генерира педагошки прашања на македонски со DoK нивоа.",
+    "analyzing": "Анализира...",
+    "analyzeWithGemini": "Анализирај со Gemini",
+    "grade": "{{grade}} одд.",
+    "pedagogicalQuestions": "Педагошки прашања",
+    "export": "Извоз"
+  },
+  "export": {
+    "title": "Извоз на податоци",
+    "exportCSV": "Извези CSV",
+    "geogebraCommands": "GeoGebra команди",
+    "copied": "Копирано!",
+    "autoSave": "Автоматско зачувување по анализа",
+    "saving": "Зачувува...",
+    "savedToLibrary": "Зачувано во Библиотека",
+    "saveToLibrary": "Зачувај во Библиотека",
+    "taskAvailable": "Задачата е достапна во твојата Библиотека."
+  },
+  "canvas": {
+    "attachImageToStart": "Прикачи слика за да почнеш",
+    "lens": "Лупа ×{{zoom}}",
+    "addPointHint": "Кликни на графикот за да додадеш точка.",
+    "deletePointHint": "Кликни на точка за да ја избришеш (или користи × во табелата).",
+    "graphAlt": "График за дигитализација"
+  },
+  "calibDialog": {
+    "enterCoords": "Внеси координати за {{point}}",
+    "clickedPosition": "Кликна на позиција (px: {{px}}, py: {{py}}). Внеси ги вистинските координати кои ги знаеш за оваа точка.",
+    "value": "{{label}} вредност",
+    "cancel": "Откажи",
+    "confirm": "Потврди"
+  },
+  "toasts": {
+    "onlyImages": "Само слики се поддржани (JPG, PNG, SVG...)",
+    "calibrateFirst": "Прво калибрирајте ги осите",
+    "aiComplete": "AI анализата е завршена!",
+    "aiError": "Грешка при AI анализа",
+    "csvExported": "CSV извезен",
+    "geogebraCopied": "GeoGebra команди копирани!",
+    "loginToSave": "Најавете се за да зачувате",
+    "savedToLibrary": "Зачувано во Библиотека!",
+    "errorSaving": "Грешка при зачувување"
+  },
+  "dataset": {
+    "default": "Датасет {{num}}"
+  },
+  "dok": {
+    "1": "Recall",
+    "2": "Skill",
+    "3": "Strategic",
+    "4": "Extended"
+  },
+  "bloom": {
+    "remember": "Памети",
+    "understand": "Разбери",
+    "apply": "Примени",
+    "analyze": "Анализирај",
+    "evaluate": "Оценувај",
+    "create": "Создади"
+  },
+  "seo": {
+    "description": "Дигитализирај графици од учебници — извлечи координати и генерирај задачи со AI"
+  },
+  "library": {
+    "graphPrefix": "График:",
+    "digitizedGraph": "Дигитализиран График ({{count}} точки)",
+    "digitizedDesc": "Дигитализиран график со {{count}} точки.",
+    "tags": {
+      "graph": "график",
+      "coordinates": "координати",
+      "digitization": "дигитализација"
+    },
+    "coordSystem": "Координатен систем"
+  }
+}

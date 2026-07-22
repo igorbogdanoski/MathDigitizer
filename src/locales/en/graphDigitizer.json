@@ -1,0 +1,129 @@
+{
+  "title": "Graph Digitizer",
+  "subtitle": "Attach a graph from a textbook → calibrate axes → read coordinates → generate tasks with AI",
+  "newImage": "New image",
+  "steps": {
+    "upload": "Image",
+    "setup": "Axes",
+    "calibrate": "Calib.",
+    "digitize": "Points",
+    "analyze": "AI",
+    "export": "Export"
+  },
+  "stats": {
+    "points": "Points",
+    "datasets": "Datasets",
+    "questions": "Questions"
+  },
+  "upload": {
+    "attachGraph": "Attach graph",
+    "formats": "JPG, PNG, SVG, BMP, WebP",
+    "dragDrop": "or drag and drop"
+  },
+  "axisSetup": {
+    "configTitle": "Axis configuration",
+    "horizontal": "X — Horizontal",
+    "vertical": "Y — Vertical",
+    "axisNamePlaceholder": "Axis name (e.g. Time, Price)",
+    "min": "Min",
+    "max": "Max",
+    "linear": "Linear",
+    "log": "Logarithmic",
+    "nextCalibration": "Next: Calibration"
+  },
+  "calibrate": {
+    "title": "2-point calibration",
+    "description": "Click on 2 points whose coordinates you know (e.g. axis intersection, grid marks). This defines the real coordinates for all other points.",
+    "point1": "Point 1",
+    "point2": "Point 2",
+    "clickOnImage": "Click on the image →",
+    "waiting": "Waiting...",
+    "digitizePoints": "Digitize points",
+    "setBothPoints": "Set both points"
+  },
+  "digitize": {
+    "title": "Digitize",
+    "pointsCount": "{{count}} points",
+    "add": "Add",
+    "delete": "Delete",
+    "newDataset": "New dataset",
+    "pointsShort": "pts.",
+    "aiAnalysis": "AI Analysis"
+  },
+  "analyze": {
+    "title": "AI Pedagogical Analysis",
+    "description": "Gemini will analyze the graph, detect type, function and generate pedagogical questions with DoK levels.",
+    "analyzing": "Analyzing...",
+    "analyzeWithGemini": "Analyze with Gemini",
+    "grade": "Grade {{grade}}",
+    "pedagogicalQuestions": "Pedagogical questions",
+    "export": "Export"
+  },
+  "export": {
+    "title": "Data export",
+    "exportCSV": "Export CSV",
+    "geogebraCommands": "GeoGebra commands",
+    "copied": "Copied!",
+    "autoSave": "Auto-save after analysis",
+    "saving": "Saving...",
+    "savedToLibrary": "Saved to Library",
+    "saveToLibrary": "Save to Library",
+    "taskAvailable": "The task is available in your Library."
+  },
+  "canvas": {
+    "attachImageToStart": "Attach an image to start",
+    "lens": "Lens ×{{zoom}}",
+    "addPointHint": "Click on the graph to add a point.",
+    "deletePointHint": "Click on a point to delete it (or use × in the table).",
+    "graphAlt": "Graph for digitization"
+  },
+  "calibDialog": {
+    "enterCoords": "Enter coordinates for {{point}}",
+    "clickedPosition": "Clicked at position (px: {{px}}, py: {{py}}). Enter the real coordinates you know for this point.",
+    "value": "{{label}} value",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "toasts": {
+    "onlyImages": "Only images are supported (JPG, PNG, SVG...)",
+    "calibrateFirst": "Calibrate the axes first",
+    "aiComplete": "AI analysis is complete!",
+    "aiError": "Error during AI analysis",
+    "csvExported": "CSV exported",
+    "geogebraCopied": "GeoGebra commands copied!",
+    "loginToSave": "Log in to save",
+    "savedToLibrary": "Saved to Library!",
+    "errorSaving": "Error saving"
+  },
+  "dataset": {
+    "default": "Dataset {{num}}"
+  },
+  "dok": {
+    "1": "Recall",
+    "2": "Skill",
+    "3": "Strategic",
+    "4": "Extended"
+  },
+  "bloom": {
+    "remember": "Remember",
+    "understand": "Understand",
+    "apply": "Apply",
+    "analyze": "Analyze",
+    "evaluate": "Evaluate",
+    "create": "Create"
+  },
+  "seo": {
+    "description": "Digitize graphs from textbooks — extract coordinates and generate tasks with AI"
+  },
+  "library": {
+    "graphPrefix": "Graph:",
+    "digitizedGraph": "Digitized Graph ({{count}} points)",
+    "digitizedDesc": "Digitized graph with {{count}} points.",
+    "tags": {
+      "graph": "graph",
+      "coordinates": "coordinates",
+      "digitization": "digitization"
+    },
+    "coordSystem": "Coordinate system"
+  }
+}

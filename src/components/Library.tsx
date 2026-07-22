@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -35,6 +36,7 @@ import { useModalA11y } from '../hooks/useModalA11y';
 import { WorkflowSteps } from './WorkflowSteps';
 
 export const Library: React.FC = () => {
+  const { t } = useTranslation('library');
   const store = useLibraryStore();
   const { showToast } = useToast();
   const filters = useTaskFilters();
@@ -91,7 +93,7 @@ export const Library: React.FC = () => {
         window.open(`/live/${pin}/host`, '_blank');
       } catch (err) {
         console.error("Error creating live session:", err);
-        showToast("Грешка при креирање на жива училница.", 'error');
+        showToast(t('liveSessionError'), 'error');
       } finally {
         setIsGeneratingKahoot(false);
       }
@@ -120,7 +122,7 @@ export const Library: React.FC = () => {
           console.error("Грешка при зачувување на флешкарта:", e);
         }
       }
-      showToast(`Успешно се генерирани ${created} флешкарти! Пренасочување...`, 'success');
+      showToast(t('flashcardsGenerated', { count: created }), 'success');
       window.location.href = '/flashcards';
     };
     
@@ -223,7 +225,7 @@ export const Library: React.FC = () => {
 
     if (tasksToExport.length === 0) return;
 
-    const headers = ['Наслов', 'Тип', 'Текст', 'Решение', 'Тежина', 'DoK', 'Одделение', 'Тема', 'Тагови', 'Извор'];
+    const headers = [t('csvTitle'), t('csvType'), t('csvText'), t('csvSolution'), t('csvDifficulty'), t('csvDok'), t('csvGrade'), t('csvTopic'), t('csvTags'), t('csvSource')];
     const rows = tasksToExport.map(t => [
       `"${(t.title || '').replace(/"/g, '""')}"`,
       `"${(t.type || '').replace(/"/g, '""')}"`,
@@ -280,9 +282,9 @@ export const Library: React.FC = () => {
       {isGeneratingKahoot && (
         <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-white animate-in fade-in">
            <div className="w-16 h-16 border-4 border-indigo-500 border-t-white rounded-full animate-spin mb-6"></div>
-           <h2 className="text-3xl font-black mb-2 tracking-tight">AI-то генерира Kahoot...</h2>
+           <h2 className="text-3xl font-black mb-2 tracking-tight">{t('kahootGenerating')}</h2>
            <p className="text-slate-200 font-bold max-w-md text-center opacity-80">
-             Се извлекуваат погрешните одговори и дистракторите специфични за вашите задачи. Може да потрае неколку секунди.
+             {t('kahootGeneratingDesc')}
            </p>
         </div>
       )}
@@ -312,19 +314,19 @@ export const Library: React.FC = () => {
                 <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center mx-auto mb-5">
                   <BookOpen className="w-8 h-8 text-indigo-400" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Библиотеката е празна</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-xs mx-auto">Извлечи задачи од YouTube видео, PDF или слика за да ја пополниш библиотеката.</p>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">{t('emptyTitle')}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-xs mx-auto">{t('emptyDescription')}</p>
                 <a
                   href="/extract"
                   className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors"
                 >
-                  Оди на Екстракција →
+                  {t('goToExtraction')}
                 </a>
               </div>
             ) : (
               <div className="text-center py-12 text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 border-dashed">
                 <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                <p className="text-sm">Нема задачи кои одговараат на пребарувањето.</p>
+                <p className="text-sm">{t('noMatchingTasks')}</p>
               </div>
             )
           ) : (
@@ -366,8 +368,8 @@ export const Library: React.FC = () => {
                     className="w-full max-w-xs border-dashed border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
                   >
                     {isFetchingNextPage
-                      ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Вчитување...</>
-                      : <><ChevronDown className="w-4 h-4 mr-2" /> Завчитај повеќе задачи</>
+                      ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('loadingTasks')}</>
+                      : <><ChevronDown className="w-4 h-4 mr-2" /> {t('loadMoreTasks')}</>
                     }
                   </Button>
                 </div>
@@ -387,14 +389,14 @@ export const Library: React.FC = () => {
                 <Card className="overflow-hidden border-slate-200 dark:border-white/10 dark:bg-slate-900/60 dark:backdrop-blur-xl shadow-lg">
                   <div className="bg-slate-50 dark:bg-white/5 px-6 py-4 border-b border-slate-200 dark:border-white/10 flex justify-between items-center">
                     <span className="font-semibold text-slate-800 dark:text-slate-100 text-lg">
-                      {task.type === 'theory' ? `Теорија: ${task.title}` : task.title}
+                      {task.type === 'theory' ? `${t('theory')}: ${task.title}` : task.title}
                     </span>
                     <button
                       type="button"
                       onClick={() => store.setSelectedTaskId(null)}
                       className="p-1 hover:bg-slate-200 dark:hover:bg-white/10 rounded-full transition-colors"
-                      title="Затвори"
-                      aria-label="Затвори"
+                      title={t('close')}
+                      aria-label={t('close')}
                     >
                       <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                     </button>
@@ -424,7 +426,7 @@ export const Library: React.FC = () => {
           onComplete={(xp) => {
             // XP awarding logic is handled in App.tsx via a global function or similar
             // For now, we'll just alert or assume it's handled
-            showToast(`Браво! Освоивте ${xp} XP за интерактивно решавање!`, 'success');
+            showToast(t('solverSuccess', { xp }), 'success');
           }}
         />
       )}
@@ -442,7 +444,7 @@ export const Library: React.FC = () => {
             ref={graphModalRef}
             role="dialog"
             aria-modal="true"
-            aria-label="Интерактивен График"
+            aria-label={t('interactiveGraph')}
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
           >
             <motion.div 
@@ -457,11 +459,11 @@ export const Library: React.FC = () => {
                     <Activity className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-900 dark:text-white">Интерактивен График</h3>
+                    <h3 className="font-bold text-slate-900 dark:text-white">{t('interactiveGraph')}</h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px] sm:max-w-xs">{store.activeGraphTask.title}</p>
                   </div>
                 </div>
-                <button type="button" onClick={() => store.setActiveGraphTask(null)} title="Затвори график" aria-label="Затвори график" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                <button type="button" onClick={() => store.setActiveGraphTask(null)} title={t('closeGraph')} aria-label={t('closeGraph')} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -473,7 +475,7 @@ export const Library: React.FC = () => {
                 />
               </div>
               <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700 text-xs text-slate-500 italic">
-                Совет: Копирајте ја функцијата од задачата и внесете ја во калкулаторот лево.
+                {t('graphTip')}
               </div>
             </motion.div>
           </div>
@@ -503,15 +505,15 @@ export const Library: React.FC = () => {
               <button
                 type="button"
                 onClick={() => store.setZoomedImage(null)}
-                title="Затвори слика"
-                aria-label="Затвори слика"
+                title={t('closeImage')}
+                aria-label={t('closeImage')}
                 className="absolute -top-12 right-0 p-2 text-white hover:text-slate-300 transition-colors bg-slate-800/50 rounded-full"
               >
                 <X className="w-6 h-6" />
               </button>
-              <img 
-                src={store.zoomedImage} 
-                alt="Зумирана визуелизација" 
+              <img
+                src={store.zoomedImage}
+                alt={t('zoomedVisualization')}
                 className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
                 referrerPolicy="no-referrer"
               />
@@ -527,7 +529,7 @@ export const Library: React.FC = () => {
              ref={manipulativesModalRef}
              role="dialog"
              aria-modal="true"
-             aria-label="Математички Манипулативи"
+             aria-label={t('manipulatives')}
              className="fixed inset-0 z-[100] flex flex-col p-4 bg-slate-900/80 backdrop-blur-sm"
              onClick={() => setShowManipulativesModal(false)}
            >
@@ -545,16 +547,16 @@ export const Library: React.FC = () => {
                    </div>
                    <div>
                      <h3 className="font-bold text-slate-900 dark:text-white">
-                        {manipulativeType === 'geogebra-3d' ? 'GeoGebra 3D Калкулатор' : 'Алгебарски Плочки (MathStudio)'}
+                        {manipulativeType === 'geogebra-3d' ? t('geogebra3d') : t('algebraTiles')}
                      </h3>
                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-lg">
-                        {manipulativeType === 'geogebra-3d' 
-                           ? 'Отворен е GeoGebra 3D Калкулатор. Идеален за просторна геометрија, стереометрија и вектори.'
-                           : 'Отворен е Polypad. Користете плочки за геометрија, дропки и алгебра.'}
+                        {manipulativeType === 'geogebra-3d'
+                           ? t('geogebra3dDesc')
+                           : t('polypadDesc')}
                      </p>
                    </div>
                  </div>
-                 <button type="button" onClick={() => setShowManipulativesModal(false)} title="Затвори манипулативи" aria-label="Затвори манипулативи" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                 <button type="button" onClick={() => setShowManipulativesModal(false)} title={t('closeManipulatives')} aria-label={t('closeManipulatives')} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                    <X className="w-5 h-5" />
                  </button>
                </div>

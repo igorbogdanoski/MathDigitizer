@@ -8,6 +8,7 @@ import { generateCurriculumModule } from '../lib/gemini';
 import { useAuth } from '../contexts/AuthContext';
 import { hasProAccess } from '../lib/saas';
 import { ProFeatureGate } from './ProFeatureGate';
+import { useTranslation } from 'react-i18next';
 
 interface LessonPlan {
   title: string;
@@ -24,6 +25,7 @@ interface Curriculum {
 
 export const CurriculumFactory = () => {
   const { userProfile } = useAuth();
+  const { t } = useTranslation('curriculumFactory');
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [curriculum, setCurriculum] = useState<Curriculum | null>(null);
@@ -52,11 +54,11 @@ export const CurriculumFactory = () => {
 
       const data = await generateCurriculumModule(prompt);
       setCurriculum(data);
-      showToast('Курикулумот е успешно генериран!', 'success');
-      
+      showToast(t('successToast'), 'success');
+
     } catch (e) {
       console.error(e);
-      showToast('Грешка при генерирање.', 'error');
+      showToast(t('errorToast'), 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -67,7 +69,7 @@ export const CurriculumFactory = () => {
     try {
       // In a real app we would map this to the MathTask schema and dump it to the library.
       // E.g., batch write to firestore
-      showToast('Сите материјали се зачувани во Библиотеката!', 'success');
+      showToast(t('savedToast'), 'success');
     } catch(e) {
       console.error(e);
     }
@@ -76,8 +78,8 @@ export const CurriculumFactory = () => {
   if (!hasProAccess(userProfile)) {
     return (
       <ProFeatureGate
-        featureName="Mass Curriculum Factory"
-        description="Batch курикулум обработка е Pro capability. Отклучете ја за големи PDF/учебник ingestion workflows."
+        featureName={t('featureName')}
+        description={t('featureDescription')}
       />
     );
   }
@@ -87,10 +89,10 @@ export const CurriculumFactory = () => {
       <div className="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-3xl p-8 text-white shadow-xl shadow-indigo-200 dark:shadow-none">
         <h1 className="text-3xl font-black mb-4 flex items-center gap-3">
           <Layers className="w-8 h-8 opacity-80" />
-          Куррикулум Фабрика (Mass-Batch)
+          {t('title')}
         </h1>
         <p className="text-indigo-100 max-w-2xl text-lg leading-relaxed">
-          Прикачи цел PDF учебник. Агенцискиот систем автоматски ќе го разглоби на лекции, теорија, задачи за час, домашна работа и дијагностички тестови.
+          {t('description')}
         </p>
       </div>
 
@@ -111,9 +113,9 @@ export const CurriculumFactory = () => {
                 <Upload className="w-8 h-8 text-indigo-500" />
               </div>
               <div>
-                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">Прикачи фајл (PDF)</h3>
+                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">{t('uploadTitle')}</h3>
                 <p className="text-sm text-slate-500 max-w-xs mt-1">
-                  {file ? file.name : "Кликни или довлечи го учебникот тука за да започне масовната екстракција."}
+                  {file ? file.name : t('uploadHint')}
                 </p>
               </div>
             </label>
@@ -125,11 +127,11 @@ export const CurriculumFactory = () => {
               >
                 {isProcessing ? (
                    <span className="flex items-center gap-2">
-                     <Loader2 className="w-5 h-5 animate-spin" /> Расклопување на учебник...
+                     <Loader2 className="w-5 h-5 animate-spin" /> {t('processing')}
                    </span>
                 ) : (
                    <span className="flex items-center gap-2">
-                     <BookOpen className="w-5 h-5" /> Обработи го Курикулумот
+                     <BookOpen className="w-5 h-5" /> {t('processCurriculum')}
                    </span>
                 )}
               </Button>
@@ -140,19 +142,19 @@ export const CurriculumFactory = () => {
             <div className="mt-8 space-y-4">
                <div className="flex items-center gap-4 text-sm font-bold text-slate-600 dark:text-slate-400">
                  <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
-                 <span>Агент 1: OCR и транскрипција на PDF...</span>
+                 <span>{t('agent1')}</span>
                </div>
                <div className="flex items-center gap-4 text-sm font-bold text-slate-400 dark:text-slate-600">
                  <Loader2 className="w-4 h-4 animate-spin" style={{ animationDelay: '1s' }} />
-                 <span>Агент 2 (Математичар): Проверка на логиката и пресметките...</span>
+                 <span>{t('agent2')}</span>
                </div>
                <div className="flex items-center gap-4 text-sm font-bold text-slate-400 dark:text-slate-600">
                  <Loader2 className="w-4 h-4 animate-spin" style={{ animationDelay: '2s' }} />
-                 <span>Агент 3 (Педагог): Додавање диференцијација и Блумова Таксономија...</span>
+                 <span>{t('agent3')}</span>
                </div>
                <div className="flex items-center gap-4 text-sm font-bold text-slate-400 dark:text-slate-600">
                  <Loader2 className="w-4 h-4 animate-spin" style={{ animationDelay: '3s' }} />
-                 <span>Агент 4 (Програмер): Пишување безгрешен GeoGebra код...</span>
+                 <span>{t('agent4')}</span>
                </div>
             </div>
          )}
@@ -166,20 +168,20 @@ export const CurriculumFactory = () => {
               {curriculum.module_title}
             </h2>
             <Button onClick={handleSaveToDB} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md">
-              Внеси се во Библиотека
+              {t('saveToLibrary')}
             </Button>
           </div>
           
           <div className="grid grid-cols-1 gap-6">
             {curriculum.lessons.map((lesson, idx) => (
               <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700">
-                 <h3 className="text-xl font-bold text-indigo-900 dark:text-indigo-400 mb-2">Лекција {idx + 1}: {lesson.title}</h3>
+                 <h3 className="text-xl font-bold text-indigo-900 dark:text-indigo-400 mb-2">{t('lesson', { index: idx + 1 })} {lesson.title}</h3>
                  <p className="text-sm text-slate-600 dark:text-slate-300 mb-6 italic border-l-4 border-indigo-200 dark:border-indigo-800 pl-4">{lesson.theory_summary}</p>
                  
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                       <h4 className="font-bold text-sm uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
-                         <BookOpen className="w-4 h-4" /> Задачи за час
+                         <BookOpen className="w-4 h-4" /> {t('classTasks')}
                       </h4>
                       <ul className="space-y-2">
                         {lesson.class_tasks.map((task, tidx) => (
@@ -190,7 +192,7 @@ export const CurriculumFactory = () => {
                     
                     <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30">
                       <h4 className="font-bold text-sm uppercase tracking-wider text-amber-600 mb-3 flex items-center gap-2">
-                         <Layers className="w-4 h-4" /> Домашна работа
+                         <Layers className="w-4 h-4" /> {t('homework')}
                       </h4>
                       <ul className="space-y-2">
                         {lesson.homework_tasks.map((task, tidx) => (
@@ -201,7 +203,7 @@ export const CurriculumFactory = () => {
                     
                     <div className="bg-emerald-50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
                       <h4 className="font-bold text-sm uppercase tracking-wider text-emerald-600 mb-3 flex items-center gap-2">
-                         <ArrowRight className="w-4 h-4" /> Exit Ticket
+                         <ArrowRight className="w-4 h-4" /> {t('exitTicket')}
                       </h4>
                       <p className="text-xs text-emerald-900 dark:text-emerald-200">{lesson.exit_ticket}</p>
                     </div>

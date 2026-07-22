@@ -12,12 +12,14 @@ import { useToast } from '../contexts/ToastContext';
 import { Skeleton } from './ui/Skeleton';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { SystemIntegrityCheck } from './SystemIntegrityCheck';
+import { useTranslation } from 'react-i18next';
 
 interface TeacherDashboardProps {
   userProfile: UserProfile;
 }
 
 export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile }) => {
+  const { t } = useTranslation('teacherDashboard');
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [attempts, setAttempts] = useState<TaskAttempt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,7 +70,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
     // Group struggles by topic
     const topicMistakes: Record<string, { mistakes: number, hints: number, count: number }> = {};
     attempts.forEach(a => {
-      const topic = a.curriculum_topic || 'Општа Математика';
+      const topic = a.curriculum_topic || t('generalMath');
       if (!topicMistakes[topic]) topicMistakes[topic] = { mistakes: 0, hints: 0, count: 0 };
       topicMistakes[topic].mistakes += a.mistake_count;
       topicMistakes[topic].hints += a.total_hints_used;
@@ -95,7 +97,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
   ];
 
   const weeklyActivityData = useMemo(() => {
-    const days = ['Нед', 'Пон', 'Вто', 'Сре', 'Чет', 'Пет', 'Саб'];
+    const days = [t('daySun'), t('dayMon'), t('dayTue'), t('dayWed'), t('dayThu'), t('dayFri'), t('daySat')];
     const past7Days = Array.from({ length: 7 }).map((_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - (6 - i));
@@ -123,13 +125,13 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
     const studentMistakes: Record<string, { userId: string, mistakes: number, topic: string, attempts: number }> = {};
     attempts.forEach(a => {
       if (!studentMistakes[a.user_id]) {
-        studentMistakes[a.user_id] = { userId: a.user_id, mistakes: 0, topic: a.curriculum_topic || 'Општа Математика', attempts: 0 };
+        studentMistakes[a.user_id] = { userId: a.user_id, mistakes: 0, topic: a.curriculum_topic || t('generalMath'), attempts: 0 };
       }
       studentMistakes[a.user_id].mistakes += a.mistake_count;
       studentMistakes[a.user_id].attempts += 1;
       // Heuristic: Keep the topic from the attempt with the highest mistakes
       if (a.mistake_count > (studentMistakes[a.user_id].mistakes / Math.max(1, studentMistakes[a.user_id].attempts))) {
-         studentMistakes[a.user_id].topic = a.curriculum_topic || 'Општа Математика';
+         studentMistakes[a.user_id].topic = a.curriculum_topic || t('generalMath');
       }
     });
 
@@ -139,8 +141,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
       .slice(0, 4)
       .map((s, index) => ({
         id: s.userId,
-        name: `Ученик ${s.userId.substring(0, 4)}...`, // We don't have user profiles joined here, so using ID mask
-        class: s.attempts > 3 ? 'Висока активност' : 'Ниска активност',
+        name: t('studentName', { id: s.userId.substring(0, 4) }), // We don't have user profiles joined here, so using ID mask
+        class: s.attempts > 3 ? t('highActivity') : t('lowActivity'),
         topic: s.topic,
         score: Math.max(0, 100 - (s.mistakes * 5)) // Mock score drop based on mistakes
       }));
@@ -179,13 +181,13 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
         
         <div className="relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-semibold text-indigo-200 tracking-wide uppercase mb-4">
-            <Activity className="w-4 h-4" /> Телеметрија во реално време
+            <Activity className="w-4 h-4" /> {t('realtimeTelemetry')}
           </div>
           <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight mb-2">
-            Когнитивен Центар
+            {t('cognitiveCenter')}
           </h2>
           <p className="text-indigo-200 text-lg max-w-xl leading-relaxed">
-            Добредојдовте, Проф. {userProfile.displayName}. Системот анализира {telemetryStats?.total || 0} неодамнешни студентски обиди.
+            {t('welcome', { name: userProfile.displayName, count: telemetryStats?.total || 0 })}
           </p>
         </div>
         
@@ -195,19 +197,19 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
             className={`border-white/10 text-white hover:bg-white/10 rounded-xl transition-all h-12 font-bold ${activeTab === 'analytics' ? 'bg-white/20 ring-1 ring-white/40' : ''}`}
             onClick={() => setActiveTab('analytics')}
           >
-            <BarChart3 className="w-5 h-5 mr-2" /> Аналитика
+            <BarChart3 className="w-5 h-5 mr-2" /> {t('analyticsTab')}
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className={`border-indigo-500/30 text-indigo-200 hover:bg-indigo-500/20 rounded-xl transition-all h-12 font-bold ${activeTab === 'diagnostics' ? 'bg-indigo-500/30 ring-1 ring-indigo-500/50' : ''}`}
             onClick={() => setActiveTab('diagnostics')}
           >
-            <ShieldCheck className="w-5 h-5 mr-2" /> Системски Пулс
+            <ShieldCheck className="w-5 h-5 mr-2" /> {t('systemPulseTab')}
           </Button>
           <Link to="/factory" className="w-full md:w-auto">
             <Button className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 border-0 h-12 px-6 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all hover:scale-105">
               <Zap className="w-5 h-5 mr-2" />
-              Фабрика
+              {t('factory')}
             </Button>
           </Link>
         </div>
@@ -229,11 +231,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
             <Users className="w-24 h-24" />
           </div>
           <CardContent className="p-6 relative z-10">
-            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Активни Ученици</p>
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">{t('activeStudents')}</p>
             <h3 className="text-4xl font-black text-slate-900 dark:text-white mb-2">{totalStudents}</h3>
             <div className="flex items-center text-sm text-emerald-600 dark:text-emerald-400 font-medium">
               <TrendingUp className="w-4 h-4 mr-1" />
-              <span>Синхронизирано</span>
+              <span>{t('synchronized')}</span>
             </div>
           </CardContent>
         </Card>
@@ -243,7 +245,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
             <Target className="w-24 h-24" />
           </div>
           <CardContent className="p-6 relative z-10">
-            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Стапка на Завршување</p>
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">{t('completionRate')}</p>
             <div className="flex items-baseline gap-2 mb-2">
               <h3 className="text-4xl font-black text-slate-900 dark:text-white">{telemetryStats?.completionRate || 0}%</h3>
             </div>
@@ -266,13 +268,13 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
           <CardContent className="p-6 relative z-10 h-full flex flex-col justify-between">
             <div>
               <p className="text-sm font-bold text-orange-100 uppercase tracking-wider mb-1 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" /> Когнитивен Аларм
+                <AlertTriangle className="w-4 h-4" /> {t('cognitiveAlarm')}
               </p>
               <h3 className="text-2xl font-bold mb-1">
-                {telemetryStats?.struggleTopics[0]?.topic || 'Нема податоци'}
+                {telemetryStats?.struggleTopics[0]?.topic || t('noData')}
               </h3>
               <p className="text-orange-100 text-sm">
-                Највисок когнитивен товар. Просек {telemetryStats?.struggleTopics[0]?.avgMistakes || 0} грешки по задача.
+                {t('highestCognitiveLoad', { avg: telemetryStats?.struggleTopics[0]?.avgMistakes || 0 })}
               </p>
             </div>
             {telemetryStats?.struggleTopics[0] && (
@@ -280,7 +282,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
                 onClick={() => handleGenerateIntervention(telemetryStats.struggleTopics[0].topic)}
                 className="mt-4 bg-white text-orange-600 hover:bg-orange-50 font-bold border-0 w-max shadow-lg focus:ring-4 focus:ring-white/20"
               >
-                Генерирај Интервентен Тест
+                {t('generateIntervention')}
               </Button>
             )}
           </CardContent>
@@ -294,7 +296,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
         <div className="lg:col-span-1 space-y-6">
           <div className="flex items-center gap-2 mb-2">
             <Cpu className="w-6 h-6 text-indigo-600" />
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white">Неврални Слабости</h3>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t('neuralWeaknesses')}</h3>
           </div>
           
           <div className="space-y-4">
@@ -311,16 +313,16 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
                   <div className="flex justify-between items-start mb-3">
                     <h4 className="font-bold text-slate-900 dark:text-white">{item.topic}</h4>
                     <span className="inline-flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-full px-2 py-1">
-                      {item.totalAttempts} обиди
+                      {t('attemptsCount', { count: item.totalAttempts })}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm mt-4">
                     <div className="bg-red-50 dark:bg-red-900/10 p-3 rounded-xl border border-red-100 dark:border-red-900/20">
-                      <p className="text-red-500 font-medium mb-1">Грешки / Зад.</p>
+                      <p className="text-red-500 font-medium mb-1">{t('mistakesPerTask')}</p>
                       <p className="text-2xl font-black text-red-700 dark:text-red-400">{item.avgMistakes}</p>
                     </div>
                     <div className="bg-amber-50 dark:bg-amber-900/10 p-3 rounded-xl border border-amber-100 dark:border-amber-900/20">
-                      <p className="text-amber-600 font-medium mb-1">Сократски Помоши</p>
+                      <p className="text-amber-600 font-medium mb-1">{t('socraticHints')}</p>
                       <p className="text-2xl font-black text-amber-700 dark:text-amber-400">{item.avgHints}</p>
                     </div>
                   </div>
@@ -331,7 +333,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
             {(!telemetryStats?.struggleTopics || telemetryStats.struggleTopics.length === 0) && (
               <div className="bg-slate-50 dark:bg-slate-800/50 p-8 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-slate-500">
                 <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3 opacity-50" />
-                <p>Нема доволно податоци за телеметрија. Учениците треба да решаваат задачи преку Интерактивниот Солвер.</p>
+                <p>{t('noTelemetryData')}</p>
               </div>
             )}
           </div>
@@ -343,7 +345,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
             <CardHeader className="border-b border-slate-100 dark:border-slate-700/50 pb-6">
               <CardTitle className="text-lg flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-indigo-600" />
-                Телеметрија на Активност (Последни 7 дена)
+                {t('activityTelemetry')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
@@ -363,7 +365,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
                       contentStyle={{ borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px 16px' }}
                       cursor={{ stroke: '#cbd5e1', strokeWidth: 2, strokeDasharray: '5 5' }}
                     />
-                    <Area type="monotone" dataKey="tasks" name="Интерактивни Решавања" stroke="#4f46e5" strokeWidth={4} fillOpacity={1} fill="url(#colorTasks)" activeDot={{ r: 8, strokeWidth: 0, fill: '#4f46e5' }} />
+                    <Area type="monotone" dataKey="tasks" name={t('interactiveSolves')} stroke="#4f46e5" strokeWidth={4} fillOpacity={1} fill="url(#colorTasks)" activeDot={{ r: 8, strokeWidth: 0, fill: '#4f46e5' }} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -374,7 +376,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
             <CardHeader className="border-b border-slate-100 dark:border-slate-700/50">
               <CardTitle className="text-lg flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-emerald-600" />
-                Студенти на кои им треба внимание
+                {t('studentsNeedAttention')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -382,7 +384,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
                 {strugglingStudents.length === 0 ? (
                   <div className="p-8 text-center text-slate-500">
                     <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3 opacity-50" />
-                    <p>Нема детектирано ученици со потешкотии од последната телеметрија.</p>
+                    <p>{t('noStrugglingStudents')}</p>
                   </div>
                 ) : (
                   strugglingStudents.map((student) => (
@@ -394,13 +396,13 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
                           </div>
                           <div>
                             <h4 className="font-semibold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{student.name}</h4>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">{student.class} • Проблем со: <span className="font-medium text-amber-600 dark:text-amber-400">{student.topic}</span></p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">{student.class} • {t('problemWith')} <span className="font-medium text-amber-600 dark:text-amber-400">{student.topic}</span></p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <p className="text-sm font-bold text-red-600 dark:text-red-400">{student.score}%</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">просек</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">{t('average')}</p>
                           </div>
                           <ChevronRight className="w-5 h-5 text-slate-400 opacity-50" />
                         </div>
@@ -416,23 +418,23 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
             <CardHeader className="border-b border-slate-100 dark:border-slate-700/50">
               <CardTitle className="text-lg flex items-center gap-2">
                 <BrainCircuit className="w-5 h-5 text-purple-600" />
-                Телеметриски AI Асистент
+                {t('telemetryAiAssistant')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
               <div className="px-5 py-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800/60 shadow-sm">
                 <h4 className="font-bold text-purple-900 dark:text-purple-300 mb-2 text-sm flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" /> 
-                  Синтеза на податоци
+                  <Sparkles className="w-4 h-4" />
+                  {t('dataSynthesis')}
                 </h4>
                 <p className="text-sm text-purple-800 dark:text-purple-400 leading-relaxed">
-                  <strong>Инсајт:</strong> Базирано на последните 100 телеметриски логови, вашите ученици најмногу време трошат на {telemetryStats?.struggleTopics[0]?.topic || 'општи'} проблеми. Нивните главни катализатори за помош се сократските прашања. 
+                  <strong>{t('insight')}</strong> {t('insightText', { topic: telemetryStats?.struggleTopics[0]?.topic || t('generalMath') })}
                 </p>
-                <Button 
+                <Button
                   className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-500/20 transition-all hover:scale-[1.02]"
-                  onClick={() => showToast('AI модулот не е врзан за продукција во оваа тест фаза.', 'info')}
+                  onClick={() => showToast(t('aiModuleNotProduction'), 'info')}
                 >
-                  Адаптирај Следна Лекција
+                  {t('adaptNextLesson')}
                 </Button>
               </div>
 
@@ -441,8 +443,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white mb-1">Здравје на училницата</p>
-                  <p className="text-xs text-slate-500 leading-relaxed">Стапката на завршување од {telemetryStats?.completionRate || 0}% е во рамки на стандардите. Интерактивниот солвер ја намалил стапката на откажување за 14%.</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white mb-1">{t('classroomHealth')}</p>
+                  <p className="text-xs text-slate-500 leading-relaxed">{t('classroomHealthText', { rate: telemetryStats?.completionRate || 0 })}</p>
                 </div>
               </div>
             </CardContent>

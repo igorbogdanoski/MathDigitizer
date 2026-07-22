@@ -1,0 +1,33 @@
+{
+  "welcome": "Përshëndetje! Unë jam tutori yt AI. Le ta zgjidhim këtë detyrë së bashku:\n\n**Le të kujtojmë rregullat:** Nuk e jap rezultatin përfundimtar menjëherë, por do të udhëheq hap pas hapi. \n\nÇfarë mendoni, cili është hapi i parë për ta zgjidhur?",
+  "commError": "Më vjen keq, ndodhi një gabim komunikimi. Mund ta përsërisni?",
+  "imageDecodeError": "Më vjen keq, nuk munda ta deshifroj imazhin. Provoni një kënd më të qartë.",
+  "hintConnError": "Gabim në lidhje për sugjerime.",
+  "analysisHeader": "**Analiza (SmartVision):**\n\n",
+  "errorsHeader": "**Gabimet e gjetura:**\n",
+  "suggestionsHeader": "**Sugjerime për hapat e ardhshëm:**\n",
+  "userMessages": {
+    "imageUpload": "Bashkëngjita një imazh/vizatim. A jam në rrugën e duhur?",
+    "canvas": "Po përdor një tabelë dixhitale për llogaritje. Mendime?",
+    "hintRequest": "Më duhet ndihmë psikologjike/teknike (Scaffolding Hint)."
+  },
+  "phases": {
+    "title": "Fazat e Njohjes",
+    "phase1Title": "1. Identifikimi",
+    "phase1Desc": "Kuptimi i kërkesës",
+    "phase2Title": "2. Strategjia",
+    "phase2Desc": "Vendosja e një metode",
+    "phase3Title": "3. Abstraksioni",
+    "phase3Desc": "Ekzekutimi dhe analiza"
+  },
+  "loading": {
+    "processingImage": "Duke përpunuar imazhin/diagramin...",
+    "synthesizing": "Tutori po sintetizon një përgjigje..."
+  },
+  "controls": {
+    "closeTutor": "Mbyll tutorin",
+    "attachImage": "Bashkëngjit imazh",
+    "mathBoard": "Tabelë Matematike",
+    "inputPlaceholder": "Shkruaj arsyetimin ose formulën tënde këtu..."
+  }
+}

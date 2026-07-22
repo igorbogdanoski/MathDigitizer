@@ -36,5 +36,102 @@
   "sinceLastWeek": "од минатата недела",
   "viewDetails": "Види детали",
   "exportReport": "Извези извештај",
-  "shareProgress": "Сподели напредок"
+  "shareProgress": "Сподели напредок",
+
+  "seoTitle": "Телеметрија и Напредок",
+  "seoDescription": "Следете го вашиот личен напредок, нивоа, значки и образовни перформанси преку напредна DOK телеметрија.",
+  "seoKeywords": "телеметрија, математика, dashboard, напредок, значки, xp, едукација",
+
+  "paymentApproved": "Вашата уплата е одобрена. Pro пристапот е активиран.",
+  "statsErrorTitle": "Грешка при вчитување на статистиките",
+  "statsErrorDescription": "Вашите телеметриски податоци не може да се пронајдат. Обидете се да ја освежите страницата или да решите задача за да активирате запис.",
+  "refreshPage": "Освежи Страница",
+
+  "proActivated": "Pro е активиран",
+  "proActivatedDesc": "Вашата уплата е одобрена и Pro пристапот е активен.",
+  "activatedAt": "Активирано:",
+  "paymentInReview": "Уплатата е во review",
+  "paymentInReviewDesc": "Тимот ја проверува доставената потврда. Pro ќе се активира веднаш по одобрување.",
+
+  "billingHealth": "Billing Health",
+  "statusGuide": "Status guide",
+  "currentFocus": "Current focus:",
+  "billingProActive": "Billing: Pro active",
+  "billingPendingReview": "Billing: Pending review",
+  "billingInReview": "Billing: In review stage",
+  "billingNeedsAction": "Billing: Needs action",
+  "billingNoReceipt": "Billing: No receipt submitted",
+  "resubmitProof": "Повторно испрати доказ",
+  "checkBillingDetails": "Провери billing детали",
+  "activateProAndSubmit": "Активирај Pro и испрати доказ",
+
+  "billingGuide": {
+    "pending": {
+      "title": "Pending review",
+      "description": "Тимот ја чека првата валидација."
+    },
+    "reviewed": {
+      "title": "In review stage",
+      "description": "Потврдата е проверена и е во финална обработка."
+    },
+    "rejected": {
+      "title": "Needs action",
+      "description": "Потребна е корекција или повторно праќање доказ."
+    },
+    "none": {
+      "title": "No receipt submitted",
+      "description": "Избери Pro план и испрати платежен доказ за активација."
+    },
+    "approved": {
+      "title": "Pro active",
+      "description": "Се е успешно верификувано, пристапот е активен."
+    }
+  },
+
+  "teacher": "Наставник",
+  "student": "Ученик",
+  "totalXp": "Вкупно XP:",
+  "progressToLevel": "Прогрес до Ниво {{level}}",
+  "dailyStreak": "Дневен Streak",
+  "solvedTasks": "Решени задачи",
+
+  "dailyQuests": "Дневни Предизвици",
+  "questsRefreshing": "Дневните предизвици се освежуваат...",
+
+  "masteryByTopics": "Мастерство по Теми",
+  "skillAnalysis": "Анализа на вештини",
+  "skillAnalysisText": "Вашиот најсилен предмет е <strong>Логика</strong>. Потребно е повеќе вежбање во областа на <strong>Тригонометрија</strong>.",
+  "generateAdaptiveTask": "Генерирај Адаптивна Задача",
+  "aiTutorGenerating": "AI Tutor генерира адаптивна задача по Тригонометрија...",
+
+  "masteryAlgebra": "Алгебра",
+  "masteryGeometry": "Геометрија",
+  "masteryTrigonometry": "Тригонометрија",
+  "masteryStatistics": "Статистика",
+  "masteryLogic": "Логика",
+  "masteryAnalysis": "Анализа",
+
+  "yourBadges": "Вашите Значки",
+
+  "recentProgress": "Неодамнешен Напредок",
+  "generatedSimilarTask": "Генерирана слична задача",
+  "twoHoursAgo": "Пред 2 часа",
+  "completedFlashcardSession": "Завршена сесија со картички",
+  "fiveHoursAgo": "Пред 5 часа",
+
+  "rankUser": "Ранг / Корисник",
+  "you": "Вие",
+  "user": "Корисник",
+  "viewFullLeaderboard": "Види ја целата табла",
+
+  "quickAccess": "Брз Пристап на Екосистемот",
+  "allToolsOnePlace": "Сите алатки на едно место",
+  "scanTasks": "Скенирај задачи",
+  "library": "Библиотека",
+  "knowledgeBank": "Банка на знаење",
+  "extractionModule": "Модул Екстракција",
+  "fromYouTubeVideos": "Од YouTube видеа",
+  "testFactory": "Тест Фабрика",
+  "generateTestsInSecond": "Генерирај тестови во секунда",
+  "subscriptionAndPayments": "Претплата и плаќања"
 }

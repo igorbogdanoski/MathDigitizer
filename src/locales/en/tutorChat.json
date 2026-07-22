@@ -1,0 +1,33 @@
+{
+  "welcome": "Hello! I am your AI tutor. Let's solve this task together:\n\n**Let's remember the rules:** I won't give the final result right away, but I will guide you step by step. \n\nWhat do you think is the first step to solve it?",
+  "commError": "Sorry, a communication error occurred. Can you repeat that?",
+  "imageDecodeError": "Sorry, I couldn't decipher the image. Try a clearer angle.",
+  "hintConnError": "Error connecting for suggestions.",
+  "analysisHeader": "**Analysis (SmartVision):**\n\n",
+  "errorsHeader": "**Errors found:**\n",
+  "suggestionsHeader": "**Suggestions for next steps:**\n",
+  "userMessages": {
+    "imageUpload": "I attached an image/drawing. Am I on the right track?",
+    "canvas": "I'm using a digital board for the calculation. Thoughts?",
+    "hintRequest": "I need psychological/technical help (Scaffolding Hint)."
+  },
+  "phases": {
+    "title": "Cognition Phases",
+    "phase1Title": "1. Identification",
+    "phase1Desc": "Understanding the requirement",
+    "phase2Title": "2. Strategy",
+    "phase2Desc": "Setting up a method",
+    "phase3Title": "3. Abstraction",
+    "phase3Desc": "Execution and analysis"
+  },
+  "loading": {
+    "processingImage": "Processing image/diagram...",
+    "synthesizing": "The tutor is synthesizing an answer..."
+  },
+  "controls": {
+    "closeTutor": "Close tutor",
+    "attachImage": "Attach image",
+    "mathBoard": "Math Board",
+    "inputPlaceholder": "Enter your reasoning or formula here..."
+  }
+}

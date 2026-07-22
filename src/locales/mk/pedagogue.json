@@ -1,0 +1,75 @@
+{
+  "header": {
+    "title": "PEDAGOGUE COMMAND CENTER",
+    "version": "v4.0.0",
+    "subtitle": "Mastery Layer Activation Ready"
+  },
+  "tabs": {
+    "knowledgeMap": "Knowledge Map",
+    "cognitiveFingerprint": "Cognitive Fingerprint",
+    "lessonArchitect": "Lesson Architect",
+    "socraticSim": "Socratic Sim"
+  },
+  "close": "Close command center",
+  "sidebar": {
+    "targetDataSource": "TARGET DATA SOURCE",
+    "pedagogicalFidelity": "Pedagogical Fidelity",
+    "cognitiveLoadFactor": "Cognitive Load Factor",
+    "high": "High",
+    "metadataStream": "Metadata Stream",
+    "active": "ACTIVE",
+    "selectTask": "Select task to initialize neural mapping",
+    "intelligenceBroadcast": "Intelligence Broadcast",
+    "collapsePanel": "Collapse details panel",
+    "expandPanel": "Expand details panel",
+    "loading": "Loading..."
+  },
+  "fingerprint": {
+    "title": "Cognitive Fingerprint Analysis",
+    "description": "Every task has a unique pedagogical signature. Our AI engine decodes the multi-dimensional complexity of abstract reasoning.",
+    "analyzing": "Decoding DNA...",
+    "performAutopsy": "Perform Cognitive Autopsy",
+    "awaitingAnalysis": "Awaiting Analysis...",
+    "rigor": "Rigor",
+    "abstraction": "Abstraction",
+    "connectivity": "Connectivity",
+    "context": "Context",
+    "effort": "Effort"
+  },
+  "architect": {
+    "title": "Lesson Architect",
+    "description": "AI-генериран методолошки скрипт специфичен за избраната задача.",
+    "regenerate": "Регенерирај",
+    "generateScript": "Генерирај скрипт",
+    "selectTask": "Изберете задача за да генерирате методолошки скрипт",
+    "composing": "Составувам методолошки скрипт...",
+    "clickToGenerate": "Кликнете «Генерирај скрипт» за да добиете Socratic hook, аналогија и инструкциска секвенца за оваа задача.",
+    "socraticHook": "Socratic Hook",
+    "metaphoricBridge": "Metaphoric Bridge",
+    "instructionalSequence": "Instructional Sequence",
+    "saved": "Зачувано",
+    "saveScript": "Save Script"
+  },
+  "simulation": {
+    "socraticStudent": "Socratic AI Student: SIM-01",
+    "persona": "PERSONA:",
+    "selectTask": "Изберете задача за да ја стартувате симулацијата",
+    "practiceDescription": "Вежбајте Сократовско пренасочување со виртуелен ученик кој ја «решава» избраната задача, со избраната персона.",
+    "startSimulation": "Започни симулација",
+    "restartSimulation": "Рестартирај симулација",
+    "inputPlaceholder": "Practice your Socratic redirection here...",
+    "inputHint": "Enter your response to guide the virtual student's intuition",
+    "sendResponse": "Send response"
+  },
+  "personas": {
+    "strugglingAbstraction": "Се бори со апстракција",
+    "quickCareless": "Брз но невнимателен",
+    "mathAnxious": "Математичка анксиозност"
+  },
+  "knowledgeMap": {
+    "legend": "GRAPH LEGEND",
+    "primaryTaskNode": "PRIMARY TASK NODE",
+    "relationshipConnection": "RELATIONSHIP CONNECTION",
+    "prerequisiteDependency": "PREREQUISITE DEPENDENCY"
+  }
+}

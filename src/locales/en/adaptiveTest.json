@@ -1,0 +1,58 @@
+{
+  "loading": "The algorithms are preparing an adaptive test...",
+  "noTasksTitle": "No tasks available",
+  "noTasksDesc": "There are no tasks in the database yet. Ask your teacher to add materials.",
+  "header": {
+    "title": "Adaptive Test",
+    "subtitle": "Spaced Repetition System (SRS)",
+    "kahootTitle": "Kahoot Mode gives limited time but awards 50% more points!",
+    "combo": "Combo!",
+    "taskProgress": "Task {{current}} of {{total}}"
+  },
+  "timer": {
+    "timeRace": "Race against time"
+  },
+  "trajectory": {
+    "taskTitle": "Task {{index}}: {{score}}%",
+    "title": "Current Algorithm Trajectory",
+    "levelUp": "Difficulty Level ↑",
+    "levelDown": "Difficulty Level ↓",
+    "stable": "Stable"
+  },
+  "task": {
+    "topicLabel": "Topic:"
+  },
+  "input": {
+    "answerPlaceholder": "Enter your solution here (you can use text and steps)...",
+    "grading": "Grading...",
+    "check": "Check"
+  },
+  "feedback": {
+    "result": "Result: {{score}} / 100",
+    "errorDetected": "Error detected",
+    "yourTurn": "Your turn (Socratic hint)",
+    "testCorrection": "Test the correction",
+    "nextTask": "Next task"
+  },
+  "finish": {
+    "sessionFinished": "The session is complete!",
+    "sessionDone": "Great job. You increased your mastery through the SRS algorithm.",
+    "pointsEarned": "Points earned:",
+    "errorAnalysis": "Analysis of specific errors",
+    "errorAnalysisDesc": "The system noticed that you made the following errors across the attempts:",
+    "conceptualError": "Conceptual error detected",
+    "generateTargeted": "Generate Focused Tasks",
+    "focusedTraining": "Focused Training",
+    "startNewSession": "Start a new session"
+  },
+  "toasts": {
+    "timeUpGradeError": "Error grading after time expired.",
+    "loadTasksError": "Error loading tasks.",
+    "gradeError": "An error occurred during grading.",
+    "adaptiveAddedEasy": "Adaptive Agent: An easier task has been added.",
+    "adaptiveAddedHard": "Adaptive Agent: A harder task has been added.",
+    "noErrorsDetected": "No specific errors detected for analysis.",
+    "targetedCreated": "Focused tasks created successfully!",
+    "targetedError": "Error creating focused tasks."
+  }
+}
