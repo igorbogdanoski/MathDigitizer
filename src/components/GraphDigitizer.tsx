@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronRight, Check, TrendingUp, RotateCcw } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card, CardContent } from './ui/Card';
@@ -19,19 +20,20 @@ import {
   DATASET_COLORS,
   STEPS,
   pixelToReal,
-  StepUpload,
-  StepAxisSetup,
-  StepCalibrate,
-  StepDigitize,
-  StepAnalyze,
-  StepExport,
-  GraphCanvas,
-  CalibrationDialog,
-} from './graph-digitizer';
+} from './graph-digitizer/types';
+import { StepUpload } from './graph-digitizer/StepUpload';
+import { StepAxisSetup } from './graph-digitizer/StepAxisSetup';
+import { StepCalibrate } from './graph-digitizer/StepCalibrate';
+import { StepDigitize } from './graph-digitizer/StepDigitize';
+import { StepAnalyze } from './graph-digitizer/StepAnalyze';
+import { StepExport } from './graph-digitizer/StepExport';
+import { GraphCanvas } from './graph-digitizer/GraphCanvas';
+import { CalibrationDialog } from './graph-digitizer/CalibrationDialog';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export const GraphDigitizer: React.FC = () => {
+  const { t } = useTranslation('graphDigitizer');
   const { showToast } = useToast();
 
   // Upload
@@ -58,7 +60,7 @@ export const GraphDigitizer: React.FC = () => {
 
   // Datasets
   const [datasets, setDatasets] = useState<Dataset[]>([
-    { name: 'Датасет 1', color: DATASET_COLORS[0], points: [] },
+    { name: t('dataset.default', { num: 1 }), color: DATASET_COLORS[0], points: [] },
   ]);
   const [activeDs, setActiveDs] = useState(0);
   const [mode, setMode] = useState<DigitizeMode>('add');
@@ -83,7 +85,7 @@ export const GraphDigitizer: React.FC = () => {
 
   const loadFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) {
-      showToast('Само слики се поддржани (JPG, PNG, SVG...)', 'error');
+      showToast(t('toasts.onlyImages'), 'error');
       return;
     }
     const reader = new FileReader();
@@ -97,12 +99,12 @@ export const GraphDigitizer: React.FC = () => {
       // reset digitize state on new image
       setCalibP1(null);
       setCalibP2(null);
-      setDatasets([{ name: 'Датасет 1', color: DATASET_COLORS[0], points: [] }]);
+      setDatasets([{ name: t('dataset.default', { num: 1 }), color: DATASET_COLORS[0], points: [] }]);
       setAnalysis(null);
       setSavedId(null);
     };
     reader.readAsDataURL(file);
-  }, [showToast]);
+  }, [showToast, t]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -165,7 +167,7 @@ export const GraphDigitizer: React.FC = () => {
 
     if (step === 'digitize') {
       if (mode === 'add') {
-        if (!calibP1 || !calibP2) { showToast('Прво калибрирајте ги осите', 'error'); return; }
+        if (!calibP1 || !calibP2) { showToast(t('toasts.calibrateFirst'), 'error'); return; }
         const real = pixelToReal(px, py, calibP1, calibP2, xAxis.scale, yAxis.scale);
         const newPt: DataPoint = { id: crypto.randomUUID(), px, py, rx: real.x, ry: real.y };
         setDatasets(prev => prev.map((ds, i) =>
@@ -184,7 +186,7 @@ export const GraphDigitizer: React.FC = () => {
   const addDataset = () => {
     const next = datasets.length;
     setDatasets(prev => [...prev, {
-      name: `Датасет ${next + 1}`,
+      name: t('dataset.default', { num: next + 1 }),
       color: DATASET_COLORS[next % DATASET_COLORS.length],
       points: [],
     }]);
@@ -205,14 +207,14 @@ export const GraphDigitizer: React.FC = () => {
         { x: xAxis, y: yAxis },
       );
       setAnalysis(result);
-      showToast('AI анализата е завршена!', 'success');
+      showToast(t('toasts.aiComplete'), 'success');
 
       // Auto-save to Library if enabled
       if (autoSave && auth.currentUser) {
         await saveToLibrary();
       }
     } catch (err: any) {
-      showToast(err?.message ?? 'Грешка при AI анализа', 'error');
+      showToast(err?.message ?? t('toasts.aiError'), 'error');
     } finally {
       setIsAnalyzing(false);
     }
@@ -221,14 +223,14 @@ export const GraphDigitizer: React.FC = () => {
   // ── Export ─────────────────────────────────────────────────────────────────
 
   const exportCSV = () => {
-    const rows = [`${xAxis.label},${yAxis.label},Датасет`];
+    const rows = [`${xAxis.label},${yAxis.label},${t('stats.datasets')}`];
     datasets.forEach(ds => ds.points.forEach(p => rows.push(`${p.rx},${p.ry},${ds.name}`)));
     const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = 'graph_data.csv'; a.click();
     URL.revokeObjectURL(url);
-    showToast('CSV извезен', 'success');
+    showToast(t('toasts.csvExported'), 'success');
   };
 
   const buildGeoGebraCommands = (): string[] => {
@@ -260,39 +262,39 @@ export const GraphDigitizer: React.FC = () => {
     navigator.clipboard.writeText(cmds.join('\n'));
     setCopiedGeo(true);
     setTimeout(() => setCopiedGeo(false), 2000);
-    showToast('GeoGebra команди копирани!', 'success');
+    showToast(t('toasts.geogebraCopied'), 'success');
   };
 
   const saveToLibrary = async () => {
-    if (!auth.currentUser) { showToast('Најавете се за да зачувате', 'error'); return; }
+    if (!auth.currentUser) { showToast(t('toasts.loginToSave'), 'error'); return; }
     setIsSaving(true);
     try {
       const allPoints = datasets.flatMap(ds => ds.points);
       const task = {
         type: 'task',
         title: analysis?.curriculum_topic
-          ? `График: ${analysis.curriculum_topic}`
-          : `Дигитализиран График (${allPoints.length} точки)`,
+          ? `${t('library.graphPrefix')} ${analysis.curriculum_topic}`
+          : t('library.digitizedGraph', { count: allPoints.length }),
         original_text: analysis?.description
-          ?? `Дигитализиран график со ${allPoints.length} точки.`,
+          ?? t('library.digitizedDesc', { count: allPoints.length }),
         solution_steps: (analysis?.generated_questions ?? []).map(q => q.question),
         latex_formulas: analysis?.detected_equation ? [`$${analysis.detected_equation}$`] : [],
         geogebra_commands: buildGeoGebraCommands(),
-        tags: ['график', 'координати', 'дигитализација',
+        tags: [t('library.tags.graph'), t('library.tags.coordinates'), t('library.tags.digitization'),
           ...(analysis?.curriculum_topic ? [analysis.curriculum_topic.toLowerCase()] : [])],
         difficulty: 'medium',
         source_url: 'Graph Digitizer',
         grade_level: analysis?.grade_level ?? '',
-        curriculum_topic: analysis?.curriculum_topic ?? 'Координатен систем',
+        curriculum_topic: analysis?.curriculum_topic ?? t('library.coordSystem'),
         dok_level: 2,
         author_uid: auth.currentUser.uid,
         created_at: new Date().toISOString(),
       };
       const ref = await addDoc(collection(db, 'tasks'), task);
       setSavedId(ref.id);
-      showToast('Зачувано во Библиотека!', 'success');
+      showToast(t('toasts.savedToLibrary'), 'success');
     } catch {
-      showToast('Грешка при зачувување', 'error');
+      showToast(t('toasts.errorSaving'), 'error');
     } finally {
       setIsSaving(false);
     }
@@ -309,7 +311,7 @@ export const GraphDigitizer: React.FC = () => {
 
   return (
     <>
-      <SEO title="Graph Digitizer | MathDigitizer Pro" description="Дигитализирај графици од учебници — извлечи координати и генерирај задачи со AI" />
+      <SEO title="Graph Digitizer | MathDigitizer Pro" description={t('seo.description')} />
 
       <div className="flex flex-col gap-6">
         {/* Header */}
@@ -317,20 +319,20 @@ export const GraphDigitizer: React.FC = () => {
           <div>
             <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
               <TrendingUp className="w-6 h-6 text-indigo-600" />
-              Graph Digitizer
+              {t('title')}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              Прикачи график од учебник → калибрирај оски → прочитај координати → генерирај задачи со AI
+              {t('subtitle')}
             </p>
           </div>
           {imageUrl && (
             <Button variant="outline" size="sm" onClick={() => {
               setImageUrl(null); setStep('upload');
               setCalibP1(null); setCalibP2(null);
-              setDatasets([{ name: 'Датасет 1', color: DATASET_COLORS[0], points: [] }]);
+              setDatasets([{ name: t('dataset.default', { num: 1 }), color: DATASET_COLORS[0], points: [] }]);
               setAnalysis(null); setSavedId(null);
             }}>
-              <RotateCcw className="w-4 h-4 mr-1.5" /> Нова слика
+              <RotateCcw className="w-4 h-4 mr-1.5" /> {t('newImage')}
             </Button>
           )}
         </div>
@@ -356,7 +358,7 @@ export const GraphDigitizer: React.FC = () => {
                     }`}
                   >
                     {isDone ? <Check className="w-3 h-3" /> : <span>{i + 1}.</span>}
-                    {s.label}
+                    {t(`steps.${s.id}`)}
                   </button>
                   {i < STEPS.length - 1 && (
                     <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
@@ -455,17 +457,17 @@ export const GraphDigitizer: React.FC = () => {
                   <div className="grid grid-cols-3 gap-3 text-center">
                     <div>
                       <p className="text-xl font-black text-indigo-600">{totalPoints}</p>
-                      <p className="text-[10px] text-slate-400 uppercase tracking-wide">Точки</p>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wide">{t('stats.points')}</p>
                     </div>
                     <div>
                       <p className="text-xl font-black text-emerald-600">{datasets.length}</p>
-                      <p className="text-[10px] text-slate-400 uppercase tracking-wide">Датасети</p>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wide">{t('stats.datasets')}</p>
                     </div>
                     <div>
                       <p className="text-xl font-black text-amber-600">
                         {analysis?.generated_questions?.length ?? '—'}
                       </p>
-                      <p className="text-[10px] text-slate-400 uppercase tracking-wide">Прашања</p>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wide">{t('stats.questions')}</p>
                     </div>
                   </div>
                 </CardContent>

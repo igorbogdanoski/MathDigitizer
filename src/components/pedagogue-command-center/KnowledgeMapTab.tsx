@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import { Database } from 'lucide-react';
 import { MathTask } from '../../lib/schema';
@@ -11,6 +12,7 @@ interface KnowledgeMapTabProps {
 }
 
 export const KnowledgeMapTab: React.FC<KnowledgeMapTabProps> = ({ task, tasks, selectedTaskId }) => {
+  const { t } = useTranslation('pedagogue');
   const svgRef = useRef<SVGSVGElement>(null);
   const simulationRef = useRef<any>(null);
 
@@ -131,20 +133,20 @@ export const KnowledgeMapTab: React.FC<KnowledgeMapTabProps> = ({ task, tasks, s
       <div className="absolute bottom-8 left-8 p-4 bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl max-w-sm">
         <h3 className="text-xs font-bold text-slate-100 flex items-center gap-2 mb-2">
           <Database className="w-3 h-3 text-indigo-400" />
-          GRAPH LEGEND
+          {t('knowledgeMap.legend')}
         </h3>
         <div className="space-y-2">
           <div className="flex items-center gap-3 text-[10px] text-slate-400">
             <div className="w-2 h-2 rounded-full bg-indigo-500" />
-            <span>PRIMARY TASK NODE</span>
+            <span>{t('knowledgeMap.primaryTaskNode')}</span>
           </div>
           <div className="flex items-center gap-3 text-[10px] text-slate-400">
             <div className="w-2 h-2 rounded-full bg-slate-400" />
-            <span>RELATIONSHIP CONNECTION</span>
+            <span>{t('knowledgeMap.relationshipConnection')}</span>
           </div>
           <div className="flex items-center gap-3 text-[10px] text-slate-400">
             <div className="w-6 h-px bg-slate-600 border-dashed border-t" />
-            <span>PREREQUISITE DEPENDENCY</span>
+            <span>{t('knowledgeMap.prerequisiteDependency')}</span>
           </div>
         </div>
       </div>

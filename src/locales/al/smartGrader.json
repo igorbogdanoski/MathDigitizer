@@ -1,0 +1,75 @@
+{
+  "header": {
+    "badge": "Mentor i Specializuar me Pagesë të Lartë",
+    "title": "AI Tutor & Smart Grader",
+    "subtitle": "Analizë vizuale automatike e shkrimit të dorës që funksionon si një Mentor Ekspert i Vlefshëm. Tregon anët e mira dhe të këqija, zbulon gabimet dhe gjeneron një format pikësh."
+  },
+  "mode": {
+    "title": "Modaliteti i Vlerësimit",
+    "singleTask": "Një Detyrë",
+    "batchWholeTest": "Batch (Gjithë Testi)",
+    "searchLibrary": "Kërko në bibliotekë...",
+    "autoSegmenting": "Segmentim Automatik",
+    "autoSegmentingDesc": "Nuk duhet të zgjidhni një detyrë specifike. Fotografoni një faqe të tërë të testit të nxënësit. Algoritmi do të zbulojë të gjitha detyrat, do t'i segmentojë dhe do t'i vlerësojë një nga një automatikisht."
+  },
+  "upload": {
+    "title": "Imazh i shkrimit të dorës",
+    "selectImageAria": "Zgjidh imazh për vlerësim",
+    "studentWorkAlt": "Puna e nxënësit",
+    "changeImage": "Ndrysho Imazhin",
+    "enterStudentName": "Shkruaj emrin e nxënësit (p.sh. Marko M.)",
+    "attachHandwriting": "Bashkëngjit shkrimin e dorës",
+    "attachDesc": "Fotografoni testin ose fletoren e nxënësit për kontroll automatik.",
+    "selectFile": "Zgjidh Skedar"
+  },
+  "analysis": {
+    "title": "Analiza",
+    "analyzing": "Duke analizuar...",
+    "gradeHandwriting": "Vlerëso shkrimin e dorës",
+    "emptyState": "Zgjidhni një imazh për të gjeneruar feedback automatik dhe një notë bazuar në Taksonominë e Bloom-it.",
+    "readingSteps": "Duke lexuar hapat...",
+    "comparingHandwriting": "Duke krahasuar shkrimin e dorës me algoritmin",
+    "batchSuccess": "Analizë Batch e Sukesshme",
+    "batchDetected": "Algoritmi zbuloi dhe vlerësoi gjithsej <strong>{{count}}</strong> detyra nga imazhi."
+  },
+  "bloom": {
+    "label": "Bloom: {{level}}",
+    "remember": "Kujtim",
+    "understand": "Kuptim",
+    "apply": "Zbatim",
+    "analyze": "Analizë",
+    "evaluate": "Vlerësim",
+    "create": "Krijim"
+  },
+  "result": {
+    "detectedTask": "Detyra e Zbuluar {{index}}",
+    "noTaskText": "Nuk u gjet tekst detyre.",
+    "outOf100": "nga 100",
+    "solvingStatus": "Statusi i zgjidhjes",
+    "selectedMetric": "Metrika e zgjedhur:",
+    "identifiedErrors": "Gabimet e Identifikuara",
+    "noErrors": "Nuk u gjetën gabime. Detyra është zgjidhur saktë.",
+    "formativeRubric": "Rubrika Formative",
+    "concept": "Koncept",
+    "execution": "Ekzekutim",
+    "communication": "Komunikim",
+    "inspirationalMentor": "Mentor AI Frymëzues",
+    "doneWell": "Çfarë u bë SHKËLQYER",
+    "whereBreaks": "Ku thyhet algoritmi",
+    "suggestions": "Rekomandime",
+    "generatePractice": "Gjenero Detyra Ushtrimore",
+    "createPersonalized": "Krijo detyra të personalizuara të fokusuara në:",
+    "generatingTasks": "Duke gjeneruar detyra...",
+    "generateHomework": "Gjenero Detyrë Shtëpie",
+    "personalizedTasks": "Detyra të Personalizuara:",
+    "taskNumber": "Detyra {{index}}"
+  },
+  "toasts": {
+    "imageTooLarge": "Imazhi është shumë i madh. Ju lutemi bashkëngjitni një imazh më të vogël se 5MB.",
+    "practiceGenError": "Ndodhi një gabim gjatë gjenerimit të detyrave.",
+    "enterStudentId": "Shkruani emrin ose identifikuesin e nxënësit për të ruajtur analitikën.",
+    "gradeSaved": "Nota u ruajt në ditar",
+    "batchGradesSaved": "{{count}} nota u ruajtën në ditar",
+    "analysisError": "Ndodhi një gabim gjatë analizës. Ju lutemi provoni përsëri."
+  }
+}

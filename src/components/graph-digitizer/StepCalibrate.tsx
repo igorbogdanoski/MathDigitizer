@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronRight, Target, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
@@ -16,20 +17,21 @@ interface StepCalibrateProps {
 export const StepCalibrate: React.FC<StepCalibrateProps> = ({
   calibP1, calibP2, waitingCalib, onSetWaitingCalib, onClearPoint, onNext,
 }) => {
+  const { t } = useTranslation('graphDigitizer');
   const calibrated = !!(calibP1 && calibP2);
 
   return (
     <Card>
       <CardContent className="p-5 space-y-4">
         <div className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
-          <Target className="w-4 h-4 text-indigo-500" /> 2-точкова калибрација
+          <Target className="w-4 h-4 text-indigo-500" /> {t('calibrate.title')}
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-          Кликни на 2 точки чии координати ги знаеш (пр. пресечиште на оски, ознаки на мрежа). Тоа ги дефинира вистинските координати за сите останати точки.
+          {t('calibrate.description')}
         </p>
 
-        {[{ label: 'Точка 1', pt: calibP1, slot: 1 as const, color: '#ef4444' },
-          { label: 'Точка 2', pt: calibP2, slot: 2 as const, color: '#3b82f6' }]
+        {[{ label: t('calibrate.point1'), pt: calibP1, slot: 1 as const, color: '#ef4444' },
+          { label: t('calibrate.point2'), pt: calibP2, slot: 2 as const, color: '#3b82f6' }]
           .map(({ label, pt, slot, color }) => (
             <div key={slot} className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
               waitingCalib === slot
@@ -54,7 +56,7 @@ export const StepCalibrate: React.FC<StepCalibrateProps> = ({
                 </div>
               ) : (
                 <span className="text-xs text-slate-400">
-                  {waitingCalib === slot ? 'Кликни на сликата →' : 'Чека...'}
+                  {waitingCalib === slot ? t('calibrate.clickOnImage') : t('calibrate.waiting')}
                 </span>
               )}
             </div>
@@ -65,7 +67,7 @@ export const StepCalibrate: React.FC<StepCalibrateProps> = ({
           disabled={!calibrated}
           onClick={onNext}
         >
-          {calibrated ? <>Дигитализирај точки <ChevronRight className="w-4 h-4 ml-1" /></> : 'Поставете ги двете точки'}
+          {calibrated ? <>{t('calibrate.digitizePoints')} <ChevronRight className="w-4 h-4 ml-1" /></> : t('calibrate.setBothPoints')}
         </Button>
       </CardContent>
     </Card>

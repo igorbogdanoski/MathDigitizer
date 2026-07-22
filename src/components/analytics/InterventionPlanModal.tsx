@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Compass } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
@@ -15,6 +16,7 @@ export interface InterventionPlanModalProps {
 }
 
 export const InterventionPlanModal: React.FC<InterventionPlanModalProps> = ({ plan, isOpen, onClose, studentId, modalRef }) => {
+  const { t } = useTranslation('analytics');
   return (
     <AnimatePresence>
       {isOpen && plan && (
@@ -22,7 +24,7 @@ export const InterventionPlanModal: React.FC<InterventionPlanModalProps> = ({ pl
           ref={modalRef}
           role="dialog"
           aria-modal="true"
-          aria-label="Сократов План за Интервенција"
+          aria-label={t('modal.title')}
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8"
         >
           <motion.div
@@ -40,18 +42,18 @@ export const InterventionPlanModal: React.FC<InterventionPlanModalProps> = ({ pl
               <div>
                 <h3 className="text-2xl font-black text-indigo-950 dark:text-indigo-100 flex items-center gap-3">
                   <Compass className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
-                  Сократов План за Интервенција (ZPD)
+                  {t('modal.title')}
                 </h3>
                 <div className="flex items-center gap-3 mt-3">
                   <p className="text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 shadow-sm">
-                    Субјект: <span className="text-indigo-900 dark:text-indigo-100 border-b border-indigo-300 dark:border-indigo-700 ml-1">{studentId}</span>
+                    {t('modal.subject')} <span className="text-indigo-900 dark:text-indigo-100 border-b border-indigo-300 dark:border-indigo-700 ml-1">{studentId}</span>
                   </p>
                   <p className="text-[10px] font-mono text-white bg-indigo-600 px-2.5 py-1.5 rounded uppercase tracking-widest shadow-sm">
-                    Дидактичка Скрипта
+                    {t('modal.didacticScript')}
                   </p>
                 </div>
               </div>
-               <button onClick={onClose} aria-label="Затвори интервенциски план" title="Затвори" className="p-3 bg-white dark:bg-white/5 rounded-xl text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-600 dark:hover:text-slate-300 border border-slate-200 dark:border-white/10 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+               <button onClick={onClose} aria-label={t('modal.closeAria')} title={t('modal.closeAria')} className="p-3 bg-white dark:bg-white/5 rounded-xl text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-600 dark:hover:text-slate-300 border border-slate-200 dark:border-white/10 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
@@ -63,12 +65,12 @@ export const InterventionPlanModal: React.FC<InterventionPlanModalProps> = ({ pl
             <div className="px-8 py-6 border-t border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-white/5 flex justify-between items-center shrink-0 rounded-b-5xl">
                <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono hidden md:block uppercase tracking-widest font-medium">
                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
-                 Методолошки Мотор (Gemini 3.1 Pro)
+                 {t('modal.methodologyEngine')}
                </div>
                <div className="flex justify-end gap-4 w-full md:w-auto">
-                 <Button onClick={onClose} variant="outline" className="rounded-xl font-bold px-6 h-12 bg-white dark:bg-transparent hover:bg-slate-50 dark:hover:bg-white/5 border-slate-200 dark:border-white/15 dark:text-slate-200">Затвори план</Button>
+                 <Button onClick={onClose} variant="outline" className="rounded-xl font-bold px-6 h-12 bg-white dark:bg-transparent hover:bg-slate-50 dark:hover:bg-white/5 border-slate-200 dark:border-white/15 dark:text-slate-200">{t('modal.closePlan')}</Button>
                  <Button onClick={() => window.print()} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold px-6 h-12 shadow-[0_4px_14px_rgba(79,70,229,0.39)] transition-transform hover:scale-105 active:scale-95">
-                   Увези како .PDF
+                   {t('modal.exportPdf')}
                  </Button>
                </div>
             </div>

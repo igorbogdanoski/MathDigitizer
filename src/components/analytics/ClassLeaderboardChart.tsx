@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Target } from 'lucide-react';
 import {
   ResponsiveContainer, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid,
@@ -7,14 +8,14 @@ import {
 import { StudentStats } from './types';
 
 const getSeriesDotClass = (seriesName?: string) => {
-  if (seriesName === 'Просек') return 'bg-indigo-500';
-  if (seriesName === 'Евалуации') return 'bg-emerald-500';
+  if (seriesName === 'Просек' || seriesName === 'Average') return 'bg-indigo-500';
+  if (seriesName === 'Евалуации' || seriesName === 'Evaluations') return 'bg-emerald-500';
   return 'bg-slate-400';
 };
 
 const getSeriesTextClass = (seriesName?: string) => {
-  if (seriesName === 'Просек') return 'text-indigo-600 dark:text-indigo-400';
-  if (seriesName === 'Евалуации') return 'text-emerald-600 dark:text-emerald-400';
+  if (seriesName === 'Просек' || seriesName === 'Average') return 'text-indigo-600 dark:text-indigo-400';
+  if (seriesName === 'Евалуации' || seriesName === 'Evaluations') return 'text-emerald-600 dark:text-emerald-400';
   return 'text-slate-600 dark:text-slate-300';
 };
 
@@ -24,26 +25,27 @@ export interface ClassLeaderboardChartProps {
 }
 
 export const ClassLeaderboardChart: React.FC<ClassLeaderboardChartProps> = ({ data, isDark }) => {
+  const { t } = useTranslation('analytics');
   return (
     <div className="xl:col-span-2 bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-5xl overflow-hidden shadow-sm p-8">
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <div>
           <h3 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
             <Target className="w-7 h-7 text-rose-500" />
-            Аналитичка Лидерска Табла
+            {t('leaderboard.title')}
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 font-medium">
-            Глобален ранкинг според Концептуална Совладливост (Просечен Резултат) и Моментум
+            {t('leaderboard.description')}
           </p>
         </div>
         <div className="flex gap-2">
            <span className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10">
               <span className="w-3 h-3 rounded-full bg-indigo-500 block"></span>
-              Просек (0-100)
+              {t('leaderboard.average')}
            </span>
            <span className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10">
               <span className="w-3 h-3 rounded-full bg-emerald-400 block"></span>
-              Вкупни Евалуации
+              {t('leaderboard.totalEvaluations')}
            </span>
         </div>
       </div>
@@ -78,7 +80,7 @@ export const ClassLeaderboardChart: React.FC<ClassLeaderboardChartProps> = ({ da
                          ))}
                        </div>
                        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-white/10 text-xs font-bold text-slate-400 dark:text-slate-500 flex items-center justify-between">
-                         <span>Cognitive ZPD Target:</span>
+                         <span>{t('leaderboard.cognitiveZpdTarget')}</span>
                          <span className="text-indigo-500 dark:text-indigo-400 font-mono bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md">
                            {payload[0] && payload[0].payload ? Math.min(100, Math.round(payload[0].payload.averageScore + (100 - payload[0].payload.averageScore) * 0.3)) : 0}
                          </span>
@@ -89,8 +91,8 @@ export const ClassLeaderboardChart: React.FC<ClassLeaderboardChartProps> = ({ da
                 return null;
               }}
             />
-            <Bar yAxisId="left" dataKey="averageScore" name="Просек" fill="url(#colorScore)" radius={[6, 6, 0, 0]} maxBarSize={60} />
-            <Line yAxisId="right" type="monotone" dataKey={(d) => d.submissions.length} name="Евалуации" stroke="#10b981" strokeWidth={3} dot={{ r: 5, fill: '#10b981', strokeWidth: 2, stroke: isDark ? '#0f172a' : '#fff' }} activeDot={{ r: 8 }} />
+            <Bar yAxisId="left" dataKey="averageScore" name={t('leaderboard.average')} fill="url(#colorScore)" radius={[6, 6, 0, 0]} maxBarSize={60} />
+            <Line yAxisId="right" type="monotone" dataKey={(d) => d.submissions.length} name={t('leaderboard.totalEvaluations')} stroke="#10b981" strokeWidth={3} dot={{ r: 5, fill: '#10b981', strokeWidth: 2, stroke: isDark ? '#0f172a' : '#fff' }} activeDot={{ r: 8 }} />
           </BarChart>
         </ResponsiveContainer>
       </div>

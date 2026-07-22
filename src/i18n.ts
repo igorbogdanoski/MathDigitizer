@@ -25,6 +25,13 @@ import mkEarlyWarning from './locales/mk/earlyWarning.json';
 import mkBilling from './locales/mk/billing.json';
 import mkSchoolInquiries from './locales/mk/schoolInquiries.json';
 import mkSmartOcr from './locales/mk/smartOcr.json';
+import mkSmartGrader from './locales/mk/smartGrader.json';
+import mkGraphDigitizer from './locales/mk/graphDigitizer.json';
+import mkAnalytics from './locales/mk/analytics.json';
+import mkPedagogue from './locales/mk/pedagogue.json';
+import mkMaterialsFactory from './locales/mk/materialsFactory.json';
+import mkTutorChat from './locales/mk/tutorChat.json';
+import mkAdaptiveTest from './locales/mk/adaptiveTest.json';
 
 import enCommon from './locales/en/common.json';
 import enNavigation from './locales/en/navigation.json';
@@ -40,6 +47,13 @@ import enEarlyWarning from './locales/en/earlyWarning.json';
 import enBilling from './locales/en/billing.json';
 import enSchoolInquiries from './locales/en/schoolInquiries.json';
 import enSmartOcr from './locales/en/smartOcr.json';
+import enSmartGrader from './locales/en/smartGrader.json';
+import enGraphDigitizer from './locales/en/graphDigitizer.json';
+import enAnalytics from './locales/en/analytics.json';
+import enPedagogue from './locales/en/pedagogue.json';
+import enMaterialsFactory from './locales/en/materialsFactory.json';
+import enTutorChat from './locales/en/tutorChat.json';
+import enAdaptiveTest from './locales/en/adaptiveTest.json';
 
 import alCommon from './locales/al/common.json';
 import alNavigation from './locales/al/navigation.json';
@@ -55,6 +69,13 @@ import alEarlyWarning from './locales/al/earlyWarning.json';
 import alBilling from './locales/al/billing.json';
 import alSchoolInquiries from './locales/al/schoolInquiries.json';
 import alSmartOcr from './locales/al/smartOcr.json';
+import alSmartGrader from './locales/al/smartGrader.json';
+import alGraphDigitizer from './locales/al/graphDigitizer.json';
+import alAnalytics from './locales/al/analytics.json';
+import alPedagogue from './locales/al/pedagogue.json';
+import alMaterialsFactory from './locales/al/materialsFactory.json';
+import alTutorChat from './locales/al/tutorChat.json';
+import alAdaptiveTest from './locales/al/adaptiveTest.json';
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'mk', name: 'Македонски', flag: '🇲🇰' },
@@ -84,6 +105,13 @@ i18n
         billing: mkBilling,
         schoolInquiries: mkSchoolInquiries,
         smartOcr: mkSmartOcr,
+        smartGrader: mkSmartGrader,
+        graphDigitizer: mkGraphDigitizer,
+        analytics: mkAnalytics,
+        pedagogue: mkPedagogue,
+        materialsFactory: mkMaterialsFactory,
+        tutorChat: mkTutorChat,
+        adaptiveTest: mkAdaptiveTest,
       },
       en: {
         common: enCommon,
@@ -100,6 +128,13 @@ i18n
         billing: enBilling,
         schoolInquiries: enSchoolInquiries,
         smartOcr: enSmartOcr,
+        smartGrader: enSmartGrader,
+        graphDigitizer: enGraphDigitizer,
+        analytics: enAnalytics,
+        pedagogue: enPedagogue,
+        materialsFactory: enMaterialsFactory,
+        tutorChat: enTutorChat,
+        adaptiveTest: enAdaptiveTest,
       },
       al: {
         common: alCommon,
@@ -116,11 +151,18 @@ i18n
         billing: alBilling,
         schoolInquiries: alSchoolInquiries,
         smartOcr: alSmartOcr,
+        smartGrader: alSmartGrader,
+        graphDigitizer: alGraphDigitizer,
+        analytics: alAnalytics,
+        pedagogue: alPedagogue,
+        materialsFactory: alMaterialsFactory,
+        tutorChat: alTutorChat,
+        adaptiveTest: alAdaptiveTest,
       },
     },
     fallbackLng: 'mk',
     defaultNS: 'common',
-    ns: ['common', 'navigation', 'pricing', 'home', 'library', 'extraction', 'dashboard', 'flashcards', 'gradebook', 'differentiation', 'earlyWarning', 'billing', 'schoolInquiries', 'smartOcr'],
+    ns: ['common', 'navigation', 'pricing', 'home', 'library', 'extraction', 'dashboard', 'flashcards', 'gradebook', 'differentiation', 'earlyWarning', 'billing', 'schoolInquiries', 'smartOcr', 'smartGrader', 'graphDigitizer', 'analytics', 'pedagogue', 'materialsFactory', 'tutorChat', 'adaptiveTest'],
     
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],

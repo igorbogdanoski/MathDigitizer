@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Layers } from 'lucide-react';
 import { Card, CardContent } from '../ui/Card';
 import { WeaknessEntry } from './types';
@@ -8,15 +9,16 @@ export interface KnowledgeGapsGridProps {
 }
 
 export const KnowledgeGapsGrid: React.FC<KnowledgeGapsGridProps> = ({ weaknesses }) => {
+  const { t } = useTranslation('analytics');
   return (
     <Card className="bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl border-slate-200 dark:border-white/10 shadow-sm rounded-5xl md:col-span-2">
       <CardContent className="p-8 md:p-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg flex items-center gap-3 uppercase tracking-widest text-sm">
             <Layers className="w-6 h-6 text-orange-500" />
-            Хронолошки Дупки во Знаењето
+            {t('gaps.title')}
           </h3>
-          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10">Гранулирана Анализа на Грешки</span>
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10">{t('gaps.granularAnalysis')}</span>
         </div>
 
         {weaknesses.length > 0 ? (
@@ -31,7 +33,7 @@ export const KnowledgeGapsGrid: React.FC<KnowledgeGapsGridProps> = ({ weaknesses
                 </div>
                 <div className="flex items-center gap-1.5 min-w-fit pl-4">
                   <span className={`text-[11px] font-black px-3 py-1.5 rounded-lg uppercase tracking-wider ${w.count > 2 ? 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-500/20' : 'text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10'}`}>
-                    {w.count} инциденти
+                    {t('gaps.incidents', { count: w.count })}
                   </span>
                 </div>
               </div>
@@ -40,7 +42,7 @@ export const KnowledgeGapsGrid: React.FC<KnowledgeGapsGridProps> = ({ weaknesses
         ) : (
           <div className="h-48 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-center bg-slate-50 dark:bg-white/5 rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
             <CheckCircle2 className="w-12 h-12 text-emerald-400 mb-3 opacity-50" />
-            <p className="font-medium text-sm">Системот не детектира структурни грешки.</p>
+            <p className="font-medium text-sm">{t('gaps.noGaps')}</p>
           </div>
         )}
       </CardContent>

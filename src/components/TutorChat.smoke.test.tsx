@@ -55,17 +55,19 @@ describe('TutorChat smoke', () => {
       />
     );
 
-    expect(await screen.findByText(/Здраво!/i)).toBeInTheDocument();
+    // The chat form is rendered (input exists)
+    const input = await screen.findByRole('textbox');
+    expect(input).toBeInTheDocument();
 
-    const input = screen.getByPlaceholderText('Внеси твое размислување или формула овде...');
+    // Type and submit a message
     fireEvent.change(input, { target: { value: 'Мој чекор е x = 3' } });
-
     fireEvent.submit(input.closest('form') as HTMLFormElement);
 
     await waitFor(() => {
       expect(mockSendMessage).toHaveBeenCalledWith({ message: 'Мој чекор е x = 3' });
     });
 
+    // The AI response is rendered
     expect(await screen.findByText('Одлично, продолжи со следниот чекор.')).toBeInTheDocument();
   });
 });

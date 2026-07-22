@@ -1,0 +1,77 @@
+{
+  "gate": {
+    "description": "Fabrika e Materialeve është një modul Pro. Zhbllokoni atë për të gjeneruar fletë pune, teste dhe prezantime në nivel production."
+  },
+  "hero": {
+    "badge": "Materiale AI të Klasit Botëror",
+    "subtitle": "Transformoni bibliotekën tuaj të detyrave në fletë pune profesionale, kuize ose prezantime në sekonda me ndihmën e inteligjencës artificiale.",
+    "availableTasks": "Detyra të disponueshme",
+    "selected": "Të zgjedhura"
+  },
+  "types": {
+    "worksheet": { "name": "Fletë pune", "description": "Detyra ushtrimore për në klasë ose shtëpi" },
+    "test": { "name": "Test / Vlerësim", "description": "Vlerësim me pikë dhe zgjidhje për mësuesin" },
+    "collection": { "name": "Koleksion detyrash", "description": "Koleksion gjithëpërfshirës i ndarë sipas temës dhe vështirësisë" },
+    "quiz": { "name": "Kuiz interaktiv", "description": "Kuiz live për nxënësit (stili Kahoot)" },
+    "presentation": { "name": "Prezantim", "description": "Sllajde me teori dhe detyra për në klasë" },
+    "flashcards": { "name": "Flashcards", "description": "Kartela për përsëritje të shpejtë të koncepteve" },
+    "homework": { "name": "Detyrë shtëpie", "description": "Detyra për punë të pavarur në shtëpi" },
+    "study_guide": { "name": "Udhëzues mësimi", "description": "Pasqyrë e detajuar e teorisë dhe detyrave kryesore" }
+  },
+  "settings": {
+    "language": "Gjuha:",
+    "languageTitle": "Zgjidh gjuhën",
+    "grade": "Klasa / Viti:",
+    "gradeTitle": "Zgjidh klasën"
+  },
+  "step1": {
+    "title": "1. Përgatitja e materialit"
+  },
+  "step2": {
+    "title": "2. Zgjidh detyra nga biblioteka",
+    "generating": "Duke gjeneruar...",
+    "generate": "Gjenero Material",
+    "searchPlaceholder": "Kërko detyra sipas titullit ose tekstit...",
+    "filters": "Filtra",
+    "selectAll": "Zgjidh të gjitha",
+    "clear": "Pastro",
+    "diffTestTitle": "Test i Diferencuar",
+    "loading": "Duke ngarkuar bibliotekën...",
+    "emptyTitle": "Biblioteka është bosh",
+    "emptyDesc": "Për të krijuar materiale edukative, fillimisht duhet të dixhitalizoni detyra me ndihmën e ekstraksionit AI.",
+    "startExtraction": "Fillo Ekstraksionin",
+    "taskSingular": "detyrë",
+    "taskPlural": "detyra",
+    "editTaskTitle": "Redakto detyrën"
+  },
+  "difficulty": {
+    "easy": "E lehtë",
+    "medium": "Mesatare",
+    "hard": "E vështirë"
+  },
+  "diff": {
+    "badge": "Mësim i Diferencuar",
+    "title": "Test i Diferencuar",
+    "subtitle": "AI gjeneroi 3 versione të testit tuaj bazuar në gatishmërinë njohëse të grupeve të ndryshme të nxënësve.",
+    "print": "Printo (PDF)",
+    "exportWord": "Eksport (Word)",
+    "closeAria": "Mbyll testin e diferencuar",
+    "closeTitle": "Mbyll",
+    "groupA": "Njohuri dhe Kuptim",
+    "groupB": "Zbatim",
+    "groupC": "Analizë dhe Sintezë",
+    "level1": "Taksonomia e Bloom-it - Niveli 1",
+    "level2": "Taksonomia e Bloom-it - Niveli 2",
+    "level3": "Taksonomia e Bloom-it - Niveli 3",
+    "solution": "Zgjidhje"
+  },
+  "toasts": {
+    "selectAtLeastOne": "Ju lutemi zgjidhni të paktën një detyrë nga biblioteka.",
+    "materialGenerated": "Materiali u gjenerua me sukses!",
+    "generateError": "Ndodhi një gabim gjatë gjenerimit. Ju lutemi provoni përsëri.",
+    "diffTestGenerated": "Testi i diferencuar u gjenerua me sukses!",
+    "jsonDownloaded": "Skedari JSON u shkarkua me sukses.",
+    "wordDownloaded": "Dokumenti Word u shkarkua me sukses.",
+    "materialReadyDownload": "Materiali është gati për shkarkim."
+  }
+}

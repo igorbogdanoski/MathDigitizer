@@ -1,7 +1,7 @@
-export const SIM_PERSONAS: { id: string; label: string }[] = [
-  { id: 'struggling_abstraction', label: 'Се бори со апстракција' },
-  { id: 'quick_careless', label: 'Брз но невнимателен' },
-  { id: 'math_anxious', label: 'Математичка анксиозност' },
+export const SIM_PERSONAS: { id: string; labelKey: string }[] = [
+  { id: 'struggling_abstraction', labelKey: 'personas.strugglingAbstraction' },
+  { id: 'quick_careless', labelKey: 'personas.quickCareless' },
+  { id: 'math_anxious', labelKey: 'personas.mathAnxious' },
 ];
 
 export interface SimMessage {

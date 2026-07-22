@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import {
   MessageSquare, Zap, Layers, BookOpen,
@@ -27,6 +28,7 @@ export const LessonArchitectTab: React.FC<LessonArchitectTabProps> = ({
   onGenerate,
   onSave,
 }) => {
+  const { t } = useTranslation('pedagogue');
   return (
     <motion.div
       key="architect"
@@ -38,8 +40,8 @@ export const LessonArchitectTab: React.FC<LessonArchitectTabProps> = ({
       <div className="max-w-4xl mx-auto space-y-8">
         <header className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-white mb-2">Lesson Architect</h2>
-            <p className="text-slate-400">AI-генериран методолошки скрипт специфичен за избраната задача.</p>
+            <h2 className="text-3xl font-bold text-white mb-2">{t('architect.title')}</h2>
+            <p className="text-slate-400">{t('architect.description')}</p>
           </div>
           {task && (
             <Button
@@ -48,7 +50,7 @@ export const LessonArchitectTab: React.FC<LessonArchitectTabProps> = ({
               className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0"
             >
               {isGeneratingScript ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-              {lessonScript ? 'Регенерирај' : 'Генерирај скрипт'}
+              {lessonScript ? t('architect.regenerate') : t('architect.generateScript')}
             </Button>
           )}
         </header>
@@ -56,17 +58,17 @@ export const LessonArchitectTab: React.FC<LessonArchitectTabProps> = ({
         {!task ? (
           <div className="text-center py-24 opacity-50">
             <BookOpen className="w-16 h-16 text-slate-700 mx-auto mb-4" />
-            <p className="text-slate-500 text-sm uppercase tracking-widest">Изберете задача за да генерирате методолошки скрипт</p>
+            <p className="text-slate-500 text-sm uppercase tracking-widest">{t('architect.selectTask')}</p>
           </div>
         ) : !lessonScript ? (
           <div className="text-center py-24">
             {isGeneratingScript ? (
               <>
                 <Loader2 className="w-12 h-12 text-indigo-400 animate-spin mx-auto mb-4" />
-                <p className="text-slate-400 text-sm">Составувам методолошки скрипт...</p>
+                <p className="text-slate-400 text-sm">{t('architect.composing')}</p>
               </>
             ) : (
-              <p className="text-slate-500 text-sm">Кликнете „Генерирај скрипт" за да добиете Socratic hook, аналогија и инструкциска секвенца за оваа задача.</p>
+              <p className="text-slate-500 text-sm">{t('architect.clickToGenerate')}</p>
             )}
           </div>
         ) : (
@@ -76,7 +78,7 @@ export const LessonArchitectTab: React.FC<LessonArchitectTabProps> = ({
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <MessageSquare className="w-5 h-5 text-indigo-400" />
-                    <h3 className="font-bold text-slate-100">Socratic Hook</h3>
+                    <h3 className="font-bold text-slate-100">{t('architect.socraticHook')}</h3>
                   </div>
                   <p className="text-sm text-slate-400 italic">"{lessonScript.socratic_hook}"</p>
                 </CardContent>
@@ -86,7 +88,7 @@ export const LessonArchitectTab: React.FC<LessonArchitectTabProps> = ({
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <Zap className="w-5 h-5 text-amber-400" />
-                    <h3 className="font-bold text-slate-100">Metaphoric Bridge</h3>
+                    <h3 className="font-bold text-slate-100">{t('architect.metaphoricBridge')}</h3>
                   </div>
                   <p className="text-sm text-slate-400">{lessonScript.metaphoric_bridge}</p>
                 </CardContent>
@@ -96,7 +98,7 @@ export const LessonArchitectTab: React.FC<LessonArchitectTabProps> = ({
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <Layers className="w-5 h-5 text-purple-400" />
-                <h3 className="text-lg font-bold text-white">Instructional Sequence</h3>
+                <h3 className="text-lg font-bold text-white">{t('architect.instructionalSequence')}</h3>
               </div>
               <Button
                 variant="outline"
@@ -106,7 +108,7 @@ export const LessonArchitectTab: React.FC<LessonArchitectTabProps> = ({
                 className="border-slate-700 text-slate-300"
               >
                 {isSavingScript ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : scriptSaved ? <Check className="w-4 h-4 mr-2 text-emerald-400" /> : <Save className="w-4 h-4 mr-2" />}
-                {scriptSaved ? 'Зачувано' : 'Save Script'}
+                {scriptSaved ? t('architect.saved') : t('architect.saveScript')}
               </Button>
             </div>
 

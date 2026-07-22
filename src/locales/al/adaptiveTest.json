@@ -1,0 +1,58 @@
+{
+  "loading": "Algoritmet po përgatisin një test adaptiv...",
+  "noTasksTitle": "Nuk ka detyra të disponueshme",
+  "noTasksDesc": "Ende nuk ka detyra në bazën e të dhënave. Kërkoni nga mësuesi të shtojë materiale.",
+  "header": {
+    "title": "Test Adaptiv",
+    "subtitle": "Sistemi i Përsëritjes me Hapësirë (SRS)",
+    "kahootTitle": "Kahoot Mode jep kohë të kufizuar por sjell 50% më shumë pikë!",
+    "combo": "Kombo!",
+    "taskProgress": "Detyra {{current}} nga {{total}}"
+  },
+  "timer": {
+    "timeRace": "Gara me kohën"
+  },
+  "trajectory": {
+    "taskTitle": "Detyra {{index}}: {{score}}%",
+    "title": "Trajektorja Aktuale e Algoritmit",
+    "levelUp": "Niveli i Vështirësisë ↑",
+    "levelDown": "Niveli i Vështirësisë ↓",
+    "stable": "Stabil"
+  },
+  "task": {
+    "topicLabel": "Tema:"
+  },
+  "input": {
+    "answerPlaceholder": "Shkruani zgjidhjen tuaj këtu (mund të përdorni tekst dhe hapa)...",
+    "grading": "Duke vlerësuar...",
+    "check": "Kontrollo"
+  },
+  "feedback": {
+    "result": "Rezultati: {{score}} / 100",
+    "errorDetected": "Gabim i zbuluar",
+    "yourTurn": "Radha juaj (Sugjerim Sokratik)",
+    "testCorrection": "Testo korrigjimin",
+    "nextTask": "Detyra tjetër"
+  },
+  "finish": {
+    "sessionFinished": "Sesioni përfundoi!",
+    "sessionDone": "Punë e shkëlqyer. Ju rritët mjeshtërinë tuaj përmes algoritmit SRS.",
+    "pointsEarned": "Pikët e fituara:",
+    "errorAnalysis": "Analiza e gabimeve specifike",
+    "errorAnalysisDesc": "Sistemi vuri re se bëtë gabimet e mëposhtme gjatë përpjekjeve:",
+    "conceptualError": "U zbulua një gabim konceptual",
+    "generateTargeted": "Gjenero Detyra të Fokusuara",
+    "focusedTraining": "Stërvitje e Fokusuar",
+    "startNewSession": "Fillo një sesion të ri"
+  },
+  "toasts": {
+    "timeUpGradeError": "Gabim në vlerësim pasi koha skadoi.",
+    "loadTasksError": "Gabim në ngarkimin e detyrave.",
+    "gradeError": "Ndodhi një gabim gjatë vlerësimit.",
+    "adaptiveAddedEasy": "Agjenti Adaptiv: U shtua një detyrë më e lehtë.",
+    "adaptiveAddedHard": "Agjenti Adaptiv: U shtua një detyrë më e vështirë.",
+    "noErrorsDetected": "Nuk u zbuluan gabime specifike për analizë.",
+    "targetedCreated": "Detyrat e fokusuara u krijuan me sukses!",
+    "targetedError": "Gabim në krijimin e detyrave të fokusuara."
+  }
+}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { collection, query, getDocs, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { MathTask, UserStats } from '../lib/schema';
@@ -12,6 +13,7 @@ import { useToast } from '../contexts/ToastContext';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const AdaptiveTest: React.FC = () => {
+  const { t } = useTranslation('adaptiveTest');
   const [tasks, setTasks] = useState<MathTask[]>([]);
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -75,7 +77,7 @@ export const AdaptiveTest: React.FC = () => {
       const result = await autoGradeSubmission(mockQuestion, studentAnswer || "Нема одговор - истече времето");
       processGradingResult(result, task);
     } catch (err) {
-      showToast('Грешка при оценување по истекот на времето.', 'error');
+      showToast(t('toasts.timeUpGradeError'), 'error');
       setIsGrading(false);
     }
   };
@@ -140,7 +142,7 @@ export const AdaptiveTest: React.FC = () => {
       setSessionCount(0);
     } catch (err) {
       console.error("Error fetching tasks:", err);
-      showToast('Грешка при вчитување на задачи.', 'error');
+      showToast(t('toasts.loadTasksError'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -227,7 +229,7 @@ export const AdaptiveTest: React.FC = () => {
       await processGradingResult(result, task);
     } catch (err) {
       console.error("Grading error:", err);
-      showToast('Настана грешка при оценувањето.', 'error');
+      showToast(t('toasts.gradeError'), 'error');
       setIsGrading(false);
     }
   };
@@ -274,7 +276,7 @@ export const AdaptiveTest: React.FC = () => {
               newArr.splice(currentTaskIndex + 1, 0, candidate);
               return newArr;
            });
-           showToast(`Адаптивен Агент: Додадена е ${targetDifficulty === 'easy' ? 'полесна' : 'потешка'} задача.`, 'info');
+           showToast(t(targetDifficulty === 'easy' ? 'toasts.adaptiveAddedEasy' : 'toasts.adaptiveAddedHard'), 'info');
         }
      } catch(e) {
         console.error("Adaptive fetch error", e);
@@ -296,7 +298,7 @@ export const AdaptiveTest: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center p-20">
         <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-4" />
-        <p className="text-slate-500">Алгоритмите подготвуваат адаптивен тест...</p>
+        <p className="text-slate-500">{t('loading')}</p>
       </div>
     );
   }
@@ -305,15 +307,15 @@ export const AdaptiveTest: React.FC = () => {
     return (
       <div className="p-8 text-center bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
         <Brain className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-        <h3 className="text-xl font-bold mb-2">Нема достапни задачи</h3>
-        <p className="text-slate-500">Сè уште нема задачи во базата. Побарајте од наставникот да додаде материјали.</p>
+        <h3 className="text-xl font-bold mb-2">{t('noTasksTitle')}</h3>
+        <p className="text-slate-500">{t('noTasksDesc')}</p>
       </div>
     );
   }
 
   const handleGenerateTargetedTasks = async () => {
      if (detectedErrors.length === 0) {
-        showToast("Не се детектирани специфични грешки за анализа.", "info");
+        showToast(t('toasts.noErrorsDetected'), "info");
         return;
      }
      setIsGeneratingTargeted(true);
@@ -321,10 +323,10 @@ export const AdaptiveTest: React.FC = () => {
         const lastTask = tasks[tasks.length - 1]; // Use as context base
         const newTasks = await generateTargetedPracticeTasks(detectedErrors, lastTask, 2);
         setTargetedTasks(newTasks);
-        showToast("Успешно креирани фокусирани задачи!", "success");
+        showToast(t('toasts.targetedCreated'), "success");
      } catch (e) {
         console.error(e);
-        showToast("Грешка при креирање фокусирани задачи.", "error");
+        showToast(t('toasts.targetedError'), "error");
      } finally {
         setIsGeneratingTargeted(false);
      }
@@ -336,28 +338,28 @@ export const AdaptiveTest: React.FC = () => {
         <div className="w-24 h-24 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-full flex items-center justify-center mx-auto mb-6 transform rotate-12">
           <Trophy className="w-12 h-12 text-white" />
         </div>
-        <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-4">Сесијата е завршена!</h2>
+        <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-4">{t('finish.sessionFinished')}</h2>
         <p className="text-lg text-slate-600 dark:text-slate-300 mb-8">
-          Одлична работа. Ја зголемивте вашата мајсторија преку SRS алгоритмот. <br/>
-          Освоени поени: <span className="font-bold text-indigo-600">{sessionScore} XP</span>
+          {t('finish.sessionDone')} <br/>
+          {t('finish.pointsEarned')} <span className="font-bold text-indigo-600">{sessionScore} XP</span>
         </p>
         
         {detectedErrors.length > 0 && targetedTasks.length === 0 && (
            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-6 text-left border border-amber-200 dark:border-amber-800 mb-8 max-w-2xl mx-auto">
               <h3 className="font-bold flex items-center gap-2 text-amber-800 dark:text-amber-400 mb-2">
-                 <AlertTriangle className="w-5 h-5" /> Анализа на специфични грешки
+                 <AlertTriangle className="w-5 h-5" /> {t('finish.errorAnalysis')}
               </h3>
               <p className="text-sm text-amber-700 dark:text-amber-300 mb-4">
-                 Системот забележа дека ги направивте следниве грешки низ обидите:
+                 {t('finish.errorAnalysisDesc')}
               </p>
               <ul className="list-disc list-inside text-sm text-amber-800/80 dark:text-amber-200 mb-4 space-y-1 pl-4">
                  {detectedErrors.map((err, i) => (
-                    <li key={i}>{typeof err === 'string' ? err.substring(0, 100) + '...' : 'Концептуална грешка детектирана'}</li>
+                    <li key={i}>{typeof err === 'string' ? err.substring(0, 100) + '...' : t('finish.conceptualError')}</li>
                  ))}
               </ul>
               <Button onClick={handleGenerateTargetedTasks} disabled={isGeneratingTargeted} className="w-full bg-amber-600 hover:bg-amber-700 text-white shadow-sm border-0 font-bold h-10">
                  {isGeneratingTargeted ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : <Zap className="w-4 h-4 mr-2"/>} 
-                 Генерирај Фокусирани Задачи
+                 {t('finish.generateTargeted')}
               </Button>
            </div>
         )}
@@ -365,7 +367,7 @@ export const AdaptiveTest: React.FC = () => {
         {targetedTasks.length > 0 && (
            <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl p-6 text-left border border-indigo-200 dark:border-indigo-800 mb-8">
               <h3 className="font-bold flex items-center gap-2 text-indigo-800 dark:text-indigo-400 mb-4">
-                 <Target className="w-5 h-5" /> Фокусиран Тренинг 
+                 <Target className="w-5 h-5" /> {t('finish.focusedTraining')} 
               </h3>
               <div className="grid gap-4">
                  {targetedTasks.map((tt, i) => (
@@ -378,7 +380,7 @@ export const AdaptiveTest: React.FC = () => {
         )}
 
         <Button onClick={fetchTasks} className="bg-indigo-600 hover:bg-indigo-700 h-12 px-8 text-lg rounded-full shadow-lg hover:shadow-xl transition-all">
-          Започни нова сесија <RefreshCw className="w-5 h-5 ml-2" />
+          {t('finish.startNewSession')} <RefreshCw className="w-5 h-5 ml-2" />
         </Button>
       </div>
     );
@@ -392,9 +394,9 @@ export const AdaptiveTest: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Zap className="w-6 h-6 text-amber-500 fill-amber-500" />
-            Адаптивен Тест
+            {t('header.title')}
           </h2>
-          <p className="text-sm text-slate-500">Систем за просторно повторување (SRS)</p>
+          <p className="text-sm text-slate-500">{t('header.subtitle')}</p>
         </div>
         <div className="flex items-center gap-4">
           <Button
@@ -405,7 +407,7 @@ export const AdaptiveTest: React.FC = () => {
                 : "border-slate-200 text-slate-500 hover:bg-slate-50"
             }`}
             onClick={() => setIsKahootMode(!isKahootMode)}
-            title="Kahoot Mode дава ограничено време но носи 50% повеќе поени!"
+            title={t('header.kahootTitle')}
           >
             <Timer className={`w-4 h-4 mr-1.5 ${isKahootMode ? "animate-pulse" : ""}`} />
             Kahoot Mode
@@ -418,12 +420,12 @@ export const AdaptiveTest: React.FC = () => {
                  animate={{ scale: 1, opacity: 1 }}
                  className={`flex items-center gap-1 font-bold ${showCombo ? 'text-rose-500 scale-110' : 'text-amber-500'} transition-all`}
                >
-                 🔥 {streak} Комбо! (x{multiplier.toFixed(1)})
+                 🔥 {streak} {t('header.combo')} (x{multiplier.toFixed(1)})
                </motion.div>
              )}
           </AnimatePresence>
           <div className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-300 font-bold px-4 py-2 rounded-full text-sm">
-            Задача {currentTaskIndex + 1} од {tasks.length}
+            {t('header.taskProgress', { current: currentTaskIndex + 1, total: tasks.length })}
           </div>
         </div>
       </div>
@@ -435,7 +437,7 @@ export const AdaptiveTest: React.FC = () => {
                  <Timer className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Трка со времето</h4>
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('timer.timeRace')}</h4>
                 <div className={`text-2xl font-black ${timeLeft <= 10 ? 'text-rose-600' : 'text-slate-800 dark:text-slate-100'}`}>
                   00:{timeLeft.toString().padStart(2, '0')}
                 </div>
@@ -458,16 +460,16 @@ export const AdaptiveTest: React.FC = () => {
         {trajectory.length > 0 && (
            <div className="absolute top-4 right-4 flex items-center gap-2">
               <div className="flex gap-1">
-                 {trajectory.map((t, idx) => (
-                    <div 
-                       key={idx} 
-                       className={`w-2 h-6 rounded-full ${t.score >= 80 ? 'bg-emerald-500' : t.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                       title={`Задача ${idx+1}: ${t.score}%`}
+                 {trajectory.map((point, idx) => (
+                    <div
+                       key={idx}
+                       className={`w-2 h-6 rounded-full ${point.score >= 80 ? 'bg-emerald-500' : point.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                       title={t('trajectory.taskTitle', { index: idx + 1, score: point.score })}
                     ></div>
                  ))}
               </div>
               <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
-              <div title="Тековна Траекторија на Алгоритамот" className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-md ${
+              <div title={t('trajectory.title')} className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-md ${
                  adaptationState === 'hardening' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 
                  adaptationState === 'softening' ? 'text-rose-600 bg-rose-50 dark:bg-rose-900/30' : 
                  'text-slate-500 bg-slate-100 dark:bg-slate-800'
@@ -475,14 +477,14 @@ export const AdaptiveTest: React.FC = () => {
                  {adaptationState === 'hardening' ? <TrendingUp className="w-3 h-3" /> : 
                   adaptationState === 'softening' ? <TrendingDown className="w-3 h-3" /> : 
                   <Target className="w-3 h-3" />}
-                 {adaptationState === 'hardening' ? 'Потешкотино Ниво ↑' : 
-                  adaptationState === 'softening' ? 'Потешкотино Ниво ↓' : 'Стабилно'}
+                 {adaptationState === 'hardening' ? t('trajectory.levelUp') :
+                  adaptationState === 'softening' ? t('trajectory.levelDown') : t('trajectory.stable')}
               </div>
            </div>
         )}
 
         <div className="mb-8 mt-6">
-          <h3 className="font-semibold text-slate-500 uppercase tracking-wider text-xs mb-2 hidden sm:block">Тема: {currentTask.curriculum_topic || 'Општо'}</h3>
+          <h3 className="font-semibold text-slate-500 uppercase tracking-wider text-xs mb-2 hidden sm:block">{t('task.topicLabel')} {currentTask.curriculum_topic || 'Општо'}</h3>
           <div className="text-xl md:text-2xl font-medium text-slate-900 dark:text-slate-100 leading-relaxed">
             <MathRenderer content={currentTask.original_text} />
           </div>
@@ -500,7 +502,7 @@ export const AdaptiveTest: React.FC = () => {
               <textarea
                 value={studentAnswer}
                 onChange={(e) => setStudentAnswer(e.target.value)}
-                placeholder="Внесете го вашето решение тука (може да користите текст и чекори)..."
+                placeholder={t('input.answerPlaceholder')}
                 className="w-full h-32 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none transition-all"
               />
               <div className="flex justify-end">
@@ -510,9 +512,9 @@ export const AdaptiveTest: React.FC = () => {
                   className="bg-indigo-600 hover:bg-indigo-700 h-12 px-8 rounded-full"
                 >
                   {isGrading ? (
-                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Оценување...</>
+                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> {t('input.grading')}</>
                   ) : (
-                    <>Провери <Brain className="w-5 h-5 ml-2" /></>
+                    <>{t('input.check')} <Brain className="w-5 h-5 ml-2" /></>
                   )}
                 </Button>
               </div>
@@ -535,7 +537,7 @@ export const AdaptiveTest: React.FC = () => {
                     feedback.score >= 50 ? 'text-amber-700 dark:text-amber-400' :
                     'text-rose-700 dark:text-rose-400'
                   }`}>
-                    Резултат: {feedback.score} / 100
+                    {t('feedback.result', { score: feedback.score })}
                   </h4>
                   <div className="text-slate-700 dark:text-slate-300 prose prose-sm dark:prose-invert">
                     <MathRenderer content={feedback.feedback} />
@@ -544,7 +546,7 @@ export const AdaptiveTest: React.FC = () => {
                   {feedback.error_detected && (
                     <div className="mt-4 p-4 bg-rose-100/50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 rounded-xl">
                       <strong className="text-rose-800 dark:text-rose-300 block mb-1 flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4" /> Детектирана грешка
+                        <AlertTriangle className="w-4 h-4" /> {t('feedback.errorDetected')}
                       </strong>
                       <p className="text-rose-700 dark:text-rose-400 text-sm">
                         <MathRenderer content={feedback.error_detected} />
@@ -555,7 +557,7 @@ export const AdaptiveTest: React.FC = () => {
                   {feedback.socratic_hint && (
                     <div className="mt-4 p-4 bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-800 rounded-xl shadow-inner">
                       <strong className="text-indigo-800 dark:text-indigo-300 block mb-2 flex items-center gap-2">
-                        <Brain className="w-4 h-4" /> Ваш ред (Сократски хинт)
+                        <Brain className="w-4 h-4" /> {t('feedback.yourTurn')}
                       </strong>
                       <p className="text-indigo-700 dark:text-indigo-200 font-medium">
                         <MathRenderer content={feedback.socratic_hint} />
@@ -571,14 +573,14 @@ export const AdaptiveTest: React.FC = () => {
                     onClick={() => setFeedback(null)} // Reset feedback to let them try again
                     className="bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:hover:bg-amber-900/70 dark:text-amber-300 rounded-full px-6"
                   >
-                    Тестирај ја поправката <RefreshCw className="w-4 h-4 ml-2" />
+                    {t('feedback.testCorrection')} <RefreshCw className="w-4 h-4 ml-2" />
                   </Button>
                 )}
                 <Button 
                   onClick={nextTask}
                   className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 text-white rounded-full px-6"
                 >
-                  Следна Задча <ArrowRight className="w-4 h-4 ml-2" />
+                  {t('feedback.nextTask')} <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
             </motion.div>

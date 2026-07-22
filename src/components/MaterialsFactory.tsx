@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
 import { collection, query, getDocs, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
@@ -29,6 +30,7 @@ export default function MaterialsFactory() {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { userProfile } = useAuth();
+  const { t } = useTranslation('materialsFactory');
   const setEditingTask = useLibraryStore(state => state.setEditingTask);
   const [tasks, setTasks] = useState<MathTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,19 +51,19 @@ export default function MaterialsFactory() {
 
   const handleGenerateMaterial = async () => {
     if (selectedTasks.size === 0) {
-      showToast('Ве молам изберете барем една задача од библиотеката.', 'info');
+      showToast(t('toasts.selectAtLeastOne'), 'info');
       return;
     }
     
     setIsGenerating(true);
     try {
-      const tasksToProcess = tasks.filter(t => t.id && selectedTasks.has(t.id));
+      const tasksToProcess = tasks.filter(task => task.id && selectedTasks.has(task.id));
       const result = await generateEducationalMaterial(tasksToProcess, selectedType, targetGrade, targetLanguage);
       setGeneratedMaterial(result);
-      showToast('Материјалот е успешно генериран!', 'success');
+      showToast(t('toasts.materialGenerated'), 'success');
     } catch (error) {
       captureError(error, { name: 'materials.generate', path: '/factory', details: { selectedType, taskCount: selectedTasks.size } });
-      showToast('Настана грешка при генерирањето. Обидете се повторно.', 'error');
+      showToast(t('toasts.generateError'), 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -71,13 +73,13 @@ export default function MaterialsFactory() {
     if (selectedTasks.size === 0) return;
     setIsGeneratingDiff(true);
     try {
-      const tasksToExport = tasks.filter(t => t.id && selectedTasks.has(t.id));
+      const tasksToExport = tasks.filter(task => task.id && selectedTasks.has(task.id));
       const result = await generateDifferentiatedTest(tasksToExport);
       setDiffResult(result);
-      showToast('Диференцираниот тест е успешно генериран!', 'success');
+      showToast(t('toasts.diffTestGenerated'), 'success');
     } catch (error) {
       captureError(error, { name: 'materials.differentiated-test', path: '/factory', details: { taskCount: selectedTasks.size } });
-      showToast('Настана грешка при генерирањето. Обидете се повторно.', 'error');
+      showToast(t('toasts.generateError'), 'error');
     } finally {
       setIsGeneratingDiff(false);
     }
@@ -85,16 +87,16 @@ export default function MaterialsFactory() {
 
   const handleExportJson = () => {
     if (selectedTasks.size === 0) return;
-    const tasksToExport = tasks.filter(t => t.id && selectedTasks.has(t.id));
+    const tasksToExport = tasks.filter(task => task.id && selectedTasks.has(task.id));
     exportToJson(tasksToExport, 'math_materials.json');
-    showToast('JSON датотеката е успешно преземена.', 'success');
+    showToast(t('toasts.jsonDownloaded'), 'success');
   };
 
   const handleExportWord = () => {
     if (selectedTasks.size === 0) return;
-    const tasksToExport = tasks.filter(t => t.id && selectedTasks.has(t.id));
+    const tasksToExport = tasks.filter(task => task.id && selectedTasks.has(task.id));
     exportToWord(tasksToExport, 'math_materials.doc');
-    showToast('Word документот е успешно преземен.', 'success');
+    showToast(t('toasts.wordDownloaded'), 'success');
   };
 
   const toggleTaskSelection = (taskId: string) => {
@@ -108,7 +110,7 @@ export default function MaterialsFactory() {
   };
 
   const handleSelectAll = () => {
-    const allFilteredIds = filteredTasks.map(t => t.id).filter(Boolean) as string[];
+    const allFilteredIds = filteredTasks.map(task => task.id).filter(Boolean) as string[];
     setSelectedTasks(new Set(allFilteredIds));
   };
 
@@ -154,21 +156,21 @@ export default function MaterialsFactory() {
   }, []);
 
   const materialTypes: { id: MaterialType; name: string; icon: any; description: string; color: string; iconBg: string }[] = [
-    { id: 'worksheet', name: 'Работен лист', icon: FileText, description: 'Задачи за вежбање на час или домашно', color: 'text-blue-600', iconBg: 'bg-blue-100' },
-    { id: 'test', name: 'Тест / Проверка', icon: Target, description: 'Оценување со бодови и решенија за наставникот', color: 'text-rose-600', iconBg: 'bg-rose-100' },
-    { id: 'collection', name: 'Збирка задачи', icon: BookOpen, description: 'Сеопфатна збирка поделена по теми и тежина', color: 'text-emerald-600', iconBg: 'bg-emerald-100' },
-    { id: 'quiz', name: 'Интерактивен квиз', icon: FileQuestion, description: 'Квиз во живо за учениците (Kahoot стил)', color: 'text-purple-600', iconBg: 'bg-purple-100' },
-    { id: 'presentation', name: 'Презентација', icon: Presentation, description: 'Слајдови со теорија и задачи за на час', color: 'text-orange-600', iconBg: 'bg-orange-100' },
-    { id: 'flashcards', name: 'Флешкарти', icon: Layers, description: 'Картички за брзо повторување на концепти', color: 'text-pink-600', iconBg: 'bg-pink-100' },
-    { id: 'homework', name: 'Домашна работа', icon: ClipboardList, description: 'Задачи за самостојна работа дома', color: 'text-teal-600', iconBg: 'bg-teal-100' },
-    { id: 'study_guide', name: 'Водич за учење', icon: GraduationCap, description: 'Детален преглед на теорија и клучни задачи', color: 'text-amber-600', iconBg: 'bg-amber-100' },
+    { id: 'worksheet', name: t('types.worksheet.name'), icon: FileText, description: t('types.worksheet.description'), color: 'text-blue-600', iconBg: 'bg-blue-100' },
+    { id: 'test', name: t('types.test.name'), icon: Target, description: t('types.test.description'), color: 'text-rose-600', iconBg: 'bg-rose-100' },
+    { id: 'collection', name: t('types.collection.name'), icon: BookOpen, description: t('types.collection.description'), color: 'text-emerald-600', iconBg: 'bg-emerald-100' },
+    { id: 'quiz', name: t('types.quiz.name'), icon: FileQuestion, description: t('types.quiz.description'), color: 'text-purple-600', iconBg: 'bg-purple-100' },
+    { id: 'presentation', name: t('types.presentation.name'), icon: Presentation, description: t('types.presentation.description'), color: 'text-orange-600', iconBg: 'bg-orange-100' },
+    { id: 'flashcards', name: t('types.flashcards.name'), icon: Layers, description: t('types.flashcards.description'), color: 'text-pink-600', iconBg: 'bg-pink-100' },
+    { id: 'homework', name: t('types.homework.name'), icon: ClipboardList, description: t('types.homework.description'), color: 'text-teal-600', iconBg: 'bg-teal-100' },
+    { id: 'study_guide', name: t('types.study_guide.name'), icon: GraduationCap, description: t('types.study_guide.description'), color: 'text-amber-600', iconBg: 'bg-amber-100' },
   ];
 
   if (!hasProAccess(userProfile)) {
     return (
       <ProFeatureGate
         featureName="Materials Factory"
-        description="Фабриката за материјали е Pro модул. Отклучете го за генерација на работни листови, тестови и презентации на production ниво."
+        description={t('gate.description')}
       />
     );
   }
@@ -186,22 +188,22 @@ export default function MaterialsFactory() {
           <div className="max-w-2xl text-center md:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-6 border border-indigo-500/30">
               <Sparkles className="w-4 h-4" />
-              <span>AI Материјали од Светска Класа</span>
+              <span>{t('hero.badge')}</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4 leading-tight">
               Materials <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Factory</span>
             </h1>
             <p className="text-lg text-slate-400 leading-relaxed">
-              Трансформирајте ја вашата библиотека со задачи во професионални работни листови, квизови или презентации за неколку секунди со помош на вештачка интелигенција.
+              {t('hero.subtitle')}
             </p>
           </div>
           
           <div className="flex-shrink-0 bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 text-center min-w-[200px]">
             <div className="text-4xl font-black text-white mb-1">{tasks.length}</div>
-            <div className="text-sm text-slate-400 font-medium uppercase tracking-widest">Достапни задачи</div>
+            <div className="text-sm text-slate-400 font-medium uppercase tracking-widest">{t('hero.availableTasks')}</div>
             <div className="mt-4 pt-4 border-t border-white/10">
               <div className="text-2xl font-bold text-indigo-400">{selectedTasks.size}</div>
-              <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Селектирани</div>
+              <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{t('hero.selected')}</div>
             </div>
           </div>
         </div>
@@ -211,17 +213,17 @@ export default function MaterialsFactory() {
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <div className="w-1.5 h-8 bg-indigo-600 rounded-full"></div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">1. Подготовка на материјалот</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('step1.title')}</h2>
         </div>
         
         {/* Settings Bar */}
         <div className="flex flex-wrap items-center gap-4 bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/30">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Јазик:</span>
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('settings.language')}</span>
             <select
               value={targetLanguage}
               onChange={(e) => setTargetLanguage(e.target.value as any)}
-              title="Избери јазик"
+              title={t('settings.languageTitle')}
               className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="mk">Македонски</option>
@@ -234,11 +236,11 @@ export default function MaterialsFactory() {
           <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 hidden sm:block mx-2"></div>
           
           <div className="flex items-center gap-3">
-             <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Одделение / Година:</span>
+             <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('settings.grade')}</span>
              <select
                value={targetGrade}
                onChange={(e) => setTargetGrade(e.target.value)}
-               title="Избери одделение"
+               title={t('settings.gradeTitle')}
                className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 min-w-40"
              >
                <option value="Сите Одделенија / Мешано">Сите Одделенија / Мешано</option>
@@ -300,7 +302,7 @@ export default function MaterialsFactory() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-1.5 h-8 bg-indigo-600 rounded-full"></div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">2. Изберете задачи од библиотека</h2>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('step2.title')}</h2>
           </div>
           
           <div className="flex items-center gap-3">
@@ -315,7 +317,7 @@ export default function MaterialsFactory() {
                 ) : (
                   <Wand2 className="w-6 h-6 mr-3 group-hover:animate-pulse" />
                 )}
-                {isGenerating ? 'Се генерира...' : 'Генерирај Материјал'}
+                {isGenerating ? t('step2.generating') : t('step2.generate')}
               </Button>
           </div>
         </div>
@@ -328,7 +330,7 @@ export default function MaterialsFactory() {
                 <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
                 <input 
                   type="text" 
-                  placeholder="Пребарај задачи по наслов или текст..." 
+                  placeholder={t('step2.searchPlaceholder')} 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-12 pr-6 py-3 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
@@ -336,7 +338,7 @@ export default function MaterialsFactory() {
               </div>
               <button className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                 <Filter className="w-4 h-4" />
-                Филтри
+                {t('step2.filters')}
               </button>
             </div>
             
@@ -346,7 +348,7 @@ export default function MaterialsFactory() {
                 className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl hover:bg-indigo-100 transition-colors"
               >
                 <CheckSquare className="w-4 h-4" />
-                Избери ги сите
+                {t('step2.selectAll')}
               </button>
               <button 
                 onClick={handleClearSelections}
@@ -354,7 +356,7 @@ export default function MaterialsFactory() {
                 className="flex items-center gap-2 px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl hover:bg-slate-50 transition-colors disabled:opacity-50"
               >
                 <X className="w-4 h-4" />
-                Поништи
+                {t('step2.clear')}
               </button>
               
               <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
@@ -364,7 +366,7 @@ export default function MaterialsFactory() {
                   onClick={handleGenerateDifferentiated}
                   disabled={selectedTasks.size === 0 || isGeneratingDiff}
                   className="w-12 h-12 flex items-center justify-center text-purple-600 bg-purple-50 dark:bg-purple-900/30 rounded-xl hover:bg-purple-100 transition-colors disabled:opacity-50"
-                  title="Диференциран Тест"
+                  title={t('step2.diffTestTitle')}
                 >
                   {isGeneratingDiff ? <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div> : <Layers className="w-6 h-6" />}
                 </button>
@@ -385,23 +387,23 @@ export default function MaterialsFactory() {
             {loading ? (
               <div className="flex-1 flex flex-col items-center justify-center py-20">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
-                <p className="text-slate-500 font-medium">Вчитување на библиотеката...</p>
+                <p className="text-slate-500 font-medium">{t('step2.loading')}</p>
               </div>
             ) : tasks.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center py-20 text-center">
                 <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-6xl flex items-center justify-center mx-auto mb-6">
                   <BookOpen className="w-12 h-12 text-slate-300" />
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Библиотеката е празна</h3>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t('step2.emptyTitle')}</h3>
                 <p className="text-slate-500 max-w-sm mb-8">
-                  За да креирате едукативни материјали, прво треба да дигитализирате задачи со помош на AI екстракција.
+                  {t('step2.emptyDesc')}
                 </p>
                 <Button 
                   onClick={() => navigate('/extract')}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Започни Екстракција
+                  {t('step2.startExtraction')}
                 </Button>
               </div>
             ) : (
@@ -420,7 +422,7 @@ export default function MaterialsFactory() {
                           </div>
                           <div>
                             <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">{topic}</h3>
-                            <p className="text-xs text-slate-500 font-bold">{topicTasks.length} {topicTasks.length === 1 ? 'задача' : 'задачи'}</p>
+                            <p className="text-xs text-slate-500 font-bold">{topicTasks.length} {topicTasks.length === 1 ? t('step2.taskSingular') : t('step2.taskPlural')}</p>
                           </div>
                         </div>
                         {isCollapsed ? (
@@ -458,7 +460,7 @@ export default function MaterialsFactory() {
                                           setEditingTask(task);
                                         }}
                                         className="p-1.5 text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-all opacity-0 group-hover:opacity-100"
-                                        title="Уреди задача"
+                                        title={t('step2.editTaskTitle')}
                                       >
                                         <Edit3 className="w-4 h-4" />
                                       </button>
@@ -477,7 +479,7 @@ export default function MaterialsFactory() {
                                         task.difficulty === 'medium' ? 'bg-amber-100 text-amber-700' :
                                         'bg-rose-100 text-rose-700'
                                       }`}>
-                                        {task.difficulty === 'easy' ? 'Лесна' : task.difficulty === 'medium' ? 'Средна' : 'Тешка'}
+                                        {task.difficulty === 'easy' ? t('difficulty.easy') : task.difficulty === 'medium' ? t('difficulty.medium') : t('difficulty.hard')}
                                       </span>
                                       {task.dok_level && (
                                         <span className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold">
@@ -525,23 +527,23 @@ export default function MaterialsFactory() {
                 <div>
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 text-purple-600 text-[10px] font-black uppercase tracking-wider mb-4 border border-purple-500/20">
                      <Layers className="w-3 h-3" />
-                     Диференцирана Настава
+                     {t('diff.badge')}
                   </div>
-                  <h2 className="text-3xl font-black text-slate-900 dark:text-white">Диференциран Тест</h2>
-                  <p className="text-slate-500 dark:text-slate-400 mt-1 max-w-xl">AI генерираше 3 верзии на вашиот тест базирани на когнитивната подготвеност на различни групи ученици.</p>
+                  <h2 className="text-3xl font-black text-slate-900 dark:text-white">{t('diff.title')}</h2>
+                  <p className="text-slate-500 dark:text-slate-400 mt-1 max-w-xl">{t('diff.subtitle')}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <Button onClick={() => window.print()} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold h-14 px-6 rounded-2xl shadow-lg print:hidden">
                     <Printer className="w-5 h-5 mr-2" />
-                    Принтај (PDF)
+                    {t('diff.print')}
                   </Button>
                   <Button onClick={() => {
                     exportToWord([...diffResult.groupA, ...diffResult.groupB, ...diffResult.groupC], 'differentiated_test.doc');
                   }} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-14 px-8 rounded-2xl shadow-lg print:hidden">
                     <Download className="w-5 h-5 mr-3" />
-                    Експорт (Word)
+                    {t('diff.exportWord')}
                   </Button>
-                  <button onClick={() => setDiffResult(null)} aria-label="Затвори диференциран тест" title="Затвори" className="p-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-white dark:hover:bg-slate-700 transition-colors shadow-sm print:hidden">
+                  <button onClick={() => setDiffResult(null)} aria-label={t('diff.closeAria')} title={t('diff.closeTitle')} className="p-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-white dark:hover:bg-slate-700 transition-colors shadow-sm print:hidden">
                     <X className="w-6 h-6" />
                   </button>
                 </div>
@@ -553,8 +555,8 @@ export default function MaterialsFactory() {
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-xl border-2 border-emerald-200">1</div>
                     <div>
-                      <h3 className="text-xl font-black text-emerald-800">Знаење и Разбирање</h3>
-                      <p className="text-xs text-slate-500 uppercase tracking-widest">Блумова Таксономија - Ниво 1</p>
+                      <h3 className="text-xl font-black text-emerald-800">{t('diff.groupA')}</h3>
+                      <p className="text-xs text-slate-500 uppercase tracking-widest">{t('diff.level1')}</p>
                     </div>
                   </div>
                   <div className="space-y-4">
@@ -567,7 +569,7 @@ export default function MaterialsFactory() {
                           </div>
                           <div className="shrink-0 flex flex-col items-center gap-1 opacity-20 group-hover:opacity-100 transition-opacity print:opacity-100">
                             <QRCodeSVG value={`https://youtu.be/search?q=${encodeURIComponent(task.title || '')}`} size={48} className="rounded-sm" />
-                            <span className="text-[9px] uppercase font-bold text-slate-400">Решение</span>
+                            <span className="text-[9px] uppercase font-bold text-slate-400">{t('diff.solution')}</span>
                           </div>
                         </div>
                       </div>
@@ -580,8 +582,8 @@ export default function MaterialsFactory() {
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black text-xl border-2 border-blue-200">2</div>
                     <div>
-                      <h3 className="text-xl font-black text-blue-800">Примена</h3>
-                      <p className="text-xs text-slate-500 uppercase tracking-widest">Блумова Таксономија - Ниво 2</p>
+                      <h3 className="text-xl font-black text-blue-800">{t('diff.groupB')}</h3>
+                      <p className="text-xs text-slate-500 uppercase tracking-widest">{t('diff.level2')}</p>
                     </div>
                   </div>
                   <div className="space-y-4">
@@ -594,7 +596,7 @@ export default function MaterialsFactory() {
                           </div>
                           <div className="shrink-0 flex flex-col items-center gap-1 opacity-20 group-hover:opacity-100 transition-opacity print:opacity-100">
                             <QRCodeSVG value={`https://youtu.be/search?q=${encodeURIComponent(task.title || '')}`} size={48} className="rounded-sm" />
-                            <span className="text-[9px] uppercase font-bold text-slate-400">Решение</span>
+                            <span className="text-[9px] uppercase font-bold text-slate-400">{t('diff.solution')}</span>
                           </div>
                         </div>
                       </div>
@@ -607,8 +609,8 @@ export default function MaterialsFactory() {
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black text-xl border-2 border-purple-200">3</div>
                     <div>
-                      <h3 className="text-xl font-black text-purple-800">Анализа и Синтеза</h3>
-                      <p className="text-xs text-slate-500 uppercase tracking-widest">Блумова Таксономија - Ниво 3</p>
+                      <h3 className="text-xl font-black text-purple-800">{t('diff.groupC')}</h3>
+                      <p className="text-xs text-slate-500 uppercase tracking-widest">{t('diff.level3')}</p>
                     </div>
                   </div>
                   <div className="space-y-4">
@@ -621,7 +623,7 @@ export default function MaterialsFactory() {
                           </div>
                           <div className="shrink-0 flex flex-col items-center gap-1 opacity-20 group-hover:opacity-100 transition-opacity print:opacity-100">
                             <QRCodeSVG value={`https://youtu.be/search?q=${encodeURIComponent(task.title || '')}`} size={48} className="rounded-sm" />
-                            <span className="text-[9px] uppercase font-bold text-slate-400">Решение</span>
+                            <span className="text-[9px] uppercase font-bold text-slate-400">{t('diff.solution')}</span>
                           </div>
                         </div>
                       </div>
@@ -649,7 +651,7 @@ export default function MaterialsFactory() {
               // For now, export the JSON including edits.
               exportToJson(finalData, `material_${selectedType}.json`);
             }
-            showToast('Материјалот е подготвен за преземање.', 'success');
+            showToast(t('toasts.materialReadyDownload'), 'success');
           }}
         />
       )}

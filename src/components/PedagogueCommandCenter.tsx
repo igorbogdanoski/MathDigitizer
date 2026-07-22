@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X, Cpu, Network, Target, BookOpen, Microscope
@@ -18,6 +19,7 @@ import {
 import type { SimMessage, CognitiveFingerprint } from './pedagogue-command-center';
 
 export const PedagogueCommandCenter: React.FC = () => {
+  const { t } = useTranslation('pedagogue');
   const {
     isCommandCenterOpen,
     setIsCommandCenterOpen,
@@ -180,20 +182,20 @@ export const PedagogueCommandCenter: React.FC = () => {
           </div>
           <div>
             <h2 className="text-slate-100 font-bold tracking-tight flex items-center gap-2">
-              PEDAGOGUE COMMAND CENTER
-              <span className="text-[10px] bg-indigo-500 text-white px-1.5 py-0.5 rounded font-mono">v4.0.0</span>
+              {t('header.title')}
+              <span className="text-[10px] bg-indigo-500 text-white px-1.5 py-0.5 rounded font-mono">{t('header.version')}</span>
             </h2>
-            <p className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.2em]">Mastery Layer Activation Ready</p>
+            <p className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.2em]">{t('header.subtitle')}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="flex bg-slate-800/50 p-1 rounded-xl border border-slate-700">
             {[
-              { id: 'map', icon: Network, label: 'Knowledge Map' },
-              { id: 'fingerprint', icon: Target, label: 'Cognitive Fingerprint' },
-              { id: 'architect', icon: BookOpen, label: 'Lesson Architect' },
-              { id: 'simulation', icon: Microscope, label: 'Socratic Sim' }
+              { id: 'map', icon: Network, label: t('tabs.knowledgeMap') },
+              { id: 'fingerprint', icon: Target, label: t('tabs.cognitiveFingerprint') },
+              { id: 'architect', icon: BookOpen, label: t('tabs.lessonArchitect') },
+              { id: 'simulation', icon: Microscope, label: t('tabs.socraticSim') }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -214,8 +216,8 @@ export const PedagogueCommandCenter: React.FC = () => {
 
           <button
             onClick={() => setIsCommandCenterOpen(false)}
-            aria-label="Close command center"
-            title="Close command center"
+            aria-label={t('close')}
+            title={t('close')}
             className="p-2 text-slate-400 hover:text-white hover:bg-red-500/10 rounded-lg transition-colors"
           >
             <X className="w-6 h-6" />

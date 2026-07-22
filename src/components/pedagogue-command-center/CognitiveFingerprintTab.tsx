@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import { Activity, Zap, Compass } from 'lucide-react';
 import { MathTask } from '../../lib/schema';
@@ -18,6 +19,7 @@ export const CognitiveFingerprintTab: React.FC<CognitiveFingerprintTabProps> = (
   isAnalyzing,
   onAnalyze,
 }) => {
+  const { t } = useTranslation('pedagogue');
   return (
     <motion.div
       key="fingerprint"
@@ -30,10 +32,10 @@ export const CognitiveFingerprintTab: React.FC<CognitiveFingerprintTabProps> = (
         <div className="flex flex-col justify-center gap-8">
           <div>
             <h2 className="text-4xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent mb-4">
-              Cognitive Fingerprint Analysis
+              {t('fingerprint.title')}
             </h2>
             <p className="text-slate-400 max-w-md leading-relaxed">
-              Every task has a unique pedagogical signature. Our AI engine decodes the multi-dimensional complexity of abstract reasoning.
+              {t('fingerprint.description')}
             </p>
           </div>
 
@@ -45,16 +47,16 @@ export const CognitiveFingerprintTab: React.FC<CognitiveFingerprintTabProps> = (
               className="bg-indigo-600 hover:bg-indigo-700 text-white w-fit group px-8"
             >
               {isAnalyzing ? <Activity className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2 group-hover:animate-pulse" />}
-              {isAnalyzing ? 'Decoding DNA...' : 'Perform Cognitive Autopsy'}
+              {isAnalyzing ? t('fingerprint.analyzing') : t('fingerprint.performAutopsy')}
             </Button>
           ) : (
             <div className="grid grid-cols-2 gap-4">
               {[
-                { label: 'Rigor', value: cognitiveFingerprint.rigor, color: 'indigo' },
-                { label: 'Abstraction', value: cognitiveFingerprint.abstraction, color: 'purple' },
-                { label: 'Connectivity', value: cognitiveFingerprint.connectivity, color: 'blue' },
-                { label: 'Context', value: cognitiveFingerprint.contextuality, color: 'emerald' },
-                { label: 'Effort', value: cognitiveFingerprint.effort, color: 'orange' }
+                { label: t('fingerprint.rigor'), value: cognitiveFingerprint.rigor, color: 'indigo' },
+                { label: t('fingerprint.abstraction'), value: cognitiveFingerprint.abstraction, color: 'purple' },
+                { label: t('fingerprint.connectivity'), value: cognitiveFingerprint.connectivity, color: 'blue' },
+                { label: t('fingerprint.context'), value: cognitiveFingerprint.contextuality, color: 'emerald' },
+                { label: t('fingerprint.effort'), value: cognitiveFingerprint.effort, color: 'orange' }
               ].map(stat => (
                 <div key={stat.label} className="p-4 bg-slate-900 border border-slate-800 rounded-2xl">
                   <div className="text-[10px] text-slate-500 uppercase font-mono mb-1">{stat.label}</div>
@@ -110,7 +112,7 @@ export const CognitiveFingerprintTab: React.FC<CognitiveFingerprintTabProps> = (
           ) : (
             <div className="text-center">
               <Compass className="w-48 h-48 text-slate-800 animate-spin-slow mb-4 mx-auto" strokeWidth={0.5} />
-              <p className="text-slate-600 font-mono text-xs uppercase tracking-widest">Awaiting Analysis...</p>
+              <p className="text-slate-600 font-mono text-xs uppercase tracking-widest">{t('fingerprint.awaitingAnalysis')}</p>
             </div>
           )}
         </div>

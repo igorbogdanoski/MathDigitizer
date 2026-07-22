@@ -1,0 +1,101 @@
+{
+  "header": {
+    "badge": "Laboratori Pedagogjike (Mastery Layer)",
+    "title": "Analiza Konjitive & ZPD",
+    "description": "Diagnostikë matematikore e mbështetur teorikisht bazuar në kornizën eksperte \"Adding It Up\" të National Research Council.",
+    "trackedSubjects": "Subjekte të Ndjekura",
+    "globalIndex": "Indeksi Global"
+  },
+  "loading": "Duke analizuar hapësirën konjitive...",
+  "noData": {
+    "title": "Mungesë e të dhënave empirike",
+    "description": "Qendra për Pedagogji Matematikore kërkon futjen fillestare të vlerësimeve përmes modulit Smart Grader për të ndërtuar profile konjitive të nxënësve."
+  },
+  "strands": {
+    "conceptual": "Konceptuale",
+    "conceptualFull": "Kuptim Konceptual",
+    "procedural": "Procedurale",
+    "proceduralFull": "Fluencë Procedurale",
+    "strategic": "Strategjike",
+    "strategicFull": "Kompetencë Strategjike",
+    "adaptive": "Adaptive",
+    "adaptiveFull": "Arsyetim Adaptiv",
+    "productive": "Dispozitë",
+    "productiveFull": "Dispozitë Produktive"
+  },
+  "momentum": {
+    "title": "Momentum Konjitiv",
+    "deltaFromStart": "Delta nga pika fillestare"
+  },
+  "metacognitive": {
+    "title": "Statusi Metakonjitiv",
+    "criticalAlarm": "Alarm Kritik",
+    "optimalAssimilation": "Asimilim Optimal"
+  },
+  "loadStates": {
+    "optimal": "Ngarkesë optimale (ZPD)",
+    "underestimated": "Konjitivisht i Nënçmuar",
+    "overloaded": "Mbingarkesë Konjitive"
+  },
+  "zpd": {
+    "title": "Kalkulator Interaktiv ZPD",
+    "currentAverage": "Mesatarja Aktuale ({{value}}%)",
+    "momentum": "Progres / Momentum ({{value}})",
+    "scenarioHint": "Ndryshoni vlerat për të simuluar skenarë të ndryshëm dhe për të kontrolluar hapat pedagogjikë të rekomanduar për ndërhyrjen tuaj të radhës.",
+    "targetCapacity": "Kapaciteti i Synuar (ZPD)",
+    "nextSteps": "Hapat e sugjeruar të radhës",
+    "resetToReal": "Kthe te të dhënat reale"
+  },
+  "zpdSteps": {
+    "step1": "Kthim te konceptet bazë. Fokus në konsolidimin e njohurive paraprake përmes detyrave diagnostikuese.",
+    "step2": "Konsolidim me detyra të të njëjtit lloj (Scaffolding). Dozoni ndihmën derisa autonomia të rritet.",
+    "step3": "Prezantim i një koncepti të ri (Zonë e dobët e zhvillimit proksimal). Inkurajoni kalimin drejt zgjidhjes abstrakte.",
+    "step4": "Zgjerim i avancuar! Detyrat duhet të përfshijnë skenarë realë, mendim kritik të lartë dhe vetëvlerësim."
+  },
+  "radar": {
+    "deficit": "Deficit \"Adding It Up\"",
+    "primaryFocus": "Fokusi primar:",
+    "description": "Është identifikuar një deficit në kornizën e kompetencës matematikore. Aktivizoni Mekanizmin e Ndërhyrjes Sokratike për të gjeneruar një plan të saktë ZPD.",
+    "generating": "Duke gjeneruar Plan Metakonjitiv...",
+    "constructPlan": "Ndërto Plan Ndërhyrjeje",
+    "proficiency": "Zotërim"
+  },
+  "leaderboard": {
+    "title": "Tabela Analitike e Renditjes",
+    "description": "Renditje globale sipas Zotërimit Konceptual (Rezultati Mesatar) dhe Momentum",
+    "average": "Mesatarja (0-100)",
+    "totalEvaluations": "Vlerësimet Totale",
+    "cognitiveZpdTarget": "Cognitive ZPD Target:"
+  },
+  "sidebar": {
+    "title": "Profile Konjitive",
+    "selectSubject": "Zgjidhni një subjekt për analizë të thelluar",
+    "evaluations": "Vlerësime:"
+  },
+  "longitudinal": {
+    "title": "Trajektore Konjitive Longitudinale",
+    "conceptualUnderstanding": "Kuptim Konceptual",
+    "proceduralFluency": "Fluencë Procedurale",
+    "momentumVelocity": "Momentum (Velocity)"
+  },
+  "gaps": {
+    "title": "Boshllëqe Kronologjike në Njohuri",
+    "granularAnalysis": "Analizë Granulare e Gabimeve",
+    "incidents": "{{count}} incidente",
+    "noGaps": "Sistemi nuk zbulon gabime strukturore."
+  },
+  "modal": {
+    "title": "Plan Ndërhyrjeje Sokratike (ZPD)",
+    "subject": "Subjekti:",
+    "didacticScript": "Skript Didaktik",
+    "methodologyEngine": "Motori Metodologjik (Gemini 3.1 Pro)",
+    "closePlan": "Mbyll planin",
+    "exportPdf": "Eksporto si .PDF",
+    "closeAria": "Mbyll planin e ndërhyrjes"
+  },
+  "interventionError": "Gabim gjatë gjenerimit të ndërhyrjes.",
+  "proGate": {
+    "featureName": "Advanced Analytics",
+    "description": "Kjo analizë është pjesë e planit Pro. Zhbllokoni atë për sinjale më të thella pedagogjike, tregues konjitivë dhe plane ndërhyrjeje."
+  }
+}

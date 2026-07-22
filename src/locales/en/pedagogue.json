@@ -1,0 +1,75 @@
+{
+  "header": {
+    "title": "PEDAGOGUE COMMAND CENTER",
+    "version": "v4.0.0",
+    "subtitle": "Mastery Layer Activation Ready"
+  },
+  "tabs": {
+    "knowledgeMap": "Knowledge Map",
+    "cognitiveFingerprint": "Cognitive Fingerprint",
+    "lessonArchitect": "Lesson Architect",
+    "socraticSim": "Socratic Sim"
+  },
+  "close": "Close command center",
+  "sidebar": {
+    "targetDataSource": "TARGET DATA SOURCE",
+    "pedagogicalFidelity": "Pedagogical Fidelity",
+    "cognitiveLoadFactor": "Cognitive Load Factor",
+    "high": "High",
+    "metadataStream": "Metadata Stream",
+    "active": "ACTIVE",
+    "selectTask": "Select task to initialize neural mapping",
+    "intelligenceBroadcast": "Intelligence Broadcast",
+    "collapsePanel": "Collapse details panel",
+    "expandPanel": "Expand details panel",
+    "loading": "Loading..."
+  },
+  "fingerprint": {
+    "title": "Cognitive Fingerprint Analysis",
+    "description": "Every task has a unique pedagogical signature. Our AI engine decodes the multi-dimensional complexity of abstract reasoning.",
+    "analyzing": "Decoding DNA...",
+    "performAutopsy": "Perform Cognitive Autopsy",
+    "awaitingAnalysis": "Awaiting Analysis...",
+    "rigor": "Rigor",
+    "abstraction": "Abstraction",
+    "connectivity": "Connectivity",
+    "context": "Context",
+    "effort": "Effort"
+  },
+  "architect": {
+    "title": "Lesson Architect",
+    "description": "AI-generated methodological script specific to the selected task.",
+    "regenerate": "Regenerate",
+    "generateScript": "Generate script",
+    "selectTask": "Select a task to generate a methodological script",
+    "composing": "Composing methodological script...",
+    "clickToGenerate": "Click \"Generate script\" to get a Socratic hook, analogy and instructional sequence for this task.",
+    "socraticHook": "Socratic Hook",
+    "metaphoricBridge": "Metaphoric Bridge",
+    "instructionalSequence": "Instructional Sequence",
+    "saved": "Saved",
+    "saveScript": "Save Script"
+  },
+  "simulation": {
+    "socraticStudent": "Socratic AI Student: SIM-01",
+    "persona": "PERSONA:",
+    "selectTask": "Select a task to start the simulation",
+    "practiceDescription": "Practice Socratic redirection with a virtual student who is \"solving\" the selected task, with the chosen persona.",
+    "startSimulation": "Start simulation",
+    "restartSimulation": "Restart simulation",
+    "inputPlaceholder": "Practice your Socratic redirection here...",
+    "inputHint": "Enter your response to guide the virtual student's intuition",
+    "sendResponse": "Send response"
+  },
+  "personas": {
+    "strugglingAbstraction": "Struggles with abstraction",
+    "quickCareless": "Quick but careless",
+    "mathAnxious": "Math anxiety"
+  },
+  "knowledgeMap": {
+    "legend": "GRAPH LEGEND",
+    "primaryTaskNode": "PRIMARY TASK NODE",
+    "relationshipConnection": "RELATIONSHIP CONNECTION",
+    "prerequisiteDependency": "PREREQUISITE DEPENDENCY"
+  }
+}

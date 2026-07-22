@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Users } from 'lucide-react';
 import { StudentStats } from './types';
 
@@ -9,14 +10,15 @@ export interface StudentMasterySidebarProps {
 }
 
 export const StudentMasterySidebar: React.FC<StudentMasterySidebarProps> = ({ students, activeStudent, onSelect }) => {
+  const { t } = useTranslation('analytics');
   return (
     <div className="xl:col-span-1 bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-5xl overflow-hidden shadow-sm flex flex-col xl:h-[800px] xl:sticky xl:top-6">
       <div className="p-6 border-b border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-white/5 flex flex-col gap-2 shrink-0">
         <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm uppercase tracking-widest flex items-center gap-2">
           <Users className="w-4 h-4 text-indigo-500" />
-          Когнитивни Профили
+          {t('sidebar.title')}
         </h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400">Селектирајте субјект за длабинска анализа</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{t('sidebar.selectSubject')}</p>
       </div>
       <div className="overflow-y-auto flex-1 p-4 space-y-3 custom-scrollbar">
         {students.map((student) => {
@@ -36,7 +38,7 @@ export const StudentMasterySidebar: React.FC<StudentMasterySidebarProps> = ({ st
                   {student.id}
                 </div>
                 <div className={`text-[10px] uppercase font-bold mt-1.5 tracking-wider ${isSelected ? 'text-indigo-400' : 'text-slate-400'}`}>
-                  Евалуации: {student.submissions.length}
+                  {t('sidebar.evaluations')} {student.submissions.length}
                 </div>
               </div>
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg shadow-sm ${

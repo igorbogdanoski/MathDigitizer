@@ -290,8 +290,234 @@ export const Gradebook: React.FC<GradebookProps> = ({ classroomId }) => {
   };
 
   const handleExport = async (format: 'excel' | 'pdf' | 'csv') => {
-    // TODO: Implement export functionality
     showToast(t('exportInProgress', { format: format.toUpperCase() }), 'info');
+
+    try {
+      if (format === 'csv') {
+        exportCsv();
+      } else if (format === 'excel') {
+        exportExcel();
+      } else if (format === 'pdf') {
+        exportPdf();
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      showToast(t('exportError'), 'error');
+    }
+  };
+
+  // ─── Export Helpers ──────────────────────────────────────────────────────
+
+  const escapeCsv = (value: string): string => {
+    if (value.includes(',') || value.includes('"') || value.includes('\n') || value.includes('\r')) {
+      return `"${value.replace(/"/g, '""')}"`;
+    }
+    return value;
+  };
+
+  const formatDate = (iso: string): string => {
+    try {
+      return new Date(iso).toLocaleDateString();
+    } catch {
+      return iso;
+    }
+  };
+
+  const getFileName = (ext: string): string => {
+    return `gradebook_${schoolYear.replace('/', '-')}_term-${selectedTerm}.${ext}`;
+  };
+
+  const downloadBlob = (content: string, mimeType: string, fileName: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportCsv = () => {
+    const headers = [
+      t('student'), t('category'), t('grade'), t('taskTitle'),
+      t('maxPoints'), t('earnedPoints'), t('feedback'), t('date')
+    ];
+
+    const rows: string[] = [headers.map(escapeCsv).join(',')];
+
+    entries.forEach(e => {
+      rows.push([
+        escapeCsv(e.studentName),
+        escapeCsv(CATEGORY_LABELS[e.category] || e.category),
+        String(e.grade),
+        escapeCsv(e.taskTitle || ''),
+        String(e.maxPoints ?? ''),
+        String(e.earnedPoints ?? ''),
+        escapeCsv(e.feedback || ''),
+        escapeCsv(formatDate(e.gradedAt)),
+      ].join(','));
+    });
+
+    // Summary section
+    rows.push('');
+    rows.push(escapeCsv(t('summaryTitle')));
+    rows.push([escapeCsv(t('student')), escapeCsv(t('average')), escapeCsv(t('totalGrades'))].join(','));
+    studentAverages.forEach(s => {
+      rows.push([
+        escapeCsv(s.studentName),
+        s.average.toFixed(2),
+        String(s.totalGrades),
+      ].join(','));
+    });
+
+    downloadBlob(rows.join('\r\n'), 'text/csv;charset=utf-8;', getFileName('csv'));
+    showToast(t('exportSuccess', { format: 'CSV' }), 'success');
+  };
+
+  const exportExcel = () => {
+    const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+<table border="1" cellspacing="0" cellpadding="4">
+  <thead>
+    <tr style="background-color:#4f46e5;color:#fff;font-weight:bold;">
+      <th style="width:180px;">${escapeHtml(t('student'))}</th>
+      <th style="width:120px;">${escapeHtml(t('category'))}</th>
+      <th style="width:60px;">${escapeHtml(t('grade'))}</th>
+      <th style="width:200px;">${escapeHtml(t('taskTitle'))}</th>
+      <th style="width:80px;">${escapeHtml(t('maxPoints'))}</th>
+      <th style="width:80px;">${escapeHtml(t('earnedPoints'))}</th>
+      <th style="width:200px;">${escapeHtml(t('feedback'))}</th>
+      <th style="width:100px;">${escapeHtml(t('date'))}</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${entries.map(e => `<tr>
+      <td>${escapeHtml(e.studentName)}</td>
+      <td>${escapeHtml(CATEGORY_LABELS[e.category] || e.category)}</td>
+      <td style="text-align:center;">${e.grade}</td>
+      <td>${escapeHtml(e.taskTitle || '')}</td>
+      <td style="text-align:center;">${e.maxPoints ?? ''}</td>
+      <td style="text-align:center;">${e.earnedPoints ?? ''}</td>
+      <td>${escapeHtml(e.feedback || '')}</td>
+      <td>${escapeHtml(formatDate(e.gradedAt))}</td>
+    </tr>`).join('\n    ')}
+  </tbody>
+</table>
+<br/>
+<table border="1" cellspacing="0" cellpadding="4">
+  <thead>
+    <tr style="background-color:#059669;color:#fff;font-weight:bold;">
+      <th style="width:180px;">${escapeHtml(t('student'))}</th>
+      <th style="width:80px;">${escapeHtml(t('average'))}</th>
+      <th style="width:80px;">${escapeHtml(t('totalGrades'))}</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${studentAverages.map(s => `<tr>
+      <td>${escapeHtml(s.studentName)}</td>
+      <td style="text-align:center;">${s.average.toFixed(2)}</td>
+      <td style="text-align:center;">${s.totalGrades}</td>
+    </tr>`).join('\n    ')}
+  </tbody>
+</table>
+</body>
+</html>`;
+
+    downloadBlob(html, 'application/vnd.ms-excel;charset=utf-8;', getFileName('xls'));
+    showToast(t('exportSuccess', { format: 'Excel' }), 'success');
+  };
+
+  const escapeHtml = (value: string): string => {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  };
+
+  const exportPdf = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showToast(t('exportError'), 'error');
+      return;
+    }
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${escapeHtml(t('title'))} - ${schoolYear} - ${t('term')} ${selectedTerm}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; color: #1e293b; }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    .meta { color: #64748b; margin-bottom: 24px; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 12px; }
+    th, td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; }
+    th { background-color: #f1f5f9; font-weight: bold; }
+    .summary th { background-color: #ecfdf5; }
+    .grade-cell { text-align: center; font-weight: bold; }
+    @media print { body { margin: 20px; } }
+  </style>
+</head>
+<body>
+  <h1>${escapeHtml(t('title'))}</h1>
+  <p class="meta">${escapeHtml(t('schoolYearLabel'))}: ${schoolYear} &nbsp;|&nbsp; ${escapeHtml(t('term'))}: ${selectedTerm}</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>${escapeHtml(t('student'))}</th>
+        <th>${escapeHtml(t('category'))}</th>
+        <th>${escapeHtml(t('grade'))}</th>
+        <th>${escapeHtml(t('taskTitle'))}</th>
+        <th>${escapeHtml(t('maxPoints'))}</th>
+        <th>${escapeHtml(t('earnedPoints'))}</th>
+        <th>${escapeHtml(t('feedback'))}</th>
+        <th>${escapeHtml(t('date'))}</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${entries.map(e => `<tr>
+        <td>${escapeHtml(e.studentName)}</td>
+        <td>${escapeHtml(CATEGORY_LABELS[e.category] || e.category)}</td>
+        <td class="grade-cell">${e.grade}</td>
+        <td>${escapeHtml(e.taskTitle || '')}</td>
+        <td class="grade-cell">${e.maxPoints ?? ''}</td>
+        <td class="grade-cell">${e.earnedPoints ?? ''}</td>
+        <td>${escapeHtml(e.feedback || '')}</td>
+        <td>${escapeHtml(formatDate(e.gradedAt))}</td>
+      </tr>`).join('\n      ')}
+    </tbody>
+  </table>
+
+  <h2>${escapeHtml(t('summaryTitle'))}</h2>
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>${escapeHtml(t('student'))}</th>
+        <th>${escapeHtml(t('average'))}</th>
+        <th>${escapeHtml(t('totalGrades'))}</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${studentAverages.map(s => `<tr>
+        <td>${escapeHtml(s.studentName)}</td>
+        <td class="grade-cell">${s.average.toFixed(2)}</td>
+        <td class="grade-cell">${s.totalGrades}</td>
+      </tr>`).join('\n      ')}
+    </tbody>
+  </table>
+
+  <script>window.onload = function() { window.print(); };</script>
+</body>
+</html>`;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
   };
 
   const TrendIcon = ({ trend }: { trend: 'improving' | 'stable' | 'declining' }) => {

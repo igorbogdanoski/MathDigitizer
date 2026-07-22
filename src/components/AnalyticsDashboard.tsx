@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -32,15 +33,17 @@ import {
 } from './analytics';
 
 // Advanced Math Pedagogy Strands (Kilpatrick et al., "Adding It Up")
-const MATH_STRANDS: MathStrand[] = [
-  { id: 'conceptual', name: 'Концептуално', full: 'Концептуално Разбирање', color: '#8b5cf6' },
-  { id: 'procedural', name: 'Процедурално', full: 'Процедурална Флуентност', color: '#0ea5e9' },
-  { id: 'strategic', name: 'Стратешко', full: 'Стратешка Компетентност', color: '#10b981' },
-  { id: 'adaptive', name: 'Адаптивно', full: 'Адаптивно Расудување', color: '#f59e0b' },
-  { id: 'productive', name: 'Диспозиција', full: 'Продуктивна Диспозиција', color: '#ec4899' },
-];
+const MATH_STRAND_IDS = ['conceptual', 'procedural', 'strategic', 'adaptive', 'productive'] as const;
+const MATH_STRAND_COLORS: Record<string, string> = {
+  conceptual: '#8b5cf6',
+  procedural: '#0ea5e9',
+  strategic: '#10b981',
+  adaptive: '#f59e0b',
+  productive: '#ec4899',
+};
 
 export const AnalyticsDashboard: React.FC = () => {
+  const { t } = useTranslation('analytics');
   const { user, userProfile } = useAuth();
   const { showToast } = useToast();
   const [submissions, setSubmissions] = useState<GradedSubmission[]>([]);
@@ -190,7 +193,7 @@ export const AnalyticsDashboard: React.FC = () => {
     ].sort((a,b) => a.val - b.val);
 
     const primaryDeficitId = strands[0].id;
-    const primaryDeficitName = MATH_STRANDS.find(s => s.id === primaryDeficitId)?.full || 'Концептуално Разбирање';
+    const primaryDeficitName = t(`strands.${primaryDeficitId}Full`, { defaultValue: t('strands.conceptualFull') });
 
     // Estimating Cognitive Load based on lowest score variance
     let variance = 0;
@@ -198,7 +201,7 @@ export const AnalyticsDashboard: React.FC = () => {
        variance = subs.reduce((acc, s) => acc + Math.pow(s.score - activeStudentData.averageScore, 2), 0) / subs.length;
     }
 
-    const loadState = variance > 400 ? 'Оптимално оптоварување (ZPD)' : (activeStudentData.averageScore > 85 ? 'Когнитивно Потценет' : 'Когнитивно Преоптоварување');
+    const loadState = variance > 400 ? t('loadStates.optimal') : (activeStudentData.averageScore > 85 ? t('loadStates.underestimated') : t('loadStates.overloaded'));
 
     return {
       velocity,
@@ -241,7 +244,7 @@ export const AnalyticsDashboard: React.FC = () => {
       setInterventionPlan(text);
     } catch (e) {
       console.error(e);
-      showToast("Грешка при генерирање интервенција.", 'error');
+      showToast(t('interventionError'), 'error');
     } finally {
       setIsGeneratingPlan(false);
     }
@@ -250,13 +253,13 @@ export const AnalyticsDashboard: React.FC = () => {
   const proficiencyData = useMemo<ProficiencyDataPoint[]>(() => {
     if (!activeStudentAdvancedStats) return [];
     return [
-      { subject: 'Концептуално', A: activeStudentAdvancedStats.conceptAvg, fullMark: 100 },
-      { subject: 'Процедурално', A: activeStudentAdvancedStats.procAvg, fullMark: 100 },
-      { subject: 'Стратешко', A: activeStudentAdvancedStats.strategic, fullMark: 100 },
-      { subject: 'Адаптивно', A: activeStudentAdvancedStats.adaptive, fullMark: 100 },
-      { subject: 'Диспозиција', A: activeStudentAdvancedStats.disposition, fullMark: 100 }
+      { subject: t('strands.conceptual'), A: activeStudentAdvancedStats.conceptAvg, fullMark: 100 },
+      { subject: t('strands.procedural'), A: activeStudentAdvancedStats.procAvg, fullMark: 100 },
+      { subject: t('strands.strategic'), A: activeStudentAdvancedStats.strategic, fullMark: 100 },
+      { subject: t('strands.adaptive'), A: activeStudentAdvancedStats.adaptive, fullMark: 100 },
+      { subject: t('strands.productive'), A: activeStudentAdvancedStats.disposition, fullMark: 100 }
     ];
-  }, [activeStudentAdvancedStats]);
+  }, [activeStudentAdvancedStats, t]);
 
   const longitudinalData = useMemo<LongitudinalDataPoint[]>(() => {
     if (!activeStudentData) return [];
@@ -291,11 +294,11 @@ export const AnalyticsDashboard: React.FC = () => {
   }, [zpdAvg, zpdVel]);
 
   const zpdNextSteps = useMemo(() => {
-    if (zpdVel < -10 || zpdAvg < 40) return "Враќање на основни концепти. Фокус на утврдување претходно знаење преку дијагностички задачи.";
-    if (zpdVel < 5) return "Консолидација со задачи од ист тип (Scaffolding). Дозирајте помош додека самостојноста не се зголеми.";
-    if (zpdVel < 15) return "Внесување на нов концепт (Слаба зона на проксимален развој). Охрабрете премин кон апстрактно решавање.";
-    return "Напредно проширување! Задачите нека вклучуваат реални сценарија, високо критичко мислење и самостојна евалуација.";
-  }, [zpdAvg, zpdVel]);
+    if (zpdVel < -10 || zpdAvg < 40) return t('zpdSteps.step1');
+    if (zpdVel < 5) return t('zpdSteps.step2');
+    if (zpdVel < 15) return t('zpdSteps.step3');
+    return t('zpdSteps.step4');
+  }, [zpdAvg, zpdVel, t]);
 
   const sortedWeaknesses = useMemo<WeaknessEntry[]>(() => {
     if (!activeStudentData) return [];
@@ -307,14 +310,14 @@ export const AnalyticsDashboard: React.FC = () => {
   if (!isPro) {
     return (
       <ProFeatureGate
-        featureName="Advanced Analytics"
-        description="Оваа аналитика е дел од Pro планот. Отклучете ја за подлабоки педагошки сигнали, когнитивни индикатори и интервенциски планови."
+        featureName={t('proGate.featureName')}
+        description={t('proGate.description')}
       />
     );
   }
 
   if (isLoading) {
-    return <div className="p-8 text-center flex items-center justify-center h-96 text-slate-500 font-mono text-sm uppercase tracking-widest animate-pulse">Анализа на когнитивниот простор...</div>;
+    return <div className="p-8 text-center flex items-center justify-center h-96 text-slate-500 font-mono text-sm uppercase tracking-widest animate-pulse">{t('loading')}</div>;
   }
 
   if (submissions.length === 0) {
@@ -323,9 +326,9 @@ export const AnalyticsDashboard: React.FC = () => {
         <div className="w-24 h-24 bg-slate-900 rounded-5xl flex items-center justify-center mx-auto mb-8 shadow-2xl border border-slate-800">
           <Activity className="w-10 h-10 text-indigo-400 animate-pulse" />
         </div>
-        <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">Отсуство на емпириски податоци</h2>
+        <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">{t('noData.title')}</h2>
         <p className="text-slate-500 dark:text-slate-400 text-lg">
-          Центарот за математичка педагогија изискува првично уфрлање на евалуации преку <span className="font-bold text-indigo-600 dark:text-indigo-400">Smart Grader</span> модулот за да конструира когнитив профили на учениците.
+          {t('noData.description')}
         </p>
       </div>
     );
@@ -339,24 +342,24 @@ export const AnalyticsDashboard: React.FC = () => {
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-mono uppercase tracking-[0.2em] mb-6 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
             <Microscope className="w-4 h-4 text-indigo-400" />
-            Педагошка Лабораторија (Mastery Layer)
+            {t('header.badge')}
           </div>
           <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent leading-tight md:leading-tight">
-            Когнитивна Анализа & ZPD
+            {t('header.title')}
           </h1>
           <p className="text-slate-400 text-base md:text-lg leading-relaxed max-w-xl font-light">
-            Теоретски поткрепена математичка дијагностика базирана на експертската рамка <span className="italic text-slate-300">"Adding It Up"</span> на National Research Council.
+            {t('header.description')}
           </p>
         </div>
 
         <div className="relative z-10 hidden lg:flex items-center gap-6 p-6 bg-slate-900/50 rounded-5xl border border-slate-800 backdrop-blur-xl shadow-xl">
            <div className="text-center px-4 border-r border-slate-800">
              <div className="text-5xl font-black text-indigo-400 font-mono tracking-tighter">{studentStats.length}</div>
-             <div className="text-[10px] text-slate-500 uppercase tracking-widest mt-2 font-bold">Следени Субјекти</div>
+             <div className="text-[10px] text-slate-500 uppercase tracking-widest mt-2 font-bold">{t('header.trackedSubjects')}</div>
            </div>
            <div className="text-center px-4">
              <div className="text-5xl font-black text-emerald-400 font-mono tracking-tighter">{classStats.average}<span className="text-2xl">%</span></div>
-             <div className="text-[10px] text-slate-500 uppercase tracking-widest mt-2 font-bold">Глобален Индекс</div>
+             <div className="text-[10px] text-slate-500 uppercase tracking-widest mt-2 font-bold">{t('header.globalIndex')}</div>
            </div>
         </div>
       </div>
@@ -383,11 +386,11 @@ export const AnalyticsDashboard: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <h4 className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Когнитивен Моментум</h4>
+                    <h4 className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">{t('momentum.title')}</h4>
                     <div className="text-5xl font-black text-slate-800 dark:text-white flex items-baseline gap-1 font-mono tracking-tighter">
                       {activeStudentAdvancedStats && activeStudentAdvancedStats.velocity > 0 ? '+' : ''}{activeStudentAdvancedStats?.velocity || 0}
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-4 bg-slate-50 dark:bg-white/5 inline-flex px-3 py-1.5 rounded-lg border border-slate-100 dark:border-white/10">Делта од почетна точка</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-4 bg-slate-50 dark:bg-white/5 inline-flex px-3 py-1.5 rounded-lg border border-slate-100 dark:border-white/10">{t('momentum.deltaFromStart')}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -405,12 +408,12 @@ export const AnalyticsDashboard: React.FC = () => {
                   </div>
                   <div>
                      <h4 className={`text-[10px] font-black uppercase tracking-widest mb-2 ${activeStudentAdvancedStats?.isStruggling ? 'text-rose-400' : 'text-slate-400'}`}>
-                       Метакогнитивен Статус
+                       {t('metacognitive.title')}
                      </h4>
                      <div className="text-2xl font-black text-white mt-1 leading-tight tracking-tight">
-                       {activeStudentAdvancedStats?.isStruggling ? 'Критичен Аларм' : 'Оптимална Асимилација'}
+                       {activeStudentAdvancedStats?.isStruggling ? t('metacognitive.criticalAlarm') : t('metacognitive.optimalAssimilation')}
                      </div>
-                     <p className={`text-[11px] font-bold mt-5 inline-flex items-center px-3 py-1.5 rounded-lg border ${activeStudentAdvancedStats?.loadState.includes('Оптимално') ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border-rose-500/30'}`}>
+                     <p className={`text-[11px] font-bold mt-5 inline-flex items-center px-3 py-1.5 rounded-lg border ${activeStudentAdvancedStats?.loadState.includes(t('loadStates.optimal')) ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border-rose-500/30'}`}>
                         {activeStudentAdvancedStats?.loadState}
                      </p>
                   </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { TrendingUp } from 'lucide-react';
 import {
   ResponsiveContainer, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend,
@@ -13,12 +14,13 @@ export interface LongitudinalChartProps {
 }
 
 export const LongitudinalChart: React.FC<LongitudinalChartProps> = ({ data, isDark }) => {
+  const { t } = useTranslation('analytics');
   return (
     <Card className="bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl border-slate-200 dark:border-white/10 shadow-sm rounded-5xl col-span-1 md:col-span-2">
       <CardContent className="p-8 md:p-10">
         <h3 className="font-black text-slate-800 dark:text-slate-100 text-lg mb-8 flex items-center gap-3 uppercase tracking-widest text-sm">
           <TrendingUp className="w-6 h-6 text-indigo-500" />
-          Лонгитудинална Когнитивна Траекторија
+          {t('longitudinal.title')}
         </h3>
         <div className="h-[350px] w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -43,9 +45,9 @@ export const LongitudinalChart: React.FC<LongitudinalChartProps> = ({ data, isDa
                  labelStyle={{ color: isDark ? '#e2e8f0' : '#1e293b' }}
               />
               <Legend iconType="circle" wrapperStyle={{ paddingTop: '30px', fontSize: '13px', fontWeight: 700 }} />
-              <Area yAxisId="left" type="monotone" name="Концептуално Разбирање" dataKey="concept" stroke="#8b5cf6" strokeWidth={4} fillOpacity={1} fill="url(#colorConcept)" activeDot={{ r: 6, strokeWidth: 0, fill: '#8b5cf6' }} />
-              <Area yAxisId="left" type="monotone" name="Процедурална Флуентност" dataKey="execution" stroke="#0ea5e9" strokeWidth={4} fillOpacity={1} fill="url(#colorExec)" activeDot={{ r: 6, strokeWidth: 0, fill: '#0ea5e9' }} />
-              <Line yAxisId="right" type="monotone" name="Моментум (Velocity)" dataKey="velocity" stroke="#10b981" strokeWidth={3} dot={{ r: 5, fill: '#10b981', strokeWidth: 2, stroke: isDark ? '#0f172a' : '#fff' }} activeDot={{ r: 8 }} />
+              <Area yAxisId="left" type="monotone" name={t('longitudinal.conceptualUnderstanding')} dataKey="concept" stroke="#8b5cf6" strokeWidth={4} fillOpacity={1} fill="url(#colorConcept)" activeDot={{ r: 6, strokeWidth: 0, fill: '#8b5cf6' }} />
+              <Area yAxisId="left" type="monotone" name={t('longitudinal.proceduralFluency')} dataKey="execution" stroke="#0ea5e9" strokeWidth={4} fillOpacity={1} fill="url(#colorExec)" activeDot={{ r: 6, strokeWidth: 0, fill: '#0ea5e9' }} />
+              <Line yAxisId="right" type="monotone" name={t('longitudinal.momentumVelocity')} dataKey="velocity" stroke="#10b981" strokeWidth={3} dot={{ r: 5, fill: '#10b981', strokeWidth: 2, stroke: isDark ? '#0f172a' : '#fff' }} activeDot={{ r: 8 }} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>

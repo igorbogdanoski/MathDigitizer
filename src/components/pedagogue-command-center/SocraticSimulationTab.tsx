@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import {
   Brain, Microscope, Loader2, RefreshCw, Play, User
@@ -32,6 +33,7 @@ export const SocraticSimulationTab: React.FC<SocraticSimulationTabProps> = ({
   onStartSimulation,
   onSendMessage,
 }) => {
+  const { t } = useTranslation('pedagogue');
   const simMessagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,28 +52,28 @@ export const SocraticSimulationTab: React.FC<SocraticSimulationTabProps> = ({
         <header className="px-8 py-4 bg-slate-900/50 border-b border-slate-800 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className={`w-2 h-2 rounded-full ${simStarted ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}`} />
-            <span className="text-xs font-mono text-slate-400 uppercase tracking-widest">Socratic AI Student: SIM-01</span>
+            <span className="text-xs font-mono text-slate-400 uppercase tracking-widest">{t('simulation.socraticStudent')}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-slate-500 font-mono">PERSONA:</span>
+              <span className="text-[10px] text-slate-500 font-mono">{t('simulation.persona')}</span>
               <select
-                title="Student persona"
-                aria-label="Student persona"
+                title={t('simulation.persona')}
+                aria-label={t('simulation.persona')}
                 value={simPersona}
                 onChange={(e) => onPersonaChange(e.target.value)}
                 disabled={isSimLoading}
                 className="bg-slate-800 border-none text-[10px] text-slate-300 rounded px-2 py-1 outline-none"
               >
-                {SIM_PERSONAS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                {SIM_PERSONAS.map(p => <option key={p.id} value={p.id}>{t(p.labelKey)}</option>)}
               </select>
             </div>
             {simStarted && (
               <button
                 onClick={onStartSimulation}
                 disabled={isSimLoading}
-                title="Рестартирај симулација"
-                aria-label="Рестартирај симулација"
+                title={t('simulation.restartSimulation')}
+                aria-label={t('simulation.restartSimulation')}
                 className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -84,14 +86,14 @@ export const SocraticSimulationTab: React.FC<SocraticSimulationTabProps> = ({
           {!task ? (
             <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
               <Microscope className="w-12 h-12 text-slate-600 mb-4" />
-              <p className="text-xs text-slate-500 uppercase tracking-widest">Изберете задача за да ја стартувате симулацијата</p>
+              <p className="text-xs text-slate-500 uppercase tracking-widest">{t('simulation.selectTask')}</p>
             </div>
           ) : !simStarted ? (
             <div className="h-full flex flex-col items-center justify-center text-center gap-4">
-              <p className="text-slate-400 text-sm max-w-md">Вежбајте Сократовско пренасочување со виртуелен ученик кој ја „решава" избраната задача, со избраната персона.</p>
+              <p className="text-slate-400 text-sm max-w-md">{t('simulation.practiceDescription')}</p>
               <Button onClick={onStartSimulation} disabled={isSimLoading} className="bg-indigo-600 hover:bg-indigo-700 text-white">
                 {isSimLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
-                Започни симулација
+                {t('simulation.startSimulation')}
               </Button>
             </div>
           ) : (
@@ -129,19 +131,19 @@ export const SocraticSimulationTab: React.FC<SocraticSimulationTabProps> = ({
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSendMessage(); } }}
               disabled={!simStarted || isSimLoading}
               className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-6 py-4 text-sm text-slate-200 placeholder:text-slate-600 focus:border-indigo-500 transition-colors outline-none pr-12 disabled:opacity-40"
-              placeholder="Practice your Socratic redirection here..."
+              placeholder={t('simulation.inputPlaceholder')}
             />
             <button
               onClick={onSendMessage}
               disabled={!simStarted || isSimLoading || !simInput.trim()}
-              title="Send response"
-              aria-label="Send response"
+              title={t('simulation.sendResponse')}
+              aria-label={t('simulation.sendResponse')}
               className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-40 transition-colors"
             >
               <Play className="w-4 h-4 text-white" />
             </button>
           </div>
-          <p className="text-[10px] text-slate-600 mt-2 text-center uppercase tracking-tighter">Enter your response to guide the virtual student's intuition</p>
+          <p className="text-[10px] text-slate-600 mt-2 text-center uppercase tracking-tighter">{t('simulation.inputHint')}</p>
         </div>
       </div>
     </motion.div>

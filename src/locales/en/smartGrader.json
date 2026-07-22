@@ -1,0 +1,75 @@
+{
+  "header": {
+    "badge": "Highly-paid Specialized Mentor",
+    "title": "AI Tutor & Smart Grader",
+    "subtitle": "Automatic visual analysis of handwriting that works as a Valid Expert Mentor. It shows good and bad sides, detects errors and generates a points format."
+  },
+  "mode": {
+    "title": "Grading Mode",
+    "singleTask": "Single Task",
+    "batchWholeTest": "Batch (Whole Test)",
+    "searchLibrary": "Search library...",
+    "autoSegmenting": "Automatic Segmentation",
+    "autoSegmentingDesc": "You don't have to pick a specific task. Photograph a whole page of the student's test. The algorithm will detect all tasks, segment them and grade them one by one automatically."
+  },
+  "upload": {
+    "title": "Handwriting Image",
+    "selectImageAria": "Select image for grading",
+    "studentWorkAlt": "Student Work",
+    "changeImage": "Change Image",
+    "enterStudentName": "Enter student name (e.g. Marko M.)",
+    "attachHandwriting": "Attach handwriting",
+    "attachDesc": "Photograph the student's test or notebook for automatic checking.",
+    "selectFile": "Select File"
+  },
+  "analysis": {
+    "title": "Analysis",
+    "analyzing": "Analyzing...",
+    "gradeHandwriting": "Grade handwriting",
+    "emptyState": "Select an image to generate automatic feedback and a grade based on Bloom's Taxonomy.",
+    "readingSteps": "Reading the steps...",
+    "comparingHandwriting": "Comparing the handwriting with the algorithm",
+    "batchSuccess": "Successful Batch Analysis",
+    "batchDetected": "The algorithm detected and graded a total of <strong>{{count}}</strong> tasks from the image."
+  },
+  "bloom": {
+    "label": "Bloom: {{level}}",
+    "remember": "Remember",
+    "understand": "Understand",
+    "apply": "Apply",
+    "analyze": "Analyze",
+    "evaluate": "Evaluate",
+    "create": "Create"
+  },
+  "result": {
+    "detectedTask": "Detected Task {{index}}",
+    "noTaskText": "No task text found.",
+    "outOf100": "out of 100",
+    "solvingStatus": "Solving status",
+    "selectedMetric": "Selected metric:",
+    "identifiedErrors": "Identified Errors",
+    "noErrors": "No errors found. The task is solved correctly.",
+    "formativeRubric": "Formative Rubric",
+    "concept": "Concept",
+    "execution": "Execution",
+    "communication": "Communication",
+    "inspirationalMentor": "Inspirational AI Mentor",
+    "doneWell": "What was done EXCELLENTLY",
+    "whereBreaks": "Where the algorithm breaks",
+    "suggestions": "Suggestions",
+    "generatePractice": "Generate Practice Tasks",
+    "createPersonalized": "Create personalized tasks focused on:",
+    "generatingTasks": "Generating tasks...",
+    "generateHomework": "Generate Homework",
+    "personalizedTasks": "Personalized Tasks:",
+    "taskNumber": "Task {{index}}"
+  },
+  "toasts": {
+    "imageTooLarge": "The image is too large. Please attach an image smaller than 5MB.",
+    "practiceGenError": "An error occurred while generating the tasks.",
+    "enterStudentId": "Enter a student name or identifier to save the analytics.",
+    "gradeSaved": "The grade has been saved to the gradebook",
+    "batchGradesSaved": "{{count}} grades have been saved to the gradebook",
+    "analysisError": "An error occurred during analysis. Please try again."
+  }
+}
