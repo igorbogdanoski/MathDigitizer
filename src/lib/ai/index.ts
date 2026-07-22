@@ -31,7 +31,3 @@ export * from './chat';
 export * from './kahoot';
 export * from './embeddings';
 export * from './utils';
-
-// Re-export everything from gemini.ts for backward compatibility
-// (includes any functions not yet categorized into domain modules)
-export * from '../gemini';

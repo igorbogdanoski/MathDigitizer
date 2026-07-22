@@ -36,10 +36,32 @@ export function apiUrl(path: string): string {
   return `${getApiBaseUrl()}${path}`;
 }
 
+// Get Firebase ID token for authenticated API requests
+async function getAuthToken(): Promise<string | null> {
+  try {
+    const { auth } = await import('../firebase');
+    const user = auth.currentUser;
+    if (user) {
+      return await user.getIdToken();
+    }
+  } catch (e) {
+    console.warn('Failed to get auth token:', e);
+  }
+  return null;
+}
+
 export async function postJson(url: string, payload: any) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+  // Add auth token for /api/ai/* routes
+  const token = await getAuthToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(apiUrl(url), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(payload ?? {})
   });
 
