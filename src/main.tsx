@@ -14,7 +14,9 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0,
   replaysSessionSampleRate: 0.05,
   integrations: [
-    Sentry.replayIntegration({ maskAllText: false, blockAllMedia: false }),
+    // EdTech app handling student data — mask all text and block media in
+    // session replays so no personal/student content is ever recorded.
+    Sentry.replayIntegration({ maskAllText: true, blockAllMedia: true }),
   ],
 });
 
