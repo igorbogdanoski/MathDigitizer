@@ -10,6 +10,7 @@ import { PromptStrategy, buildPromptEnvelope, buildRagTaskContext } from "./prom
 import { buildRagContextFromLibrary } from "./ragContext";
 import { searchCurriculumKeyword, buildCurriculumChunkText, ALL_MK_CURRICULUM } from "./curriculumData";
 import { searchCurriculum, formatCurriculumContext } from "./curriculumKnowledge";
+import { PRO_MODEL, DEFAULT_MODEL, FAST_MODEL, TTS_MODEL, IMAGE_MODEL, EMBEDDING_MODEL } from "./ai/models";
 
 // ─── Curriculum RAG helper (synchronous — no extra API call) ─────────────────
 function buildCurriculumContextBlock(query: string, gradeHint?: string): string {
@@ -201,7 +202,7 @@ function handleGeminiError(error: any): never {
 export async function generateTaskEmbedding(text: string): Promise<number[]> {
   try {
     const response = await ai.models.embedContent({
-      model: "gemini-embedding-2",
+      model: EMBEDDING_MODEL,
       contents: text
     });
     
@@ -342,7 +343,7 @@ ${MATH_PLOT_INSTRUCTION}
     });
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: PRO_MODEL,
       contents: contents,
       config: {
         responseMimeType: "application/json",
@@ -404,7 +405,7 @@ ${tasks.map((t, i) => `Задача ${i+1}:\nТекст: ${t.original_text}\nР�
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: instructions,
       config: {
         responseMimeType: "application/json",
@@ -457,7 +458,7 @@ export async function generateSpeech(text: string): Promise<string> {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-flash-tts-preview",
+      model: TTS_MODEL,
       contents: [{ parts: [{ text: transliteratedText }] }],
       config: {
         responseModalities: [Modality.AUDIO],
@@ -520,7 +521,7 @@ export async function generateInterventionTasks(
 
   try {
     const result = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -573,7 +574,7 @@ export async function getTutorChatSession(task: MathTask, relatedTasks?: MathTas
     ЈАЗИК: Професионален, но топол и охрабрувачки македонски јазик.`;
 
   const chat = ai.chats.create({
-    model: "gemini-3.1-pro-preview",
+    model: PRO_MODEL,
     config: {
       systemInstruction: systemInstruction,
       temperature: 0.2, // Very low temperature to strictly adhere to the Socratic rules
@@ -589,7 +590,7 @@ export async function generateLessonArchitectScript(task: MathTask, language: st
     : `Respond in ${language}.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: FAST_MODEL,
     contents: `Ти си експерт за методика на настава по математика. За следнава задача, состави краток методолошки скрипт за час:
 
 Наслов: ${task.title}
@@ -661,7 +662,7 @@ export async function getSocraticSimulationSession(task: MathTask, persona: stri
 Отвори го разговорот со ЕДНО кратко прашање/забуна за задачата (не поздрав, право на суштината), консистентно со твојата персона.`;
 
   const chat = ai.chats.create({
-    model: "gemini-3-flash-preview",
+    model: FAST_MODEL,
     config: {
       systemInstruction,
       temperature: 0.8,
@@ -692,7 +693,7 @@ ${JSON.stringify(tasks.map(t => ({ title: t.title, text: t.original_text, topic:
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -750,7 +751,7 @@ ${originalTask.original_text}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -782,7 +783,7 @@ ${originalTask.original_text}
   }
 }
 
-export async function enrichTaskPedagogy(task: MathTask, model: string = "gemini-3.1-pro-preview", outputLanguageOverride?: string): Promise<any> {
+export async function enrichTaskPedagogy(task: MathTask, model: string = PRO_MODEL, outputLanguageOverride?: string): Promise<any> {
   const lang = outputLanguageOverride || task.detected_language || 'mk';
   const langName: Record<string, string> = {
     mk: 'Macedonian (Кирилица — ЗАДОЛЖИТЕЛНО)',
@@ -871,7 +872,7 @@ Return STRICTLY a JSON object with all fields populated.`;
   }
 }
 
-export async function extractMathTasksFromPdf(base64Pdf: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, modelName: string = 'gemini-3.1-pro-preview'): Promise<MathTask[]> {
+export async function extractMathTasksFromPdf(base64Pdf: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, modelName: string = PRO_MODEL): Promise<MathTask[]> {
   const prompt = `Ти си експерт за дигитализација на математички текстови, креатор на "Advanced Vision OCR" и Едукативен Технолог (EdTech).
 Анализирај го приложениот документ кој може да биде скан од стар учебник, испит, документ со графици или документ со комплексен табеларен распоред.
 
@@ -980,7 +981,7 @@ ${originalTask.original_text}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -1103,7 +1104,7 @@ ${languagePrompt}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -1154,7 +1155,7 @@ export async function generateEducationalMaterial(tasks: MathTask[], type: Mater
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -1198,7 +1199,7 @@ export async function autoGradeSubmission(
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -1222,7 +1223,7 @@ function formatTimeFromMs(ms: number): string {
 
 export async function advancedMultimodalExtraction(
   source: { type: 'url' | 'file' | 'text'; data: string; mimeType?: string },
-  model: string = "gemini-3.1-pro-preview",
+  model: string = PRO_MODEL,
   customInstructions: string = ""
 ): Promise<MathTask[]> {
   const prompt = `Ти си "Extraction Architect" од светска класа и експерт за Мултијазичен OCR. Твојата мисија е ПЕРФЕКТНО извлекување на математички содржини (задачи и теорија) од дадениот извор.
@@ -1392,7 +1393,7 @@ export async function generateCurriculumTasks(
     });
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: PRO_MODEL,
       contents: orchestratedPrompt,
       config: {
         temperature: 0.7,
@@ -1432,7 +1433,7 @@ async function fetchYoutubeTranscriptViaGemini(
       : '';
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3.5-flash',
+    model: DEFAULT_MODEL,
     contents: [
       { fileData: { fileUri: url } },
       {
@@ -1450,7 +1451,7 @@ Rules:
   return transcript;
 }
 
-export async function extractMathTasksFromUrl(url: string, model: string = "gemini-3.1-pro-preview", timeRange?: {start: string, end: string}, manualTranscript?: string, instructions?: string, outputLanguage?: string): Promise<MathTask[]> {
+export async function extractMathTasksFromUrl(url: string, model: string = PRO_MODEL, timeRange?: {start: string, end: string}, manualTranscript?: string, instructions?: string, outputLanguage?: string): Promise<MathTask[]> {
   let timeContext = "";
   if (timeRange && (timeRange.start || timeRange.end)) {
     timeContext = `\nВНИМАНИЕ: Фокусирај се ИСКЛУЧИВО на делот од видеото/содржината од ${timeRange.start || 'почеток'} до ${timeRange.end || 'крај'}. Игнорирај го останатиот дел.`;
@@ -1630,7 +1631,7 @@ RULES:
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         systemInstruction,
@@ -1671,7 +1672,7 @@ ${description}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         temperature: 0.3,
@@ -1691,7 +1692,7 @@ export async function generateImage(prompt: string, gradeLevel?: string): Promis
     const styleModifier = `Style: Modern, colorful, and engaging educational vector illustration. White background, crisp lines, perfect composition. No mathematical symbols or text in the image.`;
     
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-flash-image",
+      model: IMAGE_MODEL,
       contents: {
         parts: [
           {
@@ -1718,7 +1719,7 @@ export async function generateImage(prompt: string, gradeLevel?: string): Promis
   }
 }
 
-export async function extractMathTasksFromImage(base64Image: string, mimeType: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, model: string = "gemini-3.1-pro-preview"): Promise<MathTask[]> {
+export async function extractMathTasksFromImage(base64Image: string, mimeType: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, model: string = PRO_MODEL): Promise<MathTask[]> {
   const curriculumCtx = await buildCurriculumContextBlockRag('математика македонски наставна програма');
   const prompt = `Ти си Врвен Светски Експерт за Дигитализација на Математика, "Advanced Vision OCR" и Едукативен Технолог (EdTech).
 ${curriculumCtx ? `\n${curriculumCtx}\n` : ''}
@@ -1820,7 +1821,7 @@ ${userStep}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -1867,7 +1868,7 @@ ${ALGEBRA_TILES_INSTRUCTION}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
     });
 
@@ -1893,7 +1894,7 @@ export async function modernizeTaskContext(task: MathTask): Promise<MathTask> {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -1941,7 +1942,7 @@ ${task.pedagogical_insights?.teaching_strategy}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2003,7 +2004,7 @@ ${task.pedagogical_insights?.prerequisites?.join(', ')}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2096,7 +2097,7 @@ ${studentHistory ? `ИСТОРИЈА И АНАЛИТИКА НА УЧЕНИКОТ
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview", // Use pro for spatial multimodal
+      model: PRO_MODEL, // Use pro for spatial multimodal
       contents: [
         { text: prompt },
         { inlineData: { data: base64Image, mimeType: mimeType } }
@@ -2198,7 +2199,7 @@ ${studentHistory ? `\nИСТОРИЈА И АНАЛИТИКА НА УЧЕНИКО
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: PRO_MODEL,
       contents: [
         { text: prompt },
         { inlineData: { data: base64Image, mimeType: mimeType } }
@@ -2268,7 +2269,7 @@ ${originalTask.original_text}
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2351,7 +2352,7 @@ ${tasks.map((t, idx) => `[Задача ${idx+1}]\nНаслов: ${t.title}\nТе
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -2384,7 +2385,7 @@ export async function generateFlashcards(topic: string, count: number = 5): Prom
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2432,7 +2433,7 @@ export async function generateFlawedMathProblem(topic: string, difficulty: strin
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2466,7 +2467,7 @@ export async function generateTwoCritiques(topic: string): Promise<any> {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2502,7 +2503,7 @@ export async function generateHoaxProof(): Promise<any> {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -2524,7 +2525,7 @@ export async function generateHoaxProof(): Promise<any> {
 export async function generateInterventionPlan(prompt: string): Promise<string> {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         systemInstruction: 'Ти си врвен македонски методолог и дидактичар по математика, експерт во теоријата на Свелер за когнитивно оптоварување и рамката на Килпатрик.',
@@ -2540,7 +2541,7 @@ export async function generateInterventionPlan(prompt: string): Promise<string> 
 export async function generateCurriculumModule(prompt: string): Promise<any> {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -2586,7 +2587,7 @@ export async function enhancePedagogueTask(prompt: string, language: string = 'm
   const fullPrompt = `${prompt}\n\nIMPORTANT: Write ALL output text in ${langNames[language] || 'Macedonian'}. Keep LaTeX formulas ($...$, $$...$$) unchanged.`;
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
+      model: DEFAULT_MODEL,
       contents: fullPrompt,
       config: {
         responseMimeType: 'application/json',
@@ -2611,7 +2612,7 @@ export async function enhancePedagogueTask(prompt: string, language: string = 'm
 export async function recognizeHandwrittenMath(base64Png: string): Promise<string> {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
+      model: PRO_MODEL,
       contents: [
         'Tease out ONLY the LaTeX formula from the handwriting on this whiteboard image. Do NOT include markdown backticks like ```latex . Return just the plain string.',
         { inlineData: { data: base64Png, mimeType: 'image/png' } },
@@ -2626,7 +2627,7 @@ export async function recognizeHandwrittenMath(base64Png: string): Promise<strin
 export async function checkGeminiHealth(): Promise<boolean> {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: FAST_MODEL,
       contents: 'reply with only the word OK',
     });
     return Boolean(response.text?.includes('OK'));
@@ -2689,7 +2690,7 @@ export async function analyzeGraphWithAI(
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
+      model: PRO_MODEL,
       contents: [prompt, { inlineData: { data: base64, mimeType } }],
       config: {
         responseMimeType: 'application/json',
@@ -2814,7 +2815,7 @@ ${languagePrompt}
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: 'application/json',

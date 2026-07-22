@@ -10,6 +10,7 @@ import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { MathTask } from '../lib/schema';
 import { extractMathTasksFromUrl, generateImage, generateMathGraphicConfig, advancedMultimodalExtraction, enrichTaskPedagogy, generateTaskEmbedding } from '../lib/gemini';
+import { PRO_MODEL, FLASH_36_MODEL, FAST_MODEL, LITE_MODEL } from '../lib/ai/models';
 import { exportToJson, exportToLatex, exportToMarkdown, exportToTxt } from '../lib/export';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -50,7 +51,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
   const [textInput, setTextInput] = useState('');
   const [sourceType, setSourceType] = useState<'url' | 'file' | 'text'>('url');
   const [fileData, setFileData] = useState<{base64: string, mimeType: string, name: string} | null>(null);
-  const [model, setModel] = useState('gemini-3.1-pro-preview');
+  const [model, setModel] = useState(PRO_MODEL);
   
   // Progress States
   const [statusText, setStatusText] = useState<string>('');
@@ -627,10 +628,10 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                       aria-label="AI модел"
                       className="h-10 px-3 rounded-xl bg-white/10 border border-white/20 text-indigo-50 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 [&>option]:text-slate-800 backdrop-blur-sm cursor-pointer hover:bg-white/20 transition-colors"
                     >
-                      <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (World-Class)</option>
-                      <option value="gemini-3.6-flash">Gemini 3.6 Flash (Newest)</option>
-                      <option value="gemini-3-flash-preview">Gemini 3 Flash (Fast)</option>
-                      <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (Economy)</option>
+                      <option value={PRO_MODEL}>Gemini 3.1 Pro (World-Class)</option>
+                      <option value={FLASH_36_MODEL}>Gemini 3.6 Flash (Newest)</option>
+                      <option value={FAST_MODEL}>Gemini 3 Flash (Fast)</option>
+                      <option value={LITE_MODEL}>Gemini 3.5 Flash Lite (Economy)</option>
                     </select>
                     <div className="flex items-center gap-1.5">
                       <Globe className="w-4 h-4 text-indigo-300 shrink-0" />
