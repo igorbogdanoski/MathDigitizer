@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MathTask } from '../../lib/schema';
 import { Card, CardContent } from '../ui/Card';
 import { GripVertical, Check, Trash2, Edit3, Copy } from 'lucide-react';
@@ -40,6 +41,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onDrop,
   renderDetailContent
 }) => {
+  const { t } = useTranslation('library');
   const [latexCopied, setLatexCopied] = useState(false);
 
   const handleCopyLatex = (e: React.MouseEvent) => {
@@ -83,12 +85,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           )}
           <div className="flex flex-col gap-2.5">
             <span className="font-bold text-slate-800 dark:text-slate-100 text-[15px] leading-tight line-clamp-2 pr-6">
-              {task.type === 'theory' ? `Теорија: ${task.title}` : task.title}
+              {task.type === 'theory' ? `${t('theory')}: ${task.title}` : task.title}
             </span>
             <div className="flex flex-wrap gap-1.5">
               {task.type === 'theory' && (
                 <span className="text-[9px] font-medium uppercase tracking-wider bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-full">
-                  Теорија
+                  {t('theory')}
                 </span>
               )}
               {task.tags?.slice(0, 2).map((tag, i) => (
@@ -115,7 +117,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           <button
             onClick={handleCopyLatex}
             className={`p-1.5 rounded-md transition-colors flex-shrink-0 ${latexCopied ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10' : 'text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'}`}
-            title="Копирај LaTeX"
+            title={t('copyLatex')}
           >
             {latexCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           </button>
@@ -123,7 +125,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             data-testid={`task-edit-${taskId}`}
             onClick={onEdit}
             className="p-1.5 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-md transition-colors flex-shrink-0"
-            title="Уреди задача"
+            title={t('editTask')}
           >
             <Edit3 className="w-4 h-4" />
           </button>
@@ -131,7 +133,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             data-testid={`task-delete-${taskId}`}
             onClick={onDelete}
             className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-rose-500/10 rounded-md transition-colors flex-shrink-0"
-            title="Избриши задача"
+            title={t('deleteTask')}
           >
             <Trash2 className="w-4 h-4" />
           </button>

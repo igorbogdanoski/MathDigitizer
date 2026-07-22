@@ -1,4 +1,5 @@
 import React, { lazy, Suspense, useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Image as ImageIcon, Copy, Check, Loader2,
   FileText, Code, Save, ScanLine, PenTool
@@ -22,6 +23,7 @@ import { BatchResultsList } from './smart-ocr/BatchResultsList';
 import { OCRResultPreview } from './smart-ocr/OCRResultPreview';
 
 export const SmartOCR: React.FC = () => {
+  const { t } = useTranslation('smartOcr');
 
   const [activeTab, setActiveTab] = useState<'upload' | 'draw'>('upload');
 
@@ -111,7 +113,7 @@ export const SmartOCR: React.FC = () => {
   const processFile = (file: File) => {
     const isDocx = file.name.endsWith('.docx') || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     if (!file.type.startsWith('image/') && file.type !== 'application/pdf' && !isDocx) {
-      showToast('Ве молиме прикачете слика (JPG, PNG), PDF или Word (.docx) документ.', 'error');
+      showToast(t('toasts.invalidFile'), 'error');
       return;
     }
     setMimeType(file.type || (isDocx ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : ''));
@@ -155,8 +157,8 @@ export const SmartOCR: React.FC = () => {
 
     setIsScanning(false);
     setBatchProgress(null);
-    if (all.length > 0) showToast(`Batch: ${all.length} задачи извлечени од ${arr.length} слики`, 'success');
-    else showToast('Не се пронајдени задачи во ниту една слика.', 'error');
+    if (all.length > 0) showToast(t('toasts.batchSuccess', { count: all.length, total: arr.length }), 'success');
+    else showToast(t('toasts.batchEmpty'), 'error');
   };
 
   const handleSaveAll = async () => {
@@ -164,17 +166,17 @@ export const SmartOCR: React.FC = () => {
     setIsSaving(true);
     try {
       await Promise.all(
-        batchTasks.map(t =>
+        batchTasks.map(task =>
           addDoc(collection(db, 'tasks'), {
-            ...t,
+            ...task,
             author_uid: auth.currentUser!.uid,
             created_at: new Date().toISOString()
           })
         )
       );
-      showToast(`${batchTasks.length} задачи зачувани во Библиотеката!`, 'success');
+      showToast(t('toasts.batchSaved', { count: batchTasks.length }), 'success');
     } catch {
-      showToast('Грешка при зачувување.', 'error');
+      showToast(t('toasts.saveError'), 'error');
     } finally {
       setIsSaving(false);
     }
@@ -222,7 +224,7 @@ export const SmartOCR: React.FC = () => {
       }
 
       if (!result || result.length === 0) {
-        throw new Error("Не се пронајдени задачи на оваа слика.");
+        throw new Error(t('toasts.noTasksFound'));
       }
 
       const task = result[0];
@@ -234,10 +236,10 @@ export const SmartOCR: React.FC = () => {
         formattedText += '\n\n**Решение:**\n' + task.solution_steps.join('\n');
       }
       setLatexCode(formattedText);
-      showToast('Сликата е успешно дигитализирана!', 'success');
+      showToast(t('toasts.scanSuccess'), 'success');
     } catch (error) {
       console.error("Грешка при скенирање:", error);
-      showToast('Настана грешка при скенирањето. Обидете се со појасна слика.', 'error');
+      showToast(t('toasts.scanError'), 'error');
     } finally {
       setIsScanning(false);
     }
@@ -247,7 +249,7 @@ export const SmartOCR: React.FC = () => {
     navigator.clipboard.writeText(latexCode);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
-    showToast('Кодот е копиран во клипборд.', 'success');
+    showToast(t('toasts.codeCopied'), 'success');
   };
 
   const handleExtractCrop = () => {
@@ -305,10 +307,10 @@ export const SmartOCR: React.FC = () => {
       };
 
       await addDoc(collection(db, 'tasks'), taskToSave);
-      showToast('Задачата е успешно зачувана во Библиотеката!', 'success');
+      showToast(t('toasts.taskSaved'), 'success');
     } catch (error) {
       console.error("Грешка при зачувување:", error);
-      showToast('Настана грешка при зачувувањето.', 'error');
+      showToast(t('toasts.taskSaveError'), 'error');
     } finally {
       setIsSaving(false);
     }
@@ -320,10 +322,10 @@ export const SmartOCR: React.FC = () => {
     try {
       const insights = await enrichTaskPedagogy(extractedTask as MathTask, ocrModel);
       setExtractedTask({ ...extractedTask, pedagogical_insights: insights });
-      showToast('Педагошките елементи се успешно генерирани!', 'success');
+      showToast(t('toasts.enrichSuccess'), 'success');
     } catch (error: any) {
       console.error("Грешка при збогатување:", error);
-      showToast(error.message || 'Настана грешка при генерирање на педагогијата.', 'error');
+      showToast(error.message || t('toasts.enrichError'), 'error');
     } finally {
       setIsEnriching(false);
     }
@@ -345,9 +347,9 @@ export const SmartOCR: React.FC = () => {
   return (
     <div className="flex flex-col min-h-[calc(100vh-100px)] lg:h-[calc(100vh-100px)] max-w-7xl mx-auto p-4 space-y-4 lg:space-y-6 animate-in fade-in duration-500">
       <SEO
-        title="Smart OCR & Проверка на ракопис"
-        description="Специјализиран модел за препознавање македонски ракопис и стари кирилични учебници. Напредна AI OCR технологија."
-        keywords="ocr, математика, ракопис, скенирање, gemini vision, ai, македонски математика OCR"
+        title={t('seo.title')}
+        description={t('seo.description')}
+        keywords={t('seo.keywords')}
       />
       {/* Header / Toolbar */}
       <div className="flex flex-col gap-4">
@@ -357,8 +359,8 @@ export const SmartOCR: React.FC = () => {
               <ScanLine className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-900 dark:text-white font-display tracking-tight">Advanced Vision OCR</h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Специјализиран за ракопис, оштетен текст и стари учебници</p>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white font-display tracking-tight">{t('header.title')}</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{t('header.subtitle')}</p>
             </div>
           </div>
 
@@ -372,7 +374,7 @@ export const SmartOCR: React.FC = () => {
               }`}
             >
               <ImageIcon className="w-4 h-4" />
-              Слика / PDF
+              {t('tabs.upload')}
             </button>
             <button
               onClick={() => setActiveTab('draw')}
@@ -383,7 +385,7 @@ export const SmartOCR: React.FC = () => {
               }`}
             >
               <PenTool className="w-4 h-4" />
-              Ракопис
+              {t('tabs.draw')}
             </button>
           </div>
         </div>
@@ -438,7 +440,7 @@ export const SmartOCR: React.FC = () => {
                 className={viewMode === 'preview' ? 'bg-indigo-600 text-white' : 'text-slate-600'}
               >
                 <FileText className="w-4 h-4 mr-2" />
-                Преглед
+                {t('view.preview')}
               </Button>
               <Button
                 variant={viewMode === 'code' ? 'default' : 'ghost'}
@@ -447,7 +449,7 @@ export const SmartOCR: React.FC = () => {
                 className={viewMode === 'code' ? 'bg-indigo-600 text-white' : 'text-slate-600'}
               >
                 <Code className="w-4 h-4 mr-2" />
-                LaTeX Код
+                {t('view.latexCode')}
               </Button>
             </div>
 
@@ -460,7 +462,7 @@ export const SmartOCR: React.FC = () => {
                 className="border-slate-200 dark:border-slate-700"
               >
                 {isCopied ? <Check className="w-4 h-4 mr-2 text-emerald-500" /> : <Copy className="w-4 h-4 mr-2" />}
-                {isCopied ? 'Копирано' : 'Копирај'}
+                {isCopied ? t('view.copied') : t('view.copy')}
               </Button>
               <Button
                 variant="default"
@@ -470,7 +472,7 @@ export const SmartOCR: React.FC = () => {
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                Зачувај
+                {t('view.save')}
               </Button>
             </div>
           </div>
@@ -490,7 +492,7 @@ export const SmartOCR: React.FC = () => {
                 <div className="mb-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
-                      Обработка на слики...
+                      {t('view.processingImages')}
                     </span>
                     <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
                       {batchProgress.done} / {batchProgress.total}
@@ -504,10 +506,10 @@ export const SmartOCR: React.FC = () => {
                   </div>
                   <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-2">
                     {batchProgress.done === 0
-                      ? 'Започнување...'
+                      ? t('view.starting')
                       : batchProgress.done < batchProgress.total
-                        ? `Обработена слика ${batchProgress.done} од ${batchProgress.total}...`
-                        : 'Завршено!'}
+                        ? t('view.processedImage', { done: batchProgress.done, total: batchProgress.total })
+                        : t('view.done')}
                   </p>
                 </div>
               )}
@@ -524,14 +526,14 @@ export const SmartOCR: React.FC = () => {
               ) : !latexCode && !isScanning ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400">
                   <FileText className="w-16 h-16 mb-4 opacity-20" />
-                  <p>Дигитализираниот текст ќе се појави овде</p>
+                  <p>{t('view.emptyState')}</p>
                 </div>
               ) : (
                 viewMode === 'code' ? (
                   <div className="flex flex-col h-full gap-4">
                     <div className="flex-none hidden xl:block">
-                      <p className="text-xs text-slate-500 mb-2">Напреден Математички Едитор (За вметнување равенки во кодот, копирај го резултатот тука и вметни го со $\dots$):</p>
-                      <Suspense fallback={<div className="text-xs text-slate-400 py-2">Вчитување на математички едитор...</div>}>
+                      <p className="text-xs text-slate-500 mb-2">{t('view.mathEditorHint')}</p>
+                      <Suspense fallback={<div className="text-xs text-slate-400 py-2">{t('view.loadingMathEditor')}</div>}>
                         <MathEditor
                           value=""
                           onChange={(val) => insertLatex(val)}
@@ -543,7 +545,7 @@ export const SmartOCR: React.FC = () => {
                       value={latexCode}
                       onChange={(e) => setLatexCode(e.target.value)}
                       className="w-full flex-1 p-4 font-mono text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-slate-800 dark:text-slate-200"
-                      placeholder="LaTeX кодот ќе се појави овде..."
+                      placeholder={t('view.latexPlaceholder')}
                     />
                   </div>
                 ) : (

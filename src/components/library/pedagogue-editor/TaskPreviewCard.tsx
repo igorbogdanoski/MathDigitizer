@@ -3,12 +3,15 @@ import { Activity, AlertTriangle, Compass } from 'lucide-react';
 import { MathTask } from '../../../lib/schema';
 import { Card, CardContent } from '../../ui/Card';
 import { MathRenderer } from '../../MathRenderer';
+import { useTranslation } from 'react-i18next';
 
 interface TaskPreviewCardProps {
   localTask: MathTask;
 }
 
 export const TaskPreviewCard: React.FC<TaskPreviewCardProps> = ({ localTask }) => {
+  const { t } = useTranslation('library');
+
   return (
     <Card className="bg-slate-900 border-indigo-500/20 shadow-2xl overflow-hidden relative">
       <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500" />
@@ -34,7 +37,7 @@ export const TaskPreviewCard: React.FC<TaskPreviewCardProps> = ({ localTask }) =
             <div className="md:col-span-2 space-y-4 mb-4">
                <div className="flex items-center gap-3">
                 <Activity className="w-5 h-5 text-emerald-400" />
-                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Математичко Моделирање (Реален Свет)</h3>
+                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">{t('modelingTitle')}</h3>
               </div>
               <div className="p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-3xl">
                 <p className="text-sm text-slate-300 leading-relaxed">
@@ -48,7 +51,7 @@ export const TaskPreviewCard: React.FC<TaskPreviewCardProps> = ({ localTask }) =
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <AlertTriangle className="w-5 h-5 text-red-400" />
-                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Target Misconceptions</h3>
+                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">{t('targetMisconceptions')}</h3>
               </div>
               <div className="space-y-2">
                  {localTask.pedagogical_insights?.common_pitfalls.map((p, i) => (
@@ -65,7 +68,7 @@ export const TaskPreviewCard: React.FC<TaskPreviewCardProps> = ({ localTask }) =
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <Compass className="w-5 h-5 text-indigo-400" />
-                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Socratic Discovery</h3>
+                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">{t('socraticDiscovery')}</h3>
               </div>
               <div className="space-y-3">
                 {localTask.pedagogical_insights?.socratic_questions.map((q, i) => (

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/Button';
 import { MathTask } from '../../lib/schema';
 import { exportToJson, exportToLatex, exportToMarkdown, exportToTxt } from '../../lib/export';
@@ -8,9 +9,10 @@ interface ExportBarProps {
 }
 
 export const ExportBar: React.FC<ExportBarProps> = ({ tasks }) => {
+  const { t } = useTranslation('extraction');
   return (
     <div className="flex flex-wrap gap-2 shrink-0 max-w-sm justify-end">
-      <span className="w-full text-right text-xs font-bold text-slate-400 mb-1">Експорт Опции:</span>
+      <span className="w-full text-right text-xs font-bold text-slate-400 mb-1">{t('exportOptions')}</span>
       <Button variant="outline" onClick={() => exportToMarkdown(tasks)} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm text-xs h-8 px-3">
         Markdown
       </Button>

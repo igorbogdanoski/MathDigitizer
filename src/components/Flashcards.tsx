@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Brain, Plus, Loader2, Sparkles, Layers, Trophy, Activity, X } from 'lucide-react';
 import { Button } from './ui/Button';
 import { db, auth } from '../lib/firebase';
@@ -27,6 +28,7 @@ interface FlashcardsProps {
 }
 
 export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
+  const { t } = useTranslation('flashcards');
   const { showToast } = useToast();
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -145,7 +147,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
   };
 
   const handleDeleteFlashcard = async (id: string) => {
-    if (!window.confirm('Дали сте сигурни дека сакате да ја избришете оваа картичка?')) return;
+    if (!window.confirm(t('confirmDelete'))) return;
     try {
       await deleteDoc(doc(db, 'flashcards', id));
       setFlashcards(prev => prev.filter(c => c.id !== id));
@@ -216,7 +218,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
   // Generate Quiz
   const startQuiz = () => {
     if (flashcards.length < 4) {
-      showToast("Потребни се најмалку 4 картички за да креирате квиз!", 'error');
+      showToast(t('quizMinCards'), 'error');
       return;
     }
 
@@ -268,7 +270,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
   // Match Game Logic
   const startMatchGame = () => {
     if (flashcards.length < 4) {
-      showToast("Потребни се најмалку 4 картички за да играте совпаѓање!", 'error');
+      showToast(t('matchMinCards'), 'error');
       return;
     }
 
@@ -363,10 +365,10 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
         setFlashcards(prev => [...newCards, ...prev]);
         setShowAIModal(false);
         setAiTopic('');
-        showToast(`Успешно креирани ${created} картички со помош на AI!`, 'success');
+        showToast(t('aiCreated', { count: created }), 'success');
       }
     } catch (e) {
-      showToast("Настана грешка при генерирање картички. Обидете се повторно.", 'error');
+      showToast(t('aiError'), 'error');
       console.error(e);
     } finally {
       setIsGenerating(false);
@@ -377,7 +379,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-4" />
-        <p className="text-slate-500">Се вчитуваат вашите картички...</p>
+        <p className="text-slate-500">{t('loadingCards')}</p>
       </div>
     );
   }
@@ -390,10 +392,10 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
           <div>
             <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white flex items-center gap-3">
               <Sparkles className="w-8 h-8 text-indigo-600" />
-              Quizlet Македонија
+              {t('quizletTitle')}
             </h2>
             <p className="text-slate-500 dark:text-slate-400 mt-1">
-              Твојот личен простор за интелигентно учење и меморирање.
+              {t('quizletSubtitle')}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -402,14 +404,14 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
               className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
             >
               <Sparkles className="w-4 h-4 mr-2" />
-              AI Картотека
+              {t('aiCardLibrary')}
             </Button>
             <Button
               onClick={() => setShowAddModal(true)}
               className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 text-white shadow-sm"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Нова Картичка
+              {t('newCard')}
             </Button>
           </div>
         </div>
@@ -427,7 +429,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
               }`}
             >
               <Layers className="w-4 h-4" />
-              Колекција ({flashcards.length})
+              {t('collection', { count: flashcards.length })}
             </button>
             <button
               type="button"
@@ -440,7 +442,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
               }`}
             >
               <Brain className="w-4 h-4" />
-              Паметно Учење ({dueFlashcards.length})
+              {t('smartStudy', { count: dueFlashcards.length })}
             </button>
             <button
               type="button"
@@ -453,7 +455,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
               }`}
             >
               <Trophy className="w-4 h-4" />
-              Квиз Режим
+              {t('quizMode')}
             </button>
             <button
               type="button"
@@ -466,7 +468,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
               }`}
             >
               <Activity className="w-4 h-4" />
-              Игра на совпаѓање
+              {t('matchGame')}
             </button>
           </div>
         )}
@@ -556,7 +558,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
             ref={aiModalRef}
             role="dialog"
             aria-modal="true"
-            aria-label="AI Генератор"
+            aria-label={t('aiGenerator')}
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
           >
             <motion.div
@@ -568,41 +570,41 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
               <div className="p-6 sm:p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-purple-50/50 dark:bg-purple-900/10">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
                   <Sparkles className="w-6 h-6 text-purple-600" />
-                  AI Генератор
+                  {t('aiGenerator')}
                 </h2>
-                <button type="button" onClick={() => setShowAIModal(false)} disabled={isGenerating} aria-label="Затвори" title="Затвори" className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full bg-white dark:bg-slate-800 shadow-sm">
+                <button type="button" onClick={() => setShowAIModal(false)} disabled={isGenerating} aria-label={t('close')} title={t('close')} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full bg-white dark:bg-slate-800 shadow-sm">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <div className="p-6 sm:p-8 space-y-4">
                 <p className="text-slate-600 dark:text-slate-400 text-sm">
-                  Внесете тема за која сакате вештачката интелигенција автоматски да изгенерира 5 интерактивни картички (flashcards) за учење.
+                  {t('aiGeneratorDesc')}
                 </p>
                 <div className="space-y-2 pt-2">
-                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Тема (пр. Основни изводи во математика)</label>
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('aiTopicLabel')}</label>
                   <input
                     type="text"
                     value={aiTopic}
                     onChange={(e) => setAiTopic(e.target.value)}
                     disabled={isGenerating}
                     className="w-full p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-100 dark:focus:ring-purple-900/30 transition-all font-medium"
-                    placeholder="Внеси тема..."
+                    placeholder={t('aiTopicPlaceholder')}
                   />
                 </div>
               </div>
 
               <div className="p-6 sm:p-8 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3">
-                <Button variant="ghost" onClick={() => setShowAIModal(false)} disabled={isGenerating} className="rounded-xl font-medium">Откажи</Button>
+                <Button variant="ghost" onClick={() => setShowAIModal(false)} disabled={isGenerating} className="rounded-xl font-medium">{t('cancel')}</Button>
                 <Button
                   onClick={handleAIGeneration}
                   disabled={!aiTopic.trim() || isGenerating}
                   className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl px-8 font-medium shadow-lg shadow-purple-200 dark:shadow-none"
                 >
                   {isGenerating ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Се генерира...</>
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('generating')}</>
                   ) : (
-                    <><Sparkles className="w-4 h-4 mr-2" /> Генерирај (5)</>
+                    <><Sparkles className="w-4 h-4 mr-2" /> {t('generate5')}</>
                   )}
                 </Button>
               </div>

@@ -7,6 +7,7 @@ import {
   AlertTriangle, Quote, Activity, Zap, Microscope, Brain, Loader2,
   PlayCircle, Network, ChevronUp, ChevronDown, Link2, Share2, CheckCircle
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 type LibraryStore = ReturnType<typeof useLibraryStore.getState>;
 type TaskActions = ReturnType<typeof useTaskActions>;
@@ -19,6 +20,8 @@ interface PedagogicalInsightsPanelProps {
 }
 
 export const PedagogicalInsightsPanel: React.FC<PedagogicalInsightsPanelProps> = ({ task, taskId, store, actions }) => {
+  const { t } = useTranslation('library');
+
   if (!task.pedagogical_insights) return null;
 
   return (
@@ -30,7 +33,7 @@ export const PedagogicalInsightsPanel: React.FC<PedagogicalInsightsPanelProps> =
         <div className="bg-red-50/50 border border-red-100 rounded-xl p-4">
           <h4 className="flex items-center gap-2 text-sm font-bold text-red-900 mb-3">
             <AlertTriangle className="w-4 h-4 text-red-600" />
-            Критични точки (Student Pitfalls)
+            {t('pitfallsTitle')}
           </h4>
           <ul className="space-y-2">
             {task.pedagogical_insights.common_pitfalls.map((pitfall, pIdx) => (
@@ -46,7 +49,7 @@ export const PedagogicalInsightsPanel: React.FC<PedagogicalInsightsPanelProps> =
         <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4">
           <h4 className="flex items-center gap-2 text-sm font-bold text-indigo-900 mb-3">
             <Quote className="w-4 h-4 text-indigo-600" />
-            Сократов Разговор (Scaffolding)
+            {t('socraticTitle')}
           </h4>
           <ul className="space-y-2">
             {task.pedagogical_insights.socratic_questions.map((question, qIdx) => (
@@ -63,7 +66,7 @@ export const PedagogicalInsightsPanel: React.FC<PedagogicalInsightsPanelProps> =
         <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4">
           <h4 className="flex items-center gap-2 text-sm font-bold text-emerald-900 mb-3">
             <Activity className="w-4 h-4 text-emerald-600" />
-            Математичко Моделирање (Реален Свет)
+            {t('modelingTitle')}
           </h4>
           <p className="text-xs text-emerald-800 leading-relaxed font-medium">
             {task.pedagogical_insights.modeling_scenario}
@@ -75,7 +78,7 @@ export const PedagogicalInsightsPanel: React.FC<PedagogicalInsightsPanelProps> =
         <div className="bg-orange-50/30 border border-orange-100/50 rounded-lg p-3 flex items-start gap-3">
           <Zap className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
           <div>
-            <span className="text-[10px] font-bold text-orange-600 uppercase tracking-wider block mb-1">Предлог за модернизација</span>
+            <span className="text-[10px] font-bold text-orange-600 uppercase tracking-wider block mb-1">{t('modernizationSuggestion')}</span>
             <p className="text-xs text-orange-800 italic">"{task.pedagogical_insights.modern_context_suggestion}"</p>
           </div>
         </div>
@@ -85,14 +88,14 @@ export const PedagogicalInsightsPanel: React.FC<PedagogicalInsightsPanelProps> =
         <div className="bg-red-50/50 border border-red-100 rounded-xl p-4 mt-6">
           <h4 className="flex items-center gap-2 text-sm font-bold text-red-900 mb-3">
             <Activity className="w-4 h-4 text-red-600 animate-pulse" />
-            Детекција на Анатомски Грешки (Misconceptions)
+            {t('misconceptionsTitle')}
           </h4>
           <div className="space-y-4">
             {task.misconceptions.map((mc, idx) => (
                <div key={idx} className="bg-white p-3 rounded-lg border border-red-200">
-                  <p className="text-xs font-bold text-red-800 line-through decoration-red-400 mb-2">Грешка: {mc.mistake}</p>
+                  <p className="text-xs font-bold text-red-800 line-through decoration-red-400 mb-2">{t('mistakePrefix', { mistake: mc.mistake })}</p>
                   <div className="bg-indigo-50 p-2 rounded text-xs text-indigo-800 border-l-2 border-indigo-500">
-                     <span className="font-bold flex items-center gap-1 mb-1"><CheckCircle className="w-3 h-3"/> Реакција:</span>
+                     <span className="font-bold flex items-center gap-1 mb-1"><CheckCircle className="w-3 h-3"/> {t('reactionLabel')}</span>
                      {mc.teacher_reaction}
                   </div>
                </div>
@@ -110,7 +113,7 @@ export const PedagogicalInsightsPanel: React.FC<PedagogicalInsightsPanelProps> =
           <div className="flex items-center justify-between">
             <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900">
               <Microscope className="w-4 h-4 text-indigo-600" />
-              Методолошки Архитект
+              {t('methodologicalArchitect')}
             </h4>
             <div className="flex gap-2">
               <Button
@@ -121,7 +124,7 @@ export const PedagogicalInsightsPanel: React.FC<PedagogicalInsightsPanelProps> =
                 className="h-7 text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
               >
                 {store.isGeneratingConsistency[taskId] ? <Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> : <PlayCircle className="w-3 h-3 mr-1.5" />}
-                Клонирај Метода
+                {t('cloneMethod')}
               </Button>
               <Button
                 variant="outline"
@@ -131,7 +134,7 @@ export const PedagogicalInsightsPanel: React.FC<PedagogicalInsightsPanelProps> =
                 className="h-7 text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
               >
                 {store.isGeneratingPrerequisites[taskId] ? <Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> : <Brain className="w-3 h-3 mr-1.5" />}
-                Генерирај Пред-тест
+                {t('generatePretest')}
               </Button>
             </div>
           </div>
@@ -139,7 +142,7 @@ export const PedagogicalInsightsPanel: React.FC<PedagogicalInsightsPanelProps> =
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
               <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
-                Наставна Стратегија (Methodology)
+                {t('teachingStrategyTitle')}
               </h4>
               <p className="text-sm text-slate-700 leading-relaxed font-medium">
                 {task.pedagogical_insights?.teaching_strategy}
@@ -147,7 +150,7 @@ export const PedagogicalInsightsPanel: React.FC<PedagogicalInsightsPanelProps> =
             </div>
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
               <h4 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
-                 Потребни Предзнаења
+                 {t('prerequisitesTitle')}
               </h4>
               <div className="flex flex-wrap gap-1.5">
                 {task.pedagogical_insights?.prerequisites?.map((pre, i) => (
@@ -167,24 +170,24 @@ export const PedagogicalInsightsPanel: React.FC<PedagogicalInsightsPanelProps> =
             <div className="flex items-center justify-between mb-6 relative z-10">
               <h4 className="flex items-center gap-2 text-xs font-bold text-white uppercase tracking-[0.2em]">
                 <Network className="w-4 h-4 text-indigo-400" />
-                Граф на Знаење (Invisible Engine)
+                {t('knowledgeGraphTitle')}
               </h4>
               <span className="text-[10px] font-bold px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full border border-indigo-500/30">
-                AI SEMANTIC MAPPING
+                {t('aiSemanticMapping')}
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
               <div className="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-md">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-4">Вертикална Хиерархија</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-4">{t('verticalHierarchy')}</label>
                 <div className="space-y-4">
                   <div className="flex items-center gap-4 group cursor-help">
                     <div className="w-10 h-10 rounded-xl bg-green-500/20 border border-green-500/30 flex items-center justify-center transition-transform group-hover:scale-110">
                       <ChevronUp className="w-5 h-5 text-green-400" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-bold text-white">Предуслов за:</p>
-                      <p className="text-[10px] text-slate-400 italic">Следно ниво: Квадратни равенки</p>
+                      <p className="text-[11px] font-bold text-white">{t('prerequisiteFor')}</p>
+                      <p className="text-[10px] text-slate-400 italic">{t('nextLevelExample')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4 group cursor-help">
@@ -192,27 +195,27 @@ export const PedagogicalInsightsPanel: React.FC<PedagogicalInsightsPanelProps> =
                       <ChevronDown className="w-5 h-5 text-red-400" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-bold text-white">Произлегува од:</p>
-                      <p className="text-[10px] text-slate-400 italic">База: Својства на степени</p>
+                      <p className="text-[11px] font-bold text-white">{t('derivedFrom')}</p>
+                      <p className="text-[10px] text-slate-400 italic">{t('baseExample')}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-md">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-4">Хоризонтална Мрежа</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-4">{t('horizontalNetwork')}</label>
                 <div className="flex flex-wrap gap-2">
                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors cursor-pointer">
                      <PlayCircle className="w-3.5 h-3.5 text-red-400" />
-                     <span className="text-[10px] text-slate-300">Видео Упатство</span>
+                     <span className="text-[10px] text-slate-300">{t('videoGuide')}</span>
                    </div>
                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors cursor-pointer">
                      <Link2 className="w-3.5 h-3.5 text-blue-400" />
-                     <span className="text-[10px] text-slate-300">Интерактивни Плочки</span>
+                     <span className="text-[10px] text-slate-300">{t('interactiveTiles')}</span>
                    </div>
                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors cursor-pointer">
                      <Share2 className="w-3.5 h-3.5 text-purple-400" />
-                     <span className="text-[10px] text-slate-300">Поврзани Задачи</span>
+                     <span className="text-[10px] text-slate-300">{t('relatedTasksChip')}</span>
                    </div>
                 </div>
               </div>

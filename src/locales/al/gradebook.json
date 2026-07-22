@@ -34,5 +34,18 @@
   "confirmDelete": "A jeni të sigurt që doni ta fshini këtë notë?",
   "exportExcel": "Eksporto në Excel",
   "exportPdf": "Eksporto në PDF",
-  "exportCsv": "Eksporto në CSV"
+  "exportCsv": "Eksporto në CSV",
+  "exportInProgress": "Eksport në {{format}} - në zhvillim",
+  "editGradeFor": "Redakto notën për {{name}}",
+  "grade1": "Pamjaftueshëm (1)",
+  "grade2": "Mjaftueshëm (2)",
+  "grade3": "Mirë (3)",
+  "grade4": "Shumë mirë (4)",
+  "grade5": "Shkëlqyeshëm (5)",
+  "categoryTest": "Test",
+  "categoryHomework": "Detyrë shtëpie",
+  "categoryProject": "Projekt",
+  "categoryParticipation": "Pjesëmarrje",
+  "categoryOral": "Me gojë",
+  "categoryOther": "Tjetër"
 }

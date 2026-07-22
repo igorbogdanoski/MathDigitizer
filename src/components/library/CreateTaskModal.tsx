@@ -10,6 +10,7 @@ import { VoiceInputButton } from '../VoiceInputButton';
 import { useToast } from '../../contexts/ToastContext';
 import { X, Save, Plus, Trash2, Loader2, BookOpen, Edit3 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 interface CreateTaskModalProps {
   onClose: () => void;
@@ -31,6 +32,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
   
   const [isSaving, setIsSaving] = useState(false);
   const { showToast } = useToast();
+  const { t } = useTranslation('library');
 
 
   const handleAddStep = () => {
@@ -142,7 +144,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
       onSuccess();
     } catch (error) {
       console.error('Error saving task:', error);
-      showToast('Грешка при зачувување на задачата.', 'error');
+      showToast(t('saveTaskError'), 'error');
     } finally {
       setIsSaving(false);
     }
@@ -158,9 +160,9 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
         <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50">
           <div className="flex items-center gap-2 text-indigo-600">
             {editTask ? <Edit3 className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
-            <h2 className="text-lg font-bold">{editTask ? 'Уреди задача' : 'Рачно додавање задача'}</h2>
+            <h2 className="text-lg font-bold">{editTask ? t('editTask') : t('manualTaskCreation')}</h2>
           </div>
-          <button type="button" aria-label="Затвори" title="Затвори" onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200 transition-colors">
+          <button type="button" aria-label={t('close')} title={t('close')} onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -171,56 +173,56 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
             {/* Basic Info */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Наслов</label>
-                <Input 
-                  required 
-                  value={title} 
-                  onChange={e => setTitle(e.target.value)} 
-                  placeholder="пр. Линеарна равенка со една непозната" 
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('csvTitle')}</label>
+                <Input
+                  required
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  placeholder={t('titlePlaceholder')}
                 />
               </div>
-              
+
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-slate-700">Текст на задачата</label>
+                  <label className="block text-sm font-medium text-slate-700">{t('taskTextLabel')}</label>
                   <VoiceInputButton onResult={text => setOriginalText(prev => prev + text)} className="h-6 py-0 px-2" />
                 </div>
-                <textarea 
-                  required 
+                <textarea
+                  required
                   value={originalText}
                   onChange={e => setOriginalText(e.target.value)}
                   className="w-full min-h-[80px] p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y font-mono text-sm"
-                  placeholder="пр. Реши ја равенката: 2x + 5 = 15"
+                  placeholder={t('taskTextPlaceholder')}
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Тежина</label>
-                  <select 
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('difficulty')}</label>
+                  <select
                     value={difficulty}
                     onChange={(e: any) => setDifficulty(e.target.value)}
                     className="w-full text-sm h-10 px-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="easy">Лесна</option>
-                    <option value="medium">Средна</option>
-                    <option value="hard">Тешка</option>
+                    <option value="easy">{t('difficultyEasy')}</option>
+                    <option value="medium">{t('difficultyMedium')}</option>
+                    <option value="hard">{t('difficultyHard')}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Одделение</label>
-                  <Input 
-                    value={gradeLevel} 
-                    onChange={e => setGradeLevel(e.target.value)} 
-                    placeholder="пр. 8 Одделение" 
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('grade')}</label>
+                  <Input
+                    value={gradeLevel}
+                    onChange={e => setGradeLevel(e.target.value)}
+                    placeholder={t('gradePlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Папка</label>
-                  <Input 
-                    value={folderName} 
-                    onChange={e => setFolderName(e.target.value)} 
-                    placeholder="Сите Папки" 
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('folder')}</label>
+                  <Input
+                    value={folderName}
+                    onChange={e => setFolderName(e.target.value)}
+                    placeholder={t('allFolders')}
                   />
                 </div>
               </div>
@@ -228,22 +230,22 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
 
             {/* Tags */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Тагови (Области)</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t('tagsLabel')}</label>
               <div className="flex gap-2">
-                <Input 
-                  value={currentTag} 
-                  onChange={e => setCurrentTag(e.target.value)} 
+                <Input
+                  value={currentTag}
+                  onChange={e => setCurrentTag(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                  placeholder="Додади таг..." 
+                  placeholder={t('addTagPlaceholder')}
                 />
-                <Button type="button" onClick={handleAddTag} variant="outline">Додади</Button>
+                <Button type="button" onClick={handleAddTag} variant="outline">{t('add')}</Button>
               </div>
               {tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {tags.map(tag => (
                     <span key={tag} className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded text-sm">
                       {tag}
-                      <button type="button" onClick={() => handleRemoveTag(tag)} aria-label={`Отстрани маркер ${tag}`} className="text-blue-400 hover:text-blue-600"><X className="w-3 h-3" /></button>
+                      <button type="button" onClick={() => handleRemoveTag(tag)} aria-label={t('removeTag', { tag })} className="text-blue-400 hover:text-blue-600"><X className="w-3 h-3" /></button>
                     </span>
                   ))}
                 </div>
@@ -252,7 +254,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
 
             {/* Steps */}
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-slate-700 mb-1 border-b pb-2">Чекори за решавање</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1 border-b pb-2">{t('solutionStepsLabel')}</label>
               {steps.map((step, idx) => (
                 <div key={idx} className="flex gap-2">
                   <div className="flex-shrink-0 flex flex-col items-center gap-1 w-8">
@@ -264,11 +266,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
                        className="w-8 h-8 rounded-full p-0 flex items-center justify-center border-none shadow-sm bg-white" 
                     />
                   </div>
-                  <textarea 
+                  <textarea
                     value={step}
                     onChange={e => handleStepChange(idx, e.target.value)}
                     className="flex-1 min-h-[60px] p-2 text-sm rounded-lg border border-slate-200 font-mono"
-                    placeholder={`Чекор ${idx + 1}...`}
+                    placeholder={t('stepPlaceholder', { number: idx + 1 })}
                   />
                   <button 
                     type="button" 
@@ -282,28 +284,28 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
               ))}
               <Button type="button" variant="outline" size="sm" onClick={handleAddStep} className="w-full border-dashed">
                 <Plus className="w-4 h-4 mr-2" />
-                Нов Чекор
+                {t('newStep')}
               </Button>
             </div>
 
             {/* Hints */}
             <div className="space-y-2 pt-4 border-t border-slate-100">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Помош / Насоки (Hints)</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t('hintsLabel')}</label>
               <div className="flex gap-2">
-                <Input 
-                  value={currentHint} 
-                  onChange={e => setCurrentHint(e.target.value)} 
+                <Input
+                  value={currentHint}
+                  onChange={e => setCurrentHint(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddHint())}
-                  placeholder="Кратка помош за ученикот..." 
+                  placeholder={t('hintPlaceholder')}
                 />
-                <Button type="button" onClick={handleAddHint} variant="outline">Додади</Button>
+                <Button type="button" onClick={handleAddHint} variant="outline">{t('add')}</Button>
               </div>
               {hints.length > 0 && (
                 <div className="space-y-2 mt-2">
                   {hints.map((hint, idx) => (
                     <div key={idx} className="flex justify-between items-center bg-amber-50 text-amber-800 p-2 rounded text-sm">
                       <span>{idx + 1}. {hint}</span>
-                      <button type="button" onClick={() => handleRemoveHint(idx)} aria-label={`Отстрани совет ${idx + 1}`} className="text-amber-500 hover:text-amber-700"><X className="w-4 h-4" /></button>
+                      <button type="button" onClick={() => handleRemoveHint(idx)} aria-label={t('removeHint', { number: idx + 1 })} className="text-amber-500 hover:text-amber-700"><X className="w-4 h-4" /></button>
                     </div>
                   ))}
                 </div>
@@ -314,14 +316,14 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ onClose, onSuc
         </div>
 
         <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-          <Button type="button" variant="ghost" onClick={onClose}>Откажи</Button>
-          <Button 
-            type="submit" 
-            form="create-task-form" 
+          <Button type="button" variant="ghost" onClick={onClose}>{t('cancel')}</Button>
+          <Button
+            type="submit"
+            form="create-task-form"
             disabled={isSaving || !title || !originalText}
             className="bg-indigo-600 hover:bg-indigo-700 text-white"
           >
-            {isSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Се зачувува...</> : <><Save className="w-4 h-4 mr-2" /> Зачувај Задача</>}
+            {isSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('saving')}</> : <><Save className="w-4 h-4 mr-2" /> {t('saveTask')}</>}
           </Button>
         </div>
       </motion.div>

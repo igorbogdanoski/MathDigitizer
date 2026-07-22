@@ -22,28 +22,24 @@ import type { GradeEntry, StudentRiskProfile, RiskLevel, Intervention } from '..
 // ─── Risk Level Config ───────────────────────────────────────────────────────
 
 const RISK_CONFIG: Record<RiskLevel, {
-  label: string;
   color: string;
   bgColor: string;
   borderColor: string;
   icon: React.ReactNode;
 }> = {
   low: {
-    label: 'Низок ризик',
     color: 'text-green-700 dark:text-green-300',
     bgColor: 'bg-green-50 dark:bg-green-900/20',
     borderColor: 'border-green-200 dark:border-green-800',
     icon: <CheckCircle2 className="w-5 h-5" />,
   },
   medium: {
-    label: 'Среден ризик',
     color: 'text-amber-700 dark:text-amber-300',
     bgColor: 'bg-amber-50 dark:bg-amber-900/20',
     borderColor: 'border-amber-200 dark:border-amber-800',
     icon: <AlertTriangle className="w-5 h-5" />,
   },
   high: {
-    label: 'Висок ризик',
     color: 'text-red-700 dark:text-red-300',
     bgColor: 'bg-red-50 dark:bg-red-900/20',
     borderColor: 'border-red-200 dark:border-red-800',
@@ -61,6 +57,12 @@ export const EarlyWarningDashboard: React.FC<EarlyWarningDashboardProps> = ({ cl
   const { t } = useTranslation(['earlyWarning', 'common']);
   const { user } = useAuth();
   const { showToast } = useToast();
+
+  const RISK_LABELS: Record<RiskLevel, string> = {
+    low: t('lowRisk'),
+    medium: t('mediumRisk'),
+    high: t('highRisk'),
+  };
 
   const [gradeEntries, setGradeEntries] = useState<GradeEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,7 +89,7 @@ export const EarlyWarningDashboard: React.FC<EarlyWarningDashboardProps> = ({ cl
         setGradeEntries(entries);
       } catch (error) {
         console.error('Error loading grades:', error);
-        showToast('Грешка при вчитување на оцени', 'error');
+        showToast(t('errorLoading'), 'error');
       } finally {
         setIsLoading(false);
       }
@@ -228,7 +230,7 @@ export const EarlyWarningDashboard: React.FC<EarlyWarningDashboardProps> = ({ cl
             variant={filterRisk === level ? 'default' : 'outline'}
             className={filterRisk === level ? 'bg-indigo-600' : ''}
           >
-            {level === 'all' ? t('all', 'Сите') : RISK_CONFIG[level].label}
+            {level === 'all' ? t('all', 'Сите') : RISK_LABELS[level]}
           </Button>
         ))}
       </div>
@@ -252,7 +254,7 @@ export const EarlyWarningDashboard: React.FC<EarlyWarningDashboardProps> = ({ cl
                       {student.studentName}
                     </h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {config.label}
+                      {RISK_LABELS[student.riskLevel]}
                     </p>
                   </div>
                 </div>
@@ -347,7 +349,7 @@ export const EarlyWarningDashboard: React.FC<EarlyWarningDashboardProps> = ({ cl
               <div className={`p-4 rounded-xl ${RISK_CONFIG[selectedStudent.riskLevel].bgColor} mb-4`}>
                 <div className="flex items-center justify-between">
                   <span className={RISK_CONFIG[selectedStudent.riskLevel].color}>
-                    {RISK_CONFIG[selectedStudent.riskLevel].label}
+                    {RISK_LABELS[selectedStudent.riskLevel]}
                   </span>
                   <span className={`text-2xl font-bold ${getRiskScoreColor(selectedStudent.riskScore)}`}>
                     {selectedStudent.riskScore}/100

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Trophy, Play, Check, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { MathRenderer } from '../MathRenderer';
@@ -28,6 +29,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
   onRestart,
   onBackToLibrary,
 }) => {
+  const { t } = useTranslation('flashcards');
   if (isFinished) {
     return (
       <motion.div
@@ -38,16 +40,16 @@ export const QuizView: React.FC<QuizViewProps> = ({
         <div className="w-24 h-24 bg-amber-100 dark:bg-amber-900/50 rounded-full flex items-center justify-center mx-auto mb-6">
           <Trophy className="w-12 h-12 text-amber-500" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Квизот е завршен!</h2>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t('quizFinished')}</h2>
         <p className="text-slate-600 dark:text-slate-400 mb-8">
-          Освоивте {quizScore} од {quizQuestions.length} поени.
+          {t('quizScore', { score: quizScore, total: quizQuestions.length })}
         </p>
         <div className="space-y-3">
           <Button onClick={onRestart} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12">
-            <Play className="w-4 h-4 mr-2" /> Обиди се повторно
+            <Play className="w-4 h-4 mr-2" /> {t('tryAgain')}
           </Button>
           <Button variant="outline" onClick={onBackToLibrary} className="w-full rounded-xl h-12">
-            Врати се во колекција
+            {t('backToCollection')}
           </Button>
         </div>
       </motion.div>
@@ -59,8 +61,8 @@ export const QuizView: React.FC<QuizViewProps> = ({
       {/* Progress Bar */}
       <div className="mb-8">
         <div className="flex justify-between text-sm text-slate-500 font-medium mb-2">
-          <span>Прашање {quizIndex + 1} од {quizQuestions.length}</span>
-          <span>Резултат: {quizScore}</span>
+          <span>{t('questionOf', { current: quizIndex + 1, total: quizQuestions.length })}</span>
+          <span>{t('score', { score: quizScore })}</span>
         </div>
         <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
           <motion.div
@@ -114,7 +116,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
       <div className="flex justify-center">
         <Button variant="ghost" onClick={onCancel} className="text-slate-500">
-          Откажи квиз
+          {t('cancelQuiz')}
         </Button>
       </div>
     </div>

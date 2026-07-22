@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { MathRenderer } from '../MathRenderer';
 import { quickInsertGroups } from './types';
 
@@ -13,6 +14,7 @@ export const LatexQuickInsertPalette: React.FC<LatexQuickInsertPaletteProps> = (
   setActiveGroup,
   onInsertSymbol,
 }) => {
+  const { t } = useTranslation('smartOcr');
   return (
     <div className="flex flex-col border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm">
       {/* MathType Group Tabs */}
@@ -37,8 +39,8 @@ export const LatexQuickInsertPalette: React.FC<LatexQuickInsertPaletteProps> = (
           <button
             key={idx}
             onClick={() => onInsertSymbol(item.insert)}
-            title={`Вметни симбол ${item.label}`}
-            aria-label={`Вметни симбол ${item.label}`}
+            title={t('palette.insertSymbol', { label: item.label })}
+            aria-label={t('palette.insertSymbol', { label: item.label })}
             className="px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:shadow-md transition-all active:scale-95 flex-shrink-0"
           >
             <MathRenderer content={`$${item.label}$`} />

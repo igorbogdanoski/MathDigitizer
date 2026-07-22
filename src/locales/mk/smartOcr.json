@@ -1,0 +1,107 @@
+{
+  "seo": {
+    "title": "Smart OCR & Проверка на ракопис",
+    "description": "Специјализиран модел за препознавање македонски ракопис и стари кирилични учебници. Напредна AI OCR технологија.",
+    "keywords": "ocr, математика, ракопис, скенирање, gemini vision, ai, македонски математика OCR"
+  },
+  "header": {
+    "title": "Advanced Vision OCR",
+    "subtitle": "Специјализиран за ракопис, оштетен текст и стари учебници"
+  },
+  "tabs": {
+    "upload": "Слика / PDF",
+    "draw": "Ракопис"
+  },
+  "settings": {
+    "outputLanguage": "Излезен Јазик:",
+    "outputLanguageTitle": "Излезен јазик",
+    "langAuto": "Автоматски (Оригинален)",
+    "langMk": "Македонски",
+    "langEn": "English (Англиски)",
+    "langTr": "Türkçe (Турски)",
+    "langRu": "Русский (Руски)",
+    "visualization": "Визуелизација:",
+    "visualizationTitle": "Визуелизација",
+    "vizNone": "Без дијаграм",
+    "vizTikz": "LaTeX (TikZ)",
+    "vizGeogebra": "GeoGebra (Интерактивно)",
+    "vizNanobanana": "AI Контекстуална Слика",
+    "model": "Модел:",
+    "modelTitle": "OCR модел",
+    "modelPro": "Gemini 3.1 Pro (World-Class)",
+    "modelFlash": "Gemini 3 Flash (Fast)",
+    "logicalReconstruction": "Логичка Реконструкција:",
+    "enabled": "Вклучена",
+    "disabled": "Исклучена"
+  },
+  "crop": {
+    "originalImage": "Оригинална Слика",
+    "drawingBoard": "Табла за цртање",
+    "extractCrop": "Извлечи (Crop & OCR)",
+    "ocrHandwriting": "OCR на ракопис",
+    "clear": "Исчисти",
+    "batchInProgress": "Batch OCR во тек...",
+    "batchImagesProcessed": "{{done}} / {{total}} слики обработени",
+    "dropzoneTitle": "Повлечете слика/PDF или залепете (CTRL+V)",
+    "dropzoneFormats": "Поддржани формати: JPG, PNG, PDF",
+    "dropzoneBatchHint": "Изберете повеќе датотеки истовремено за batch обработка",
+    "attachedTask": "Прикачена задача",
+    "scanningTitle": "Gemini 3.1 Pro OCR...",
+    "scanningSubtitle": "Анализа на пиксели во тек",
+    "drawHint": "Цртајте овде...",
+    "attachImageOrPdf": "Прикачи слика или PDF"
+  },
+  "palette": {
+    "insertSymbol": "Вметни симбол {{label}}"
+  },
+  "result": {
+    "evidenceFound": "Пронајден доказ: \"{{quote}}\"",
+    "aiMetadata": "AI Метаподатоци",
+    "pedagogicalEnrichment": "Педагошко збогатување",
+    "difficulty": "Тежина:",
+    "topic": "Тема:",
+    "type": "Тип:",
+    "language": "Јазик:",
+    "commonPitfalls": "Можни грешки",
+    "socraticQuestions": "Водечки прашања",
+    "modelingScenario": "Математичко Моделирање",
+    "modernizationSuggestion": "Предлог за модернизација",
+    "openInGeogebra": "Отвори во GeoGebra",
+    "geogebraReady": "Овој код е подготвен за автоматско полнење на GeoGebra Applet."
+  },
+  "batch": {
+    "results": "Batch резултати: {{count}} задачи",
+    "saveAll": "Зачувај ги сите",
+    "copyLatex": "Копирај LaTeX"
+  },
+  "view": {
+    "preview": "Преглед",
+    "latexCode": "LaTeX Код",
+    "copied": "Копирано",
+    "copy": "Копирај",
+    "save": "Зачувај",
+    "processingImages": "Обработка на слики...",
+    "starting": "Започнување...",
+    "processedImage": "Обработена слика {{done}} од {{total}}...",
+    "done": "Завршено!",
+    "emptyState": "Дигитализираниот текст ќе се појави овде",
+    "mathEditorHint": "Напреден Математички Едитор (За вметнување равенки во кодот, копирај го резултатот тука и вметни го со $\\dots$):",
+    "loadingMathEditor": "Вчитување на математички едитор...",
+    "latexPlaceholder": "LaTeX кодот ќе се појави овде..."
+  },
+  "toasts": {
+    "invalidFile": "Ве молиме прикачете слика (JPG, PNG), PDF или Word (.docx) документ.",
+    "batchSuccess": "Batch: {{count}} задачи извлечени од {{total}} слики",
+    "batchEmpty": "Не се пронајдени задачи во ниту една слика.",
+    "batchSaved": "{{count}} задачи зачувани во Библиотеката!",
+    "saveError": "Грешка при зачувување.",
+    "noTasksFound": "Не се пронајдени задачи на оваа слика.",
+    "scanSuccess": "Сликата е успешно дигитализирана!",
+    "scanError": "Настана грешка при скенирањето. Обидете се со појасна слика.",
+    "codeCopied": "Кодот е копиран во клипборд.",
+    "taskSaved": "Задачата е успешно зачувана во Библиотеката!",
+    "taskSaveError": "Настана грешка при зачувувањето.",
+    "enrichSuccess": "Педагошките елементи се успешно генерирани!",
+    "enrichError": "Настана грешка при генерирање на педагогијата."
+  }
+}

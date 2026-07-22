@@ -22,7 +22,6 @@ const LEVEL_CONFIG: Record<DifferentiationLevel, {
   bgColor: string;
   borderColor: string;
   icon: React.ReactNode;
-  description: string;
 }> = {
   support: {
     label: 'Support',
@@ -30,7 +29,6 @@ const LEVEL_CONFIG: Record<DifferentiationLevel, {
     bgColor: 'bg-amber-50 dark:bg-amber-900/20',
     borderColor: 'border-amber-200 dark:border-amber-800',
     icon: <Lightbulb className="w-5 h-5" />,
-    description: 'За ученици кои имаат потешкотии',
   },
   core: {
     label: 'Core',
@@ -38,7 +36,6 @@ const LEVEL_CONFIG: Record<DifferentiationLevel, {
     bgColor: 'bg-blue-50 dark:bg-blue-900/20',
     borderColor: 'border-blue-200 dark:border-blue-800',
     icon: <Target className="w-5 h-5" />,
-    description: 'Стандардно ниво',
   },
   extension: {
     label: 'Extension',
@@ -46,7 +43,6 @@ const LEVEL_CONFIG: Record<DifferentiationLevel, {
     bgColor: 'bg-purple-50 dark:bg-purple-900/20',
     borderColor: 'border-purple-200 dark:border-purple-800',
     icon: <TrendingUp className="w-5 h-5" />,
-    description: 'За напредни ученици',
   },
 };
 
@@ -62,6 +58,12 @@ export const TaskDifferentiation: React.FC<TaskDifferentiationProps> = ({ task: 
   const { user } = useAuth();
   const { showToast } = useToast();
 
+  const LEVEL_DESCRIPTIONS: Record<DifferentiationLevel, string> = {
+    support: t('supportDesc'),
+    core: t('coreDesc'),
+    extension: t('extensionDesc'),
+  };
+
   const [selectedTask, setSelectedTask] = useState<MathTask | null>(propTask || null);
   const [result, setResult] = useState<DifferentiationResult | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -76,7 +78,7 @@ export const TaskDifferentiation: React.FC<TaskDifferentiationProps> = ({ task: 
 
   const handleGenerate = async () => {
     if (!selectedTask) {
-      showToast('Изберете задача прво', 'error');
+      showToast(t('selectTaskFirst'), 'error');
       return;
     }
 
@@ -92,10 +94,10 @@ export const TaskDifferentiation: React.FC<TaskDifferentiationProps> = ({ task: 
         language: 'mk',
       });
       setResult(differentiationResult);
-      showToast('Диференцијацијата е генерирана', 'success');
+      showToast(t('differentiationGenerated'), 'success');
     } catch (error) {
       console.error('Differentiation error:', error);
-      showToast('Грешка при генерирање', 'error');
+      showToast(t('errorGenerating'), 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -108,9 +110,9 @@ export const TaskDifferentiation: React.FC<TaskDifferentiationProps> = ({ task: 
 
   const renderHints = (level: DifferentiationLevel, hints: { level1: string; level2: string; level3: string }) => {
     const hintLevels = [
-      { num: 1, label: 'Насока', text: hints.level1 },
-      { num: 2, label: 'Прв чекор', text: hints.level2 },
-      { num: 3, label: 'Речиси решение', text: hints.level3 },
+      { num: 1, label: t('hint1'), text: hints.level1 },
+      { num: 2, label: t('hint2'), text: hints.level2 },
+      { num: 3, label: t('hint3'), text: hints.level3 },
     ];
 
     return (
@@ -149,7 +151,7 @@ export const TaskDifferentiation: React.FC<TaskDifferentiationProps> = ({ task: 
       <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
         <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
           <BookOpen className="w-4 h-4" />
-          Scaffolding (Чекор-по-чекор)
+          {t('scaffolding')}
         </h4>
         <ol className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
           {scaffolding.map((step, i) => (
@@ -183,13 +185,13 @@ export const TaskDifferentiation: React.FC<TaskDifferentiationProps> = ({ task: 
             <div className={config.color}>{config.icon}</div>
             <div className="text-left">
               <h3 className={`font-bold ${config.color}`}>{config.label}</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{config.description}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{LEVEL_DESCRIPTIONS[level]}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-slate-500 flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {variant.estimatedTime} мин
+              {variant.estimatedTime} {t('estimatedTime')}
             </span>
             {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
           </div>
@@ -214,7 +216,7 @@ export const TaskDifferentiation: React.FC<TaskDifferentiationProps> = ({ task: 
                 {variant.task.solution_steps.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
                     <h5 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                      Решение:
+                      {t('solution')}:
                     </h5>
                     <ol className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
                       {variant.task.solution_steps.map((step, i) => (
@@ -234,7 +236,7 @@ export const TaskDifferentiation: React.FC<TaskDifferentiationProps> = ({ task: 
                   <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                     <h4 className="text-sm font-semibold text-green-700 dark:text-green-300 mb-2 flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4" />
-                      Критериуми за успех
+                      {t('successCriteria')}
                     </h4>
                     <ul className="space-y-1 text-sm text-green-600 dark:text-green-400">
                       {variant.successCriteria.map((criterion, i) => (
@@ -342,7 +344,7 @@ export const TaskDifferentiation: React.FC<TaskDifferentiationProps> = ({ task: 
             <CardContent className="p-4">
               <h3 className="font-semibold text-indigo-900 dark:text-indigo-100 mb-2 flex items-center gap-2">
                 <Sparkles className="w-5 h-5" />
-                Педагошки белешки
+                {t('pedagogicalNotes')}
               </h3>
               <p className="text-sm text-indigo-700 dark:text-indigo-300">
                 {result.pedagogicalNotes}

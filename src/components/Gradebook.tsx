@@ -18,29 +18,12 @@ import type {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const GRADE_LABELS: Record<MKGrade, string> = {
-  1: 'Недоволно (1)',
-  2: 'Доволно (2)',
-  3: 'Добро (3)',
-  4: 'Многу добро (4)',
-  5: 'Одлично (5)',
-};
-
 const GRADE_COLORS: Record<MKGrade, string> = {
   1: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
   2: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
   3: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
   4: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
   5: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-};
-
-const CATEGORY_LABELS: Record<GradeCategory, string> = {
-  test: 'Тест',
-  homework: 'Домашна',
-  project: 'Проект',
-  participation: 'Учество',
-  oral: 'Усно',
-  other: 'Друго',
 };
 
 const DEFAULT_WEIGHTS: GradeWeightConfig = {
@@ -107,6 +90,23 @@ export const Gradebook: React.FC<GradebookProps> = ({ classroomId }) => {
   const { user, userProfile } = useAuth();
   const { showToast } = useToast();
 
+  const GRADE_LABELS: Record<MKGrade, string> = {
+    1: t('grade1'),
+    2: t('grade2'),
+    3: t('grade3'),
+    4: t('grade4'),
+    5: t('grade5'),
+  };
+
+  const CATEGORY_LABELS: Record<GradeCategory, string> = {
+    test: t('categoryTest'),
+    homework: t('categoryHomework'),
+    project: t('categoryProject'),
+    participation: t('categoryParticipation'),
+    oral: t('categoryOral'),
+    other: t('categoryOther'),
+  };
+
   // State
   const [entries, setEntries] = useState<GradeEntry[]>([]);
   const [students, setStudents] = useState<{ id: string; name: string }[]>([]);
@@ -159,7 +159,7 @@ export const Gradebook: React.FC<GradebookProps> = ({ classroomId }) => {
         setStudents(Array.from(uniqueStudents, ([id, name]) => ({ id, name })));
       } catch (error) {
         console.error('Error loading gradebook:', error);
-        showToast('Грешка при вчитување на дневникот', 'error');
+        showToast(t('errorLoading'), 'error');
       } finally {
         setIsLoading(false);
       }
@@ -227,10 +227,10 @@ export const Gradebook: React.FC<GradebookProps> = ({ classroomId }) => {
 
       if (editingEntry?.id) {
         await updateDoc(doc(db, 'grade_entries', editingEntry.id), newEntry);
-        showToast('Оценката е ажурирана', 'success');
+        showToast(t('gradeUpdated'), 'success');
       } else {
         await addDoc(collection(db, 'grade_entries'), newEntry);
-        showToast('Оценката е додадена', 'success');
+        showToast(t('gradeAdded'), 'success');
       }
 
       setShowAddModal(false);
@@ -257,20 +257,20 @@ export const Gradebook: React.FC<GradebookProps> = ({ classroomId }) => {
       setEntries(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as GradeEntry)));
     } catch (error) {
       console.error('Error saving grade:', error);
-      showToast('Грешка при зачувување', 'error');
+      showToast(t('errorSaving'), 'error');
     }
   };
 
   const handleDeleteGrade = async (id: string) => {
-    if (!confirm('Дали сте сигурни дека сакате да ја избришете оваа оценка?')) return;
+    if (!confirm(t('confirmDelete'))) return;
 
     try {
       await deleteDoc(doc(db, 'grade_entries', id));
       setEntries(prev => prev.filter(e => e.id !== id));
-      showToast('Оценката е избришана', 'success');
+      showToast(t('gradeDeleted'), 'success');
     } catch (error) {
       console.error('Error deleting grade:', error);
-      showToast('Грешка при бришење', 'error');
+      showToast(t('errorDeleting'), 'error');
     }
   };
 
@@ -291,7 +291,7 @@ export const Gradebook: React.FC<GradebookProps> = ({ classroomId }) => {
 
   const handleExport = async (format: 'excel' | 'pdf' | 'csv') => {
     // TODO: Implement export functionality
-    showToast(`Експорт во ${format.toUpperCase()} - во изработка`, 'info');
+    showToast(t('exportInProgress', { format: format.toUpperCase() }), 'info');
   };
 
   const TrendIcon = ({ trend }: { trend: 'improving' | 'stable' | 'declining' }) => {
@@ -525,7 +525,7 @@ export const Gradebook: React.FC<GradebookProps> = ({ classroomId }) => {
                           if (entry) handleEditGrade(entry);
                         }}
                         className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"
-                        aria-label={`Уреди оценка за ${student.studentName}`}
+                        aria-label={t('editGradeFor', { name: student.studentName })}
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -568,7 +568,7 @@ export const Gradebook: React.FC<GradebookProps> = ({ classroomId }) => {
                   setEditingEntry(null);
                 }}
                 className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
-                aria-label="Затвори"
+                aria-label={t('common:close')}
               >
                 <X className="w-5 h-5" />
               </button>

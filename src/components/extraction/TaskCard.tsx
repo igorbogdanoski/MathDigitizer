@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import {
   Wand2, Loader2, Sparkles, BookOpen, CheckCircle, Save, Check,
@@ -34,6 +35,7 @@ interface TaskCardProps {
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSave, onGenerateGraphics }) => {
+  const { t } = useTranslation('extraction');
   const { setEditingTask } = useLibraryStore();
   const {
     savedTasks, isEnriching, isGeneratingImage, expandedPrompts,
@@ -55,7 +57,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
       <div className="p-3 bg-slate-50/80 border-b border-slate-100 flex justify-between items-center ml-1">
         <div className="flex px-3 gap-3 items-center">
           <span className="font-bold text-slate-400 text-xs uppercase tracking-widest">
-            {task.type === 'theory' ? `Теорија ${index + 1}` : `Задача ${index + 1}`}
+            {task.type === 'theory' ? `${t('theoryLabel')} ${index + 1}` : `${t('taskLabel')} ${index + 1}`}
           </span>
           {task.type === 'task' && (
             <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
@@ -88,14 +90,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
               return (
                 <a href={deepLink} target="_blank" rel="noopener noreferrer"
                   onClick={e => e.stopPropagation()}
-                  title={`Отвори YouTube на ${task.source_timestamp}`}
+                  title={t('openYoutubeAt', { timestamp: task.source_timestamp })}
                   className="bg-amber-100 flex items-center gap-1 text-amber-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full hover:bg-amber-200 transition-colors">
                   <Clock className="w-3 h-3" /> {task.source_timestamp} ↗
                 </a>
               );
             }
             return (
-              <span className="bg-amber-100 flex items-center gap-1 text-amber-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full cursor-help" title="Проценето време во видеото">
+              <span className="bg-amber-100 flex items-center gap-1 text-amber-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full cursor-help" title={t('estimatedVideoTime')}>
                 <Clock className="w-3 h-3" /> {task.source_timestamp}
               </span>
             );
@@ -115,7 +117,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
               className="h-7 px-3 text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-bold uppercase tracking-wider"
             >
               {isEnriching[index] ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Zap className="w-3 h-3 mr-1" />}
-              AI Педагошко Збогатување
+              {t('aiEnrichment')}
             </Button>
           )}
         </div>
@@ -126,7 +128,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
             onClick={() => setEditingTask(task)}
             className="h-9 px-4 text-xs font-bold rounded-xl border-indigo-200 text-indigo-700 hover:bg-indigo-50"
           >
-            <Layers className="w-4 h-4 mr-1.5" /> Уреди Архитектонски
+            <Layers className="w-4 h-4 mr-1.5" /> {t('editArchitectural')}
           </Button>
           <Button
             variant={savedTasks.has(index) ? "default" : "outline"}
@@ -135,7 +137,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
             disabled={savedTasks.has(index)}
             className={`h-9 px-4 text-xs font-bold rounded-xl ${savedTasks.has(index) ? 'bg-emerald-500 hover:bg-emerald-600 border-none' : 'border-slate-200 text-slate-700 hover:bg-slate-100'}`}
           >
-            {savedTasks.has(index) ? <><CheckCircle className="w-4 h-4 mr-1.5" /> Зачувано</> : <><Save className="w-4 h-4 mr-1.5" /> Зачувај в Библиотека</>}
+            {savedTasks.has(index) ? <><CheckCircle className="w-4 h-4 mr-1.5" /> {t('savedToLibrary')}</> : <><Save className="w-4 h-4 mr-1.5" /> {t('saveToLibraryBtn')}</>}
           </Button>
         </div>
       </div>
@@ -159,14 +161,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
               <div className="flex items-center justify-between">
                 <h4 className="flex items-center gap-2 text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
                   <Activity className="w-3.5 h-3.5 text-emerald-400" />
-                  GeoGebra API Команди
+                  {t('geogebraCommands')}
                 </h4>
                 <Button
                   size="sm"
                   className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-0 rounded-lg shadow-md"
                   onClick={() => setActiveGeogebraCmds(task.geogebra_commands || [])}
                 >
-                  Илустрирај во GeoGebra
+                  {t('illustrateInGeogebra')}
                 </Button>
               </div>
               <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-emerald-300 font-mono text-xs overflow-x-auto space-y-1">
@@ -181,7 +183,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
             <div className="mb-6 bg-slate-800 rounded-2xl p-4 shadow-inner border border-slate-700 flex flex-col gap-2">
               <h4 className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 <ImageIcon className="w-3.5 h-3.5 text-blue-400" />
-                Visual AI / NanoBanana Промпт
+                {t('visualAiPrompt')}
               </h4>
               <p className="text-xs text-blue-300 font-mono leading-relaxed bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
                 {task.illustration_prompt}
@@ -199,7 +201,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
                   </div>
                   <h4 className="flex items-center gap-2 text-xs font-bold text-red-900 dark:text-red-400 mb-3 relative z-10">
                     <AlertTriangle className="w-3.5 h-3.5 text-red-600 animate-pulse" />
-                    Педагошка Аутопсија (Критични точки)
+                    {t('pedagogicalAutopsy')}
                   </h4>
                   <ul className="space-y-2 relative z-10">
                     {task.pedagogical_insights.common_pitfalls.map((p, i) => (
@@ -217,7 +219,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
                   </div>
                   <h4 className="flex items-center gap-2 text-xs font-bold text-indigo-900 dark:text-indigo-400 mb-3 relative z-10">
                     <Quote className="w-3.5 h-3.5 text-indigo-600" />
-                    Сократови прашања (Водичи)
+                    {t('socraticGuides')}
                   </h4>
                   <ul className="space-y-2 relative z-10">
                     {task.pedagogical_insights.socratic_questions.map((q, i) => (
@@ -237,7 +239,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
                   </div>
                   <h4 className="flex items-center gap-2 text-xs font-bold text-emerald-900 dark:text-emerald-400 mb-3 relative z-10">
                     <Activity className="w-3.5 h-3.5 text-emerald-600" />
-                    Математичко Моделирање (Реален Свет)
+                    {t('mathModeling')}
                   </h4>
                   <p className="text-[11px] text-emerald-800 dark:text-emerald-300 leading-relaxed font-medium relative z-10">
                     {task.pedagogical_insights.modeling_scenario}
@@ -251,12 +253,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
                   <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 blur-3xl -ml-10 -mb-10" />
                   <h4 className="flex items-center gap-2 text-xs font-bold text-white mb-4 relative z-10">
                     <Sparkles className="w-4 h-4 text-indigo-400" />
-                    Методолошки Клон (Invisible Knowledge Graph)
+                    {t('methodologicalClone')}
                   </h4>
                   <div className="space-y-4 relative z-10">
                     {task.pedagogical_insights.teaching_strategy && (
                       <div>
-                        <label className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] block mb-2">Наставна Архитектура</label>
+                        <label className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] block mb-2">{t('teachingArchitecture')}</label>
                         <p className="text-[12px] text-slate-300 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/10">
                           {task.pedagogical_insights.teaching_strategy}
                         </p>
@@ -264,7 +266,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
                     )}
                     {task.pedagogical_insights.prerequisites && task.pedagogical_insights.prerequisites.length > 0 && (
                       <div>
-                        <label className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] block mb-2">Предзнаења во Графот</label>
+                        <label className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] block mb-2">{t('prerequisitesInGraph')}</label>
                         <div className="flex flex-wrap gap-2">
                           {task.pedagogical_insights.prerequisites.map((req, i) => (
                             <span key={i} className="text-[10px] font-medium bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full shadow-sm">
@@ -286,7 +288,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
                 <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mr-3 shadow-sm border border-emerald-200">
                    <Check className="w-5 h-5" />
                 </div>
-                Решение чекор по чекор
+                {t('solutionStepByStep')}
               </h4>
               <div className="space-y-4">
                 {task.solution_steps.map((step, i) => (
@@ -311,12 +313,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
             ))}
             {task.grade_level && (
               <span className="text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg uppercase tracking-wider flex items-center gap-1.5 inline-flex">
-                <BookOpen className="w-3.5 h-3.5" /> БРО: {task.grade_level}
+                <BookOpen className="w-3.5 h-3.5" /> {t('gradeLevelPrefix')} {task.grade_level}
               </span>
             )}
             {task.curriculum_topic && (
               <span className="text-[11px] font-bold text-purple-600 bg-purple-50 border border-purple-200 px-3 py-1.5 rounded-lg uppercase tracking-wider">
-                ТЕМА: {task.curriculum_topic}
+                {t('topicPrefix')} {task.curriculum_topic}
               </span>
             )}
           </div>
@@ -326,12 +328,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
             <div className="mt-8 p-6 bg-emerald-50/50 rounded-2xl border border-emerald-100">
               <label className="text-xs font-bold text-emerald-800 uppercase tracking-widest flex items-center gap-2 mb-4">
                 <BrainCircuit className="w-4 h-4 text-emerald-600" />
-                Педагошки Увид (CoT)
+                {t('pedagogicalInsightCot')}
               </label>
               <div className="space-y-4 text-sm text-slate-700">
                 {task.pedagogical_insights.common_pitfalls?.length > 0 && (
                   <div>
-                    <strong className="text-emerald-900 block mb-1">Чести грешки кај учениците:</strong>
+                    <strong className="text-emerald-900 block mb-1">{t('commonMistakes')}</strong>
                     <ul className="list-disc pl-5 space-y-1">
                       {task.pedagogical_insights.common_pitfalls.map((pitfall, pIdx) => (
                         <li key={pIdx}>{pitfall}</li>
@@ -341,7 +343,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
                 )}
                 {task.pedagogical_insights.socratic_questions?.length > 0 && (
                   <div>
-                    <strong className="text-emerald-900 block mb-1">Сократови прашања (За наставник):</strong>
+                    <strong className="text-emerald-900 block mb-1">{t('socraticForTeacher')}</strong>
                     <ul className="list-disc pl-5 space-y-1">
                       {task.pedagogical_insights.socratic_questions.map((q, qIdx) => (
                         <li key={qIdx}>{q}</li>
@@ -351,13 +353,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
                 )}
                 {task.pedagogical_insights.teaching_strategy && (
                   <div>
-                    <strong className="text-emerald-900 block mb-1">Стратегија за предавање:</strong>
+                    <strong className="text-emerald-900 block mb-1">{t('teachingStrategy')}</strong>
                     <p>{task.pedagogical_insights.teaching_strategy}</p>
                   </div>
                 )}
                 {task.pedagogical_insights.hints && task.pedagogical_insights.hints.length > 0 && (
                   <div>
-                    <strong className="text-emerald-900 block mb-1">Прогресивни Hint-ови:</strong>
+                    <strong className="text-emerald-900 block mb-1">{t('progressiveHints')}</strong>
                     <ol className="list-none pl-0 space-y-1.5">
                       {task.pedagogical_insights.hints.map((h, hIdx) => (
                         <li key={hIdx} className="flex gap-2 items-start">
@@ -370,7 +372,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
                 )}
                 {task.pedagogical_insights.modern_context_suggestion && (
                   <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100">
-                    <strong className="text-indigo-900 block mb-1">Модерен контекст:</strong>
+                    <strong className="text-indigo-900 block mb-1">{t('modernContext')}</strong>
                     <p className="italic text-indigo-800">{task.pedagogical_insights.modern_context_suggestion}</p>
                   </div>
                 )}
@@ -378,13 +380,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
                   <div className="grid grid-cols-2 gap-3">
                     {task.pedagogical_insights.differentiated_learning.support && (
                       <div className="bg-green-50 rounded-xl p-3 border border-green-100">
-                        <strong className="text-green-900 block mb-1 text-xs uppercase tracking-wider">Поддршка:</strong>
+                        <strong className="text-green-900 block mb-1 text-xs uppercase tracking-wider">{t('supportLabel')}</strong>
                         <p className="text-green-800 text-sm">{task.pedagogical_insights.differentiated_learning.support}</p>
                       </div>
                     )}
                     {task.pedagogical_insights.differentiated_learning.extension && (
                       <div className="bg-purple-50 rounded-xl p-3 border border-purple-100">
-                        <strong className="text-purple-900 block mb-1 text-xs uppercase tracking-wider">Проширување:</strong>
+                        <strong className="text-purple-900 block mb-1 text-xs uppercase tracking-wider">{t('extensionLabel')}</strong>
                         <p className="text-purple-800 text-sm">{task.pedagogical_insights.differentiated_learning.extension}</p>
                       </div>
                     )}
@@ -398,7 +400,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
           <div className="mt-8 p-6 bg-slate-50 rounded-2xl border border-slate-200">
             <label className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2 mb-3">
               <CheckCircle className="w-4 h-4 text-emerald-500" />
-              Опсервација на Наставникот (Твој став)
+              {t('teacherObservation')}
             </label>
             <textarea
               value={task.teacher_notes || ''}
@@ -407,7 +409,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
                 newTasks[index] = { ...task, teacher_notes: e.target.value };
                 setTasks(newTasks);
               }}
-              placeholder="Внесете свое мислење, забелешка или интервенција пред зачувување..."
+              placeholder={t('teacherNotesPlaceholder')}
               className="w-full h-24 p-4 text-sm bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none font-medium placeholder:text-slate-400"
             />
           </div>
@@ -425,7 +427,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
                      disabled={isGeneratingImage[index]}
                    >
                      {isGeneratingImage[index] ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Wand2 className="w-4 h-4 mr-2" />}
-                     Регенерирај Графика
+                     {t('regenerateGraphic')}
                    </Button>
             </div>
           ) : (
@@ -434,8 +436,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
                 <ImageIcon className="w-10 h-10 opacity-70" />
               </div>
               <div className="space-y-1.5">
-                <h4 className="font-extrabold text-slate-800 text-base">Визуелизација</h4>
-                <p className="text-xs text-slate-500 px-2 leading-relaxed">Генерирајте инстантен векторски геометриски графикон базиран на AI промпт.</p>
+                <h4 className="font-extrabold text-slate-800 text-base">{t('visualization')}</h4>
+                <p className="text-xs text-slate-500 px-2 leading-relaxed">{t('visualizationDesc')}</p>
               </div>
               <Button
                 onClick={() => onGenerateGraphics(mathGraphicPrompt(task), index)}
@@ -444,9 +446,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
                 className="w-full bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 shadow-md text-white border-0 h-12 font-bold rounded-xl"
               >
                 {isGeneratingImage[index] ? (
-                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Генерирање...</>
+                  <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> {t('generating')}</>
                 ) : (
-                  <><Wand2 className="w-5 h-5 mr-2" /> Создај 2D Графика</>
+                  <><Wand2 className="w-5 h-5 mr-2" /> {t('create2dGraphic')}</>
                 )}
               </Button>
               {task.illustration_prompt && (

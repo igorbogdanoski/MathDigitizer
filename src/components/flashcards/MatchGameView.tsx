@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Activity, Trophy } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { MathRenderer } from '../MathRenderer';
@@ -24,12 +25,13 @@ export const MatchGameView: React.FC<MatchGameViewProps> = ({
   onRestart,
   onExit,
 }) => {
+  const { t } = useTranslation('flashcards');
   return (
     <div className="max-w-4xl mx-auto pt-4">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
           <Activity className="w-6 h-6 text-sky-500" />
-          Игра на совпаѓање
+          {t('matchGameTitle')}
         </h2>
         <div className="text-xl font-mono text-slate-600 dark:text-slate-400 font-bold bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-xl">
           {matchTimeElapsed.toFixed(1)}s
@@ -45,16 +47,16 @@ export const MatchGameView: React.FC<MatchGameViewProps> = ({
           <div className="w-24 h-24 bg-sky-100 dark:bg-sky-900/50 rounded-full flex items-center justify-center mx-auto mb-6">
             <Trophy className="w-12 h-12 text-sky-500" />
           </div>
-          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">Браво!</h2>
+          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">{t('bravo')}</h2>
           <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-sm mx-auto">
-            Сите картички ги поврзавте точно за <span className="font-bold text-sky-600">{matchTimeElapsed.toFixed(1)} секунди</span>.
+            {t('matchComplete', { time: matchTimeElapsed.toFixed(1) })}
           </p>
           <div className="flex justify-center gap-4">
             <Button onClick={onRestart} className="bg-sky-600 hover:bg-sky-700 text-white rounded-xl h-12 px-8">
-              Играј повторно
+              {t('playAgain')}
             </Button>
             <Button variant="outline" onClick={onExit} className="rounded-xl h-12 px-8">
-              Кон колекција
+              {t('toCollection')}
             </Button>
           </div>
         </motion.div>
@@ -87,7 +89,7 @@ export const MatchGameView: React.FC<MatchGameViewProps> = ({
       )}
       <div className="flex justify-center mt-8">
         <Button variant="ghost" onClick={onExit} className="text-slate-500">
-          Откажи
+          {t('cancel')}
         </Button>
       </div>
     </div>

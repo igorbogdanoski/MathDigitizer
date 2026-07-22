@@ -5,6 +5,7 @@ import { Button } from '../../ui/Button';
 import { Input } from '../../ui/Input';
 import { MathRenderer } from '../../MathRenderer';
 import { VoiceInputButton } from '../../VoiceInputButton';
+import { useTranslation } from 'react-i18next';
 
 interface ContentArchitectureTabProps {
   localTask: MathTask;
@@ -25,10 +26,12 @@ export const ContentArchitectureTab: React.FC<ContentArchitectureTabProps> = ({
   addTag,
   removeTag
 }) => {
+  const { t } = useTranslation('library');
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Task Title</label>
+        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t('taskTitleLabel')}</label>
         <Input
           value={localTask.title}
           onChange={(e) => updateField('title', e.target.value)}
@@ -39,7 +42,7 @@ export const ContentArchitectureTab: React.FC<ContentArchitectureTabProps> = ({
       <div className="space-y-4">
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2">
           <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-3">
-            Mathematical Narrative (LaTeX support)
+            {t('mathNarrativeLabel')}
             <VoiceInputButton
               onResult={(text) => {
                 const newText = localTask.original_text + text;
@@ -97,7 +100,7 @@ export const ContentArchitectureTab: React.FC<ContentArchitectureTabProps> = ({
               value={localTask.original_text}
               onChange={(e) => updateField('original_text', e.target.value)}
               className="w-full bg-slate-900 border border-white/5 rounded-2xl p-6 text-slate-200 font-mono text-sm leading-relaxed focus:border-indigo-500 outline-none h-80 resize-none transition-all"
-              placeholder="Write your math problem here. Use $$ for display math and $ for inline math..."
+              placeholder={t('mathNarrativePlaceholder')}
             />
             <VoiceInputButton
               className="absolute bottom-4 right-4 !bg-slate-800 !border-slate-700 !text-slate-300 hover:!bg-indigo-600 hover:!text-white shadow-xl"
@@ -111,9 +114,9 @@ export const ContentArchitectureTab: React.FC<ContentArchitectureTabProps> = ({
             />
           </div>
           <div className="w-full bg-slate-900/50 border border-white/5 rounded-2xl p-6 overflow-y-auto h-80">
-            <label className="text-[10px] font-black text-indigo-500/50 uppercase tracking-widest block mb-4">Live Visual Sync</label>
+            <label className="text-[10px] font-black text-indigo-500/50 uppercase tracking-widest block mb-4">{t('liveVisualSync')}</label>
             <div className="prose prose-invert max-w-none">
-              <MathRenderer content={localTask.original_text || '*Type something to see preview...*'} />
+              <MathRenderer content={localTask.original_text || t('previewPlaceholder')} />
             </div>
           </div>
         </div>
@@ -121,55 +124,55 @@ export const ContentArchitectureTab: React.FC<ContentArchitectureTabProps> = ({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Difficulty</label>
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t('difficultyField')}</label>
           <select
             value={localTask.difficulty}
             onChange={(e) => updateField('difficulty', e.target.value)}
-            title="Difficulty"
-            aria-label="Difficulty"
+            title={t('difficultyField')}
+            aria-label={t('difficultyField')}
             className="w-full h-12 bg-slate-900 border border-white/5 rounded-xl text-slate-300 px-4 outline-none focus:border-indigo-500"
           >
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
+            <option value="easy">{t('optionEasy')}</option>
+            <option value="medium">{t('optionMedium')}</option>
+            <option value="hard">{t('optionHard')}</option>
           </select>
         </div>
         <div className="space-y-2">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Instructional Type</label>
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t('instructionalType')}</label>
           <select
             value={localTask.type}
             onChange={(e) => updateField('type', e.target.value)}
-            title="Instructional type"
-            aria-label="Instructional type"
+            title={t('instructionalTypeAttr')}
+            aria-label={t('instructionalTypeAttr')}
             className="w-full h-12 bg-slate-900 border border-white/5 rounded-xl text-slate-300 px-4 outline-none focus:border-indigo-500"
           >
-            <option value="task">Problem Solving</option>
-            <option value="theory">Theoretic Explanation</option>
+            <option value="task">{t('problemSolving')}</option>
+            <option value="theory">{t('theoreticExplanation')}</option>
           </select>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Bloom's Taxonomy</label>
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t('bloomsTaxonomy')}</label>
           <select
             value={localTask.bloom_taxonomy || ''}
             onChange={(e) => updateField('bloom_taxonomy', e.target.value || undefined)}
-            title="Bloom taxonomy"
-            aria-label="Bloom taxonomy"
+            title={t('bloomTaxonomyAttr')}
+            aria-label={t('bloomTaxonomyAttr')}
             className="w-full h-12 bg-slate-900 border border-white/5 rounded-xl text-slate-300 px-4 outline-none focus:border-purple-500"
           >
-            <option value="">Неодредено</option>
-            <option value="remember">Запомнување (Remember)</option>
-            <option value="understand">Разбирање (Understand)</option>
-            <option value="apply">Примена (Apply)</option>
-            <option value="analyze">Анализирање (Analyze)</option>
-            <option value="evaluate">Евалуација (Evaluate)</option>
-            <option value="create">Креирање (Create)</option>
+            <option value="">{t('bloomUndefined')}</option>
+            <option value="remember">{t('bloomRemember')}</option>
+            <option value="understand">{t('bloomUnderstand')}</option>
+            <option value="apply">{t('bloomApply')}</option>
+            <option value="analyze">{t('bloomAnalyze')}</option>
+            <option value="evaluate">{t('bloomEvaluate')}</option>
+            <option value="create">{t('bloomCreate')}</option>
           </select>
         </div>
         <div className="space-y-2">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">DoK Level (1-4)</label>
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t('dokLevelLabel')}</label>
           <input
             type="number"
             min="1"
@@ -177,7 +180,7 @@ export const ContentArchitectureTab: React.FC<ContentArchitectureTabProps> = ({
             value={localTask.dok_level || ''}
             onChange={(e) => updateField('dok_level', parseInt(e.target.value) || undefined)}
             className="w-full h-12 bg-slate-900 border border-white/5 rounded-xl text-slate-300 px-4 outline-none focus:border-purple-500"
-            placeholder="Пр. 2"
+            placeholder={t('dokPlaceholder')}
           />
         </div>
       </div>
@@ -185,7 +188,7 @@ export const ContentArchitectureTab: React.FC<ContentArchitectureTabProps> = ({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-3">
-            Solution Architecture (Steps)
+            {t('solutionArchitecture')}
             <VoiceInputButton
               onResult={(text) => {
                 // If there are no steps, append a new step, else append to the last step
@@ -200,7 +203,7 @@ export const ContentArchitectureTab: React.FC<ContentArchitectureTabProps> = ({
              />
           </label>
           <Button variant="outline" size="sm" onClick={addStep} className="border-white/10 text-slate-400">
-            <Plus className="w-3 h-3 mr-2" /> Add Step
+            <Plus className="w-3 h-3 mr-2" /> {t('addStepBtn')}
           </Button>
         </div>
         <div className="space-y-3">
@@ -214,9 +217,9 @@ export const ContentArchitectureTab: React.FC<ContentArchitectureTabProps> = ({
                   id={`step-textarea-${i}`}
                   value={step}
                   onChange={(e) => updateStep(i, e.target.value)}
-                  title={`Solution step ${i + 1}`}
-                  aria-label={`Solution step ${i + 1}`}
-                  placeholder="Опиши го чекорот..."
+                  title={t('solutionStepAttr', { number: i + 1 })}
+                  aria-label={t('solutionStepAttr', { number: i + 1 })}
+                  placeholder={t('describeStepPlaceholder')}
                   className="w-full bg-slate-900 border border-white/5 rounded-xl p-3 text-slate-300 text-sm focus:border-indigo-500 outline-none min-h-[80px] resize-none pr-10"
                 />
                 <VoiceInputButton
@@ -239,8 +242,8 @@ export const ContentArchitectureTab: React.FC<ContentArchitectureTabProps> = ({
       </div>
 
       <div className="space-y-4">
-        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block">GeoGebra Visualization Commands</label>
-        <p className="text-xs text-slate-400 mb-2">Each line represents a GeoGebra command to render a geometric shape or graph (e.g. `f(x) = x^2` or `A = (2, 3)`).</p>
+        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block">{t('geogebraCommandsLabel')}</label>
+        <p className="text-xs text-slate-400 mb-2">{t('geogebraCommandsDesc')}</p>
         <textarea
           value={(localTask.geogebra_commands || []).join('\n')}
           onChange={(e) => updateField('geogebra_commands', e.target.value.split('\n').filter(l => l.trim() !== ''))}
@@ -250,18 +253,18 @@ export const ContentArchitectureTab: React.FC<ContentArchitectureTabProps> = ({
       </div>
 
       <div className="space-y-4">
-        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block">Ontology & Search (Tags)</label>
+        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block">{t('ontologyTagsLabel')}</label>
         <div className="flex flex-wrap gap-2 mb-3">
           {localTask.tags?.map(tag => (
             <span key={tag} className="flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-lg text-xs font-bold">
               #{tag}
-              <button onClick={() => removeTag(tag)} aria-label={`Избриши таг ${tag}`} title={`Избриши таг ${tag}`} className="hover:text-white"><X className="w-3 h-3" /></button>
+              <button onClick={() => removeTag(tag)} aria-label={t('deleteTag', { tag })} title={t('deleteTag', { tag })} className="hover:text-white"><X className="w-3 h-3" /></button>
             </span>
           ))}
         </div>
         <div className="flex gap-2">
           <Input
-            placeholder="Add a tag..."
+            placeholder={t('addTagInput')}
             id="new-tag-input"
             className="bg-slate-900 border-white/5 text-white h-10"
             onKeyDown={(e) => {
@@ -275,7 +278,7 @@ export const ContentArchitectureTab: React.FC<ContentArchitectureTabProps> = ({
             const input = document.getElementById('new-tag-input') as HTMLInputElement;
             addTag(input.value);
             input.value = '';
-          }} className="bg-slate-800 hover:bg-slate-700">Add</Button>
+          }} className="bg-slate-800 hover:bg-slate-700">{t('addBtn')}</Button>
         </div>
       </div>
     </div>

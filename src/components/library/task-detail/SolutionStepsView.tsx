@@ -9,6 +9,7 @@ import {
 import { db } from '../../../lib/firebase';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../../contexts/ToastContext';
+import { useTranslation } from 'react-i18next';
 
 type LibraryStore = ReturnType<typeof useLibraryStore.getState>;
 
@@ -21,6 +22,7 @@ interface SolutionStepsViewProps {
 export const SolutionStepsView: React.FC<SolutionStepsViewProps> = ({ task, taskId, store }) => {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const { t } = useTranslation('library');
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -74,7 +76,7 @@ export const SolutionStepsView: React.FC<SolutionStepsViewProps> = ({ task, task
     <>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-          {task.type === 'theory' ? 'Клучни Точки' : 'Решение'}
+          {task.type === 'theory' ? t('keyPoints') : t('csvSolution')}
         </h3>
 
         <div className="flex items-center gap-2">
@@ -83,7 +85,7 @@ export const SolutionStepsView: React.FC<SolutionStepsViewProps> = ({ task, task
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
-              const allSteps = task.solution_steps.map((step, i) => `Чекор ${i + 1}:\n${step}`).join('\n\n');
+              const allSteps = task.solution_steps.map((step, i) => `${t('stepNumber', { number: i + 1 })}:\n${step}`).join('\n\n');
               navigator.clipboard.writeText(allSteps);
               store.setCopiedText('steps-' + taskId);
               setTimeout(() => store.setCopiedText(null), 2000);
@@ -91,17 +93,17 @@ export const SolutionStepsView: React.FC<SolutionStepsViewProps> = ({ task, task
             className="h-7 px-2 text-xs text-slate-500 hover:text-slate-700"
           >
             {store.copiedText === 'steps-' + taskId ? <Check className="w-3 h-3 mr-1 text-green-500" /> : <Copy className="w-3 h-3 mr-1" />}
-            {store.copiedText === 'steps-' + taskId ? 'Копирано' : 'Копирај чекори'}
+            {store.copiedText === 'steps-' + taskId ? t('copied') : t('copySteps')}
           </Button>
           {store.practiceMode[taskId] && (
             <div className="flex items-center gap-2 bg-slate-100 px-2 py-1 rounded-md">
               <span className="text-xs font-mono font-bold text-slate-700 w-10 text-center">
                 {formatTime(store.practiceTimer[taskId] || 0)}
               </span>
-              <button type="button" title="Паузирај/Продолжи тајмер" aria-label="Паузирај/Продолжи тајмер" onClick={(e) => { e.stopPropagation(); store.setTimerActive({ ...store.timerActive, [taskId]: !store.timerActive[taskId] }); }} className="text-slate-500 hover:text-blue-600">
+              <button type="button" title={t('pauseResumeTimer')} aria-label={t('pauseResumeTimer')} onClick={(e) => { e.stopPropagation(); store.setTimerActive({ ...store.timerActive, [taskId]: !store.timerActive[taskId] }); }} className="text-slate-500 hover:text-blue-600">
                 {store.timerActive[taskId] ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
               </button>
-              <button type="button" title="Ресетирај тајмер" aria-label="Ресетирај тајмер" onClick={(e) => { e.stopPropagation(); store.setPracticeTimer({ ...store.practiceTimer, [taskId]: 0 }); }} className="text-slate-500 hover:text-blue-600">
+              <button type="button" title={t('resetTimer')} aria-label={t('resetTimer')} onClick={(e) => { e.stopPropagation(); store.setPracticeTimer({ ...store.practiceTimer, [taskId]: 0 }); }} className="text-slate-500 hover:text-blue-600">
                 <RotateCcw className="w-3 h-3" />
               </button>
               <Button
@@ -117,7 +119,7 @@ export const SolutionStepsView: React.FC<SolutionStepsViewProps> = ({ task, task
                 }}
                 className="h-6 px-2 text-xs text-slate-500 hover:text-slate-700"
               >
-                Ресетирај чекори
+                {t('resetSteps')}
               </Button>
             </div>
           )}
@@ -127,7 +129,7 @@ export const SolutionStepsView: React.FC<SolutionStepsViewProps> = ({ task, task
             onClick={(e) => { e.stopPropagation(); togglePracticeMode(taskId, task); }}
             className={`h-7 text-xs ${store.practiceMode[taskId] ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'text-slate-600'}`}
           >
-            Практика Мод
+            {t('practiceMode')}
           </Button>
         </div>
       </div>
@@ -146,7 +148,7 @@ export const SolutionStepsView: React.FC<SolutionStepsViewProps> = ({ task, task
                 document.getElementById(`step-${stepKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }}
               className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-blue-100 hover:text-blue-700 flex items-center justify-center text-xs font-bold transition-colors"
-              title={`Оди на чекор ${stepIdx + 1}`}
+              title={t('goToStep', { number: stepIdx + 1 })}
             >
               {stepIdx + 1}
             </button>
@@ -166,8 +168,8 @@ export const SolutionStepsView: React.FC<SolutionStepsViewProps> = ({ task, task
                 <div className="pl-3 py-2 flex items-center">
                   <input
                     type="checkbox"
-                    aria-label={`Избери чекор ${stepIdx + 1}`}
-                    title={`Избери чекор ${stepIdx + 1}`}
+                    aria-label={t('selectStep', { number: stepIdx + 1 })}
+                    title={t('selectStep', { number: stepIdx + 1 })}
                     checked={isSelected || false}
                     onChange={(e) => { e.stopPropagation(); toggleStepSelection(taskId, stepIdx); }}
                     onClick={(e) => e.stopPropagation()}
@@ -183,7 +185,7 @@ export const SolutionStepsView: React.FC<SolutionStepsViewProps> = ({ task, task
                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">
                       {stepIdx + 1}
                     </span>
-                    <span className="text-xs font-medium text-slate-600">Чекор {stepIdx + 1}</span>
+                    <span className="text-xs font-medium text-slate-600">{t('stepNumber', { number: stepIdx + 1 })}</span>
                   </div>
                   {isCollapsed ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronUp className="w-4 h-4 text-slate-400" />}
                 </button>
@@ -205,7 +207,7 @@ export const SolutionStepsView: React.FC<SolutionStepsViewProps> = ({ task, task
               className="w-full text-xs"
               onClick={(e) => { e.stopPropagation(); showSelectedSteps(taskId); }}
             >
-              Прикажи ги избраните чекори ({store.selectedSteps[taskId].size})
+              {t('showSelectedSteps', { count: store.selectedSteps[taskId].size })}
             </Button>
           </div>
         )}
@@ -217,7 +219,7 @@ export const SolutionStepsView: React.FC<SolutionStepsViewProps> = ({ task, task
             className="w-full text-xs border-dashed border-slate-300 text-slate-500 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50"
             onClick={async (e) => {
               e.stopPropagation();
-              const newStep = window.prompt("Внесете го новиот чекор (може да користите LaTeX):");
+              const newStep = window.prompt(t('addStepPrompt'));
               if (newStep && newStep.trim()) {
                 try {
                   const { doc, updateDoc } = await import('firebase/firestore');
@@ -227,12 +229,12 @@ export const SolutionStepsView: React.FC<SolutionStepsViewProps> = ({ task, task
                   queryClient.invalidateQueries({ queryKey: ['tasks'] });
                 } catch (err) {
                   console.error("Грешка при додавање чекор:", err);
-                  showToast("Настана грешка при зачувување на чекорот.", 'error');
+                  showToast(t('addStepError'), 'error');
                 }
               }
             }}
           >
-            <Plus className="w-3 h-3 mr-1" /> Додади чекор
+            <Plus className="w-3 h-3 mr-1" /> {t('addStep')}
           </Button>
         </div>
       </div>

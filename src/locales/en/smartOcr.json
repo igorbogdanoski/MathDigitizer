@@ -1,0 +1,107 @@
+{
+  "seo": {
+    "title": "Smart OCR & Handwriting Recognition",
+    "description": "Specialized model for recognizing Macedonian handwriting and old Cyrillic textbooks. Advanced AI OCR technology.",
+    "keywords": "ocr, mathematics, handwriting, scanning, gemini vision, ai, macedonian math OCR"
+  },
+  "header": {
+    "title": "Advanced Vision OCR",
+    "subtitle": "Specialized for handwriting, damaged text and old textbooks"
+  },
+  "tabs": {
+    "upload": "Image / PDF",
+    "draw": "Handwriting"
+  },
+  "settings": {
+    "outputLanguage": "Output Language:",
+    "outputLanguageTitle": "Output language",
+    "langAuto": "Automatic (Original)",
+    "langMk": "Macedonian",
+    "langEn": "English",
+    "langTr": "Türkçe (Turkish)",
+    "langRu": "Русский (Russian)",
+    "visualization": "Visualization:",
+    "visualizationTitle": "Visualization",
+    "vizNone": "No diagram",
+    "vizTikz": "LaTeX (TikZ)",
+    "vizGeogebra": "GeoGebra (Interactive)",
+    "vizNanobanana": "AI Contextual Image",
+    "model": "Model:",
+    "modelTitle": "OCR model",
+    "modelPro": "Gemini 3.1 Pro (World-Class)",
+    "modelFlash": "Gemini 3 Flash (Fast)",
+    "logicalReconstruction": "Logical Reconstruction:",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
+  "crop": {
+    "originalImage": "Original Image",
+    "drawingBoard": "Drawing Board",
+    "extractCrop": "Extract (Crop & OCR)",
+    "ocrHandwriting": "OCR Handwriting",
+    "clear": "Clear",
+    "batchInProgress": "Batch OCR in progress...",
+    "batchImagesProcessed": "{{done}} / {{total}} images processed",
+    "dropzoneTitle": "Drag image/PDF or paste (CTRL+V)",
+    "dropzoneFormats": "Supported formats: JPG, PNG, PDF",
+    "dropzoneBatchHint": "Select multiple files at once for batch processing",
+    "attachedTask": "Attached task",
+    "scanningTitle": "Gemini 3.1 Pro OCR...",
+    "scanningSubtitle": "Pixel analysis in progress",
+    "drawHint": "Draw here...",
+    "attachImageOrPdf": "Attach image or PDF"
+  },
+  "palette": {
+    "insertSymbol": "Insert symbol {{label}}"
+  },
+  "result": {
+    "evidenceFound": "Evidence found: \"{{quote}}\"",
+    "aiMetadata": "AI Metadata",
+    "pedagogicalEnrichment": "Pedagogical Enrichment",
+    "difficulty": "Difficulty:",
+    "topic": "Topic:",
+    "type": "Type:",
+    "language": "Language:",
+    "commonPitfalls": "Common Pitfalls",
+    "socraticQuestions": "Socratic Questions",
+    "modelingScenario": "Mathematical Modeling",
+    "modernizationSuggestion": "Modernization Suggestion",
+    "openInGeogebra": "Open in GeoGebra",
+    "geogebraReady": "This code is ready for automatic GeoGebra Applet loading."
+  },
+  "batch": {
+    "results": "Batch results: {{count}} tasks",
+    "saveAll": "Save all",
+    "copyLatex": "Copy LaTeX"
+  },
+  "view": {
+    "preview": "Preview",
+    "latexCode": "LaTeX Code",
+    "copied": "Copied",
+    "copy": "Copy",
+    "save": "Save",
+    "processingImages": "Processing images...",
+    "starting": "Starting...",
+    "processedImage": "Processed image {{done}} of {{total}}...",
+    "done": "Done!",
+    "emptyState": "Digitized text will appear here",
+    "mathEditorHint": "Advanced Math Editor (To insert equations into the code, copy the result here and insert with $\\dots$):",
+    "loadingMathEditor": "Loading math editor...",
+    "latexPlaceholder": "LaTeX code will appear here..."
+  },
+  "toasts": {
+    "invalidFile": "Please attach an image (JPG, PNG), PDF or Word (.docx) document.",
+    "batchSuccess": "Batch: {{count}} tasks extracted from {{total}} images",
+    "batchEmpty": "No tasks found in any image.",
+    "batchSaved": "{{count}} tasks saved to the Library!",
+    "saveError": "Error saving.",
+    "noTasksFound": "No tasks found in this image.",
+    "scanSuccess": "Image successfully digitized!",
+    "scanError": "An error occurred during scanning. Try a clearer image.",
+    "codeCopied": "Code copied to clipboard.",
+    "taskSaved": "Task successfully saved to the Library!",
+    "taskSaveError": "An error occurred while saving.",
+    "enrichSuccess": "Pedagogical elements successfully generated!",
+    "enrichError": "An error occurred while generating pedagogy."
+  }
+}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Image as ImageIcon, PenTool, Crop, ScanLine, Upload, Loader2, Images
 } from 'lucide-react';
@@ -53,32 +54,33 @@ export const ImageCropPanel: React.FC<ImageCropPanelProps> = ({
   onDragOver,
   onFileSelect,
 }) => {
+  const { t } = useTranslation('smartOcr');
   return (
     <div className="flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[400px] lg:min-h-0">
       <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
         <h2 className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
           {activeTab === 'upload' ? (
-            <><ImageIcon className="w-4 h-4" /> Оригинална Слика</>
+            <><ImageIcon className="w-4 h-4" /> {t('crop.originalImage')}</>
           ) : (
-            <><PenTool className="w-4 h-4" /> Табла за цртање</>
+            <><PenTool className="w-4 h-4" /> {t('crop.drawingBoard')}</>
           )}
         </h2>
         <div className="flex gap-2">
           {activeTab === 'upload' && image && (
             <Button variant="outline" size="sm" onClick={onExtractCrop} disabled={isScanning || !completedCrop}>
               <Crop className="w-4 h-4 mr-2" />
-              Извлечи (Crop & OCR)
+              {t('crop.extractCrop')}
             </Button>
           )}
           {activeTab === 'draw' && (
             <Button variant="outline" size="sm" onClick={onScanCanvas} disabled={isScanning}>
               <ScanLine className="w-4 h-4 mr-2" />
-              OCR на ракопис
+              {t('crop.ocrHandwriting')}
             </Button>
           )}
           {(image || activeTab === 'draw') && (
             <Button variant="ghost" size="sm" onClick={onClear} className="text-slate-500 hover:text-red-600">
-              Исчисти
+              {t('crop.clear')}
             </Button>
           )}
         </div>
@@ -92,8 +94,8 @@ export const ImageCropPanel: React.FC<ImageCropPanelProps> = ({
                 <Images className="w-8 h-8 text-indigo-500 animate-pulse" />
               </div>
               <div className="w-full max-w-xs text-center">
-                <p className="font-bold text-slate-800 dark:text-slate-200 mb-1">Batch OCR во тек...</p>
-                <p className="text-sm text-slate-500 mb-4">{batchProgress.done} / {batchProgress.total} слики обработени</p>
+                <p className="font-bold text-slate-800 dark:text-slate-200 mb-1">{t('crop.batchInProgress')}</p>
+                <p className="text-sm text-slate-500 mb-4">{t('crop.batchImagesProcessed', { done: batchProgress.done, total: batchProgress.total })}</p>
                 <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
                   <div
                     className="h-full bg-indigo-500 rounded-full transition-all duration-500"
@@ -118,20 +120,20 @@ export const ImageCropPanel: React.FC<ImageCropPanelProps> = ({
                 accept="image/*,application/pdf"
                 multiple
                 onChange={onFileSelect}
-                title="Прикачи слика или PDF"
-                aria-label="Прикачи слика или PDF"
+                title={t('crop.attachImageOrPdf')}
+                aria-label={t('crop.attachImageOrPdf')}
               />
               <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Upload className="w-8 h-8 text-indigo-500" />
               </div>
               <p className="text-lg text-slate-700 dark:text-slate-300 font-medium mb-2">
-                Повлечете слика/PDF или залепете (CTRL+V)
+                {t('crop.dropzoneTitle')}
               </p>
               <p className="text-sm text-slate-500 mb-1">
-                Поддржани формати: JPG, PNG, PDF
+                {t('crop.dropzoneFormats')}
               </p>
               <p className="text-xs text-indigo-500 flex items-center gap-1">
-                <Images className="w-3.5 h-3.5" /> Изберете повеќе датотеки истовремено за batch обработка
+                <Images className="w-3.5 h-3.5" /> {t('crop.dropzoneBatchHint')}
               </p>
             </div>
           ) : (
@@ -140,7 +142,7 @@ export const ImageCropPanel: React.FC<ImageCropPanelProps> = ({
                 <img
                   ref={imgRef}
                   src={image}
-                  alt="Прикачена задача"
+                  alt={t('crop.attachedTask')}
                   className="max-w-full object-contain"
                 />
               </ReactCrop>
@@ -148,8 +150,8 @@ export const ImageCropPanel: React.FC<ImageCropPanelProps> = ({
                 <div className="absolute inset-0 z-10 bg-slate-900/60 backdrop-blur-md flex flex-col items-center justify-center rounded-xl">
                   <div className="bg-white dark:bg-slate-800 p-8 rounded-5xl shadow-2xl flex flex-col items-center border border-slate-200 dark:border-slate-700">
                     <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" />
-                    <p className="font-extrabold text-lg text-slate-900 dark:text-white">Gemini 3.1 Pro OCR...</p>
-                    <p className="text-sm text-slate-500 mt-2">Анализа на пиксели во тек</p>
+                    <p className="font-extrabold text-lg text-slate-900 dark:text-white">{t('crop.scanningTitle')}</p>
+                    <p className="text-sm text-slate-500 mt-2">{t('crop.scanningSubtitle')}</p>
                   </div>
                 </div>
               )}
@@ -186,7 +188,7 @@ export const ImageCropPanel: React.FC<ImageCropPanelProps> = ({
               }}
             />
             <div className="absolute bottom-4 left-4 text-xs font-medium text-slate-400 pointer-events-none">
-              Цртајте овде...
+              {t('crop.drawHint')}
             </div>
           </div>
         )}

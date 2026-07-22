@@ -3,6 +3,7 @@ import { AlertTriangle, Quote, Activity, Plus, Trash2 } from 'lucide-react';
 import { MathTask } from '../../../lib/schema';
 import { Button } from '../../ui/Button';
 import { Input } from '../../ui/Input';
+import { useTranslation } from 'react-i18next';
 
 interface PedagogicalDNATabProps {
   localTask: MathTask;
@@ -13,6 +14,8 @@ export const PedagogicalDNATab: React.FC<PedagogicalDNATabProps> = ({
   localTask,
   updateInsightField
 }) => {
+  const { t } = useTranslation('library');
+
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -20,7 +23,7 @@ export const PedagogicalDNATab: React.FC<PedagogicalDNATabProps> = ({
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
               <AlertTriangle className="w-3 h-3 text-red-500" />
-              Target Misconceptions
+              {t('targetMisconceptions')}
             </label>
             <Button variant="ghost" size="sm" onClick={() => updateInsightField('common_pitfalls', [...(localTask.pedagogical_insights?.common_pitfalls || []), ""])}>
               <Plus className="w-3 h-3" />
@@ -53,7 +56,7 @@ export const PedagogicalDNATab: React.FC<PedagogicalDNATabProps> = ({
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
               <Quote className="w-3 h-3 text-indigo-500" />
-              Socratic Scaffolding
+              {t('socraticScaffolding')}
             </label>
             <Button variant="ghost" size="sm" onClick={() => updateInsightField('socratic_questions', [...(localTask.pedagogical_insights?.socratic_questions || []), ""])}>
               <Plus className="w-3 h-3" />
@@ -78,7 +81,7 @@ export const PedagogicalDNATab: React.FC<PedagogicalDNATabProps> = ({
                     target.style.height = 'auto';
                     target.style.height = target.scrollHeight + 'px';
                   }}
-                  placeholder="Enter a Socratic question..."
+                  placeholder={t('socraticQuestionPlaceholder')}
                 />
                 <Button variant="ghost" size="sm" onClick={() => {
                   const next = (localTask.pedagogical_insights?.socratic_questions || []).filter((_, idx) => idx !== i);
@@ -95,43 +98,43 @@ export const PedagogicalDNATab: React.FC<PedagogicalDNATabProps> = ({
       <div className="space-y-4">
         <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
           <Activity className="w-3 h-3 text-emerald-500" />
-          Mathematical Modeling Scenario
+          {t('modelingScenarioLabel')}
         </label>
         <textarea
           value={localTask.pedagogical_insights?.modeling_scenario}
           onChange={(e) => updateInsightField('modeling_scenario', e.target.value)}
           className="w-full bg-slate-900 border border-white/5 rounded-2xl p-6 text-slate-300 text-sm leading-relaxed focus:border-indigo-500 outline-none h-40 resize-none transition-all"
-          placeholder="Describe the real-world modeling application for this task..."
+          placeholder={t('modelingScenarioPlaceholder')}
         />
       </div>
 
       <div className="space-y-2">
-        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Instructional Strategy Architect</label>
+        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t('instructionalStrategyLabel')}</label>
         <textarea
           value={localTask.pedagogical_insights?.teaching_strategy}
           onChange={(e) => updateInsightField('teaching_strategy', e.target.value)}
           className="w-full bg-slate-900 border border-white/5 rounded-2xl p-6 text-slate-300 text-sm leading-relaxed focus:border-indigo-500 outline-none h-40 resize-none transition-all"
-          placeholder="Describe the optimal teaching sequence for this task..."
+          placeholder={t('teachingStrategyPlaceholder')}
         />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <label className="text-xs font-bold text-amber-500 uppercase tracking-widest">Differentiated Support (Tier 2/3)</label>
+          <label className="text-xs font-bold text-amber-500 uppercase tracking-widest">{t('differentiatedSupportLabel')}</label>
           <textarea
             value={localTask.pedagogical_insights?.differentiated_learning?.support || ''}
             onChange={(e) => updateInsightField('differentiated_learning', { ...localTask.pedagogical_insights?.differentiated_learning, support: e.target.value })}
             className="w-full bg-slate-900 border border-amber-500/20 rounded-2xl p-6 text-slate-300 text-sm leading-relaxed focus:border-amber-500 outline-none h-32 resize-none transition-all"
-            placeholder="How to support struggling learners..."
+            placeholder={t('supportPlaceholder')}
           />
         </div>
         <div className="space-y-2">
-          <label className="text-xs font-bold text-fuchsia-500 uppercase tracking-widest">Differentiated Extension (Gifted)</label>
+          <label className="text-xs font-bold text-fuchsia-500 uppercase tracking-widest">{t('differentiatedExtensionLabel')}</label>
           <textarea
             value={localTask.pedagogical_insights?.differentiated_learning?.extension || ''}
             onChange={(e) => updateInsightField('differentiated_learning', { ...localTask.pedagogical_insights?.differentiated_learning, extension: e.target.value })}
             className="w-full bg-slate-900 border border-fuchsia-500/20 rounded-2xl p-6 text-slate-300 text-sm leading-relaxed focus:border-fuchsia-500 outline-none h-32 resize-none transition-all"
-            placeholder="How to extend and challenge advanced learners..."
+            placeholder={t('extensionPlaceholder')}
           />
         </div>
       </div>

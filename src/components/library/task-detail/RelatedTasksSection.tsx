@@ -5,6 +5,7 @@ import { MathRenderer } from '../../MathRenderer';
 import { useLibraryStore } from '../../../store/useLibraryStore';
 import { Brain } from 'lucide-react';
 import { cosineSimilarity } from '../../../lib/ragContext';
+import { useTranslation } from 'react-i18next';
 
 type LibraryStore = ReturnType<typeof useLibraryStore.getState>;
 
@@ -14,15 +15,17 @@ interface RelatedTasksSectionProps {
 }
 
 export const RelatedTasksSection: React.FC<RelatedTasksSectionProps> = ({ task, store }) => {
+  const { t } = useTranslation('library');
+
   if (!task.embedding || !store.tasks || store.tasks.length <= 1) return null;
 
   return (
     <div className="md:col-span-2 pt-6 mt-4 border-t border-slate-200">
       <div className="flex items-center gap-2 mb-4">
         <Brain className="w-5 h-5 text-purple-500" />
-        <h3 className="text-sm font-bold text-slate-800">Поврзани задачи (RAG AI Match)</h3>
+        <h3 className="text-sm font-bold text-slate-800">{t('relatedTasksTitle')}</h3>
         <span className="text-[10px] font-bold px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full ml-2">
-              Semantic Search
+              {t('semanticSearchBadge')}
             </span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -38,7 +41,7 @@ export const RelatedTasksSection: React.FC<RelatedTasksSectionProps> = ({ task, 
           .map(({ task: relatedTask, score }) => (
             <div key={relatedTask.id} className="bg-slate-50 border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-2 opacity-10 font-mono text-[10px] font-bold select-none pointer-events-none">
-                {(score * 100).toFixed(1)}% Match
+                {t('matchBadge', { percent: (score * 100).toFixed(1) })}
               </div>
               <h4 className="font-bold text-xs text-slate-700 mb-2 truncate pr-16">{relatedTask.title}</h4>
               <div className="text-[11px] text-slate-500 line-clamp-2 mb-3 h-8">
@@ -60,7 +63,7 @@ export const RelatedTasksSection: React.FC<RelatedTasksSectionProps> = ({ task, 
                   }}
                   className="h-6 text-[10px] text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 shrink-0"
                 >
-                  Види
+                  {t('view')}
                 </Button>
               </div>
             </div>

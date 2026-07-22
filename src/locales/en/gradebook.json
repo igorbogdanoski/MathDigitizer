@@ -34,5 +34,18 @@
   "confirmDelete": "Are you sure you want to delete this grade?",
   "exportExcel": "Export to Excel",
   "exportPdf": "Export to PDF",
-  "exportCsv": "Export to CSV"
+  "exportCsv": "Export to CSV",
+  "exportInProgress": "Export to {{format}} - under development",
+  "editGradeFor": "Edit grade for {{name}}",
+  "grade1": "Insufficient (1)",
+  "grade2": "Sufficient (2)",
+  "grade3": "Good (3)",
+  "grade4": "Very Good (4)",
+  "grade5": "Excellent (5)",
+  "categoryTest": "Test",
+  "categoryHomework": "Homework",
+  "categoryProject": "Project",
+  "categoryParticipation": "Participation",
+  "categoryOral": "Oral",
+  "categoryOther": "Other"
 }
