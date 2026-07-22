@@ -101,30 +101,11 @@ try {
 } catch (e) {}
 
 const initAiPromise = (async () => {
-  if (!cachedApiKey || cachedApiKey === "undefined") {
-    try {
-      const hasHttpOrigin =
-        typeof window !== 'undefined' &&
-        typeof window.location?.origin === 'string' &&
-        /^https?:\/\//i.test(window.location.origin);
-      const isTestRuntime = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
-
-      if (hasHttpOrigin && !isTestRuntime) {
-        const configUrl = new URL(`/api/config?_cb=${Date.now()}`, window.location.origin).toString();
-        const res = await fetch(configUrl);
-        if (res.ok) {
-          const text = await res.text();
-          if (!text.startsWith('<')) {
-            const data = JSON.parse(text);
-            cachedApiKey = data.apiKey;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("Failed to fetch API key from server", e);
-    }
-  }
-
+  // NOTE: We intentionally do NOT fetch the API key from the server. The old
+  // `/api/config` endpoint exposed the raw server GEMINI_API_KEY to any client
+  // and has been removed. The key now comes only from build-time env
+  // (VITE_GEMINI_API_KEY, referrer-restricted, for static hosting); when it is
+  // absent we fall back to the authenticated `/api/ai/*` proxy below.
   if (cachedApiKey && cachedApiKey !== "undefined") {
     _aiInstance = new GoogleGenAI({ apiKey: cachedApiKey });
     return;

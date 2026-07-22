@@ -1,3 +1,5 @@
+import * as Sentry from '@sentry/react';
+
 export type ObservabilitySeverity = 'info' | 'warning' | 'error';
 
 export interface ObservabilityEvent {
@@ -75,6 +77,17 @@ function createId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
 
+// Unhandled errors/rejections are already captured natively by Sentry's
+// browser integrations (wired in Sentry.init), so we skip forwarding those to
+// avoid duplicate events. Every other (handled) error is forwarded below.
+const SENTRY_NATIVE_EVENTS = new Set(['unhandled-window-error', 'unhandled-promise-rejection']);
+
+const SENTRY_LEVEL: Record<ObservabilitySeverity, 'info' | 'warning' | 'error'> = {
+  info: 'info',
+  warning: 'warning',
+  error: 'error',
+};
+
 export function captureError(error: unknown, context: { name: string; path?: string; severity?: ObservabilitySeverity; details?: Record<string, unknown> }) {
   const event: ObservabilityEvent = {
     id: createId('err'),
@@ -89,6 +102,15 @@ export function captureError(error: unknown, context: { name: string; path?: str
 
   pushEvent(event);
   console.error(`[observability] ${context.name}`, error);
+
+  if (!SENTRY_NATIVE_EVENTS.has(context.name)) {
+    Sentry.captureException(error instanceof Error ? error : new Error(event.message), {
+      level: SENTRY_LEVEL[event.severity],
+      tags: { name: context.name, path: context.path },
+      extra: context.details,
+    });
+  }
+
   return event;
 }
 

@@ -26,9 +26,14 @@ try {
 // Authentication middleware for /api/ai/* routes
 async function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
   if (!firebaseAdminInitialized) {
-    // If Firebase Admin is not configured, allow requests (for local dev)
-    // but log a warning
-    console.warn("[Auth] Firebase Admin not configured — allowing unauthenticated request");
+    // Fail CLOSED in production: if Firebase Admin isn't configured we must
+    // NOT let anonymous traffic through the AI proxy (it would let anyone
+    // spend our Gemini quota). The permissive fallback is dev-only.
+    if (process.env.NODE_ENV === "production") {
+      console.error("[Auth] Firebase Admin not configured in production — rejecting request");
+      return res.status(503).json({ error: "Auth service unavailable" });
+    }
+    console.warn("[Auth] Firebase Admin not configured — allowing unauthenticated request (dev only)");
     return next();
   }
 
@@ -112,11 +117,6 @@ function withTimeout(ms: number): AbortSignal {
   const controller = new AbortController();
   setTimeout(() => controller.abort(), ms);
   return controller.signal;
-}
-
-function isPublicConfigEndpointEnabled(): boolean {
-  const flag = String(process.env.ALLOW_PUBLIC_API_CONFIG || "").toLowerCase();
-  return flag === "1" || flag === "true";
 }
 
 let serverAiClient: any = null;
@@ -315,22 +315,6 @@ async function startServer() {
       console.error("[Billing] status failed:", error?.message || error);
       return res.status(500).json({ error: "Failed to fetch billing status" });
     }
-  });
-
-  // Public key config endpoint is disabled by default in production.
-  // Enable only when strictly needed via ALLOW_PUBLIC_API_CONFIG=true.
-  app.get("/api/config", (req, res) => {
-    const enabled = isPublicConfigEndpointEnabled();
-    if (!enabled) {
-      return res.status(404).json({ error: "Not found" });
-    }
-
-    const origin = req.headers.origin;
-    if (origin && !isAllowedOrigin(origin)) {
-      return res.status(403).json({ error: "Origin not allowed" });
-    }
-
-    res.json({ apiKey: process.env.GEMINI_API_KEY || "" });
   });
 
   app.post("/api/ai/generate-content", requireAuth, async (req, res) => {
