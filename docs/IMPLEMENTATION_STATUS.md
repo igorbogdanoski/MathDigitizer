@@ -1,7 +1,8 @@
 # MathDigitizer Pro — Implementation Status Tracker
 
-**Last Updated:** 2026-07-22
-**Branch:** feat/i18n-and-decomposition (PR #76)
+**Last Updated:** 2026-07-22 (Session 2)
+**Branch:** feat/aria-i18n-and-interventions (PR #77)
+**Merged:** PR #76 (i18n ~85%, decomposition 11/11, Gradebook export, docs)
 
 ---
 
@@ -47,7 +48,7 @@
 |------|--------|---------|
 | A. Gradebook | ✅ DONE | Full CRUD + weighted averages + CSV/Excel/PDF export |
 | B. Диференцијација | ✅ DONE | 3-level generation via Gemini, hints, scaffolding |
-| C. Early Warning | ✅ DONE | Risk profiles (5 weighted factors), interventions, per-student detail modal |
+| C. Early Warning | ✅ DONE | Risk profiles + **intervention tracking** (create/track/complete/notes) |
 
 #### 3.2 Medium Priority (Q4 2026)
 
@@ -75,10 +76,10 @@
 | Component tests | ✅ DONE | 109 tests passing (26 test files) |
 | Error tracking (Sentry) | ✅ DONE | Configured with captureException, replay masking |
 | Security audit | ✅ DONE | API key exposure fixed, fail-closed auth, npm audit fix |
-| i18n completion | 🔄 IN PROGRESS | **~30% coverage** (25+ components, 13 namespaces, mk/en/al) |
+| i18n completion | 🔄 IN PROGRESS | **~85% coverage** (60+ components, 38 namespaces, mk/en/al) + aria-labels DONE |
 | Performance audit | ❌ NOT STARTED | Lighthouse |
 | Design system | ❌ NOT STARTED | No consistent component library |
-| Accessibility audit | ❌ NOT STARTED | WCAG 2.1; 116 hardcoded MK aria-labels |
+| Accessibility audit | 🟡 PARTIAL | WCAG 2.1; aria-labels i18n DONE (0 hardcoded MK remaining); full audit pending |
 
 ---
 
@@ -90,7 +91,7 @@
 | 2 | Диференцијација | ✅ DONE |
 | 3 | Early Warning | ✅ DONE |
 | 4 | Stripe интеграција | ⚠️ N/A (Stripe not available in MK) |
-| 5 | i18n completion (AL) | 🔄 ~30% |
+| 5 | i18n completion (AL) | 🔄 ~85% + aria-labels DONE |
 
 ---
 
@@ -112,35 +113,29 @@
    - AnalyticsDashboard: 799→407 (-49%)
    - Home: 737→274 (-63%)
    - Dashboard: 742→482 (-35%)
-4. **i18n integration (13 namespaces):**
-   - dashboard, schoolInquiries, extraction, smartOcr, flashcards, library
-   - graphDigitizer, analytics, pedagogue, smartGrader, materialsFactory, tutorChat, adaptiveTest
+4. **i18n integration (38 namespaces, ~85% coverage):**
+   - 60+ components with useTranslation (mk/en/al)
+   - All aria-labels internationalized (0 hardcoded MK remaining)
 5. **Gradebook export** — CSV + Excel (.xls) + PDF (print)
-6. **Hardcoded MK fixes** — Gradebook, TaskDifferentiation, EarlyWarning constants → t()
-7. **Test fixes** — Updated 6 test files for i18n compatibility
+6. **Early Warning intervention tracking** — create/track/complete/notes
+7. **Documentation** — User Manual (EN), Technical Docs, Financial Plan (Alibaba)
+8. **15 screenshots** added to User Manual
+9. **PR #76 MERGED** → main
+10. **PR #77 created** — aria-labels i18n + Early Warning interventions
 
-### In Progress
+### Remaining
 
-- i18n batch 3: Classrooms, TeacherDashboard, StudentDashboard, KahootMaker, LiveCanvas
-- i18n batch 4: InteractiveSolver, LessonPlanGenerator, CurriculumFactory, TestGenerator, GlobalAITutor
-
-### Remaining i18n (~70% of components)
-
-Components still without useTranslation:
-- Classrooms, TeacherDashboard, StudentDashboard
-- KahootMaker, MakedoTestGenerator, LiveCanvas
-- InteractiveSolver, LessonPlanGenerator, CurriculumFactory
-- TestGenerator/MassFactory, GlobalAITutor
-- AvatarShop, StudentSkillTree, WorkflowSteps
-- Blog components, SEO component
-- UI primitives (Button, Card, Input, Skeleton)
-- Various modals and small components
+- i18n: blog posts (static content), UI primitives (no text) — low priority
+- Performance audit (Lighthouse)
+- Full accessibility audit (WCAG 2.1)
+- Design system consistency
 
 ---
 
-## PR #76 Status
+## PR Status
 
-**URL:** https://github.com/igorbogdanoski/MathDigitizer/pull/76
-**Branch:** feat/i18n-and-decomposition
-**Commits:** 5 (will grow as i18n batches complete)
-**Verification:** tsc 0 errors, vitest 109/109
+| PR | Status | Content |
+|----|--------|---------|
+| #75 | ✅ MERGED | Security fixes, Sentry, deps, AI tests, gemini refactor |
+| #76 | ✅ MERGED | i18n ~85%, decomposition 11/11, Gradebook export, docs |
+| #77 | 🔄 OPEN | Aria-labels i18n + Early Warning intervention tracking |
