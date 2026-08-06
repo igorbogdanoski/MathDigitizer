@@ -35,5 +35,11 @@ jobs:
       - name: Governance gate
         run: npm run quality:governance
 
+      - name: Ingestion security gate
+        run: npm run quality:ingestion
+
       - name: Bundle budget gate
         run: npm run quality:bundle
+
+      - name: Route budget gate
+        run: npm run quality:routes

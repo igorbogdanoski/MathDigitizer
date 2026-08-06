@@ -413,16 +413,25 @@ After implementation, MathDigitizer gains:
 - src/lib/ingestion/sanitize.test.ts
 - src/lib/ingestion/injectionScan.test.ts
 - src/lib/ingestion/preflight.test.ts
+- src/lib/ingestion/policy.test.ts
+
+1. Added CI and local quality gate wiring for ingestion security:
+
+- package.json -> quality:ingestion
+- scripts/run-quality-gates.mjs includes quality:ingestion
+- .github/workflows/quality-gates.yml includes Ingestion security gate and Route budget gate
 
 1. Validation result:
 
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts`
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts src/lib/ingestion/preflight.test.ts`
-- Status: 3 test files passed, 7 tests passed.
+- `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts src/lib/ingestion/preflight.test.ts src/lib/ingestion/policy.test.ts`
+- `npm run quality:ingestion`
+- Status: 4 test files passed, 10 tests passed.
 
 ### Next 72 hours (expert execution lane)
 
 1. Add extraction metadata contract (method, fallback, sanitize counters, scan severity) to output payload.
 2. Add Safety Panel UI showing sanitize and scan summary per extraction job.
-3. Add CI gate for ingestion security tests to prevent silent regressions.
-4. Add policy thresholds (warn/block) for high-severity scan findings.
+3. Extend policy thresholds with configurable env mode for strictness by source type.
+4. Prepare Firestore-safe persistence contract for metadata without violating current rules allowlist.
