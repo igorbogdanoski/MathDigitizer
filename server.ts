@@ -14,6 +14,7 @@ import { taskToSlides } from "./src/lib/slidesExport";
 import { tasksByCurriculum } from "./src/lib/curriculumExport";
 import { tasksToSlideaDocument } from "./src/lib/slideaInterchange";
 import { MathTask } from "./src/lib/schema";
+import { mergeBillingActivity } from "./src/lib/billing";
 
 // ─── Firebase Admin Initialization ───────────────────────────────────────────
 // Requires GOOGLE_APPLICATION_CREDENTIALS env var pointing to a service account
@@ -631,17 +632,27 @@ async function startServer() {
       const userSnap = await db.collection("users").doc(uid).get();
       const userData = userSnap.exists ? userSnap.data()! : {};
 
-      // Fetch user's payment receipts
-      const receiptsSnap = await db.collection("payment_receipts")
-        .where("requester_uid", "==", uid)
-        .orderBy("created_at", "desc")
-        .limit(20)
-        .get();
+      const [receiptsSnap, intentsSnap] = await Promise.all([
+        db.collection("payment_receipts")
+          .where("requester_uid", "==", uid)
+          .orderBy("created_at", "desc")
+          .limit(20)
+          .get(),
+        db.collection("payment_intents")
+          .where("user_id", "==", uid)
+          .limit(20)
+          .get(),
+      ]);
 
       const receipts = receiptsSnap.docs.map((d) => ({
         id: d.id,
         ...d.data(),
       }));
+      const intents = intentsSnap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
+      const history = mergeBillingActivity(receipts, intents);
 
       const isPro = Boolean(userData.isPro);
       const trialStartedAt = userData.trialStartedAt as string | undefined;
@@ -657,6 +668,8 @@ async function startServer() {
         proStartedAt: userData.proStartedAt || null,
         paymentChannel: userData.paymentChannel || null,
         receipts,
+        intents,
+        history,
       });
     } catch (error: any) {
       console.error("[Billing] status failed:", error?.message || error);
