@@ -514,6 +514,11 @@ After implementation, MathDigitizer gains:
 - src/components/SystemIntegrityCheck.tsx now includes `Export JSON` action for severity trend snapshots
 - export payload includes `exportedAt`, `includePreflight`, latest diagnostics timestamp, and full local snapshot history
 
+1. Added compact weekly summary ribbon for ingestion safety posture:
+
+- src/components/SystemIntegrityCheck.tsx now computes a 7-day severity summary from local diagnostics history
+- posture tiers (`stable`, `watch`, `critical`) are derived from average high-severity ratio and shown inline in diagnostics card
+
 1. Validation result:
 
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts`
@@ -526,7 +531,7 @@ After implementation, MathDigitizer gains:
 
 ### Next 72 hours (expert execution lane)
 
-1. Add compact weekly summary ribbon for ingestion safety posture.
-2. Add ingestion diagnostics UI smoke test with admin/non-admin visibility checks.
-3. Add diagnostics preflight toggle persistence (remember last state per admin browser).
-4. Add severity-trend retention cap indicator in UI (show oldest/newest snapshot window).
+1. Add ingestion diagnostics UI smoke test with admin/non-admin visibility checks.
+2. Add diagnostics preflight toggle persistence (remember last state per admin browser).
+3. Add severity-trend retention cap indicator in UI (show oldest/newest snapshot window).
+4. Add optional route-level guard to hide diagnostics endpoint fetch for non-admin-only sessions.

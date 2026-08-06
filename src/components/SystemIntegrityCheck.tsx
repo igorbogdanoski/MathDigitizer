@@ -63,6 +63,14 @@ interface SeverityTrendPoint {
   lowCount: number;
 }
 
+interface WeeklySeveritySummary {
+  snapshots: number;
+  avgHighPct: number;
+  avgMediumPct: number;
+  avgLowPct: number;
+  posture: 'stable' | 'watch' | 'critical';
+}
+
 function readSeverityHistory(): SeverityTrendPoint[] {
   try {
     const raw = window.localStorage.getItem(INGESTION_HISTORY_KEY);
@@ -108,6 +116,35 @@ function toSeverityTrendPoint(data: IngestionDiagnosticsView): SeverityTrendPoin
   };
 }
 
+function buildWeeklySummary(points: SeverityTrendPoint[]): WeeklySeveritySummary | null {
+  if (points.length === 0) return null;
+
+  const now = Date.now();
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+  const weekly = points.filter((item) => {
+    const stamp = Date.parse(item.stamp);
+    return Number.isFinite(stamp) && now - stamp <= weekMs;
+  });
+
+  const sample = weekly.length > 0 ? weekly : points.slice(-7);
+  if (sample.length === 0) return null;
+
+  const avgHighPct = Math.round(sample.reduce((sum, item) => sum + item.highPct, 0) / sample.length);
+  const avgMediumPct = Math.round(sample.reduce((sum, item) => sum + item.mediumPct, 0) / sample.length);
+  const avgLowPct = Math.round(sample.reduce((sum, item) => sum + item.lowPct, 0) / sample.length);
+
+  const posture: WeeklySeveritySummary['posture'] =
+    avgHighPct >= 25 ? 'critical' : avgHighPct >= 10 ? 'watch' : 'stable';
+
+  return {
+    snapshots: sample.length,
+    avgHighPct,
+    avgMediumPct,
+    avgLowPct,
+    posture,
+  };
+}
+
 export const SystemIntegrityCheck: React.FC = () => {
   const { user, userProfile } = useAuth();
   const canViewIngestionDiagnostics = isPaymentAdmin(userProfile?.email ?? user?.email);
@@ -126,6 +163,7 @@ export const SystemIntegrityCheck: React.FC = () => {
   const [ingestionDiagError, setIngestionDiagError] = useState<string | null>(null);
   const [severityHistory, setSeverityHistory] = useState<SeverityTrendPoint[]>([]);
   const [includePreflight, setIncludePreflight] = useState(false);
+  const weeklySummary = buildWeeklySummary(severityHistory);
 
   const handleResetSeverityHistory = () => {
     clearSeverityHistory();
@@ -424,6 +462,25 @@ export const SystemIntegrityCheck: React.FC = () => {
                   <div className="text-xl font-black text-emerald-800 dark:text-emerald-300">{ingestionDiagnostics.scanner.bySeverity.low}</div>
                 </div>
               </div>
+
+              {weeklySummary && (
+                <div
+                  className={`rounded-xl border px-3 py-2 text-xs flex items-center justify-between gap-3 ${
+                    weeklySummary.posture === 'critical'
+                      ? 'border-red-300 bg-red-50 dark:border-red-900/60 dark:bg-red-900/20'
+                      : weeklySummary.posture === 'watch'
+                        ? 'border-amber-300 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-900/20'
+                        : 'border-emerald-300 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-900/20'
+                  }`}
+                >
+                  <div className="font-semibold text-slate-800 dark:text-slate-100">
+                    Weekly posture: {weeklySummary.posture.toUpperCase()} ({weeklySummary.snapshots} snapshots)
+                  </div>
+                  <div className="text-slate-600 dark:text-slate-300">
+                    High {weeklySummary.avgHighPct}% • Medium {weeklySummary.avgMediumPct}% • Low {weeklySummary.avgLowPct}%
+                  </div>
+                </div>
+              )}
 
               {severityHistory.length > 1 && (
                 <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
