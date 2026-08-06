@@ -15,8 +15,9 @@ import {
 } from '../../lib/sharedTaskFormat';
 import { tasksToSlideDeck } from '../../lib/slidesExport';
 import { tasksByCurriculum } from '../../lib/curriculumExport';
+import { tasksToSlideaDocument, getSlideaFilename } from '../../lib/slideaInterchange';
 
-type ExportFormat = 'json' | 'latex' | 'markdown' | 'slides' | 'curriculum';
+type ExportFormat = 'json' | 'latex' | 'markdown' | 'slides' | 'curriculum' | 'slidea';
 type ExportTarget = 'ai-navigator' | 'slides' | 'generic';
 
 interface ExportPanelProps {
@@ -130,6 +131,15 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ tasks, preselectedIds,
           );
           break;
         }
+        case 'slidea': {
+          const doc = tasksToSlideaDocument(selectedTasks);
+          const filename = getSlideaFilename(doc.title);
+          saveAs(
+            new Blob([JSON.stringify(doc, null, 2)], { type: 'application/json;charset=utf-8' }),
+            filename
+          );
+          break;
+        }
       }
       showToast(t('exportDownloadSuccess', { count: selectedTasks.length }), 'success');
     } catch (e) {
@@ -146,6 +156,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ tasks, preselectedIds,
     { value: 'markdown', labelKey: 'exportFormatMarkdown', descKey: 'exportFormatMarkdownDesc' },
     { value: 'slides', labelKey: 'exportFormatSlides', descKey: 'exportFormatSlidesDesc' },
     { value: 'curriculum', labelKey: 'exportFormatCurriculum', descKey: 'exportFormatCurriculumDesc' },
+    { value: 'slidea', labelKey: 'exportFormatSlidea', descKey: 'exportFormatSlideaDesc' },
   ];
 
   const targets: { value: ExportTarget; labelKey: string }[] = [

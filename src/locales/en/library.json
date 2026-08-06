@@ -166,6 +166,8 @@
   "exportFormatSlidesDesc": "Slide deck for slides.mismath.net (question → steps → answer)",
   "exportFormatCurriculum": "Curriculum",
   "exportFormatCurriculumDesc": "Grouped by curriculum topics for ai.mismath.net",
+  "exportFormatSlidea": "Slidea Interchange",
+  "exportFormatSlideaDesc": "Slidea Interchange Format for slides.mismath.net (БРО codes + activities)",
   "exportTargetLabel": "Target app",
   "exportTargetAiNavigator": "AI Navigator (ai.mismath.net)",
   "exportTargetSlides": "Slides / Slidea (slides.mismath.net)",

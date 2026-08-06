@@ -12,6 +12,7 @@ import {
 } from "./src/lib/sharedTaskFormat";
 import { taskToSlides } from "./src/lib/slidesExport";
 import { tasksByCurriculum } from "./src/lib/curriculumExport";
+import { tasksToSlideaDocument } from "./src/lib/slideaInterchange";
 import { MathTask } from "./src/lib/schema";
 
 // ─── Firebase Admin Initialization ───────────────────────────────────────────
@@ -514,6 +515,33 @@ async function startServer() {
     } catch (error: any) {
       console.error("[Export] curriculum failed:", error?.message || error);
       return res.status(500).json({ error: "Curriculum export failed" });
+    }
+  });
+
+  /**
+   * GET /api/export/slidea
+   * Slidea Interchange Format for slides.mismath.net — tasks converted to
+   * the Slidea import format with БРО outcome codes.
+   * Query: grade, topic, title (optional document title).
+   * Returns: SlideaInterchangeDocument
+   */
+  app.get("/api/export/slidea", requireAuth, exportRateLimit, async (req, res) => {
+    try {
+      if (!requireFirestore(res)) return;
+
+      const grade = queryStringParam(req.query.grade);
+      const title = queryStringParam(req.query.title);
+
+      const tasks = await fetchExportTasks({ grade });
+      if (tasks.length === 0) {
+        return res.status(404).json({ error: "No tasks found for the given filters" });
+      }
+
+      const doc = tasksToSlideaDocument(tasks, title || undefined);
+      return res.json(doc);
+    } catch (error: any) {
+      console.error("[Export] slidea failed:", error?.message || error);
+      return res.status(500).json({ error: "Slidea export failed" });
     }
   });
 

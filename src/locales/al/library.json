@@ -166,6 +166,8 @@
   "exportFormatSlidesDesc": "Prezantim për slides.mismath.net (pyetje → hapa → përgjigje)",
   "exportFormatCurriculum": "Curriculum",
   "exportFormatCurriculumDesc": "Grupuar sipas temave mësimore për ai.mismath.net",
+  "exportFormatSlidea": "Slidea Interchange",
+  "exportFormatSlideaDesc": "Slidea Interchange Format për slides.mismath.net (kodet БРО + aktivitete)",
   "exportTargetLabel": "Aplikacioni synues",
   "exportTargetAiNavigator": "AI Navigator (ai.mismath.net)",
   "exportTargetSlides": "Slides / Slidea (slides.mismath.net)",
