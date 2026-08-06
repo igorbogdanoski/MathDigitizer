@@ -489,6 +489,10 @@ After implementation, MathDigitizer gains:
 - src/components/SystemIntegrityCheck.tsx now stores the latest diagnostics snapshots locally
 - visual trend chart for low/medium/high severity composition over recent checkpoints
 
+1. Added retention and reset control for local diagnostics trend history:
+
+- src/components/SystemIntegrityCheck.tsx includes reset action to clear local severity history snapshots
+
 1. Validation result:
 
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts`
@@ -504,4 +508,4 @@ After implementation, MathDigitizer gains:
 1. Add E2E check for ingestion snapshot persistence flag behavior.
 2. Add diagnostics card for preflight dependency status toggled view.
 3. Add role-gated visibility control for ingestion diagnostics panel.
-4. Add retention/reset control for local diagnostics trend history.
+4. Add trend export option (JSON) for diagnostics snapshots.

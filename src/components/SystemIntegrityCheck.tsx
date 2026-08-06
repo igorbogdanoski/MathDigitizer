@@ -67,6 +67,14 @@ function writeSeverityHistory(data: SeverityTrendPoint[]) {
   }
 }
 
+function clearSeverityHistory() {
+  try {
+    window.localStorage.removeItem(INGESTION_HISTORY_KEY);
+  } catch {
+    // Ignore localStorage cleanup failures.
+  }
+}
+
 function toSeverityTrendPoint(data: IngestionDiagnosticsView): SeverityTrendPoint {
   const low = data.scanner.bySeverity.low;
   const medium = data.scanner.bySeverity.medium;
@@ -98,6 +106,11 @@ export const SystemIntegrityCheck: React.FC = () => {
   const [ingestionDiagLoading, setIngestionDiagLoading] = useState(false);
   const [ingestionDiagError, setIngestionDiagError] = useState<string | null>(null);
   const [severityHistory, setSeverityHistory] = useState<SeverityTrendPoint[]>([]);
+
+  const handleResetSeverityHistory = () => {
+    clearSeverityHistory();
+    setSeverityHistory([]);
+  };
 
   const fetchIngestionDiagnostics = async () => {
     setIngestionDiagLoading(true);
@@ -340,7 +353,17 @@ export const SystemIntegrityCheck: React.FC = () => {
 
               {severityHistory.length > 1 && (
                 <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
-                  <div className="text-xs uppercase tracking-wider text-slate-500 mb-2">Severity Mix Trend (Last {severityHistory.length})</div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="text-xs uppercase tracking-wider text-slate-500">Severity Mix Trend (Last {severityHistory.length})</div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResetSeverityHistory}
+                      className="h-7 px-2 text-xs"
+                    >
+                      Reset history
+                    </Button>
+                  </div>
                   <div className="h-52 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={severityHistory} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
