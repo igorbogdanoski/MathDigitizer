@@ -6,3 +6,4 @@ export * from './InterventionRadarPanel';
 export * from './LongitudinalChart';
 export * from './KnowledgeGapsGrid';
 export * from './InterventionPlanModal';
+export * from './CurriculumCoveragePanel';

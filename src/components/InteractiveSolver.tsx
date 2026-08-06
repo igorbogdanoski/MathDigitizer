@@ -236,6 +236,7 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
         total_hints_used: telemetrySteps.reduce((acc, step) => acc + step.hints_requested, 0),
         mistake_count: telemetrySteps.filter(s => !s.is_correct).length,
         curriculum_topic: task.curriculum_topic,
+        curriculum_topic_id: task.curriculum_refs?.[0]?.topic_id,
         tags: task.tags,
       };
       
