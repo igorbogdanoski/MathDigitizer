@@ -96,6 +96,11 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
   const [isDragOver, setIsDragOver] = useState(false);
   const [targetFolder, setTargetFolder] = useState('');
 
+  const latestIngestionMeta = React.useMemo(() => {
+    const firstTask = tasks[0] as any;
+    return firstTask?.__ingestion_meta ?? null;
+  }, [tasks]);
+
   const isValidUrl = (url: string) => {
     try {
       new URL(url);
@@ -879,6 +884,29 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                        )}
                      </div>
                    </div>
+                </div>
+              </div>
+            )}
+
+            {latestIngestionMeta && (
+              <div className="mt-5 rounded-2xl border border-amber-300/40 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="font-semibold text-amber-900 dark:text-amber-100">Ingestion Safety Panel</div>
+                  <div className="text-xs text-amber-800 dark:text-amber-200">
+                    Source: <span className="font-semibold">{String(latestIngestionMeta.sourceKind || 'unknown')}</span>
+                  </div>
+                </div>
+
+                <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-amber-900 dark:text-amber-100">
+                  <div>
+                    Severity: <span className="font-semibold">{String(latestIngestionMeta.scan?.highestSeverity || 'none')}</span>
+                  </div>
+                  <div>
+                    Sanitized: <span className="font-semibold">{latestIngestionMeta.sanitize?.changed ? 'yes' : 'no'}</span>
+                  </div>
+                  <div>
+                    Parser path: <span className="font-semibold">{String(latestIngestionMeta.parserPath || 'n/a')}</span>
+                  </div>
                 </div>
               </div>
             )}

@@ -428,6 +428,11 @@ After implementation, MathDigitizer gains:
 - src/lib/analytics.ts -> `trackIngestionSecurity`
 - src/components/ExtractionEngine.tsx emits severity and sanitization signal after extraction
 
+1. Implemented Ingestion Safety Panel in extraction UI:
+
+- surfaces source kind, scan severity, sanitize changed flag, and parser path
+- powered by transient `__ingestion_meta` contract
+
 1. Added unit tests:
 
 - src/lib/ingestion/sanitize.test.ts
@@ -455,7 +460,7 @@ After implementation, MathDigitizer gains:
 
 ### Next 72 hours (expert execution lane)
 
-1. Add Safety Panel UI showing sanitize and scan summary per extraction job.
-2. Add reviewer-facing docs for interpreting ingestion warnings.
-3. Add optional endpoint for exposing ingestion diagnostics in admin dashboards.
-4. Evaluate safe expansion of metadata persistence with Firestore rules update plan.
+1. Add reviewer-facing docs for interpreting ingestion warnings.
+2. Add optional endpoint for exposing ingestion diagnostics in admin dashboards.
+3. Evaluate safe expansion of metadata persistence with Firestore rules update plan.
+4. Prepare production rollout checklist for env policy modes.
