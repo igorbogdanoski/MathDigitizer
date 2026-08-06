@@ -27,6 +27,29 @@ const formatDate = (iso: string): string => {
   }
 };
 
+export async function sendPaymentIntentCreatedEmail(
+  userEmail: string,
+  customerName: string,
+  invoiceNumber: string,
+  amount: number,
+  plan: PaymentIntentPlan
+): Promise<void> {
+  await sendEmail(EMAIL_TEMPLATES.teacher, {
+    to_email: userEmail,
+    teacher_email: userEmail,
+    teacher_name: customerName,
+    email_type: 'payment_intent_created',
+    reference_code: invoiceNumber,
+    plan: planLabel(plan),
+    amount: `${amount.toLocaleString('en-US')} MKD`,
+    subject: `[MathDigitizer] Invoice ${invoiceNumber} - Payment Instructions`,
+    message:
+      `Ја генериравме фактурата ${invoiceNumber} за ${planLabel(plan)}. ` +
+      `Износ: ${amount.toLocaleString('en-US')} MKD. ` +
+      'Откачи ја фактурата, направи ја уплатата преку банка и подоцна прикачи ја потврдата во Billing таблата.',
+  });
+}
+
 /** "We received your payment — it will be reviewed within 24h." */
 export async function sendPaymentReceivedEmail(userEmail: string, invoiceNumber: string): Promise<void> {
   await sendEmail(EMAIL_TEMPLATES.teacher, {
@@ -84,7 +107,7 @@ export async function sendAdminNotificationEmail(paymentIntent: PaymentIntentRec
     reference_code: paymentIntent.invoice_number,
     plan: planLabel(paymentIntent.plan),
     amount: `${paymentIntent.amount.toLocaleString('en-US')} MKD`,
-    subject: `Нова уплата за преглед — ${paymentIntent.invoice_number}`,
+    subject: `[MathDigitizer Admin] New Payment to Review - ${paymentIntent.invoice_number}`,
     message:
       `Нова уплата чека преглед во Payment Admin таблата (/payment-admin).\n` +
       `Фактура: ${paymentIntent.invoice_number}\n` +

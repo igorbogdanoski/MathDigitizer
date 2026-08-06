@@ -13,7 +13,11 @@ import {
   createPaymentIntent,
   type PaymentIntentRecord,
 } from '../lib/paymentIntents';
-import { sendAdminNotificationEmail, sendPaymentReceivedEmail } from '../lib/paymentEmails';
+import {
+  sendAdminNotificationEmail,
+  sendPaymentIntentCreatedEmail,
+  sendPaymentReceivedEmail,
+} from '../lib/paymentEmails';
 import { trackReceiptSubmitted } from '../lib/analytics';
 import { Button } from './ui/Button';
 import { Modal } from './ui/Modal';
@@ -110,6 +114,14 @@ export const ProPaymentModal: React.FC<ProPaymentModalProps> = ({ isOpen, onClos
         return;
       }
 
+      sendPaymentIntentCreatedEmail(
+        customerEmail.trim(),
+        customerName.trim(),
+        allocation.invoiceNumber,
+        selectedPlan.priceMkd,
+        plan
+      ).catch(() => {});
+
       setAllocated(allocation);
       showToast(t('payModalInvoiceOpened'), 'success');
       setStep('bank');
@@ -155,6 +167,7 @@ export const ProPaymentModal: React.FC<ProPaymentModalProps> = ({ isOpen, onClos
         invoiceNumber: allocated.invoiceNumber,
         intentId: allocated.id,
       });
+      sendPaymentReceivedEmail(customerEmail.trim(), allocated.invoiceNumber).catch(() => {});
       setCreatedIntent(intent);
       setStep('receipt');
     } catch (error) {

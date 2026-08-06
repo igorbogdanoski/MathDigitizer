@@ -122,6 +122,9 @@
   "payAdminPlanMonthly": "Месечно",
   "payAdminPlanAnnual": "Годишно",
 
+  "payModalInvoiceEmailSent": "Испратена е потврдна е-пошта на вашиот inbox.",
+  "payModalReceiptSubmitted": "Вашата потврда е примена и процесот на преглед започна.",
+
   "payIntentsTitle": "Фактури и плаќања",
   "payIntentsDownloadInvoice": "Преземи фактура",
   "payIntentsMethodBank": "Банкарски трансфер (фактура)",
