@@ -97,5 +97,28 @@
   "proGate": {
     "featureName": "Advanced Analytics",
     "description": "Kjo analizë është pjesë e planit Pro. Zhbllokoni atë për sinjale më të thella pedagogjike, tregues konjitivë dhe plane ndërhyrjeje."
+  },
+  "curriculumCoverage": {
+    "title": "Mbulimi i Programit Mësimor",
+    "description": "Shpërndarja e bibliotekës së detyrave nëpër temat zyrtare mësimore BRO",
+    "loading": "Duke ngarkuar detyrat...",
+    "loadError": "Gabim në ngarkimin e detyrave.",
+    "tasksPerTopic": "Detyra sipas temës mësimore",
+    "tasksCount": "{{count}} detyra",
+    "gaps": {
+      "title": "Tema pa detyra",
+      "none": "Nuk ka tema bosh — çdo temë mësimore ka të paktën një detyrë.",
+      "showAll": "Shfaq të gjitha {{count}} temat",
+      "showLess": "Shfaq më pak"
+    },
+    "byGrade": {
+      "title": "Mbulimi sipas klasës",
+      "topicsCovered": "{{covered}}/{{total}} tema"
+    },
+    "summary": {
+      "totalTopics": "Tema mësimore",
+      "coveredTopics": "Tema të mbuluara",
+      "coveragePct": "Mbulimi"
+    }
   }
 }

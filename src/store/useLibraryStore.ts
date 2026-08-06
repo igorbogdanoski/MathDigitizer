@@ -27,6 +27,8 @@ interface LibraryState {
   setGradeFilter: (grades: string[]) => void;
   folderFilter: string;
   setFolderFilter: (folder: string) => void;
+  curriculumTopicFilter: string; // 'all' or a topic_id (curriculum_refs) / free-form curriculum_topic
+  setCurriculumTopicFilter: (topic: string) => void;
   dokFilter: number[];
   setDokFilter: (doks: number[]) => void;
   sortDifficulty: 'none' | 'asc' | 'desc';
@@ -144,6 +146,8 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   setGradeFilter: (gradeFilter) => set({ gradeFilter }),
   folderFilter: 'all',
   setFolderFilter: (folderFilter) => set({ folderFilter }),
+  curriculumTopicFilter: 'all',
+  setCurriculumTopicFilter: (curriculumTopicFilter) => set({ curriculumTopicFilter }),
   dokFilter: [],
   setDokFilter: (dokFilter) => set({ dokFilter }),
   sortDifficulty: 'none',
@@ -163,6 +167,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     difficultyFilter: 'all',
     sourceFilter: 'all',
     folderFilter: 'all',
+    curriculumTopicFilter: 'all',
     tagFilter: [],
     gradeFilter: [],
     dokFilter: [],

@@ -96,5 +96,72 @@
   "ariaCloseGeoGebra": "Mbyll GeoGebra",
   "ariaGeoGebraCanvas": "GeoGebra Kanavacë Interaktive",
   "ariaLightTheme": "Tema e ndritshme",
-  "ariaDarkTheme": "Tema e errët"
+  "ariaDarkTheme": "Tema e errët",
+  "curriculumAdmin": {
+    "refresh": "Rifresko",
+    "loadingTasks": "Duke ngarkuar detyrat...",
+    "stats": {
+      "title": "Hartëzimi i detyrave me programin mësimor",
+      "totalTasks": "Gjithsej detyra",
+      "mappedTasks": "Të hartëzuara",
+      "unmappedTasks": "Pa hartëzim",
+      "mappingPct": "Mbulimi",
+      "lowConfidence": "Besim i ulët",
+      "trackBreakdown": "Sipas nivelit të arsimit: tema të mbuluara / tema gjithsej"
+    },
+    "heatmap": {
+      "title": "Mbulimi sipas klasës",
+      "subtitle": "Përqindja e temave me të paktën një detyrë të hartëzuar",
+      "legendGood": "Mbulim i mirë",
+      "legendPartial": "I pjesshëm",
+      "legendNone": "Pa detyra",
+      "topicsCovered": "{{covered}}/{{total}} tema"
+    },
+    "browser": {
+      "title": "Shfletuesi i temave",
+      "subtitle": "Hierarkia: niveli i arsimit → klasa → tema",
+      "hoursShort": "orë",
+      "outcomes": "rezultate",
+      "keywords": "fjalë kyçe",
+      "taskCount": "{{count}} detyra",
+      "noTasks": "pa detyra"
+    },
+    "queue": {
+      "title": "Rradha e rishikimit të hartëzimit",
+      "subtitle": "Detyra pa temë mësimore ose me besim të ulët hartëzimi",
+      "unmapped": "Pa hartëzim",
+      "lowConfidence": "Besimi {{value}}",
+      "classify": "Klasifiko",
+      "classifying": "Duke klasifikuar...",
+      "classifySuccess": "Detyra u hartëzua: {{topic}} ({{confidence}})",
+      "classifyNoMatch": "Nuk u gjet temë përkatëse mësimore.",
+      "classifyError": "Gabim në klasifikim.",
+      "manualAssign": "Cakto temën manualisht",
+      "selectTopic": "Zgjidh temën...",
+      "assignSuccess": "Tema u caktua manualisht.",
+      "assignError": "Gabim në caktimin e temës.",
+      "empty": "Të gjitha detyrat janë hartëzuar me besim të lartë.",
+      "showingFirst": "Po shfaqen {{count}} detyrat e para"
+    }
+  },
+  "curriculumTestGen": {
+    "title": "Teste sipas Standardeve Shtetërore",
+    "subtitle": "Gjeneroni materiale të përputhura me programet e MON/BRO (bro.gov.mk)",
+    "trackLabel": "Niveli i Arsimit",
+    "gradeLabel": "Klasa / Viti",
+    "topicLabel": "Tema Mësimore",
+    "outcomesCount": "{{count}} rezultate",
+    "hoursShort": "{{hours}} orë",
+    "keywordsCount": "{{count}} fjalë kyçe",
+    "generate": "Gjenero Detyra (BRO)",
+    "generating": "Duke gjeneruar detyra me AI...",
+    "injectionNote": "Rezultatet, fjalët kyçe dhe shembujt nga programi zyrtar janë të përfshira në gjenerim.",
+    "savedToast": "U gjeneruan dhe u ruajtën me sukses {{count}} detyra sipas standardit shtetëror.",
+    "errorToast": "Gabim në gjenerim.",
+    "footerNote": "Detyrat e gjeneruara shtohen automatikisht në koleksionin e detyrave dhe do të jenë të disponueshme për nxënësit në Testin Adaptiv.",
+    "trackPrimary": "Arsimi fillor",
+    "trackSecondaryGeneral": "Gjimnazi i përgjithshëm",
+    "trackSecondaryMathInfo": "Gjimnazi matematikë-informatikë",
+    "trackSecondaryVocational": "Arsimi profesional"
+  }
 }
