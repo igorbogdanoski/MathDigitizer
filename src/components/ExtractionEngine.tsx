@@ -22,6 +22,7 @@ import { db } from '../lib/firebase';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { useNavigate } from 'react-router-dom';
 import { stripIngestionMetaForPersistence } from '../lib/ingestion/metadata';
+import { trackIngestionSecurity } from '../lib/analytics';
 import { KahootMaker } from './KahootMaker';
 import { MakedoTestGenerator } from './MakedoTestGenerator';
 import { GeoGebraViewer } from './GeoGebraViewer';
@@ -281,6 +282,22 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
       setProgress(100);
       setStatusText(t('progressSuccess'));
       setTasks(extractedTasks);
+
+      const meta = (extractedTasks[0] as any)?.__ingestion_meta;
+      if (meta) {
+        trackIngestionSecurity({
+          source_type: String(meta.sourceKind || sourceType),
+          severity: meta.scan?.highestSeverity ?? 'none',
+          sanitized: meta.sanitize?.changed ? 'yes' : 'no',
+        });
+      } else {
+        trackIngestionSecurity({
+          source_type: sourceType,
+          severity: 'none',
+          sanitized: 'no',
+        });
+      }
+
       setSessionExtractionCount((n) => n + 1);
       
       // Auto-save logic
