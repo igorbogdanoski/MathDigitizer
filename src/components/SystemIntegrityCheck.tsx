@@ -132,6 +132,32 @@ export const SystemIntegrityCheck: React.FC = () => {
     setSeverityHistory([]);
   };
 
+  const handleExportSeverityHistory = () => {
+    try {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        includePreflight,
+        latestDiagnosticsGeneratedAt: ingestionDiagnostics?.generatedAt ?? null,
+        snapshots: severityHistory,
+      };
+
+      const json = JSON.stringify(payload, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const objectUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+      anchor.href = objectUrl;
+      anchor.download = `ingestion-diagnostics-trend-${stamp}.json`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(objectUrl);
+    } catch {
+      setIngestionDiagError('Failed to export diagnostics history JSON.');
+    }
+  };
+
   const fetchIngestionDiagnostics = async (preflightOverride?: boolean) => {
     setIngestionDiagLoading(true);
     setIngestionDiagError(null);
@@ -403,14 +429,24 @@ export const SystemIntegrityCheck: React.FC = () => {
                 <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="text-xs uppercase tracking-wider text-slate-500">Severity Mix Trend (Last {severityHistory.length})</div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleResetSeverityHistory}
-                      className="h-7 px-2 text-xs"
-                    >
-                      Reset history
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExportSeverityHistory}
+                        className="h-7 px-2 text-xs"
+                      >
+                        Export JSON
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleResetSeverityHistory}
+                        className="h-7 px-2 text-xs"
+                      >
+                        Reset history
+                      </Button>
+                    </div>
                   </div>
                   <div className="h-52 w-full">
                     <ResponsiveContainer width="100%" height="100%">

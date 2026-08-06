@@ -509,6 +509,11 @@ After implementation, MathDigitizer gains:
 - src/App.tsx adds dev-only route `/__e2e__/ingestion-snapshot`
 - e2e/ingestion-snapshot-flag.spec.ts validates both flag branches (`override=false` and `override=true`) and snapshot payload shape
 
+1. Added diagnostics trend export option (JSON):
+
+- src/components/SystemIntegrityCheck.tsx now includes `Export JSON` action for severity trend snapshots
+- export payload includes `exportedAt`, `includePreflight`, latest diagnostics timestamp, and full local snapshot history
+
 1. Validation result:
 
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts`
@@ -521,7 +526,7 @@ After implementation, MathDigitizer gains:
 
 ### Next 72 hours (expert execution lane)
 
-1. Add trend export option (JSON) for diagnostics snapshots.
-2. Add compact weekly summary ribbon for ingestion safety posture.
-3. Add ingestion diagnostics UI smoke test with admin/non-admin visibility checks.
-4. Add diagnostics preflight toggle persistence (remember last state per admin browser).
+1. Add compact weekly summary ribbon for ingestion safety posture.
+2. Add ingestion diagnostics UI smoke test with admin/non-admin visibility checks.
+3. Add diagnostics preflight toggle persistence (remember last state per admin browser).
+4. Add severity-trend retention cap indicator in UI (show oldest/newest snapshot window).
