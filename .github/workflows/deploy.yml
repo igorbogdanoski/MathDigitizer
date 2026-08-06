@@ -40,7 +40,7 @@ jobs:
         run: sudo apt-get install -y lftp
 
       - name: Deploy via lftp direct puts (zero remote listing)
-        timeout-minutes: 20
+        timeout-minutes: 30
         env:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
           FTP_PASS: ${{ secrets.FTP_PASSWORD }}
@@ -91,25 +91,37 @@ jobs:
           # Phase 2 (fail-exit yes): the actual upload. This must succeed for
           # every file, so a bad login/path/permission now aborts the step
           # instead of silently leaving stale content live.
-          {
-            echo "set ftp:ssl-allow no"
-            echo "set ftp:use-mlsd no"
-            echo "set ftp:use-mdtm no"
-            echo "set net:timeout 60"
-            echo "set net:max-retries 3"
-            echo "set cmd:fail-exit yes"
-            if [ -n "$CD_CMD" ]; then
-              echo "$CD_CMD"
+          for attempt in 1 2 3; do
+            echo "FTP upload attempt $attempt/3"
+            if {
+              echo "set ftp:ssl-allow no"
+              echo "set ftp:use-mlsd no"
+              echo "set ftp:use-mdtm no"
+              echo "set net:timeout 45"
+              echo "set net:max-retries 2"
+              echo "set cmd:fail-exit yes"
+              if [ -n "$CD_CMD" ]; then
+                echo "$CD_CMD"
+              fi
+              find . -type f | sed 's|^\./||' | while read -r f; do
+                echo "put \"$GITHUB_WORKSPACE/dist/$f\" -o \"$f\""
+              done
+              # Prove the upload actually landed, from the server's own
+              # perspective, inside this same authenticated session — no HTTP
+              # cache layer can lie about this the way it can for a curl check.
+              echo "ls -la index.html"
+              echo "bye"
+            } | lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST"; then
+              break
             fi
-            find . -type f | sed 's|^\./||' | while read -r f; do
-              echo "put \"$GITHUB_WORKSPACE/dist/$f\" -o \"$f\""
-            done
-            # Prove the upload actually landed, from the server's own
-            # perspective, inside this same authenticated session — no HTTP
-            # cache layer can lie about this the way it can for a curl check.
-            echo "ls -la index.html"
-            echo "bye"
-          } | lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST"
+
+            if [ "$attempt" -eq 3 ]; then
+              echo "Upload failed after 3 attempts." >&2
+              exit 1
+            fi
+
+            sleep 10
+          done
 
       - name: Fix file permissions
         env:
