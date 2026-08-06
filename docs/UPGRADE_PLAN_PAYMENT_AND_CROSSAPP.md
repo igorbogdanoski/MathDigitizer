@@ -2,7 +2,9 @@
 
 **Датум:** 2026-07-22
 **Гранка:** `feat/payment-and-crossapp-api`
-**Статус:** Во реализација
+**Статус:** Завршено — готово за review/deploy
+
+**Краток статус:** Payment automation и Cross-app export API се имплементирани, проверени и документирани за production rollout.
 
 ---
 

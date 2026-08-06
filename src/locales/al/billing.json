@@ -122,6 +122,9 @@
   "payAdminPlanMonthly": "Mujor",
   "payAdminPlanAnnual": "Vjetor",
 
+  "payModalInvoiceEmailSent": "Një email konfirmimi u dërgua në inbox-in tuaj.",
+  "payModalReceiptSubmitted": "Vërtetimi juaj u mor dhe procesi i shqyrtimit ka filluar.",
+
   "payIntentsTitle": "Faturat dhe pagesat",
   "payIntentsDownloadInvoice": "Shkarko faturën",
   "payIntentsMethodBank": "Transfertë bankare (faturë)",

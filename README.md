@@ -61,3 +61,6 @@ CI workflow:
 - Start now with Preview Deployments for every PR.
 - Use a closed beta URL after stability checkpoint A.
 - Promote to Production only after the readiness criteria in [docs/ACTION_PLAN-14D.md](docs/ACTION_PLAN-14D.md) are met for at least 7 consecutive days.
+- For the payment and cross-app upgrade, follow the release checklist in [docs/DEPLOYMENT_READINESS_CHECKLIST.md](docs/DEPLOYMENT_READINESS_CHECKLIST.md).
+- For preview deployment validation, use [docs/PREVIEW_DEPLOYMENT_CHECKLIST.md](docs/PREVIEW_DEPLOYMENT_CHECKLIST.md).
+- Ensure the server has Firebase Admin credentials and the required email/payment env vars before rollout.

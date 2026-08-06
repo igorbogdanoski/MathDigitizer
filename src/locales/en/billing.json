@@ -122,6 +122,9 @@
   "payAdminPlanMonthly": "Monthly",
   "payAdminPlanAnnual": "Annual",
 
+  "payModalInvoiceEmailSent": "A confirmation email was sent to your inbox.",
+  "payModalReceiptSubmitted": "Your receipt was received and the review process has started.",
+
   "payIntentsTitle": "Invoices & payments",
   "payIntentsDownloadInvoice": "Download invoice",
   "payIntentsMethodBank": "Bank transfer (invoice)",
