@@ -1,8 +1,20 @@
 import express from "express";
 import path from "path";
 import http from "http";
+import fs from "fs";
 import { Server } from "socket.io";
 import * as admin from "firebase-admin";
+import {
+  toSharedTask,
+  toSharedTaskExport,
+  sharedTasksToLatex,
+  sharedTasksToMarkdown,
+} from "./src/lib/sharedTaskFormat";
+import { taskToSlides } from "./src/lib/slidesExport";
+import { tasksByCurriculum } from "./src/lib/curriculumExport";
+import { tasksToSlideaDocument } from "./src/lib/slideaInterchange";
+import { MathTask } from "./src/lib/schema";
+import { mergeBillingActivity } from "./src/lib/billing";
 
 // ─── Firebase Admin Initialization ───────────────────────────────────────────
 // Requires GOOGLE_APPLICATION_CREDENTIALS env var pointing to a service account
@@ -53,7 +65,113 @@ async function requireAuth(req: express.Request, res: express.Response, next: ex
   }
 }
 
-const DEFAULT_ALLOWED_ORIGINS = ["https://math.mismath.net"];
+// ─── Cross-App Export API helpers ────────────────────────────────────────────
+
+let APP_VERSION = "0.0.0";
+try {
+  const pkg = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8"));
+  if (typeof pkg.version === "string") APP_VERSION = pkg.version;
+} catch {
+  // keep the fallback version
+}
+
+/**
+ * Fixed-window in-memory rate limit for the export endpoints:
+ * 120 requests / minute per IP. Keeps sibling apps honest without adding a
+ * dependency (see docs/CROSS_APP_API.md §Rate limits).
+ */
+const EXPORT_RATE_LIMIT_MAX = 120;
+const EXPORT_RATE_WINDOW_MS = 60_000;
+const exportRateBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function exportRateLimit(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const key = req.ip || req.socket.remoteAddress || "unknown";
+  const now = Date.now();
+
+  // Opportunistic cleanup so the map can't grow unbounded.
+  if (exportRateBuckets.size > 5000) {
+    for (const [ip, bucket] of exportRateBuckets) {
+      if (now > bucket.resetAt) exportRateBuckets.delete(ip);
+    }
+  }
+
+  let bucket = exportRateBuckets.get(key);
+  if (!bucket || now > bucket.resetAt) {
+    bucket = { count: 0, resetAt: now + EXPORT_RATE_WINDOW_MS };
+    exportRateBuckets.set(key, bucket);
+  }
+  bucket.count += 1;
+  if (bucket.count > EXPORT_RATE_LIMIT_MAX) {
+    res.setHeader("Retry-After", String(Math.ceil((bucket.resetAt - now) / 1000)));
+    return res.status(429).json({ error: "Rate limit exceeded — max 120 requests/minute" });
+  }
+  next();
+}
+
+/** Hard ceiling on how many task docs a single export query may scan. */
+const EXPORT_SCAN_CAP = 1000;
+const EXPORT_MAX_PAGE = 200;
+const EXPORT_MAX_BATCH = 100;
+
+// Firestore docs are validated by firestore.rules (isValidTask) before they
+// are written, so reading them back as MathTask matches the client's approach
+// (see useRealtimeTasks).
+type RawTask = MathTask & { id: string };
+
+/**
+ * Fetch tasks from the shared `tasks` collection with equality filters.
+ * Firestore allows combining multiple equality filters without composite
+ * indexes; ordering/pagination happens in memory after the scan so we never
+ * need an index for every filter combination. The `topic` filter matches
+ * either `curriculum_topic` or a tag, so it is always applied in memory.
+ */
+async function fetchExportTasks(filters: {
+  grade?: string;
+  topic?: string;
+  difficulty?: string;
+  type?: string;
+}): Promise<RawTask[]> {
+  const db = admin.firestore();
+  let query: admin.firestore.Query = db.collection("tasks");
+  if (filters.grade) query = query.where("grade_level", "==", filters.grade);
+  if (filters.difficulty) query = query.where("difficulty", "==", filters.difficulty);
+  if (filters.type) query = query.where("type", "==", filters.type);
+
+  const snap = await query.limit(EXPORT_SCAN_CAP).get();
+  let tasks: RawTask[] = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as RawTask);
+
+  if (filters.topic) {
+    const topic = filters.topic;
+    tasks = tasks.filter(
+      (t) => t.curriculum_topic === topic || (Array.isArray(t.tags) && t.tags.includes(topic))
+    );
+  }
+
+  tasks.sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+  return tasks;
+}
+
+/** 503 guard for endpoints that need Firestore via Firebase Admin. */
+function requireFirestore(res: express.Response): boolean {
+  if (!firebaseAdminInitialized) {
+    res.status(503).json({ error: "Firebase Admin not configured" });
+    return false;
+  }
+  return true;
+}
+
+function queryStringParam(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() !== "" ? value.trim() : undefined;
+}
+
+// Cross-app export API consumers (see docs/CROSS_APP_API.md):
+//   - ai.mismath.net    → math-curriculum-ai-navigator
+//   - slides.mismath.net → mkd-slidea
+const DEFAULT_ALLOWED_ORIGINS = [
+  "https://math.mismath.net",
+  "https://ai.mismath.net",
+  "https://slides.mismath.net",
+];
 
 const PRIVATE_HOST_PATTERNS = [
   /^localhost$/i,
@@ -194,8 +312,238 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok" });
+  app.get("/api/health", async (req, res) => {
+    let tasksCount = 0;
+    if (firebaseAdminInitialized) {
+      try {
+        const countSnap = await admin.firestore().collection("tasks").count().get();
+        tasksCount = countSnap.data().count;
+      } catch (error: any) {
+        console.warn("[Health] task count failed:", error?.message || error);
+      }
+    }
+    res.json({
+      status: "ok",
+      version: APP_VERSION,
+      api_version: "1.0",
+      tasks_count: tasksCount,
+    });
+  });
+
+  // ─── Cross-App Export API (see docs/CROSS_APP_API.md) ─────────────────────
+  // Serves the SharedTask format (src/lib/sharedTaskFormat.ts) to
+  // ai.mismath.net and slides.mismath.net. All routes require a Firebase
+  // ID token (Authorization: Bearer <token>) and are rate limited.
+
+  /**
+   * GET /api/export/tasks
+   * List tasks with filters.
+   * Query: grade, topic, difficulty, type, limit, offset, format=json|latex|markdown
+   * Returns: { tasks: SharedTask[], total: number } (json) or text for latex/markdown.
+   */
+  app.get("/api/export/tasks", requireAuth, exportRateLimit, async (req, res) => {
+    try {
+      if (!requireFirestore(res)) return;
+
+      const grade = queryStringParam(req.query.grade);
+      const topic = queryStringParam(req.query.topic);
+      const difficulty = queryStringParam(req.query.difficulty);
+      const type = queryStringParam(req.query.type);
+      const format = (queryStringParam(req.query.format) || "json").toLowerCase();
+
+      if (difficulty && !["easy", "medium", "hard"].includes(difficulty)) {
+        return res.status(400).json({ error: "difficulty must be easy|medium|hard" });
+      }
+      if (type && !["task", "theory"].includes(type)) {
+        return res.status(400).json({ error: "type must be task|theory" });
+      }
+      if (!["json", "latex", "markdown"].includes(format)) {
+        return res.status(400).json({ error: "format must be json|latex|markdown" });
+      }
+
+      const limitRaw = Number.parseInt(queryStringParam(req.query.limit) || "50", 10);
+      const offsetRaw = Number.parseInt(queryStringParam(req.query.offset) || "0", 10);
+      const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), EXPORT_MAX_PAGE) : 50;
+      const offset = Number.isFinite(offsetRaw) ? Math.max(offsetRaw, 0) : 0;
+
+      const all = await fetchExportTasks({ grade, topic, difficulty, type });
+      const page = all.slice(offset, offset + limit);
+      const shared = page.map((t) => toSharedTask(t));
+
+      if (format === "latex") {
+        res.setHeader("Content-Type", "text/plain; charset=utf-8");
+        return res.send(sharedTasksToLatex(shared));
+      }
+      if (format === "markdown") {
+        res.setHeader("Content-Type", "text/markdown; charset=utf-8");
+        return res.send(sharedTasksToMarkdown(shared));
+      }
+      return res.json({ tasks: shared, total: all.length });
+    } catch (error: any) {
+      console.error("[Export] tasks list failed:", error?.message || error);
+      return res.status(500).json({ error: "Failed to list tasks" });
+    }
+  });
+
+  /**
+   * GET /api/export/tasks/:id
+   * Single task detail as SharedTask.
+   */
+  app.get("/api/export/tasks/:id", requireAuth, exportRateLimit, async (req, res) => {
+    try {
+      if (!requireFirestore(res)) return;
+
+      const taskId = typeof req.params.id === "string" ? req.params.id : undefined;
+      if (!taskId || taskId.length > 200) {
+        return res.status(400).json({ error: "Invalid task id" });
+      }
+
+      const docSnap = await admin.firestore().collection("tasks").doc(taskId).get();
+      if (!docSnap.exists) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      return res.json(toSharedTask({ id: docSnap.id, ...docSnap.data()! } as RawTask));
+    } catch (error: any) {
+      console.error("[Export] task detail failed:", error?.message || error);
+      return res.status(500).json({ error: "Failed to fetch task" });
+    }
+  });
+
+  /**
+   * POST /api/export/batch
+   * Export specific task ids as a SharedTaskExport envelope.
+   * Body: { taskIds: string[], format: 'json' | 'slides' | 'curriculum' }
+   */
+  app.post("/api/export/batch", requireAuth, exportRateLimit, async (req, res) => {
+    try {
+      if (!requireFirestore(res)) return;
+
+      const { taskIds, format } = (req.body || {}) as { taskIds?: unknown; format?: unknown };
+      if (!Array.isArray(taskIds) || taskIds.length === 0) {
+        return res.status(400).json({ error: "taskIds must be a non-empty array" });
+      }
+      if (taskIds.length > EXPORT_MAX_BATCH) {
+        return res.status(400).json({ error: `Maximum ${EXPORT_MAX_BATCH} tasks per batch` });
+      }
+      const ids = taskIds.filter((id): id is string => typeof id === "string" && id.length > 0 && id.length <= 200);
+      if (ids.length === 0) {
+        return res.status(400).json({ error: "No valid task ids provided" });
+      }
+      const batchFormat = typeof format === "string" ? format : "json";
+      if (!["json", "slides", "curriculum"].includes(batchFormat)) {
+        return res.status(400).json({ error: "format must be json|slides|curriculum" });
+      }
+
+      const db = admin.firestore();
+      const refs = ids.map((id) => db.collection("tasks").doc(id));
+      const snaps = await db.getAll(...refs);
+      const tasks: RawTask[] = [];
+      for (const snap of snaps) {
+        if (snap.exists) tasks.push({ id: snap.id, ...snap.data()! } as RawTask);
+      }
+
+      const target = batchFormat === "slides" ? "slides" : batchFormat === "curriculum" ? "ai-navigator" : "generic";
+      return res.json(toSharedTaskExport(tasks, target));
+    } catch (error: any) {
+      console.error("[Export] batch failed:", error?.message || error);
+      return res.status(500).json({ error: "Batch export failed" });
+    }
+  });
+
+  /**
+   * GET /api/export/slides/:taskId
+   * Slide-ready format for slides.mismath.net. Each solution step becomes a
+   * slide; the last step is emitted as the 'answer' slide.
+   * Returns: { title, slides: [{ type: 'question'|'step'|'answer', content, latex? }] }
+   */
+  app.get("/api/export/slides/:taskId", requireAuth, exportRateLimit, async (req, res) => {
+    try {
+      if (!requireFirestore(res)) return;
+
+      const taskId = typeof req.params.taskId === "string" ? req.params.taskId : undefined;
+      if (!taskId || taskId.length > 200) {
+        return res.status(400).json({ error: "Invalid task id" });
+      }
+
+      const docSnap = await admin.firestore().collection("tasks").doc(taskId).get();
+      if (!docSnap.exists) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+
+      const deck = taskToSlides({ id: docSnap.id, ...docSnap.data()! } as RawTask);
+      const slides = deck.slides
+        .filter((s) => s.type === "question" || s.type === "step" || s.type === "answer")
+        .map((s) => ({
+          type: s.type,
+          content: s.content,
+          ...(s.latex && s.latex.length > 0 ? { latex: s.latex } : {}),
+        }));
+
+      return res.json({ title: deck.title, slides });
+    } catch (error: any) {
+      console.error("[Export] slides failed:", error?.message || error);
+      return res.status(500).json({ error: "Slides export failed" });
+    }
+  });
+
+  /**
+   * GET /api/export/curriculum
+   * Curriculum-organized export for ai.mismath.net — tasks grouped by
+   * curriculum_refs.topic_id. Query: grade, track.
+   * Returns: Record<topic_id, { topic_id, topic_name, grade, tasks: SharedTask[] }>
+   */
+  app.get("/api/export/curriculum", requireAuth, exportRateLimit, async (req, res) => {
+    try {
+      if (!requireFirestore(res)) return;
+
+      const grade = queryStringParam(req.query.grade);
+      const track = queryStringParam(req.query.track);
+
+      const tasks = await fetchExportTasks({ grade });
+      const grouped = tasksByCurriculum(tasks);
+
+      if (track) {
+        for (const key of Object.keys(grouped)) {
+          const group = grouped[key];
+          group.tasks = group.tasks.filter((t) =>
+            t.curriculum_refs?.some((ref) => ref.education_track === track)
+          );
+          if (group.tasks.length === 0) delete grouped[key];
+        }
+      }
+
+      return res.json(grouped);
+    } catch (error: any) {
+      console.error("[Export] curriculum failed:", error?.message || error);
+      return res.status(500).json({ error: "Curriculum export failed" });
+    }
+  });
+
+  /**
+   * GET /api/export/slidea
+   * Slidea Interchange Format for slides.mismath.net — tasks converted to
+   * the Slidea import format with БРО outcome codes.
+   * Query: grade, topic, title (optional document title).
+   * Returns: SlideaInterchangeDocument
+   */
+  app.get("/api/export/slidea", requireAuth, exportRateLimit, async (req, res) => {
+    try {
+      if (!requireFirestore(res)) return;
+
+      const grade = queryStringParam(req.query.grade);
+      const title = queryStringParam(req.query.title);
+
+      const tasks = await fetchExportTasks({ grade });
+      if (tasks.length === 0) {
+        return res.status(404).json({ error: "No tasks found for the given filters" });
+      }
+
+      const doc = tasksToSlideaDocument(tasks, title || undefined);
+      return res.json(doc);
+    } catch (error: any) {
+      console.error("[Export] slidea failed:", error?.message || error);
+      return res.status(500).json({ error: "Slidea export failed" });
+    }
   });
 
   // ─── Billing API ────────────────────────────────────────────────────────────
@@ -284,17 +632,27 @@ async function startServer() {
       const userSnap = await db.collection("users").doc(uid).get();
       const userData = userSnap.exists ? userSnap.data()! : {};
 
-      // Fetch user's payment receipts
-      const receiptsSnap = await db.collection("payment_receipts")
-        .where("requester_uid", "==", uid)
-        .orderBy("created_at", "desc")
-        .limit(20)
-        .get();
+      const [receiptsSnap, intentsSnap] = await Promise.all([
+        db.collection("payment_receipts")
+          .where("requester_uid", "==", uid)
+          .orderBy("created_at", "desc")
+          .limit(20)
+          .get(),
+        db.collection("payment_intents")
+          .where("user_id", "==", uid)
+          .limit(20)
+          .get(),
+      ]);
 
       const receipts = receiptsSnap.docs.map((d) => ({
         id: d.id,
         ...d.data(),
       }));
+      const intents = intentsSnap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
+      const history = mergeBillingActivity(receipts, intents);
 
       const isPro = Boolean(userData.isPro);
       const trialStartedAt = userData.trialStartedAt as string | undefined;
@@ -310,6 +668,8 @@ async function startServer() {
         proStartedAt: userData.proStartedAt || null,
         paymentChannel: userData.paymentChannel || null,
         receipts,
+        intents,
+        history,
       });
     } catch (error: any) {
       console.error("[Billing] status failed:", error?.message || error);

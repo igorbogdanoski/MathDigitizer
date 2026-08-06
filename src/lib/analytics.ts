@@ -35,6 +35,19 @@ export function trackExtraction(source_type: string) {
   g('event', 'extraction_used', { event_category: 'engagement', source_type });
 }
 
+export function trackIngestionSecurity(signal: {
+  source_type: string;
+  severity: 'none' | 'low' | 'medium' | 'high';
+  sanitized: 'yes' | 'no';
+}) {
+  g('event', 'ingestion_security_signal', {
+    event_category: 'quality_security',
+    source_type: signal.source_type,
+    severity: signal.severity,
+    sanitized: signal.sanitized,
+  });
+}
+
 export function trackTrialExpired() {
   g('event', 'trial_expired', { event_category: 'conversion_funnel' });
 }

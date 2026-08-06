@@ -12,6 +12,7 @@ export function useTaskFilters() {
     tagFilter,
     gradeFilter,
     folderFilter,
+    curriculumTopicFilter,
     dokFilter,
     sortDifficulty,
     searchQuery,
@@ -23,6 +24,27 @@ export function useTaskFilters() {
   const allTags = useMemo(() => Array.from(new Set(tasks.flatMap(task => task.tags || []))).filter((t): t is string => !!t).sort(), [tasks]);
   const allGrades = useMemo(() => Array.from(new Set(tasks.map(task => task.grade_level).filter((g): g is string => !!g))).sort(), [tasks]);
   const allFolders = useMemo(() => Array.from(new Set(tasks.map(task => task.folder_name).filter((f): f is string => !!f))).sort(), [tasks]);
+
+  /**
+   * Unique curriculum topics across the library: structured
+   * curriculum_refs[].topic_id/topic_name when available, falling back to the
+   * free-form curriculum_topic string for tasks without refs.
+   */
+  const allCurriculumTopics = useMemo(() => {
+    const topics = new Map<string, string>(); // value (topic_id or free-form string) -> display label
+    for (const task of tasks) {
+      if (task.curriculum_refs && task.curriculum_refs.length > 0) {
+        for (const ref of task.curriculum_refs) {
+          if (ref.topic_id) topics.set(ref.topic_id, ref.topic_name || ref.topic_id);
+        }
+      } else if (task.curriculum_topic) {
+        topics.set(task.curriculum_topic, task.curriculum_topic);
+      }
+    }
+    return Array.from(topics.entries())
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [tasks]);
 
   const fuse = useMemo(() => new Fuse(tasks, {
     keys: ['title', 'original_text', 'tags', 'folder_name'],
@@ -58,12 +80,20 @@ export function useTaskFilters() {
       const matchesTag = tagFilter.length === 0 || (task.tags && task.tags.some(tag => tagFilter.includes(tag)));
       const matchesGrade = gradeFilter.length === 0 || (task.grade_level && gradeFilter.includes(task.grade_level));
       const matchesDok = dokFilter.length === 0 || (task.dok_level && dokFilter.includes(task.dok_level));
-      
-      const matchesSource = sourceFilter === 'all' || 
+
+      // Curriculum topic: structured curriculum_refs[].topic_id first,
+      // falling back to the free-form curriculum_topic string
+      const matchesCurriculumTopic = curriculumTopicFilter === 'all' || (
+        task.curriculum_refs && task.curriculum_refs.length > 0
+          ? task.curriculum_refs.some(ref => ref.topic_id === curriculumTopicFilter)
+          : task.curriculum_topic === curriculumTopicFilter
+      );
+
+      const matchesSource = sourceFilter === 'all' ||
         (sourceFilter === 'url' && task.source_url && !task.source_url.includes('Слика')) ||
         (sourceFilter === 'image' && task.source_url && task.source_url.includes('Слика'));
-      
-      if (!(matchesDifficulty && matchesFolder && matchesTag && matchesGrade && matchesDok && matchesSource)) {
+
+      if (!(matchesDifficulty && matchesFolder && matchesTag && matchesGrade && matchesDok && matchesCurriculumTopic && matchesSource)) {
          bt.isMatch = false;
       }
 
@@ -80,7 +110,7 @@ export function useTaskFilters() {
 
       return bt;
     }).filter(t => t.isMatch);
-  }, [tasks, difficultyFilter, folderFilter, tagFilter, gradeFilter, dokFilter, sourceFilter, searchQuery, searchMode, semanticQueryEmbedding, fuse]);
+  }, [tasks, difficultyFilter, folderFilter, tagFilter, gradeFilter, curriculumTopicFilter, dokFilter, sourceFilter, searchQuery, searchMode, semanticQueryEmbedding, fuse]);
 
   const sortedAndFilteredTasks = useMemo(() => {
     return [...filteredTasks].sort((a, b) => {
@@ -119,6 +149,7 @@ export function useTaskFilters() {
     allTags,
     allGrades,
     allFolders,
+    allCurriculumTopics,
     filteredTasks: filteredTasks.map(t => t.task),
     sortedAndFilteredTasks,
   };

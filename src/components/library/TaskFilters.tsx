@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Filter, ChevronDown, ArrowUpDown, X, History as HistoryIcon, CheckSquare, Square, FileText, Download, FileSpreadsheet, Plus, BookOpen, Zap, Brain, Loader2, Trash2 } from 'lucide-react';
+import { Search, Filter, ChevronDown, ArrowUpDown, X, History as HistoryIcon, CheckSquare, Square, FileText, Download, FileSpreadsheet, Plus, BookOpen, Zap, Brain, Loader2, Trash2, Share2 } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
@@ -23,6 +23,7 @@ interface TaskFiltersProps {
   setShowTestGenerator: (val: boolean) => void;
   setShowWorksheetModal: (val: boolean) => void;
   handleExportCSV: () => void;
+  onOpenExportPanel: () => void;
 }
 
 export const TaskFilters: React.FC<TaskFiltersProps> = ({
@@ -34,7 +35,8 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   setSelectedForTest,
   setShowTestGenerator,
   setShowWorksheetModal,
-  handleExportCSV
+  handleExportCSV,
+  onOpenExportPanel
 }) => {
   const {
     searchQuery, setSearchQuery,
@@ -48,6 +50,8 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
     dokFilter, setDokFilter,
     folderFilter, setFolderFilter,
     allFolders,
+    curriculumTopicFilter, setCurriculumTopicFilter,
+    allCurriculumTopics,
     sortDifficulty, setSortDifficulty,
     searchHistory, saveSearchToHistory, setSearchHistory,
     clearFilters,
@@ -406,6 +410,21 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
                 </select>
               </div>
 
+              <div className="relative w-full sm:w-48">
+                <select
+                  value={curriculumTopicFilter}
+                  onChange={(e) => setCurriculumTopicFilter(e.target.value)}
+                  title={t('allCurriculumTopics')}
+                  className="w-full h-10 rounded-md border border-slate-300 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-no-repeat bg-[right_8px_center] bg-[length:16px_16px]"
+                  style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")' }}
+                >
+                  <option value="all">{t('allCurriculumTopics')}</option>
+                  {allCurriculumTopics.map(topic => (
+                    <option key={topic.value} value={topic.value}>{topic.label}</option>
+                  ))}
+                </select>
+              </div>
+
               <div className="relative w-full sm:flex-1" ref={gradeDropdownRef}>
                 <button
                   onClick={() => setIsGradeDropdownOpen(!isGradeDropdownOpen)}
@@ -515,7 +534,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               {t('difficulty')} {sortDifficulty === 'asc' ? '↑' : sortDifficulty === 'desc' ? '↓' : ''}
             </Button>
 
-            {(searchQuery || difficultyFilter !== 'all' || sourceFilter !== 'all' || tagFilter.length > 0 || gradeFilter.length > 0 || dokFilter.length > 0 || folderFilter !== 'all' || sortDifficulty !== 'none') && (
+            {(searchQuery || difficultyFilter !== 'all' || sourceFilter !== 'all' || tagFilter.length > 0 || gradeFilter.length > 0 || dokFilter.length > 0 || folderFilter !== 'all' || curriculumTopicFilter !== 'all' || sortDifficulty !== 'none') && (
               <Button variant="ghost" onClick={clearFilters} className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
                 <X className="w-4 h-4 mr-2" />
                 {t('clearFilters')}
@@ -523,6 +542,10 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
             )}
 
             <div className="flex gap-2 ml-auto">
+              <Button variant="outline" size="sm" onClick={onOpenExportPanel} title={t('exportPanelTip')} className="border-indigo-300 dark:border-indigo-400/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10">
+                <Share2 className="w-4 h-4 mr-2" />
+                {t('exportButton')}
+              </Button>
               <Button variant="outline" size="sm" onClick={() => exportToWord(sortedAndFilteredTasks, 'math-tasks.docx')} title={t('exportWordTip')} className="dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/5">
                 <FileText className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />
                 Word

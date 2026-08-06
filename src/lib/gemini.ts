@@ -11,6 +11,7 @@
  */
 export * from './ai/client';
 export * from './ai/extraction';
+export * from './ai/curriculum';
 export * from './ai/grading';
 export * from './ai/generation';
 export * from './ai/materials';
@@ -18,4 +19,5 @@ export * from './ai/media';
 export * from './ai/chat';
 export * from './ai/kahoot';
 export * from './ai/embeddings';
+export * from './ai/classification';
 export * from './ai/utils';

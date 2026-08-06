@@ -77,7 +77,7 @@ service cloud.firestore {
 
     // Domain Validators
     function isValidTask(data) {
-      let allowedFields = ['title', 'original_text', 'solution_steps', 'latex_formulas', 'illustration_prompt', 'geogebra_commands', 'math_graphic_config', 'source_url', 'tags', 'difficulty', 'author_uid', 'created_at', 'type', 'dok_level', 'grade_level', 'curriculum_topic', 'evidence_quote', 'source_timestamp', 'hints', 'pedagogical_insights', 'folder_id', 'folder_name', 'detected_language', 'teacher_notes', 'bloom_taxonomy', 'embedding', 'related_task_ids', 'prerequisite_task_ids'];
+      let allowedFields = ['title', 'original_text', 'solution_steps', 'latex_formulas', 'illustration_prompt', 'geogebra_commands', 'math_graphic_config', 'source_url', 'tags', 'difficulty', 'author_uid', 'created_at', 'type', 'dok_level', 'grade_level', 'curriculum_topic', 'evidence_quote', 'source_timestamp', 'hints', 'pedagogical_insights', 'folder_id', 'folder_name', 'detected_language', 'teacher_notes', 'bloom_taxonomy', 'embedding', 'related_task_ids', 'prerequisite_task_ids', 'ingestion_snapshot'];
       
       return hasOnlyAllowedFields(allowedFields) &&
              validStringLength('title', 1, 200) &&
@@ -107,7 +107,17 @@ service cloud.firestore {
              (!('teacher_notes' in data) || (data.teacher_notes is string && data.teacher_notes.size() <= 10000)) &&
              (!('embedding' in data) || data.embedding is list) &&
              (!('related_task_ids' in data) || data.related_task_ids is list) &&
-             (!('prerequisite_task_ids' in data) || data.prerequisite_task_ids is list);
+             (!('prerequisite_task_ids' in data) || data.prerequisite_task_ids is list) &&
+             (!('ingestion_snapshot' in data) ||
+               (data.ingestion_snapshot is map &&
+                data.ingestion_snapshot.keys().hasOnly(['source_kind', 'parser_path', 'highest_severity', 'sanitized', 'finding_ids', 'finding_count', 'generated_at']) &&
+                data.ingestion_snapshot.source_kind in ['url', 'text', 'file', 'pdf', 'image'] &&
+                data.ingestion_snapshot.parser_path is string && data.ingestion_snapshot.parser_path.size() <= 120 &&
+                data.ingestion_snapshot.highest_severity in ['none', 'low', 'medium', 'high'] &&
+                data.ingestion_snapshot.sanitized is bool &&
+                data.ingestion_snapshot.finding_ids is list && data.ingestion_snapshot.finding_ids.size() <= 10 &&
+                data.ingestion_snapshot.finding_count is number && data.ingestion_snapshot.finding_count >= 0 && data.ingestion_snapshot.finding_count <= 50 &&
+                data.ingestion_snapshot.generated_at is string && data.ingestion_snapshot.generated_at.size() <= 40));
     }
 
     function isValidTodo(data) {
@@ -207,6 +217,52 @@ service cloud.firestore {
              request.resource.data.reviewed_by == request.auth.uid &&
              isValidDateString(request.resource.data.reviewed_at) &&
              (!('review_note' in request.resource.data) || (request.resource.data.review_note is string && request.resource.data.review_note.size() <= 2000));
+    }
+
+    // ── payment_intents (invoice-based bank-transfer Pro activation) ──
+    // Create: the paying user writes their own intent, locked to
+    // pending_payment with no receipt/review fields yet.
+    function isValidPaymentIntentCreate(data) {
+      let allowedFields = ['user_id', 'email', 'customer_name', 'plan', 'amount', 'currency', 'status', 'invoice_number', 'created_at', 'updated_at'];
+
+      return data.keys().hasOnly(allowedFields) &&
+             data.user_id is string &&
+             request.auth != null &&
+             data.user_id == request.auth.uid &&
+             data.email is string && data.email.matches('^.+@.+\\..+$') &&
+             data.customer_name is string && data.customer_name.size() > 0 && data.customer_name.size() <= 120 &&
+             data.plan in ['monthly', 'annual'] &&
+             data.amount is number && data.amount > 0 && data.amount <= 1000000 &&
+             data.currency == 'MKD' &&
+             data.status == 'pending_payment' &&
+             data.invoice_number is string && data.invoice_number.size() > 0 && data.invoice_number.size() <= 40 &&
+             isValidDateString(data.created_at) &&
+             isValidDateString(data.updated_at);
+    }
+
+    // Owner path: only the payer may attach a receipt / move the intent
+    // toward review. Every other field is immutable on this path.
+    function isPaymentIntentOwnerUpdate() {
+      return isAuthenticated() &&
+             request.auth.uid == resource.data.user_id &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'receipt_url', 'updated_at']) &&
+             request.resource.data.status in ['receipt_uploaded', 'admin_review'] &&
+             (!('receipt_url' in request.resource.data) ||
+               (request.resource.data.receipt_url is string && request.resource.data.receipt_url.size() <= 950000)) &&
+             isValidDateString(request.resource.data.updated_at);
+    }
+
+    // Teacher (admin) path: review transitions only — approve/reject/expire
+    // or pick up into admin_review. Payer data is immutable here.
+    function isPaymentIntentReviewUpdate() {
+      return isTeacher() &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewed_by', 'reviewed_at', 'rejection_reason', 'updated_at']) &&
+             request.resource.data.status in ['admin_review', 'approved', 'rejected', 'expired'] &&
+             (!('reviewed_by' in request.resource.data) || request.resource.data.reviewed_by == request.auth.uid) &&
+             (!('reviewed_at' in request.resource.data) || isValidDateString(request.resource.data.reviewed_at)) &&
+             (!('rejection_reason' in request.resource.data) ||
+               (request.resource.data.rejection_reason is string && request.resource.data.rejection_reason.size() <= 2000)) &&
+             isValidDateString(request.resource.data.updated_at);
     }
 
     function isValidSalesOpsAlertState(data) {
@@ -452,6 +508,17 @@ service cloud.firestore {
       allow create: if isValidPaymentReceipt(request.resource.data);
       allow read: if isTeacher();
       allow update: if isTeacher() && isValidPaymentReceiptUpdate();
+      allow delete: if false;
+    }
+
+    match /payment_intents/{intentId} {
+      // Payer creates their own intent (locked to pending_payment);
+      // payer reads their own, teachers read all (review dashboard);
+      // updates are split into an owner path (receipt upload) and a
+      // teacher path (approve/reject/expire) — see validators above.
+      allow create: if isAuthenticated() && isValidPaymentIntentCreate(request.resource.data);
+      allow read: if isAuthenticated() && (resource.data.user_id == request.auth.uid || isTeacher());
+      allow update: if (isAuthenticated() && isPaymentIntentOwnerUpdate()) || isPaymentIntentReviewUpdate();
       allow delete: if false;
     }
 

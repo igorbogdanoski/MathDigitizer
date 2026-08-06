@@ -23,6 +23,7 @@ import {
   LongitudinalChart,
   KnowledgeGapsGrid,
   InterventionPlanModal,
+  CurriculumCoveragePanel,
   MathStrand,
   StudentStats,
   ClassStats,
@@ -322,14 +323,19 @@ export const AnalyticsDashboard: React.FC = () => {
 
   if (submissions.length === 0) {
     return (
-      <div className="p-12 text-center max-w-2xl mx-auto mt-20">
-        <div className="w-24 h-24 bg-slate-900 rounded-5xl flex items-center justify-center mx-auto mb-8 shadow-2xl border border-slate-800">
-          <Activity className="w-10 h-10 text-indigo-400 animate-pulse" />
+      <div className="max-w-[1400px] mx-auto space-y-6 pb-20">
+        <div className="p-12 text-center max-w-2xl mx-auto mt-20">
+          <div className="w-24 h-24 bg-slate-900 rounded-5xl flex items-center justify-center mx-auto mb-8 shadow-2xl border border-slate-800">
+            <Activity className="w-10 h-10 text-indigo-400 animate-pulse" />
+          </div>
+          <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">{t('noData.title')}</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-lg">
+            {t('noData.description')}
+          </p>
         </div>
-        <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">{t('noData.title')}</h2>
-        <p className="text-slate-500 dark:text-slate-400 text-lg">
-          {t('noData.description')}
-        </p>
+
+        {/* Curriculum coverage works independently of graded submissions */}
+        <CurriculumCoveragePanel />
       </div>
     );
   }
@@ -452,6 +458,9 @@ export const AnalyticsDashboard: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Curriculum coverage across official БРО topics */}
+      <CurriculumCoveragePanel />
 
       {/* Socratic Intervention Modals */}
       <InterventionPlanModal

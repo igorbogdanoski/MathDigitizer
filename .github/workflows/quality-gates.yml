@@ -12,10 +12,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -35,5 +35,11 @@ jobs:
       - name: Governance gate
         run: npm run quality:governance
 
+      - name: Ingestion security gate
+        run: npm run quality:ingestion
+
       - name: Bundle budget gate
         run: npm run quality:bundle
+
+      - name: Route budget gate
+        run: npm run quality:routes

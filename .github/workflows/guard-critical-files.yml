@@ -5,16 +5,18 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
   issues: write
+  statuses: write
 
 jobs:
   guard:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Verify vercel.json exists with auth handler rewrite
         shell: bash
@@ -113,3 +115,15 @@ jobs:
         run: |
           echo "All critical-file guards passed."
           echo "Login auth chain, PWA, migration tooling, and secret hygiene are intact."
+
+      - name: Publish guard status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            -X POST \
+            "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            -f state=success \
+            -f context=guard \
+            -f description="All critical-file guards passed."

@@ -97,5 +97,28 @@
   "proGate": {
     "featureName": "Advanced Analytics",
     "description": "This analytics is part of the Pro plan. Unlock it for deeper pedagogical signals, cognitive indicators and intervention plans."
+  },
+  "curriculumCoverage": {
+    "title": "Curriculum Coverage",
+    "description": "Distribution of the task library across official BRO curriculum topics",
+    "loading": "Loading tasks...",
+    "loadError": "Error loading tasks.",
+    "tasksPerTopic": "Tasks per curriculum topic",
+    "tasksCount": "{{count}} tasks",
+    "gaps": {
+      "title": "Topics with zero tasks",
+      "none": "No empty topics — every curriculum topic has at least one task.",
+      "showAll": "Show all {{count}} topics",
+      "showLess": "Show less"
+    },
+    "byGrade": {
+      "title": "Coverage by grade",
+      "topicsCovered": "{{covered}}/{{total}} topics"
+    },
+    "summary": {
+      "totalTopics": "Curriculum topics",
+      "coveredTopics": "Covered topics",
+      "coveragePct": "Coverage"
+    }
   }
 }

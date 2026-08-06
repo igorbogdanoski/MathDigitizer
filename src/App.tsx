@@ -46,9 +46,11 @@ const Gradebook = lazy(() => import('./components/Gradebook').then((m) => ({ def
 const TaskDifferentiation = lazy(() => import('./components/TaskDifferentiation').then((m) => ({ default: m.TaskDifferentiation })));
 const EarlyWarningDashboard = lazy(() => import('./components/EarlyWarningDashboard').then((m) => ({ default: m.EarlyWarningDashboard })));
 const BillingDashboard = lazy(() => import('./components/BillingDashboard').then((m) => ({ default: m.BillingDashboard })));
+const PaymentAdminDashboard = lazy(() => import('./components/PaymentAdminDashboard').then((m) => ({ default: m.PaymentAdminDashboard })));
 const BlogOcrMath = lazy(() => import('./components/blog/BlogOcrMath').then((m) => ({ default: m.BlogOcrMath })));
 const BlogLatexExtraction = lazy(() => import('./components/blog/BlogLatexExtraction').then((m) => ({ default: m.BlogLatexExtraction })));
 const BlogLiveMathKahoot = lazy(() => import('./components/blog/BlogLiveMathKahoot').then((m) => ({ default: m.BlogLiveMathKahoot })));
+const IngestionSnapshotFlagProbe = lazy(() => import('./components/dev/IngestionSnapshotFlagProbe').then((m) => ({ default: m.IngestionSnapshotFlagProbe })));
 
 const RouteFallback = () => (
   <div className="min-h-[40vh] flex items-center justify-center text-slate-500 text-sm">Loading...</div>
@@ -250,6 +252,12 @@ const AppRoutes = () => {
             </ProtectedRoute>
           } />
 
+          <Route path="payment-admin" element={
+            <ProtectedRoute allowedRoles={['teacher']} authFeatureName="Payment Admin">
+              <PaymentAdminDashboard />
+            </ProtectedRoute>
+          } />
+
           <Route path="student-dashboard" element={
             <ProtectedRoute allowedRoles={['student']}>
               <StudentDashboard />
@@ -290,6 +298,10 @@ const AppRoutes = () => {
         <Route path="/play" element={<GamePlayerWrapper />} />
         <Route path="/exam/:examId" element={<SummativeExamWrapper />} />
         <Route path="/pricing" element={<Pricing />} />
+
+        {import.meta.env.DEV && (
+          <Route path="/__e2e__/ingestion-snapshot" element={<IngestionSnapshotFlagProbe />} />
+        )}
 
         {/* Public blog posts — no auth required */}
         <Route path="/blog/ocr-matematika" element={<BlogOcrMath />} />
