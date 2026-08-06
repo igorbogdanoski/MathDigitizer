@@ -484,6 +484,11 @@ After implementation, MathDigitizer gains:
 
 - docs/INGESTION_HIGH_SEVERITY_RUNBOOK.md
 
+1. Added dashboard-level severity mix trend chart:
+
+- src/components/SystemIntegrityCheck.tsx now stores the latest diagnostics snapshots locally
+- visual trend chart for low/medium/high severity composition over recent checkpoints
+
 1. Validation result:
 
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts`
@@ -496,7 +501,7 @@ After implementation, MathDigitizer gains:
 
 ### Next 72 hours (expert execution lane)
 
-1. Add dashboard-level trend chart for severity mix over time.
-2. Add E2E check for ingestion snapshot persistence flag behavior.
-3. Add diagnostics card for preflight dependency status toggled view.
-4. Add role-gated visibility control for ingestion diagnostics panel.
+1. Add E2E check for ingestion snapshot persistence flag behavior.
+2. Add diagnostics card for preflight dependency status toggled view.
+3. Add role-gated visibility control for ingestion diagnostics panel.
+4. Add retention/reset control for local diagnostics trend history.

@@ -9,6 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { motion, AnimatePresence } from 'motion/react';
 import { checkGeminiHealth } from '../lib/gemini';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+
+const INGESTION_HISTORY_KEY = 'ingestion_diagnostics_history_v1';
+const INGESTION_HISTORY_LIMIT = 30;
 
 interface IngestionDiagnosticsView {
   ok: boolean;
@@ -33,6 +37,53 @@ interface HealthStatus {
   icon: React.ReactNode;
 }
 
+interface SeverityTrendPoint {
+  stamp: string;
+  highPct: number;
+  mediumPct: number;
+  lowPct: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
+}
+
+function readSeverityHistory(): SeverityTrendPoint[] {
+  try {
+    const raw = window.localStorage.getItem(INGESTION_HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as SeverityTrendPoint[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.slice(-INGESTION_HISTORY_LIMIT);
+  } catch {
+    return [];
+  }
+}
+
+function writeSeverityHistory(data: SeverityTrendPoint[]) {
+  try {
+    window.localStorage.setItem(INGESTION_HISTORY_KEY, JSON.stringify(data.slice(-INGESTION_HISTORY_LIMIT)));
+  } catch {
+    // Ignore localStorage persistence failures (private mode or blocked storage).
+  }
+}
+
+function toSeverityTrendPoint(data: IngestionDiagnosticsView): SeverityTrendPoint {
+  const low = data.scanner.bySeverity.low;
+  const medium = data.scanner.bySeverity.medium;
+  const high = data.scanner.bySeverity.high;
+  const total = Math.max(1, low + medium + high);
+
+  return {
+    stamp: data.generatedAt,
+    highPct: Math.round((high / total) * 100),
+    mediumPct: Math.round((medium / total) * 100),
+    lowPct: Math.round((low / total) * 100),
+    highCount: high,
+    mediumCount: medium,
+    lowCount: low,
+  };
+}
+
 export const SystemIntegrityCheck: React.FC = () => {
   const [statuses, setStatuses] = useState<HealthStatus[]>([
     { service: 'Firebase Authentication', status: 'idle', message: 'Чекање тест...', icon: <Lock className="w-5 h-5" /> },
@@ -46,6 +97,7 @@ export const SystemIntegrityCheck: React.FC = () => {
   const [ingestionDiagnostics, setIngestionDiagnostics] = useState<IngestionDiagnosticsView | null>(null);
   const [ingestionDiagLoading, setIngestionDiagLoading] = useState(false);
   const [ingestionDiagError, setIngestionDiagError] = useState<string | null>(null);
+  const [severityHistory, setSeverityHistory] = useState<SeverityTrendPoint[]>([]);
 
   const fetchIngestionDiagnostics = async () => {
     setIngestionDiagLoading(true);
@@ -73,6 +125,15 @@ export const SystemIntegrityCheck: React.FC = () => {
 
       const data = (await response.json()) as IngestionDiagnosticsView;
       setIngestionDiagnostics(data);
+
+      const nextPoint = toSeverityTrendPoint(data);
+      setSeverityHistory((prev) => {
+        const base = prev.length > 0 ? prev : readSeverityHistory();
+        const deduped = base.filter((item) => item.stamp !== nextPoint.stamp);
+        const next = [...deduped, nextPoint].slice(-INGESTION_HISTORY_LIMIT);
+        writeSeverityHistory(next);
+        return next;
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown diagnostics error';
       setIngestionDiagError(message);
@@ -151,6 +212,7 @@ export const SystemIntegrityCheck: React.FC = () => {
   };
 
   useEffect(() => {
+    setSeverityHistory(readSeverityHistory());
     runDiagnostics();
     fetchIngestionDiagnostics();
   }, []);
@@ -275,6 +337,52 @@ export const SystemIntegrityCheck: React.FC = () => {
                   <div className="text-xl font-black text-emerald-800 dark:text-emerald-300">{ingestionDiagnostics.scanner.bySeverity.low}</div>
                 </div>
               </div>
+
+              {severityHistory.length > 1 && (
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                  <div className="text-xs uppercase tracking-wider text-slate-500 mb-2">Severity Mix Trend (Last {severityHistory.length})</div>
+                  <div className="h-52 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={severityHistory} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="sevLow" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.45} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0.08} />
+                          </linearGradient>
+                          <linearGradient id="sevMedium" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.45} />
+                            <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.08} />
+                          </linearGradient>
+                          <linearGradient id="sevHigh" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.45} />
+                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0.08} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" strokeOpacity={0.45} />
+                        <XAxis
+                          dataKey="stamp"
+                          tickFormatter={(value) => new Date(value).toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' })}
+                          minTickGap={20}
+                          tick={{ fontSize: 11, fill: '#64748b' }}
+                        />
+                        <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} tick={{ fontSize: 11, fill: '#64748b' }} />
+                        <Tooltip
+                          formatter={(value: number, name: string, item: any) => {
+                            const label = name === 'highPct' ? 'High' : name === 'mediumPct' ? 'Medium' : 'Low';
+                            const countKey = name === 'highPct' ? 'highCount' : name === 'mediumPct' ? 'mediumCount' : 'lowCount';
+                            const count = item?.payload?.[countKey] ?? 0;
+                            return [`${value}% (${count})`, label];
+                          }}
+                          labelFormatter={(value) => new Date(value).toLocaleString('mk-MK')}
+                        />
+                        <Area type="monotone" dataKey="lowPct" name="lowPct" stroke="#10b981" fill="url(#sevLow)" strokeWidth={2} />
+                        <Area type="monotone" dataKey="mediumPct" name="mediumPct" stroke="#f59e0b" fill="url(#sevMedium)" strokeWidth={2} />
+                        <Area type="monotone" dataKey="highPct" name="highPct" stroke="#ef4444" fill="url(#sevHigh)" strokeWidth={2} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
 
               {ingestionDiagnostics.scanner.highSeverityRuleIds.length > 0 && (
                 <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
