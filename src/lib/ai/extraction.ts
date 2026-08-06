@@ -8,8 +8,24 @@ import { MathTask } from '../schema';
 import { Type } from '@google/genai';
 import { PRO_MODEL, DEFAULT_MODEL } from './models';
 
+/**
+ * Shared curriculum-alignment instruction for extraction prompts.
+ * Normalizes grade_level to the valid MK curriculum grade tokens and points
+ * the model at the official curriculum context injected alongside it.
+ */
+const CURRICULUM_PROMPT_INSTRUCTION = `ПРАВИЛА ЗА НАСТАВНА ПРОГРАМА (БРО):
+- ЗАДОЛЖИТЕЛНО: Во \`grade_level\` врати ТОЧНО еден од следните валидни токени (без друг текст):
+  • Основно образование (1–9 одделение): '1', '2', '3', '4', '5', '6', '7', '8', '9'
+  • Општа гимназија: '1год', '2год', '3год', '4год'
+  • Математичко-информатичка гимназија: '1год-миг', '2год-миг', '3год-миг', '4год-миг'
+  • Средно стручно образование: '1год-струк', '2год-струк', '3год-струк', '4год-струк'
+  Ако не можеш со сигурност да го одредиш нивото, процени го најблискиот токен.
+- ЗАДОЛЖИТЕЛНО: Во \`curriculum_topic\` напиши ја темата усогласена со официјалната наставна програма дадена во контекстот (ако е приложена).`;
+
 export async function extractMathTasksFromPdf(base64Pdf: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, modelName: string = PRO_MODEL): Promise<MathTask[]> {
+  const curriculumCtx = await buildCurriculumContextBlockRag('математика македонски наставна програма');
   const prompt = `Ти си експерт за дигитализација на математички текстови, креатор на "Advanced Vision OCR" и Едукативен Технолог (EdTech).
+${curriculumCtx ? `\n${curriculumCtx}\n` : ''}
 Анализирај го приложениот документ кој може да биде скан од стар учебник, испит, документ со графици или документ со комплексен табеларен распоред.
 
 СТРАТЕГИЈА ЗА "ADVANCED VISION OCR":
@@ -23,6 +39,8 @@ ${enableLogicalReconstruction
 4. **Комплексни Распореди и Табели**: Ако задачата содржи табела, конвертирај ја табелата во Markdown.
 5. **Геометрија и Графици**: Ако документот содржи график или геометриска слика, генерирај \`geogebra_commands\` низа од команди.
 6. **Педагошко подобрување и Chain-of-Thought**: За секоја извлечена задача, генерирај детално, скалилесто решение во \`solution_steps\`. Решението МОРА да содржи обрамотување на теоретската основа и педагошко појаснување (зошто се користи овој чекор) според најстрогите педагошки стандарди.
+
+${CURRICULUM_PROMPT_INSTRUCTION}
 
 Твојата цел е ПЕРФЕКТНО да ги извлечеш сите математички задачи.
 За секоја задача, врати:
@@ -109,14 +127,12 @@ export async function advancedMultimodalExtraction(
 Врати JSON објект кој го анализира процесот и ги структурира податоците.`;
 
   try {
-    let finalPayloadContext = prompt;
-    
+    let urlContext = "";
+
     // Ако е URL, користиме двостепен пристап како кај extractMathTasksFromUrl
     if (source.type === 'url') {
-      const searchPrompt = `Ти си истражувач. Најди го деталниот транскрипт или главната содржина за следното YouTube видео / веб страна: ${source.data}. 
+      const searchPrompt = `Ти си истражувач. Најди го деталниот транскрипт или главната содржина за следното YouTube видео / веб страна: ${source.data}.
 Извлечи ги сите математички задачи и објаснувања во нивниот ОРИГИНАЛЕН јазик. Не преведувај. Користи Google Search. Врати детален извештај.`;
-      
-      let urlContext = "";
 
       if (!urlContext) {
          const isYoutube = source.data.includes('youtube.com') || source.data.includes('youtu.be');
@@ -164,7 +180,20 @@ export async function advancedMultimodalExtraction(
           urlContext = "Нема податоци (серверска грешка).";
         }
       }
-      finalPayloadContext = `${prompt}\n\n================\nКОНТЕКСТ ОД ИЗВОРОТ (URL: ${source.data}):\n${urlContext}\n================`;
+    }
+
+    // Curriculum context injection (RAG over official БРО program)
+    const curriculumQuery =
+      source.type === 'text' ? source.data.slice(0, 300)
+      : source.type === 'url' ? urlContext.slice(0, 300)
+      : 'математика македонски наставна програма';
+    const curriculumCtx = await buildCurriculumContextBlockRag(curriculumQuery || 'математика наставна програма');
+
+    let finalPayloadContext = prompt;
+    if (curriculumCtx) finalPayloadContext += `\n\n${curriculumCtx}`;
+    finalPayloadContext += `\n\n${CURRICULUM_PROMPT_INSTRUCTION}`;
+    if (source.type === 'url') {
+      finalPayloadContext += `\n\n================\nКОНТЕКСТ ОД ИЗВОРОТ (URL: ${source.data}):\n${urlContext}\n================`;
     }
 
     const contents: any[] = [{ text: finalPayloadContext }];
@@ -330,6 +359,7 @@ ${timeContext}
   }
 
   // ЧЕКОР 2: Строга JSON екстракција БЕЗ алатки
+  const curriculumCtx = await buildCurriculumContextBlockRag(videoContext.slice(0, 300) || 'математика наставна програма');
   const extractionPrompt = `Ти си Врвен Светски Експерт за Дигитализација на Математичка Едукација и специјалист за OCR и анализа на транскрипти.
 Твојата мисија е ПЕРФЕКТНО да ги дигитализираш СИТЕ математички содржини (И ТЕОРИЈА И ЗАДАЧИ) кои се појавуваат во овој транскрипт:
 
@@ -337,7 +367,7 @@ ${timeContext}
 ИЗВЛЕЧЕН ТРАНСКРИПТ/СОДРЖИНА ОД ИЗВОРОТ (${url}):
 ${videoContext}
 ==================
-
+${curriculumCtx ? `\n${curriculumCtx}\n` : ''}
 СТРАТЕГИЈА ЗА МАКСИМАЛНА ПРЕЦИЗНОСТ И АВТОМАТСКО ПРЕПОЗНАВАЊЕ НА ЈАЗИК (Chain-of-Thought):
 1. **Автоматска Детекција на Јазик**: Детектирај го јазикот на транскриптот. Поддржани ISO кодови: 'mk' (македонски), 'en' (англиски), 'ru' (руски), 'tr' (турски), 'ar' (арапски), 'de', 'fr', 'es', 'al' (Albanian) — или кој и да е друг ISO 639-1 код. Запиши го во \`detected_language\`.
 2. **Јазик на излезот (КРИТИЧНО)**: ${outputLanguage && outputLanguage !== 'auto'
@@ -348,9 +378,8 @@ ${videoContext}
 5. **ZERO-ERROR LaTeX**: СИТЕ МАТЕМАТИЧКИ СИМБОЛИ, БРОЕВИ, РАВЕНКИ И ФОРМУЛИ МОРА ДА БИДАТ СТРОГО ВО LaTeX ФОРМАТ ВО original_text И ВО solution_steps! Користи $...$ за inline математика (пр. Let $x=5$) и $$...$$ за математика во нов ред. ОВА Е НАЈСТРОГОТО ПРАВИЛО!
 6. **Илустрации и Графици**: Формирај \`illustration_prompt\` за стварни/животни објекти. Формирај \`math_graphic_config\` (JSON објект) за геометрија и координатни системи.
 
-ПРАВИЛА ЗА НАСТАВНА ПРОГРАМА:
-- ЗАДОЛЖИТЕЛНО: Во \`grade_level\` одреди го нивото кориснтејќи ја нотацијата на земјата/јазикот: за 'mk' → "7-мо одделение"; за 'en' → "Grade 7" / "Year 9" / "AP Calculus"; за 'ru' → "7-й класс"; за 'tr' → "7. sınıf". Ако не можеш точно — напиши ниво (пр. "Middle School", "High School").
-- ЗАДОЛЖИТЕЛНО: Во \`curriculum_topic\` смести ја темата на ИЗЛЕЗНИОТ јазик (оној бараниот од корисникот, наведен погоре). Ако корисникот бара македонски → "Линеарни равенки", за англиски → "Linear Equations", за турски → "Doğrusal Denklemler".
+${CURRICULUM_PROMPT_INSTRUCTION}
+- Во \`curriculum_topic\` смести ја темата на ИЗЛЕЗНИОТ јазик (оној бараниот од корисникот, наведен погоре). Ако корисникот бара македонски → "Линеарни равенки", за англиски → "Linear Equations", за турски → "Doğrusal Denklemler".
 
 ${instructions ? `\nСПЕЦИФИЧНИ ИНСТРУКЦИИ ЗА ИЗВЛЕКУВАЊЕ:\n${instructions}\n` : ""}
 Врати JSON објект со следната структура која симулира NotebookLM (прво длабинска анализа, па потоа теорија и задачи).`;

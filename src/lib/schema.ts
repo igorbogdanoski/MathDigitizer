@@ -73,6 +73,7 @@ export interface TaskAttempt {
   total_hints_used: number;
   mistake_count: number;
   curriculum_topic?: string; // Cache topic for fast aggregation in Factory
+  curriculum_topic_id?: string; // Cache of curriculum_refs[0].topic_id for fast aggregation
   tags?: string[];
   cognitive_score?: number; // Calculated field based on hints/time/errors
 }
@@ -87,6 +88,17 @@ export interface PedagogicalInsight {
   hints?: string[];
   differentiated_learning?: { support: string; extension: string };
   quality_score?: number;
+}
+
+/** Една мапирана врска задача → наставна тема (БРО curriculum) */
+export interface CurriculumRef {
+  education_track: string; // 'primary' | 'secondary_general' | 'secondary_math_info' | 'secondary_vocational'
+  grade: string; // '1'..'9' | '1год' | '2год' etc.
+  topic_id: string; // e.g. 'mk-7-algebarski-izrazi'
+  topic_name: string; // for display
+  outcome_codes: string[]; // e.g. ['МА.7.5.2']
+  confidence?: number; // 0-1
+  source: 'ai' | 'manual';
 }
 
 export interface LessonArchitectStep {
@@ -123,6 +135,7 @@ export interface MathTask {
   bloom_taxonomy?: BloomTaxonomyLevel;
   grade_level?: string;
   curriculum_topic?: string;
+  curriculum_refs?: CurriculumRef[]; // Structured mapping to official БРО curriculum topics
   hints?: string[];
   pedagogical_insights?: PedagogicalInsight;
   author_uid?: string;

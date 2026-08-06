@@ -10,14 +10,14 @@ import {
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { MathTask } from '../lib/schema';
-import { extractMathTasksFromUrl, generateImage, generateMathGraphicConfig, advancedMultimodalExtraction, enrichTaskPedagogy, generateTaskEmbedding } from '../lib/gemini';
+import { extractMathTasksFromUrl, generateImage, generateMathGraphicConfig, advancedMultimodalExtraction, enrichTaskPedagogy, generateTaskEmbedding, classifyTaskCurriculum } from '../lib/gemini';
 import { PRO_MODEL, FLASH_36_MODEL, FAST_MODEL, LITE_MODEL } from '../lib/ai/models';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useGamification } from '../contexts/GamificationContext';
 import { hasProAccess } from '../lib/saas';
 import { ProFeatureGate } from './ProFeatureGate';
-import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { useNavigate } from 'react-router-dom';
@@ -307,8 +307,18 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
               taskToSave.folder_name = targetFolder.trim();
               taskToSave.folder_id = targetFolder.trim().toLowerCase().replace(/\s+/g, '-');
             }
-            await addDoc(collection(db, 'tasks'), taskToSave);
+            const docRef = await addDoc(collection(db, 'tasks'), taskToSave);
             newSavedSet.add(idx);
+
+            // Curriculum classification — NON-BLOCKING: runs after the save and
+            // must never fail the extraction flow. Updates the doc in-place.
+            classifyTaskCurriculum(taskToSave)
+              .then(async (curriculumRefs) => {
+                if (curriculumRefs.length === 0) return;
+                await updateDoc(docRef, { curriculum_refs: curriculumRefs });
+                setTasks(prev => prev.map((t, i) => (i === idx ? { ...t, curriculum_refs: curriculumRefs } : t)));
+              })
+              .catch(classifyErr => console.warn(`Curriculum classification failed for task ${idx}:`, classifyErr));
           } catch (err) {
             console.error(`Error saving task ${idx}:`, err);
           }

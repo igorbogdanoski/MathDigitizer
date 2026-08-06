@@ -96,5 +96,72 @@
   "ariaCloseGeoGebra": "Затвори GeoGebra",
   "ariaGeoGebraCanvas": "GeoGebra Интерактивно Платно",
   "ariaLightTheme": "Светла тема",
-  "ariaDarkTheme": "Темна тема"
+  "ariaDarkTheme": "Темна тема",
+  "curriculumAdmin": {
+    "refresh": "Освежи",
+    "loadingTasks": "Вчитување задачи...",
+    "stats": {
+      "title": "Мапирање на задачи кон наставна програма",
+      "totalTasks": "Вкупно задачи",
+      "mappedTasks": "Мапирани",
+      "unmappedTasks": "Немапирани",
+      "mappingPct": "Покриеност",
+      "lowConfidence": "Ниска сигурност",
+      "trackBreakdown": "По образовен тип: покриени теми / вкупно теми"
+    },
+    "heatmap": {
+      "title": "Покриеност по одделение",
+      "subtitle": "Процент на теми со барем една мапирана задача",
+      "legendGood": "Добра покриеност",
+      "legendPartial": "Делумна",
+      "legendNone": "Без задачи",
+      "topicsCovered": "{{covered}}/{{total}} теми"
+    },
+    "browser": {
+      "title": "Преглед на теми",
+      "subtitle": "Хиерархија: образовен тип → одделение → тема",
+      "hoursShort": "ч",
+      "outcomes": "исходи",
+      "keywords": "клучни зборови",
+      "taskCount": "{{count}} задачи",
+      "noTasks": "нема задачи"
+    },
+    "queue": {
+      "title": "Редица за мапирање",
+      "subtitle": "Задачи без наставна тема или со ниска сигурност на мапирање",
+      "unmapped": "Немапирана",
+      "lowConfidence": "Сигурност {{value}}",
+      "classify": "Класифицирај",
+      "classifying": "Класифицирање...",
+      "classifySuccess": "Задачата е мапирана: {{topic}} ({{confidence}})",
+      "classifyNoMatch": "Не е пронајдена соодветна наставна тема.",
+      "classifyError": "Грешка при класификација.",
+      "manualAssign": "Рачно додели тема",
+      "selectTopic": "Избери тема...",
+      "assignSuccess": "Темата е рачно доделена.",
+      "assignError": "Грешка при доделување тема.",
+      "empty": "Сите задачи се мапирани со висока сигурност.",
+      "showingFirst": "Прикажани први {{count}} задачи"
+    }
+  },
+  "curriculumTestGen": {
+    "title": "Тестови по Државни Стандарди",
+    "subtitle": "Генерирајте материјали усогласени со програмите на МОН/БРО (bro.gov.mk)",
+    "trackLabel": "Образовен Тип",
+    "gradeLabel": "Одделение / Година",
+    "topicLabel": "Наставна Тема",
+    "outcomesCount": "{{count}} исходи",
+    "hoursShort": "{{hours}} часа",
+    "keywordsCount": "{{count}} клучни зборови",
+    "generate": "Генерирај Задачи (БРО)",
+    "generating": "Генерирање задачи со AI...",
+    "injectionNote": "Исходите, клучните зборови и примерите од официјалната програма се вградени во генерацијата.",
+    "savedToast": "Успешно генерирани и зачувани {{count}} задачи по државен стандард.",
+    "errorToast": "Грешка при генерирање.",
+    "footerNote": "Изгенерираните задачи автоматски ќе се додадат во колекцијата на задачи и ќе бидат достапни за учениците во Адаптивниот Тест.",
+    "trackPrimary": "Основно образование",
+    "trackSecondaryGeneral": "Општа гимназија",
+    "trackSecondaryMathInfo": "Мат-инф гимназија",
+    "trackSecondaryVocational": "Стручно образование"
+  }
 }

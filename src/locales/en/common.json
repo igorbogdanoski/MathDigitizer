@@ -96,5 +96,72 @@
   "ariaCloseGeoGebra": "Close GeoGebra",
   "ariaGeoGebraCanvas": "GeoGebra Interactive Canvas",
   "ariaLightTheme": "Light theme",
-  "ariaDarkTheme": "Dark theme"
+  "ariaDarkTheme": "Dark theme",
+  "curriculumAdmin": {
+    "refresh": "Refresh",
+    "loadingTasks": "Loading tasks...",
+    "stats": {
+      "title": "Task mapping to curriculum",
+      "totalTasks": "Total tasks",
+      "mappedTasks": "Mapped",
+      "unmappedTasks": "Unmapped",
+      "mappingPct": "Coverage",
+      "lowConfidence": "Low confidence",
+      "trackBreakdown": "By education track: covered topics / total topics"
+    },
+    "heatmap": {
+      "title": "Coverage by grade",
+      "subtitle": "Percentage of topics with at least one mapped task",
+      "legendGood": "Good coverage",
+      "legendPartial": "Partial",
+      "legendNone": "No tasks",
+      "topicsCovered": "{{covered}}/{{total}} topics"
+    },
+    "browser": {
+      "title": "Topic browser",
+      "subtitle": "Hierarchy: education track → grade → topic",
+      "hoursShort": "h",
+      "outcomes": "outcomes",
+      "keywords": "keywords",
+      "taskCount": "{{count}} tasks",
+      "noTasks": "no tasks"
+    },
+    "queue": {
+      "title": "Mapping review queue",
+      "subtitle": "Tasks without a curriculum topic or with low mapping confidence",
+      "unmapped": "Unmapped",
+      "lowConfidence": "Confidence {{value}}",
+      "classify": "Classify",
+      "classifying": "Classifying...",
+      "classifySuccess": "Task mapped: {{topic}} ({{confidence}})",
+      "classifyNoMatch": "No matching curriculum topic found.",
+      "classifyError": "Classification error.",
+      "manualAssign": "Manually assign topic",
+      "selectTopic": "Select topic...",
+      "assignSuccess": "Topic manually assigned.",
+      "assignError": "Error assigning topic.",
+      "empty": "All tasks are mapped with high confidence.",
+      "showingFirst": "Showing first {{count}} tasks"
+    }
+  },
+  "curriculumTestGen": {
+    "title": "Tests by National Standards",
+    "subtitle": "Generate materials aligned with MON/BRO curricula (bro.gov.mk)",
+    "trackLabel": "Education Track",
+    "gradeLabel": "Grade / Year",
+    "topicLabel": "Curriculum Topic",
+    "outcomesCount": "{{count}} outcomes",
+    "hoursShort": "{{hours}} hours",
+    "keywordsCount": "{{count}} keywords",
+    "generate": "Generate Tasks (BRO)",
+    "generating": "Generating tasks with AI...",
+    "injectionNote": "Outcomes, keywords and examples from the official curriculum are embedded into the generation.",
+    "savedToast": "Successfully generated and saved {{count}} tasks per national standard.",
+    "errorToast": "Generation error.",
+    "footerNote": "Generated tasks are automatically added to the task collection and become available to students in the Adaptive Test.",
+    "trackPrimary": "Primary education",
+    "trackSecondaryGeneral": "General gymnasium",
+    "trackSecondaryMathInfo": "Math-IT gymnasium",
+    "trackSecondaryVocational": "Vocational education"
+  }
 }
