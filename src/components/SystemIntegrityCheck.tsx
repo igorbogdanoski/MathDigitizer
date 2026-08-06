@@ -26,6 +26,20 @@ interface IngestionDiagnosticsView {
     bySeverity: { low: number; medium: number; high: number };
     highSeverityRuleIds: string[];
   };
+  preflight?: {
+    ok: boolean;
+    generatedAt: string;
+    dependencyChecks: Array<{
+      name: string;
+      status: 'available' | 'missing';
+      details: string;
+    }>;
+    parserPlans: Array<{
+      sourceType: 'url' | 'text' | 'file-image' | 'file-pdf';
+      primary: string;
+      fallback: string[];
+    }>;
+  };
   advisories: string[];
 }
 
@@ -106,21 +120,23 @@ export const SystemIntegrityCheck: React.FC = () => {
   const [ingestionDiagLoading, setIngestionDiagLoading] = useState(false);
   const [ingestionDiagError, setIngestionDiagError] = useState<string | null>(null);
   const [severityHistory, setSeverityHistory] = useState<SeverityTrendPoint[]>([]);
+  const [includePreflight, setIncludePreflight] = useState(false);
 
   const handleResetSeverityHistory = () => {
     clearSeverityHistory();
     setSeverityHistory([]);
   };
 
-  const fetchIngestionDiagnostics = async () => {
+  const fetchIngestionDiagnostics = async (preflightOverride?: boolean) => {
     setIngestionDiagLoading(true);
     setIngestionDiagError(null);
+    const preflightEnabled = typeof preflightOverride === 'boolean' ? preflightOverride : includePreflight;
 
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 8000);
 
     try {
-      const response = await fetch('/api/ingestion/diagnostics?preflight=false', {
+      const response = await fetch(`/api/ingestion/diagnostics?preflight=${preflightEnabled ? 'true' : 'false'}`, {
         method: 'GET',
         cache: 'no-store',
         signal: controller.signal,
@@ -155,6 +171,12 @@ export const SystemIntegrityCheck: React.FC = () => {
       window.clearTimeout(timeoutId);
       setIngestionDiagLoading(false);
     }
+  };
+
+  const togglePreflightDiagnostics = async () => {
+    const next = !includePreflight;
+    setIncludePreflight(next);
+    await fetchIngestionDiagnostics(next);
   };
 
   const updateStatus = (service: string, status: HealthStatus['status'], message: string, latency?: number) => {
@@ -301,11 +323,20 @@ export const SystemIntegrityCheck: React.FC = () => {
               variant="outline"
               size="sm"
               disabled={ingestionDiagLoading}
-              onClick={fetchIngestionDiagnostics}
+              onClick={() => fetchIngestionDiagnostics()}
               className="bg-white dark:bg-slate-800"
             >
               <RefreshCcw className={`w-4 h-4 mr-2 ${ingestionDiagLoading ? 'animate-spin' : ''}`} />
               Refresh
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={ingestionDiagLoading}
+              onClick={togglePreflightDiagnostics}
+              className="bg-white dark:bg-slate-800"
+            >
+              Preflight: {includePreflight ? 'ON' : 'OFF'}
             </Button>
           </div>
         </CardHeader>
@@ -431,6 +462,47 @@ export const SystemIntegrityCheck: React.FC = () => {
                       <li key={`${item}-${index}`}>{item}</li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {includePreflight && ingestionDiagnostics.preflight && (
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs uppercase tracking-wider text-slate-500">Preflight Dependencies</div>
+                    <span
+                      className={`inline-flex px-2 py-1 rounded text-xs font-semibold ${
+                        ingestionDiagnostics.preflight.ok
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                      }`}
+                    >
+                      {ingestionDiagnostics.preflight.ok ? 'READY' : 'DEGRADED'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {ingestionDiagnostics.preflight.dependencyChecks.map((dep) => (
+                      <div key={dep.name} className="rounded-lg border border-slate-200 dark:border-slate-700 p-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{dep.name}</span>
+                          <span
+                            className={`text-xs font-semibold ${
+                              dep.status === 'available'
+                                ? 'text-emerald-700 dark:text-emerald-300'
+                                : 'text-red-700 dark:text-red-300'
+                            }`}
+                          >
+                            {dep.status}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1 line-clamp-2">{dep.details}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="text-xs text-slate-500">
+                    Parser plans: {ingestionDiagnostics.preflight.parserPlans.length}
+                  </div>
                 </div>
               )}
 

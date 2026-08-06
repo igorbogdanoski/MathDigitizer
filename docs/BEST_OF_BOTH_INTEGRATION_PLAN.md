@@ -493,6 +493,11 @@ After implementation, MathDigitizer gains:
 
 - src/components/SystemIntegrityCheck.tsx includes reset action to clear local severity history snapshots
 
+1. Added preflight dependency diagnostics card with toggle view:
+
+- src/components/SystemIntegrityCheck.tsx supports `preflight` toggle in diagnostics fetch
+- renders dependency availability and parser-plan count when preflight mode is enabled
+
 1. Validation result:
 
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts`
@@ -506,6 +511,6 @@ After implementation, MathDigitizer gains:
 ### Next 72 hours (expert execution lane)
 
 1. Add E2E check for ingestion snapshot persistence flag behavior.
-2. Add diagnostics card for preflight dependency status toggled view.
-3. Add role-gated visibility control for ingestion diagnostics panel.
-4. Add trend export option (JSON) for diagnostics snapshots.
+2. Add role-gated visibility control for ingestion diagnostics panel.
+3. Add trend export option (JSON) for diagnostics snapshots.
+4. Add compact weekly summary ribbon for ingestion safety posture.
