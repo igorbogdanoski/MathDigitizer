@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Filter, ChevronDown, ArrowUpDown, X, History as HistoryIcon, CheckSquare, Square, FileText, Download, FileSpreadsheet, Plus, BookOpen, Zap, Brain, Loader2, Trash2 } from 'lucide-react';
+import { Search, Filter, ChevronDown, ArrowUpDown, X, History as HistoryIcon, CheckSquare, Square, FileText, Download, FileSpreadsheet, Plus, BookOpen, Zap, Brain, Loader2, Trash2, Share2 } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
@@ -23,6 +23,7 @@ interface TaskFiltersProps {
   setShowTestGenerator: (val: boolean) => void;
   setShowWorksheetModal: (val: boolean) => void;
   handleExportCSV: () => void;
+  onOpenExportPanel: () => void;
 }
 
 export const TaskFilters: React.FC<TaskFiltersProps> = ({
@@ -34,7 +35,8 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   setSelectedForTest,
   setShowTestGenerator,
   setShowWorksheetModal,
-  handleExportCSV
+  handleExportCSV,
+  onOpenExportPanel
 }) => {
   const {
     searchQuery, setSearchQuery,
@@ -523,6 +525,10 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
             )}
 
             <div className="flex gap-2 ml-auto">
+              <Button variant="outline" size="sm" onClick={onOpenExportPanel} title={t('exportPanelTip')} className="border-indigo-300 dark:border-indigo-400/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10">
+                <Share2 className="w-4 h-4 mr-2" />
+                {t('exportButton')}
+              </Button>
               <Button variant="outline" size="sm" onClick={() => exportToWord(sortedAndFilteredTasks, 'math-tasks.docx')} title={t('exportWordTip')} className="dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/5">
                 <FileText className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />
                 Word

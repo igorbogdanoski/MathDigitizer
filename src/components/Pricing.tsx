@@ -10,6 +10,7 @@ import { Button } from './ui/Button';
 import { BillingPeriod, getManualPaymentDetails, getProPricingPlans, getUpgradeOptions, UpgradeChannel } from '../lib/saas';
 import { sendReceiptNotification } from '../lib/emailService';
 import { trackPricingView, trackReceiptSubmitted } from '../lib/analytics';
+import { ProPaymentModal } from './ProPaymentModal';
 
 function buildReferenceCode(uid: string | undefined, period: BillingPeriod): string {
   if (!uid) return '';
@@ -26,6 +27,7 @@ export const Pricing: React.FC = () => {
   const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false);
   const [isSubmittingReceipt, setIsSubmittingReceipt] = useState(false);
   const [receiptRefManuallyEdited, setReceiptRefManuallyEdited] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [schoolInquiry, setSchoolInquiry] = useState({
     contactName: '',
     schoolName: '',
@@ -376,6 +378,14 @@ export const Pricing: React.FC = () => {
             </div>
           ) : null}
 
+          <Button
+            onClick={() => setIsPaymentModalOpen(true)}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 mb-4"
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            {t('billing:activatePro', 'Активирај Pro')}
+          </Button>
+
           {primaryOption ? (
             <Button onClick={() => handleStartCheckout(primaryOption.channel)} disabled={isRedirecting} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 mb-4">
               {isRedirecting ? 'Пренасочување...' : `${selectedPlan.ctaLabel} преку ${primaryOption.label.replace('Плати со ', '')}`}
@@ -621,6 +631,12 @@ export const Pricing: React.FC = () => {
           </div>
         </div>
       </section>
+
+      <ProPaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        initialPeriod={billingPeriod}
+      />
     </div>
   );
 };

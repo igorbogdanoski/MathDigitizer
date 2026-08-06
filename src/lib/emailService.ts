@@ -4,6 +4,14 @@ const TEMPLATE_TEACHER = import.meta.env.VITE_EMAILJS_TEMPLATE_TEACHER as string
 const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string;
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL as string;
 
+/** EmailJS template ids, exported so domain modules (e.g. paymentEmails) can reuse the same transport. */
+export const EMAIL_TEMPLATES = {
+  admin: TEMPLATE_ADMIN,
+  teacher: TEMPLATE_TEACHER,
+} as const;
+
+export { ADMIN_EMAIL };
+
 export interface ReceiptEmailParams {
   teacher_name: string;
   teacher_email: string;
@@ -12,7 +20,7 @@ export interface ReceiptEmailParams {
   amount: string;
 }
 
-async function sendEmail(templateId: string, params: Record<string, string>): Promise<void> {
+export async function sendEmail(templateId: string, params: Record<string, string>): Promise<void> {
   if (!SERVICE_ID || !PUBLIC_KEY) {
     console.warn('[emailService] Missing EmailJS config — skipping send');
     return;

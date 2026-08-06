@@ -3,11 +3,17 @@ import { useTranslation } from 'react-i18next';
 import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import {
   CreditCard, Crown, Clock, CheckCircle2, XCircle, AlertCircle,
-  ArrowRight, Shield, CalendarDays, Receipt, Sparkles, Loader2,
+  ArrowRight, Shield, CalendarDays, Receipt, Sparkles, Loader2, FileDown, Landmark,
 } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { hasProAccess, isOnTrial, trialDaysRemaining, getProPricingPlans, getManualPaymentDetails } from '../lib/saas';
+import {
+  PAYMENT_INTENTS_COLLECTION,
+  type PaymentIntentRecord,
+  type PaymentIntentStatus,
+} from '../lib/paymentIntents';
+import { generateInvoiceHtml, openInvoiceInPrintWindow } from '../lib/invoicing';
 import { SEO } from './SEO';
 import { Link } from 'react-router-dom';
 
@@ -52,11 +58,50 @@ const STATUS_CONFIG: Record<ReceiptStatus, { label: string; icon: React.ReactNod
   },
 };
 
+/** Status badges for the new invoice-based `payment_intents` flow. */
+const INTENT_STATUS_STYLE: Record<PaymentIntentStatus, { key: string; className: string }> = {
+  pending_payment: {
+    key: 'billing:payIntentsStatusPendingPayment',
+    className: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
+  },
+  receipt_uploaded: {
+    key: 'billing:payIntentsStatusReceiptUploaded',
+    className: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200',
+  },
+  admin_review: {
+    key: 'billing:payIntentsStatusAdminReview',
+    className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200',
+  },
+  approved: {
+    key: 'billing:payIntentsStatusApproved',
+    className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
+  },
+  rejected: {
+    key: 'billing:payIntentsStatusRejected',
+    className: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200',
+  },
+  expired: {
+    key: 'billing:payIntentsStatusExpired',
+    className: 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
+  },
+};
+
+const INTENT_STATUS_FALLBACKS: Record<PaymentIntentStatus, string> = {
+  pending_payment: 'Чека уплата',
+  receipt_uploaded: 'Прикачена потврда',
+  admin_review: 'Во преглед',
+  approved: 'Одобрено',
+  rejected: 'Одбиено',
+  expired: 'Истечено',
+};
+
 export const BillingDashboard: React.FC = () => {
   const { t } = useTranslation('common');
   const { user, userProfile } = useAuth();
   const [receipts, setReceipts] = useState<PaymentReceipt[]>([]);
   const [isLoadingReceipts, setIsLoadingReceipts] = useState(true);
+  const [intents, setIntents] = useState<PaymentIntentRecord[]>([]);
+  const [isLoadingIntents, setIsLoadingIntents] = useState(true);
 
   const isPro = hasProAccess(userProfile);
   const onTrial = isOnTrial(userProfile);
@@ -89,6 +134,56 @@ export const BillingDashboard: React.FC = () => {
 
     return unsubscribe;
   }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setIsLoadingIntents(false);
+      return;
+    }
+
+    // No orderBy here on purpose: where + orderBy would require a composite
+    // index; the list is sorted client-side below instead.
+    const intentsQuery = query(
+      collection(db, PAYMENT_INTENTS_COLLECTION),
+      where('user_id', '==', user.uid)
+    );
+
+    const unsubscribe = onSnapshot(intentsQuery, (snapshot) => {
+      const items = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      })) as PaymentIntentRecord[];
+      items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setIntents(items);
+      setIsLoadingIntents(false);
+    }, () => {
+      setIsLoadingIntents(false);
+    });
+
+    return unsubscribe;
+  }, [user]);
+
+  const handleDownloadIntentInvoice = (intent: PaymentIntentRecord) => {
+    const details = getManualPaymentDetails();
+    const issueDate = intent.created_at;
+    const dueDate = new Date(new Date(intent.created_at).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const html = generateInvoiceHtml({
+      invoiceNumber: intent.invoice_number,
+      customerName: intent.customer_name,
+      customerEmail: intent.email,
+      plan: intent.plan,
+      amount: intent.amount,
+      bankDetails: {
+        bank: details.bankName ?? 'NLB Bank',
+        iban: details.bankIban ?? 'MK07210501596102457',
+        swift: details.bankSwift ?? 'TUTNMK22',
+        recipient: 'Игор Богданоски',
+      },
+      issueDate,
+      dueDate,
+    });
+    openInvoiceInPrintWindow(html);
+  };
 
   const planStatus = useMemo(() => {
     if (isPro && !onTrial) return 'pro';
@@ -241,6 +336,75 @@ export const BillingDashboard: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* Invoices & payments — new bank-transfer (payment_intents) flow */}
+      {(intents.length > 0 || isLoadingIntents) && (
+        <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 overflow-hidden">
+          <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800">
+            <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <Landmark className="w-5 h-5 text-indigo-600" />
+              {t('billing:payIntentsTitle', 'Фактури и плаќања')}
+            </h2>
+          </div>
+
+          {isLoadingIntents ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              {intents.map((intent) => {
+                const statusStyle = INTENT_STATUS_STYLE[intent.status] ?? INTENT_STATUS_STYLE.pending_payment;
+                return (
+                  <div key={intent.id} className="px-8 py-5 flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-3 mb-1">
+                        <span className="font-bold text-slate-900 dark:text-white truncate">
+                          {intent.amount.toLocaleString('en-US')} MKD ·{' '}
+                          {intent.plan === 'annual'
+                            ? t('billing.annual', 'Годишно')
+                            : t('billing.monthly', 'Месечно')}
+                        </span>
+                        <span
+                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${statusStyle.className}`}
+                        >
+                          {t(statusStyle.key, INTENT_STATUS_FALLBACKS[intent.status])}
+                        </span>
+                      </div>
+                      <div className="text-sm text-slate-500 dark:text-slate-400 space-y-0.5">
+                        <p>
+                          <span className="font-medium">{t('billing:payIntentsInvoice', 'Фактура')}:</span>{' '}
+                          <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                            {intent.invoice_number}
+                          </code>
+                        </p>
+                        <p>
+                          <span className="font-medium">{t('billing.channel', 'Канал')}:</span>{' '}
+                          {t('billing:payIntentsMethodBank', 'Банкарски трансфер (фактура)')}
+                        </p>
+                        <p>{formatDate(intent.created_at)}</p>
+                        {intent.rejection_reason && (
+                          <p className="text-xs italic text-red-500 dark:text-red-400 mt-1">
+                            {t('billing:payIntentsRejectionReason', 'Причина за одбивање')}: "{intent.rejection_reason}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadIntentInvoice(intent)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 dark:border-indigo-700 px-3 py-2 text-xs font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors shrink-0"
+                    >
+                      <FileDown className="w-4 h-4" />
+                      {t('billing:payIntentsDownloadInvoice', 'Преземи фактура')}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Payment History */}
       <div className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 overflow-hidden">
