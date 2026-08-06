@@ -503,6 +503,12 @@ After implementation, MathDigitizer gains:
 - src/components/SystemIntegrityCheck.tsx now limits ingestion diagnostics visibility to admin allowlist users
 - non-admin users see a clear restricted-access message while core system checks remain visible
 
+1. Added E2E check for ingestion snapshot persistence flag behavior:
+
+- src/components/dev/IngestionSnapshotFlagProbe.tsx adds a development-only probe harness for save-payload behavior
+- src/App.tsx adds dev-only route `/__e2e__/ingestion-snapshot`
+- e2e/ingestion-snapshot-flag.spec.ts validates both flag branches (`override=false` and `override=true`) and snapshot payload shape
+
 1. Validation result:
 
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts`
@@ -515,7 +521,7 @@ After implementation, MathDigitizer gains:
 
 ### Next 72 hours (expert execution lane)
 
-1. Add E2E check for ingestion snapshot persistence flag behavior.
-2. Add trend export option (JSON) for diagnostics snapshots.
-3. Add compact weekly summary ribbon for ingestion safety posture.
-4. Add ingestion diagnostics UI smoke test with admin/non-admin visibility checks.
+1. Add trend export option (JSON) for diagnostics snapshots.
+2. Add compact weekly summary ribbon for ingestion safety posture.
+3. Add ingestion diagnostics UI smoke test with admin/non-admin visibility checks.
+4. Add diagnostics preflight toggle persistence (remember last state per admin browser).
