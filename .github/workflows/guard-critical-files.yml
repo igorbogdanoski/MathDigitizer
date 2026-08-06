@@ -10,6 +10,7 @@ on:
 permissions:
   contents: read
   issues: write
+  statuses: write
 
 jobs:
   guard:
@@ -114,3 +115,15 @@ jobs:
         run: |
           echo "All critical-file guards passed."
           echo "Login auth chain, PWA, migration tooling, and secret hygiene are intact."
+
+      - name: Publish guard status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            -X POST \
+            "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            -f state=success \
+            -f context=guard \
+            -f description="All critical-file guards passed."
