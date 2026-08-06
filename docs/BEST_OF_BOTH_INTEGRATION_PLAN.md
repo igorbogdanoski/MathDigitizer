@@ -475,6 +475,15 @@ After implementation, MathDigitizer gains:
 
 - docs/INGESTION_POLICY_ROLLOUT_CHECKLIST.md
 
+1. Added minimal diagnostics widget in admin diagnostics flow:
+
+- src/components/SystemIntegrityCheck.tsx now fetches and displays `/api/ingestion/diagnostics`
+- includes policy mode visibility, scanner severity mix, high-severity rule IDs, and advisories
+
+1. Added runbook for repeated high-severity signal spikes:
+
+- docs/INGESTION_HIGH_SEVERITY_RUNBOOK.md
+
 1. Validation result:
 
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts`
@@ -487,7 +496,7 @@ After implementation, MathDigitizer gains:
 
 ### Next 72 hours (expert execution lane)
 
-1. Add minimal admin dashboard widget wired to `/api/ingestion/diagnostics`.
-2. Document runbook checks for repeated high-severity signal spikes.
-3. Add dashboard-level trend chart for severity mix over time.
-4. Add E2E check for ingestion snapshot persistence flag behavior.
+1. Add dashboard-level trend chart for severity mix over time.
+2. Add E2E check for ingestion snapshot persistence flag behavior.
+3. Add diagnostics card for preflight dependency status toggled view.
+4. Add role-gated visibility control for ingestion diagnostics panel.

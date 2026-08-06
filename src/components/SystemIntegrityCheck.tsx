@@ -10,6 +10,21 @@ import { Button } from './ui/Button';
 import { motion, AnimatePresence } from 'motion/react';
 import { checkGeminiHealth } from '../lib/gemini';
 
+interface IngestionDiagnosticsView {
+  ok: boolean;
+  generatedAt: string;
+  policyModes: {
+    userInputMode: 'advisory' | 'strict';
+    sourceContentMode: 'advisory' | 'strict';
+  };
+  scanner: {
+    totalRules: number;
+    bySeverity: { low: number; medium: number; high: number };
+    highSeverityRuleIds: string[];
+  };
+  advisories: string[];
+}
+
 interface HealthStatus {
   service: string;
   status: 'ok' | 'error' | 'testing' | 'idle';
@@ -28,6 +43,45 @@ export const SystemIntegrityCheck: React.FC = () => {
   ]);
 
   const [isTesting, setIsTesting] = useState(false);
+  const [ingestionDiagnostics, setIngestionDiagnostics] = useState<IngestionDiagnosticsView | null>(null);
+  const [ingestionDiagLoading, setIngestionDiagLoading] = useState(false);
+  const [ingestionDiagError, setIngestionDiagError] = useState<string | null>(null);
+
+  const fetchIngestionDiagnostics = async () => {
+    setIngestionDiagLoading(true);
+    setIngestionDiagError(null);
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const response = await fetch('/api/ingestion/diagnostics?preflight=false', {
+        method: 'GET',
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+
+      if (response.status === 401) {
+        setIngestionDiagnostics(null);
+        setIngestionDiagError('Ingestion diagnostics are protected (401). Set admin key policy for internal access.');
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Diagnostics request failed (${response.status})`);
+      }
+
+      const data = (await response.json()) as IngestionDiagnosticsView;
+      setIngestionDiagnostics(data);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown diagnostics error';
+      setIngestionDiagError(message);
+      setIngestionDiagnostics(null);
+    } finally {
+      window.clearTimeout(timeoutId);
+      setIngestionDiagLoading(false);
+    }
+  };
 
   const updateStatus = (service: string, status: HealthStatus['status'], message: string, latency?: number) => {
     setStatuses(prev => prev.map(s => s.service === service ? { ...s, status, message, latency } : s));
@@ -98,6 +152,7 @@ export const SystemIntegrityCheck: React.FC = () => {
 
   useEffect(() => {
     runDiagnostics();
+    fetchIngestionDiagnostics();
   }, []);
 
   return (
@@ -159,6 +214,106 @@ export const SystemIntegrityCheck: React.FC = () => {
           ))}
         </AnimatePresence>
       </div>
+
+      <Card className="border-none shadow-lg bg-white dark:bg-slate-800 overflow-hidden">
+        <CardHeader className="border-b border-slate-100 dark:border-slate-700/50">
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
+              <ShieldCheck className="w-4 h-4 text-indigo-500" />
+              Ingestion Safety Diagnostics
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={ingestionDiagLoading}
+              onClick={fetchIngestionDiagnostics}
+              className="bg-white dark:bg-slate-800"
+            >
+              <RefreshCcw className={`w-4 h-4 mr-2 ${ingestionDiagLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-5 space-y-4">
+          {ingestionDiagError ? (
+            <div className="rounded-xl border border-amber-300/60 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-900 dark:text-amber-200">
+              <div className="font-semibold mb-1">Diagnostics unavailable</div>
+              <div>{ingestionDiagError}</div>
+            </div>
+          ) : ingestionDiagLoading && !ingestionDiagnostics ? (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-sm text-slate-500 dark:text-slate-300">
+              Loading ingestion diagnostics...
+            </div>
+          ) : ingestionDiagnostics ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                  <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">User Input Mode</div>
+                  <div className="font-semibold text-slate-900 dark:text-slate-100">{ingestionDiagnostics.policyModes.userInputMode}</div>
+                </div>
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                  <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">Source Content Mode</div>
+                  <div className="font-semibold text-slate-900 dark:text-slate-100">{ingestionDiagnostics.policyModes.sourceContentMode}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="rounded-xl bg-slate-50 dark:bg-slate-700/40 p-3 border border-slate-200 dark:border-slate-700">
+                  <div className="text-xs text-slate-500 uppercase tracking-wide">Rules</div>
+                  <div className="text-xl font-black text-slate-900 dark:text-white">{ingestionDiagnostics.scanner.totalRules}</div>
+                </div>
+                <div className="rounded-xl bg-red-50 dark:bg-red-900/20 p-3 border border-red-200 dark:border-red-900/50">
+                  <div className="text-xs text-red-600 uppercase tracking-wide">High</div>
+                  <div className="text-xl font-black text-red-700 dark:text-red-300">{ingestionDiagnostics.scanner.bySeverity.high}</div>
+                </div>
+                <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 p-3 border border-amber-200 dark:border-amber-900/50">
+                  <div className="text-xs text-amber-700 uppercase tracking-wide">Medium</div>
+                  <div className="text-xl font-black text-amber-800 dark:text-amber-300">{ingestionDiagnostics.scanner.bySeverity.medium}</div>
+                </div>
+                <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-3 border border-emerald-200 dark:border-emerald-900/50">
+                  <div className="text-xs text-emerald-700 uppercase tracking-wide">Low</div>
+                  <div className="text-xl font-black text-emerald-800 dark:text-emerald-300">{ingestionDiagnostics.scanner.bySeverity.low}</div>
+                </div>
+              </div>
+
+              {ingestionDiagnostics.scanner.highSeverityRuleIds.length > 0 && (
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                  <div className="text-xs uppercase tracking-wider text-slate-500 mb-2">High Severity Rule IDs</div>
+                  <div className="flex flex-wrap gap-2">
+                    {ingestionDiagnostics.scanner.highSeverityRuleIds.map((id) => (
+                      <span
+                        key={id}
+                        className="inline-flex px-2 py-1 rounded-md text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                      >
+                        {id}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {ingestionDiagnostics.advisories.length > 0 && (
+                <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 p-3">
+                  <div className="text-xs uppercase tracking-wider text-indigo-700 dark:text-indigo-300 mb-2">Advisories</div>
+                  <ul className="list-disc pl-5 space-y-1 text-sm text-indigo-900 dark:text-indigo-200">
+                    {ingestionDiagnostics.advisories.map((item, index) => (
+                      <li key={`${item}-${index}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="text-xs text-slate-500">
+                Generated: {new Date(ingestionDiagnostics.generatedAt).toLocaleString('mk-MK')}
+              </div>
+            </>
+          ) : (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-sm text-slate-500 dark:text-slate-300">
+              No diagnostics data available.
+            </div>
+          )}
+        </CardContent>
+      </Card>
       
       {/* Visual Connection Map */}
       <Card className="border-none shadow-lg bg-slate-900 text-white overflow-hidden relative">
