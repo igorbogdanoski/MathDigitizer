@@ -21,6 +21,13 @@ import { collection, addDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { useNavigate } from 'react-router-dom';
+import {
+  stripIngestionMetaForPersistence,
+  buildPersistedIngestionSnapshot,
+  PersistedIngestionSnapshot,
+} from '../lib/ingestion/metadata';
+import { resolveIngestionSnapshotPersistenceEnabled } from '../lib/ingestion/config';
+import { trackIngestionSecurity } from '../lib/analytics';
 import { KahootMaker } from './KahootMaker';
 import { MakedoTestGenerator } from './MakedoTestGenerator';
 import { GeoGebraViewer } from './GeoGebraViewer';
@@ -93,6 +100,11 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
   const [expandedPrompts, setExpandedPrompts] = useState<Record<number, boolean>>({});
   const [isDragOver, setIsDragOver] = useState(false);
   const [targetFolder, setTargetFolder] = useState('');
+
+  const latestIngestionMeta = React.useMemo(() => {
+    const firstTask = tasks[0] as any;
+    return firstTask?.__ingestion_meta ?? null;
+  }, [tasks]);
 
   const isValidUrl = (url: string) => {
     try {
@@ -280,6 +292,22 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
       setProgress(100);
       setStatusText(t('progressSuccess'));
       setTasks(extractedTasks);
+
+      const meta = (extractedTasks[0] as any)?.__ingestion_meta;
+      if (meta) {
+        trackIngestionSecurity({
+          source_type: String(meta.sourceKind || sourceType),
+          severity: meta.scan?.highestSeverity ?? 'none',
+          sanitized: meta.sanitize?.changed ? 'yes' : 'no',
+        });
+      } else {
+        trackIngestionSecurity({
+          source_type: sourceType,
+          severity: 'none',
+          sanitized: 'no',
+        });
+      }
+
       setSessionExtractionCount((n) => n + 1);
       
       // Auto-save logic
@@ -290,11 +318,16 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
         // Save simultaneously but manage errors
         await Promise.all(extractedTasks.map(async (task, idx) => {
           try {
-            const taskToSave: MathTask = {
-              ...task,
+            const taskToSave: MathTask & { ingestion_snapshot?: PersistedIngestionSnapshot } = {
+              ...stripIngestionMetaForPersistence(task),
               author_uid: user.uid,
               created_at: new Date().toISOString()
             };
+
+            if (resolveIngestionSnapshotPersistenceEnabled()) {
+              const snapshot = buildPersistedIngestionSnapshot((task as any).__ingestion_meta);
+              if (snapshot) taskToSave.ingestion_snapshot = snapshot;
+            }
 
             try {
               const textToEmbed = `${task.title} ${task.original_text} ${(task.solution_steps || []).join(' ')} ${(task.tags || []).join(' ')} ${task.curriculum_topic || ''}`;
@@ -348,11 +381,16 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
     }
 
     try {
-      const taskToSave = {
-        ...task,
+      const taskToSave: MathTask & { ingestion_snapshot?: PersistedIngestionSnapshot } = {
+        ...stripIngestionMetaForPersistence(task),
         author_uid: user.uid,
         created_at: new Date().toISOString()
       };
+
+      if (resolveIngestionSnapshotPersistenceEnabled()) {
+        const snapshot = buildPersistedIngestionSnapshot((task as any).__ingestion_meta);
+        if (snapshot) taskToSave.ingestion_snapshot = snapshot;
+      }
       
       try {
         const textToEmbed = `${task.title} ${task.original_text} ${(task.solution_steps || []).join(' ')} ${(task.tags || []).join(' ')} ${task.curriculum_topic || ''}`;
@@ -861,6 +899,29 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                        )}
                      </div>
                    </div>
+                </div>
+              </div>
+            )}
+
+            {latestIngestionMeta && (
+              <div className="mt-5 rounded-2xl border border-amber-300/40 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="font-semibold text-amber-900 dark:text-amber-100">Ingestion Safety Panel</div>
+                  <div className="text-xs text-amber-800 dark:text-amber-200">
+                    Source: <span className="font-semibold">{String(latestIngestionMeta.sourceKind || 'unknown')}</span>
+                  </div>
+                </div>
+
+                <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-amber-900 dark:text-amber-100">
+                  <div>
+                    Severity: <span className="font-semibold">{String(latestIngestionMeta.scan?.highestSeverity || 'none')}</span>
+                  </div>
+                  <div>
+                    Sanitized: <span className="font-semibold">{latestIngestionMeta.sanitize?.changed ? 'yes' : 'no'}</span>
+                  </div>
+                  <div>
+                    Parser path: <span className="font-semibold">{String(latestIngestionMeta.parserPath || 'n/a')}</span>
+                  </div>
                 </div>
               </div>
             )}

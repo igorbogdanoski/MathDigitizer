@@ -9,6 +9,42 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { motion, AnimatePresence } from 'motion/react';
 import { checkGeminiHealth } from '../lib/gemini';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useAuth } from '../contexts/AuthContext';
+import { isPaymentAdmin } from '../lib/paymentIntents';
+
+const INGESTION_HISTORY_KEY = 'ingestion_diagnostics_history_v1';
+const INGESTION_HISTORY_LIMIT = 30;
+const INGESTION_PREFLIGHT_KEY = 'ingestion_diagnostics_preflight_v1';
+
+interface IngestionDiagnosticsView {
+  ok: boolean;
+  generatedAt: string;
+  policyModes: {
+    userInputMode: 'advisory' | 'strict';
+    sourceContentMode: 'advisory' | 'strict';
+  };
+  scanner: {
+    totalRules: number;
+    bySeverity: { low: number; medium: number; high: number };
+    highSeverityRuleIds: string[];
+  };
+  preflight?: {
+    ok: boolean;
+    generatedAt: string;
+    dependencyChecks: Array<{
+      name: string;
+      status: 'available' | 'missing';
+      details: string;
+    }>;
+    parserPlans: Array<{
+      sourceType: 'url' | 'text' | 'file-image' | 'file-pdf';
+      primary: string;
+      fallback: string[];
+    }>;
+  };
+  advisories: string[];
+}
 
 interface HealthStatus {
   service: string;
@@ -18,7 +54,120 @@ interface HealthStatus {
   icon: React.ReactNode;
 }
 
+interface SeverityTrendPoint {
+  stamp: string;
+  highPct: number;
+  mediumPct: number;
+  lowPct: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
+}
+
+interface WeeklySeveritySummary {
+  snapshots: number;
+  avgHighPct: number;
+  avgMediumPct: number;
+  avgLowPct: number;
+  posture: 'stable' | 'watch' | 'critical';
+}
+
+function readSeverityHistory(): SeverityTrendPoint[] {
+  try {
+    const raw = window.localStorage.getItem(INGESTION_HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as SeverityTrendPoint[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.slice(-INGESTION_HISTORY_LIMIT);
+  } catch {
+    return [];
+  }
+}
+
+function writeSeverityHistory(data: SeverityTrendPoint[]) {
+  try {
+    window.localStorage.setItem(INGESTION_HISTORY_KEY, JSON.stringify(data.slice(-INGESTION_HISTORY_LIMIT)));
+  } catch {
+    // Ignore localStorage persistence failures (private mode or blocked storage).
+  }
+}
+
+function clearSeverityHistory() {
+  try {
+    window.localStorage.removeItem(INGESTION_HISTORY_KEY);
+  } catch {
+    // Ignore localStorage cleanup failures.
+  }
+}
+
+function readPreflightPreference(): boolean {
+  try {
+    const raw = window.localStorage.getItem(INGESTION_PREFLIGHT_KEY);
+    if (!raw) return false;
+    return raw === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writePreflightPreference(value: boolean) {
+  try {
+    window.localStorage.setItem(INGESTION_PREFLIGHT_KEY, value ? '1' : '0');
+  } catch {
+    // Ignore localStorage failures.
+  }
+}
+
+function toSeverityTrendPoint(data: IngestionDiagnosticsView): SeverityTrendPoint {
+  const low = data.scanner.bySeverity.low;
+  const medium = data.scanner.bySeverity.medium;
+  const high = data.scanner.bySeverity.high;
+  const total = Math.max(1, low + medium + high);
+
+  return {
+    stamp: data.generatedAt,
+    highPct: Math.round((high / total) * 100),
+    mediumPct: Math.round((medium / total) * 100),
+    lowPct: Math.round((low / total) * 100),
+    highCount: high,
+    mediumCount: medium,
+    lowCount: low,
+  };
+}
+
+function buildWeeklySummary(points: SeverityTrendPoint[]): WeeklySeveritySummary | null {
+  if (points.length === 0) return null;
+
+  const now = Date.now();
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+  const weekly = points.filter((item) => {
+    const stamp = Date.parse(item.stamp);
+    return Number.isFinite(stamp) && now - stamp <= weekMs;
+  });
+
+  const sample = weekly.length > 0 ? weekly : points.slice(-7);
+  if (sample.length === 0) return null;
+
+  const avgHighPct = Math.round(sample.reduce((sum, item) => sum + item.highPct, 0) / sample.length);
+  const avgMediumPct = Math.round(sample.reduce((sum, item) => sum + item.mediumPct, 0) / sample.length);
+  const avgLowPct = Math.round(sample.reduce((sum, item) => sum + item.lowPct, 0) / sample.length);
+
+  const posture: WeeklySeveritySummary['posture'] =
+    avgHighPct >= 25 ? 'critical' : avgHighPct >= 10 ? 'watch' : 'stable';
+
+  return {
+    snapshots: sample.length,
+    avgHighPct,
+    avgMediumPct,
+    avgLowPct,
+    posture,
+  };
+}
+
 export const SystemIntegrityCheck: React.FC = () => {
+  const { user, userProfile } = useAuth();
+  const canViewIngestionDiagnostics = isPaymentAdmin(userProfile?.email ?? user?.email);
+
   const [statuses, setStatuses] = useState<HealthStatus[]>([
     { service: 'Firebase Authentication', status: 'idle', message: 'Чекање тест...', icon: <Lock className="w-5 h-5" /> },
     { service: 'Cloud Firestore (DB)', status: 'idle', message: 'Чекање тест...', icon: <Database className="w-5 h-5" /> },
@@ -28,6 +177,95 @@ export const SystemIntegrityCheck: React.FC = () => {
   ]);
 
   const [isTesting, setIsTesting] = useState(false);
+  const [ingestionDiagnostics, setIngestionDiagnostics] = useState<IngestionDiagnosticsView | null>(null);
+  const [ingestionDiagLoading, setIngestionDiagLoading] = useState(false);
+  const [ingestionDiagError, setIngestionDiagError] = useState<string | null>(null);
+  const [severityHistory, setSeverityHistory] = useState<SeverityTrendPoint[]>([]);
+  const [includePreflight, setIncludePreflight] = useState(() => readPreflightPreference());
+  const weeklySummary = buildWeeklySummary(severityHistory);
+
+  const handleResetSeverityHistory = () => {
+    clearSeverityHistory();
+    setSeverityHistory([]);
+  };
+
+  const handleExportSeverityHistory = () => {
+    try {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        includePreflight,
+        latestDiagnosticsGeneratedAt: ingestionDiagnostics?.generatedAt ?? null,
+        snapshots: severityHistory,
+      };
+
+      const json = JSON.stringify(payload, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const objectUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+      anchor.href = objectUrl;
+      anchor.download = `ingestion-diagnostics-trend-${stamp}.json`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(objectUrl);
+    } catch {
+      setIngestionDiagError('Failed to export diagnostics history JSON.');
+    }
+  };
+
+  const fetchIngestionDiagnostics = async (preflightOverride?: boolean) => {
+    setIngestionDiagLoading(true);
+    setIngestionDiagError(null);
+    const preflightEnabled = typeof preflightOverride === 'boolean' ? preflightOverride : includePreflight;
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const response = await fetch(`/api/ingestion/diagnostics?preflight=${preflightEnabled ? 'true' : 'false'}`, {
+        method: 'GET',
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+
+      if (response.status === 401) {
+        setIngestionDiagnostics(null);
+        setIngestionDiagError('Ingestion diagnostics are protected (401). Set admin key policy for internal access.');
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Diagnostics request failed (${response.status})`);
+      }
+
+      const data = (await response.json()) as IngestionDiagnosticsView;
+      setIngestionDiagnostics(data);
+
+      const nextPoint = toSeverityTrendPoint(data);
+      setSeverityHistory((prev) => {
+        const base = prev.length > 0 ? prev : readSeverityHistory();
+        const deduped = base.filter((item) => item.stamp !== nextPoint.stamp);
+        const next = [...deduped, nextPoint].slice(-INGESTION_HISTORY_LIMIT);
+        writeSeverityHistory(next);
+        return next;
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown diagnostics error';
+      setIngestionDiagError(message);
+      setIngestionDiagnostics(null);
+    } finally {
+      window.clearTimeout(timeoutId);
+      setIngestionDiagLoading(false);
+    }
+  };
+
+  const togglePreflightDiagnostics = () => {
+    const next = !includePreflight;
+    setIncludePreflight(next);
+    writePreflightPreference(next);
+  };
 
   const updateStatus = (service: string, status: HealthStatus['status'], message: string, latency?: number) => {
     setStatuses(prev => prev.map(s => s.service === service ? { ...s, status, message, latency } : s));
@@ -97,8 +335,14 @@ export const SystemIntegrityCheck: React.FC = () => {
   };
 
   useEffect(() => {
+    setSeverityHistory(readSeverityHistory());
     runDiagnostics();
   }, []);
+
+  useEffect(() => {
+    if (!canViewIngestionDiagnostics) return;
+    fetchIngestionDiagnostics(includePreflight);
+  }, [canViewIngestionDiagnostics, includePreflight]);
 
   return (
     <div className="space-y-6">
@@ -159,6 +403,249 @@ export const SystemIntegrityCheck: React.FC = () => {
           ))}
         </AnimatePresence>
       </div>
+
+      <Card className="border-none shadow-lg bg-white dark:bg-slate-800 overflow-hidden">
+        <CardHeader className="border-b border-slate-100 dark:border-slate-700/50">
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
+              <ShieldCheck className="w-4 h-4 text-indigo-500" />
+              Ingestion Safety Diagnostics
+            </CardTitle>
+            {canViewIngestionDiagnostics && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={ingestionDiagLoading}
+                  onClick={() => fetchIngestionDiagnostics()}
+                  className="bg-white dark:bg-slate-800"
+                >
+                  <RefreshCcw className={`w-4 h-4 mr-2 ${ingestionDiagLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={ingestionDiagLoading}
+                  onClick={togglePreflightDiagnostics}
+                  className="bg-white dark:bg-slate-800"
+                >
+                  Preflight: {includePreflight ? 'ON' : 'OFF'}
+                </Button>
+              </>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="p-5 space-y-4">
+          {!canViewIngestionDiagnostics ? (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-sm text-slate-600 dark:text-slate-300">
+              Ingestion diagnostics are restricted to admins.
+            </div>
+          ) : ingestionDiagError ? (
+            <div className="rounded-xl border border-amber-300/60 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-900 dark:text-amber-200">
+              <div className="font-semibold mb-1">Diagnostics unavailable</div>
+              <div>{ingestionDiagError}</div>
+            </div>
+          ) : ingestionDiagLoading && !ingestionDiagnostics ? (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-sm text-slate-500 dark:text-slate-300">
+              Loading ingestion diagnostics...
+            </div>
+          ) : ingestionDiagnostics ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                  <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">User Input Mode</div>
+                  <div className="font-semibold text-slate-900 dark:text-slate-100">{ingestionDiagnostics.policyModes.userInputMode}</div>
+                </div>
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                  <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">Source Content Mode</div>
+                  <div className="font-semibold text-slate-900 dark:text-slate-100">{ingestionDiagnostics.policyModes.sourceContentMode}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="rounded-xl bg-slate-50 dark:bg-slate-700/40 p-3 border border-slate-200 dark:border-slate-700">
+                  <div className="text-xs text-slate-500 uppercase tracking-wide">Rules</div>
+                  <div className="text-xl font-black text-slate-900 dark:text-white">{ingestionDiagnostics.scanner.totalRules}</div>
+                </div>
+                <div className="rounded-xl bg-red-50 dark:bg-red-900/20 p-3 border border-red-200 dark:border-red-900/50">
+                  <div className="text-xs text-red-600 uppercase tracking-wide">High</div>
+                  <div className="text-xl font-black text-red-700 dark:text-red-300">{ingestionDiagnostics.scanner.bySeverity.high}</div>
+                </div>
+                <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 p-3 border border-amber-200 dark:border-amber-900/50">
+                  <div className="text-xs text-amber-700 uppercase tracking-wide">Medium</div>
+                  <div className="text-xl font-black text-amber-800 dark:text-amber-300">{ingestionDiagnostics.scanner.bySeverity.medium}</div>
+                </div>
+                <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 p-3 border border-emerald-200 dark:border-emerald-900/50">
+                  <div className="text-xs text-emerald-700 uppercase tracking-wide">Low</div>
+                  <div className="text-xl font-black text-emerald-800 dark:text-emerald-300">{ingestionDiagnostics.scanner.bySeverity.low}</div>
+                </div>
+              </div>
+
+              {weeklySummary && (
+                <div
+                  className={`rounded-xl border px-3 py-2 text-xs flex items-center justify-between gap-3 ${
+                    weeklySummary.posture === 'critical'
+                      ? 'border-red-300 bg-red-50 dark:border-red-900/60 dark:bg-red-900/20'
+                      : weeklySummary.posture === 'watch'
+                        ? 'border-amber-300 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-900/20'
+                        : 'border-emerald-300 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-900/20'
+                  }`}
+                >
+                  <div className="font-semibold text-slate-800 dark:text-slate-100">
+                    Weekly posture: {weeklySummary.posture.toUpperCase()} ({weeklySummary.snapshots} snapshots)
+                  </div>
+                  <div className="text-slate-600 dark:text-slate-300">
+                    High {weeklySummary.avgHighPct}% • Medium {weeklySummary.avgMediumPct}% • Low {weeklySummary.avgLowPct}%
+                  </div>
+                </div>
+              )}
+
+              {severityHistory.length > 1 && (
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="text-xs uppercase tracking-wider text-slate-500">Severity Mix Trend (Last {severityHistory.length})</div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExportSeverityHistory}
+                        className="h-7 px-2 text-xs"
+                      >
+                        Export JSON
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleResetSeverityHistory}
+                        className="h-7 px-2 text-xs"
+                      >
+                        Reset history
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="h-52 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={severityHistory} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="sevLow" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.45} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0.08} />
+                          </linearGradient>
+                          <linearGradient id="sevMedium" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.45} />
+                            <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.08} />
+                          </linearGradient>
+                          <linearGradient id="sevHigh" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.45} />
+                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0.08} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" strokeOpacity={0.45} />
+                        <XAxis
+                          dataKey="stamp"
+                          tickFormatter={(value) => new Date(value).toLocaleTimeString('mk-MK', { hour: '2-digit', minute: '2-digit' })}
+                          minTickGap={20}
+                          tick={{ fontSize: 11, fill: '#64748b' }}
+                        />
+                        <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} tick={{ fontSize: 11, fill: '#64748b' }} />
+                        <Tooltip
+                          formatter={(value: number, name: string, item: any) => {
+                            const label = name === 'highPct' ? 'High' : name === 'mediumPct' ? 'Medium' : 'Low';
+                            const countKey = name === 'highPct' ? 'highCount' : name === 'mediumPct' ? 'mediumCount' : 'lowCount';
+                            const count = item?.payload?.[countKey] ?? 0;
+                            return [`${value}% (${count})`, label];
+                          }}
+                          labelFormatter={(value) => new Date(value).toLocaleString('mk-MK')}
+                        />
+                        <Area type="monotone" dataKey="lowPct" name="lowPct" stroke="#10b981" fill="url(#sevLow)" strokeWidth={2} />
+                        <Area type="monotone" dataKey="mediumPct" name="mediumPct" stroke="#f59e0b" fill="url(#sevMedium)" strokeWidth={2} />
+                        <Area type="monotone" dataKey="highPct" name="highPct" stroke="#ef4444" fill="url(#sevHigh)" strokeWidth={2} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
+              {ingestionDiagnostics.scanner.highSeverityRuleIds.length > 0 && (
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                  <div className="text-xs uppercase tracking-wider text-slate-500 mb-2">High Severity Rule IDs</div>
+                  <div className="flex flex-wrap gap-2">
+                    {ingestionDiagnostics.scanner.highSeverityRuleIds.map((id) => (
+                      <span
+                        key={id}
+                        className="inline-flex px-2 py-1 rounded-md text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                      >
+                        {id}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {ingestionDiagnostics.advisories.length > 0 && (
+                <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 p-3">
+                  <div className="text-xs uppercase tracking-wider text-indigo-700 dark:text-indigo-300 mb-2">Advisories</div>
+                  <ul className="list-disc pl-5 space-y-1 text-sm text-indigo-900 dark:text-indigo-200">
+                    {ingestionDiagnostics.advisories.map((item, index) => (
+                      <li key={`${item}-${index}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {includePreflight && ingestionDiagnostics.preflight && (
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs uppercase tracking-wider text-slate-500">Preflight Dependencies</div>
+                    <span
+                      className={`inline-flex px-2 py-1 rounded text-xs font-semibold ${
+                        ingestionDiagnostics.preflight.ok
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                      }`}
+                    >
+                      {ingestionDiagnostics.preflight.ok ? 'READY' : 'DEGRADED'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {ingestionDiagnostics.preflight.dependencyChecks.map((dep) => (
+                      <div key={dep.name} className="rounded-lg border border-slate-200 dark:border-slate-700 p-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{dep.name}</span>
+                          <span
+                            className={`text-xs font-semibold ${
+                              dep.status === 'available'
+                                ? 'text-emerald-700 dark:text-emerald-300'
+                                : 'text-red-700 dark:text-red-300'
+                            }`}
+                          >
+                            {dep.status}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1 line-clamp-2">{dep.details}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="text-xs text-slate-500">
+                    Parser plans: {ingestionDiagnostics.preflight.parserPlans.length}
+                  </div>
+                </div>
+              )}
+
+              <div className="text-xs text-slate-500">
+                Generated: {new Date(ingestionDiagnostics.generatedAt).toLocaleString('mk-MK')}
+              </div>
+            </>
+          ) : (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-sm text-slate-500 dark:text-slate-300">
+              No diagnostics data available.
+            </div>
+          )}
+        </CardContent>
+      </Card>
       
       {/* Visual Connection Map */}
       <Card className="border-none shadow-lg bg-slate-900 text-white overflow-hidden relative">

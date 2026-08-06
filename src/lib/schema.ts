@@ -146,6 +146,15 @@ export interface MathTask {
   related_task_ids?: string[]; // IDs for Knowledge Graph links
   lesson_architect_script?: LessonArchitectScript; // Saved output from Pedagogue Command Center's Lesson Architect tab
   prerequisite_task_ids?: string[]; // Specifically for "Task A is prerequisite forTask B"
+  ingestion_snapshot?: {
+    source_kind: 'url' | 'text' | 'file' | 'pdf' | 'image';
+    parser_path: string;
+    highest_severity: 'none' | 'low' | 'medium' | 'high';
+    sanitized: boolean;
+    finding_ids: string[];
+    finding_count: number;
+    generated_at: string;
+  };
 }
 
 export interface Flashcard {

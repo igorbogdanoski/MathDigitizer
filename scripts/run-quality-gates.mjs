@@ -6,6 +6,7 @@ function run(command) {
 
 try {
   run('npm run quality:governance');
+  run('npm run quality:ingestion');
   run('npm run quality:bundle');
   run('npm run quality:routes');
   console.log('All quality gates passed.');
