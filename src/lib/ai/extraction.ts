@@ -9,6 +9,7 @@ import { Type } from '@google/genai';
 import { PRO_MODEL, DEFAULT_MODEL } from './models';
 import { sanitizeIngestionText } from '../ingestion/sanitize';
 import { scanPromptInjectionSignals } from '../ingestion/injectionScan';
+import { evaluateInjectionPolicy } from '../ingestion/policy';
 
 /**
  * Shared curriculum-alignment instruction for extraction prompts.
@@ -117,6 +118,10 @@ export async function advancedMultimodalExtraction(
   const customInstructionScan = scanPromptInjectionSignals(customInstructions);
   if (customInstructionScan.highestSeverity) {
     console.warn('[ingestion-scan] customInstructions advisory findings:', customInstructionScan.findings.map(f => f.id));
+  }
+  const customInstructionPolicy = evaluateInjectionPolicy(customInstructionScan, 'strict', 'custom instructions');
+  if (customInstructionPolicy.blocked) {
+    throw new Error(customInstructionPolicy.reason || 'Небезбедни инструкции во custom input.');
   }
 
   const prompt = `Ти си "Extraction Architect" од светска класа и експерт за Мултијазичен OCR. Твојата мисија е ПЕРФЕКТНО извлекување на математички содржини (задачи и теорија) од дадениот извор.
@@ -315,6 +320,10 @@ export async function extractMathTasksFromUrl(url: string, model: string = PRO_M
     if (manualScan.highestSeverity) {
       console.warn('[ingestion-scan] manualTranscript advisory findings:', manualScan.findings.map(f => f.id));
     }
+    const manualPolicy = evaluateInjectionPolicy(manualScan, 'advisory', 'manual transcript');
+    if (manualPolicy.blocked) {
+      throw new Error(manualPolicy.reason || 'Небезбеден manual transcript.');
+    }
   }
 
   let videoContext = sanitizedManualTranscript || "";
@@ -390,9 +399,23 @@ ${timeContext}
   if (transcriptScan.highestSeverity) {
     console.warn('[ingestion-scan] transcript advisory findings:', transcriptScan.findings.map(f => f.id));
   }
+  const transcriptPolicy = evaluateInjectionPolicy(transcriptScan, 'advisory', 'source transcript');
+  if (transcriptPolicy.blocked) {
+    throw new Error(transcriptPolicy.reason || 'Небезбеден transcript input.');
+  }
 
   const curriculumCtx = await buildCurriculumContextBlockRag(sanitizedVideoContext.slice(0, 300) || 'математика наставна програма');
   const sanitizedInstructions = instructions ? sanitizeIngestionText(instructions).text : '';
+  if (instructions) {
+    const instructionScan = scanPromptInjectionSignals(instructions);
+    if (instructionScan.highestSeverity) {
+      console.warn('[ingestion-scan] extraction instructions advisory findings:', instructionScan.findings.map(f => f.id));
+    }
+    const instructionPolicy = evaluateInjectionPolicy(instructionScan, 'strict', 'extraction instructions');
+    if (instructionPolicy.blocked) {
+      throw new Error(instructionPolicy.reason || 'Небезбедни extraction instructions.');
+    }
+  }
   const extractionPrompt = `Ти си Врвен Светски Експерт за Дигитализација на Математичка Едукација и специјалист за OCR и анализа на транскрипти.
 Твојата мисија е ПЕРФЕКТНО да ги дигитализираш СИТЕ математички содржини (И ТЕОРИЈА И ЗАДАЧИ) кои се појавуваат во овој транскрипт:
 
