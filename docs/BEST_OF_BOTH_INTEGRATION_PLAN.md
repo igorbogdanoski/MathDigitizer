@@ -498,6 +498,11 @@ After implementation, MathDigitizer gains:
 - src/components/SystemIntegrityCheck.tsx supports `preflight` toggle in diagnostics fetch
 - renders dependency availability and parser-plan count when preflight mode is enabled
 
+1. Added role-gated visibility for ingestion diagnostics panel:
+
+- src/components/SystemIntegrityCheck.tsx now limits ingestion diagnostics visibility to admin allowlist users
+- non-admin users see a clear restricted-access message while core system checks remain visible
+
 1. Validation result:
 
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts`
@@ -511,6 +516,6 @@ After implementation, MathDigitizer gains:
 ### Next 72 hours (expert execution lane)
 
 1. Add E2E check for ingestion snapshot persistence flag behavior.
-2. Add role-gated visibility control for ingestion diagnostics panel.
-3. Add trend export option (JSON) for diagnostics snapshots.
-4. Add compact weekly summary ribbon for ingestion safety posture.
+2. Add trend export option (JSON) for diagnostics snapshots.
+3. Add compact weekly summary ribbon for ingestion safety posture.
+4. Add ingestion diagnostics UI smoke test with admin/non-admin visibility checks.

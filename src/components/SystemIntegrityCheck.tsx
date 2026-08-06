@@ -10,6 +10,8 @@ import { Button } from './ui/Button';
 import { motion, AnimatePresence } from 'motion/react';
 import { checkGeminiHealth } from '../lib/gemini';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useAuth } from '../contexts/AuthContext';
+import { isPaymentAdmin } from '../lib/paymentIntents';
 
 const INGESTION_HISTORY_KEY = 'ingestion_diagnostics_history_v1';
 const INGESTION_HISTORY_LIMIT = 30;
@@ -107,6 +109,9 @@ function toSeverityTrendPoint(data: IngestionDiagnosticsView): SeverityTrendPoin
 }
 
 export const SystemIntegrityCheck: React.FC = () => {
+  const { user, userProfile } = useAuth();
+  const canViewIngestionDiagnostics = isPaymentAdmin(userProfile?.email ?? user?.email);
+
   const [statuses, setStatuses] = useState<HealthStatus[]>([
     { service: 'Firebase Authentication', status: 'idle', message: 'Чекање тест...', icon: <Lock className="w-5 h-5" /> },
     { service: 'Cloud Firestore (DB)', status: 'idle', message: 'Чекање тест...', icon: <Database className="w-5 h-5" /> },
@@ -249,8 +254,12 @@ export const SystemIntegrityCheck: React.FC = () => {
   useEffect(() => {
     setSeverityHistory(readSeverityHistory());
     runDiagnostics();
-    fetchIngestionDiagnostics();
   }, []);
+
+  useEffect(() => {
+    if (!canViewIngestionDiagnostics) return;
+    fetchIngestionDiagnostics();
+  }, [canViewIngestionDiagnostics]);
 
   return (
     <div className="space-y-6">
@@ -319,29 +328,37 @@ export const SystemIntegrityCheck: React.FC = () => {
               <ShieldCheck className="w-4 h-4 text-indigo-500" />
               Ingestion Safety Diagnostics
             </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={ingestionDiagLoading}
-              onClick={() => fetchIngestionDiagnostics()}
-              className="bg-white dark:bg-slate-800"
-            >
-              <RefreshCcw className={`w-4 h-4 mr-2 ${ingestionDiagLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={ingestionDiagLoading}
-              onClick={togglePreflightDiagnostics}
-              className="bg-white dark:bg-slate-800"
-            >
-              Preflight: {includePreflight ? 'ON' : 'OFF'}
-            </Button>
+            {canViewIngestionDiagnostics && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={ingestionDiagLoading}
+                  onClick={() => fetchIngestionDiagnostics()}
+                  className="bg-white dark:bg-slate-800"
+                >
+                  <RefreshCcw className={`w-4 h-4 mr-2 ${ingestionDiagLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={ingestionDiagLoading}
+                  onClick={togglePreflightDiagnostics}
+                  className="bg-white dark:bg-slate-800"
+                >
+                  Preflight: {includePreflight ? 'ON' : 'OFF'}
+                </Button>
+              </>
+            )}
           </div>
         </CardHeader>
         <CardContent className="p-5 space-y-4">
-          {ingestionDiagError ? (
+          {!canViewIngestionDiagnostics ? (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-sm text-slate-600 dark:text-slate-300">
+              Ingestion diagnostics are restricted to admins.
+            </div>
+          ) : ingestionDiagError ? (
             <div className="rounded-xl border border-amber-300/60 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-900 dark:text-amber-200">
               <div className="font-semibold mb-1">Diagnostics unavailable</div>
               <div>{ingestionDiagError}</div>
