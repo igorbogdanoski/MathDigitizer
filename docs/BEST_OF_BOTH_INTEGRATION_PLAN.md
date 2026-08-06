@@ -448,6 +448,21 @@ After implementation, MathDigitizer gains:
 - scripts/run-quality-gates.mjs includes quality:ingestion
 - .github/workflows/quality-gates.yml includes Ingestion security gate and Route budget gate
 
+1. Added reviewer-facing interpretation guide for ingestion safety warnings:
+
+- docs/INGESTION_WARNINGS_REVIEWER_GUIDE.md
+
+1. Added optional admin diagnostics endpoint for ingestion safety visibility:
+
+- src/lib/ingestion/diagnostics.ts
+- api/ingestion/diagnostics.ts
+- optional key guard via `INGESTION_DIAGNOSTICS_KEY` and `x-admin-key` header
+
+1. Added diagnostics unit coverage and included it in ingestion quality gate:
+
+- src/lib/ingestion/diagnostics.test.ts
+- package.json -> quality:ingestion now includes diagnostics test
+
 1. Validation result:
 
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts`
@@ -460,7 +475,7 @@ After implementation, MathDigitizer gains:
 
 ### Next 72 hours (expert execution lane)
 
-1. Add reviewer-facing docs for interpreting ingestion warnings.
-2. Add optional endpoint for exposing ingestion diagnostics in admin dashboards.
-3. Evaluate safe expansion of metadata persistence with Firestore rules update plan.
-4. Prepare production rollout checklist for env policy modes.
+1. Evaluate safe expansion of metadata persistence with Firestore rules update plan.
+2. Prepare production rollout checklist for env policy modes.
+3. Add minimal admin dashboard widget wired to `/api/ingestion/diagnostics`.
+4. Document runbook checks for repeated high-severity signal spikes.

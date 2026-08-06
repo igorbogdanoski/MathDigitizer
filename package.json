@@ -15,7 +15,7 @@
     "postinstall": "node scripts/fix-vitest-runner.cjs",
     "quality:bundle": "node scripts/check-bundle-budget.mjs",
     "quality:routes": "node scripts/check-route-budgets.mjs",
-    "quality:ingestion": "vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts src/lib/ingestion/preflight.test.ts src/lib/ingestion/policy.test.ts",
+    "quality:ingestion": "vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts src/lib/ingestion/preflight.test.ts src/lib/ingestion/policy.test.ts src/lib/ingestion/diagnostics.test.ts",
     "quality:governance": "node scripts/check-governance.mjs",
     "quality:gates": "node scripts/run-quality-gates.mjs",
     "migrate:dry": "node scripts/migrate-from-ai-studio.mjs --dry-run",

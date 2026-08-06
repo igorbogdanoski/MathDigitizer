@@ -17,6 +17,12 @@ export interface InjectionScanResult {
   highestSeverity: InjectionSeverity | null;
 }
 
+export interface InjectionRuleDescriptor {
+  id: string;
+  severity: InjectionSeverity;
+  message: string;
+}
+
 interface Rule {
   id: string;
   severity: InjectionSeverity;
@@ -64,6 +70,14 @@ const RULES: Rule[] = [
 ];
 
 const RANK: Record<InjectionSeverity, number> = { low: 1, medium: 2, high: 3 };
+
+export function getInjectionRuleCatalog(): InjectionRuleDescriptor[] {
+  return RULES.map((rule) => ({
+    id: rule.id,
+    severity: rule.severity,
+    message: rule.message,
+  }));
+}
 
 export function scanPromptInjectionSignals(input: string): InjectionScanResult {
   const findings: InjectionFinding[] = [];
