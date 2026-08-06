@@ -120,7 +120,9 @@ export const ProPaymentModal: React.FC<ProPaymentModalProps> = ({ isOpen, onClos
         allocation.invoiceNumber,
         selectedPlan.priceMkd,
         plan
-      ).catch(() => {});
+      ).catch((error) => {
+        console.error('Failed to send payment intent created email:', error);
+      });
 
       setAllocated(allocation);
       showToast(t('payModalInvoiceOpened'), 'success');
@@ -167,7 +169,9 @@ export const ProPaymentModal: React.FC<ProPaymentModalProps> = ({ isOpen, onClos
         invoiceNumber: allocated.invoiceNumber,
         intentId: allocated.id,
       });
-      sendPaymentReceivedEmail(customerEmail.trim(), allocated.invoiceNumber).catch(() => {});
+      sendPaymentReceivedEmail(customerEmail.trim(), allocated.invoiceNumber).catch((error) => {
+        console.error('Failed to send payment received email after intent creation:', error);
+      });
       setCreatedIntent(intent);
       setStep('receipt');
     } catch (error) {
@@ -186,9 +190,13 @@ export const ProPaymentModal: React.FC<ProPaymentModalProps> = ({ isOpen, onClos
       const dataUrl = await compressReceiptToDataUrl(receiptFile);
       await attachPaymentReceipt(allocated.id, dataUrl);
 
-      sendPaymentReceivedEmail(customerEmail.trim(), allocated.invoiceNumber).catch(() => {});
+      sendPaymentReceivedEmail(customerEmail.trim(), allocated.invoiceNumber).catch((error) => {
+        console.error('Failed to send payment received email after receipt upload:', error);
+      });
       if (createdIntent) {
-        sendAdminNotificationEmail({ ...createdIntent, status: 'receipt_uploaded' }).catch(() => {});
+        sendAdminNotificationEmail({ ...createdIntent, status: 'receipt_uploaded' }).catch((error) => {
+          console.error('Failed to send admin payment notification email:', error);
+        });
       }
       trackReceiptSubmitted(plan);
 

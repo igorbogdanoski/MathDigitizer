@@ -640,7 +640,6 @@ async function startServer() {
           .get(),
         db.collection("payment_intents")
           .where("user_id", "==", uid)
-          .orderBy("created_at", "desc")
           .limit(20)
           .get(),
       ]);
