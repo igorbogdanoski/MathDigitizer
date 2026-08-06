@@ -15,6 +15,7 @@ import { isPaymentAdmin } from '../lib/paymentIntents';
 
 const INGESTION_HISTORY_KEY = 'ingestion_diagnostics_history_v1';
 const INGESTION_HISTORY_LIMIT = 30;
+const INGESTION_PREFLIGHT_KEY = 'ingestion_diagnostics_preflight_v1';
 
 interface IngestionDiagnosticsView {
   ok: boolean;
@@ -99,6 +100,24 @@ function clearSeverityHistory() {
   }
 }
 
+function readPreflightPreference(): boolean {
+  try {
+    const raw = window.localStorage.getItem(INGESTION_PREFLIGHT_KEY);
+    if (!raw) return false;
+    return raw === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writePreflightPreference(value: boolean) {
+  try {
+    window.localStorage.setItem(INGESTION_PREFLIGHT_KEY, value ? '1' : '0');
+  } catch {
+    // Ignore localStorage failures.
+  }
+}
+
 function toSeverityTrendPoint(data: IngestionDiagnosticsView): SeverityTrendPoint {
   const low = data.scanner.bySeverity.low;
   const medium = data.scanner.bySeverity.medium;
@@ -162,7 +181,7 @@ export const SystemIntegrityCheck: React.FC = () => {
   const [ingestionDiagLoading, setIngestionDiagLoading] = useState(false);
   const [ingestionDiagError, setIngestionDiagError] = useState<string | null>(null);
   const [severityHistory, setSeverityHistory] = useState<SeverityTrendPoint[]>([]);
-  const [includePreflight, setIncludePreflight] = useState(false);
+  const [includePreflight, setIncludePreflight] = useState(() => readPreflightPreference());
   const weeklySummary = buildWeeklySummary(severityHistory);
 
   const handleResetSeverityHistory = () => {
@@ -242,10 +261,10 @@ export const SystemIntegrityCheck: React.FC = () => {
     }
   };
 
-  const togglePreflightDiagnostics = async () => {
+  const togglePreflightDiagnostics = () => {
     const next = !includePreflight;
     setIncludePreflight(next);
-    await fetchIngestionDiagnostics(next);
+    writePreflightPreference(next);
   };
 
   const updateStatus = (service: string, status: HealthStatus['status'], message: string, latency?: number) => {
@@ -322,8 +341,8 @@ export const SystemIntegrityCheck: React.FC = () => {
 
   useEffect(() => {
     if (!canViewIngestionDiagnostics) return;
-    fetchIngestionDiagnostics();
-  }, [canViewIngestionDiagnostics]);
+    fetchIngestionDiagnostics(includePreflight);
+  }, [canViewIngestionDiagnostics, includePreflight]);
 
   return (
     <div className="space-y-6">

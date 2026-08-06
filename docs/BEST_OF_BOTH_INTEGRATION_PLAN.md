@@ -519,6 +519,11 @@ After implementation, MathDigitizer gains:
 - src/components/SystemIntegrityCheck.tsx now computes a 7-day severity summary from local diagnostics history
 - posture tiers (`stable`, `watch`, `critical`) are derived from average high-severity ratio and shown inline in diagnostics card
 
+1. Added preflight toggle persistence in diagnostics UI:
+
+- src/components/SystemIntegrityCheck.tsx now stores admin preflight ON/OFF preference in localStorage
+- diagnostics fetch now reuses saved preflight mode automatically on subsequent visits
+
 1. Validation result:
 
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts`
@@ -532,6 +537,6 @@ After implementation, MathDigitizer gains:
 ### Next 72 hours (expert execution lane)
 
 1. Add ingestion diagnostics UI smoke test with admin/non-admin visibility checks.
-2. Add diagnostics preflight toggle persistence (remember last state per admin browser).
-3. Add severity-trend retention cap indicator in UI (show oldest/newest snapshot window).
-4. Add optional route-level guard to hide diagnostics endpoint fetch for non-admin-only sessions.
+2. Add severity-trend retention cap indicator in UI (show oldest/newest snapshot window).
+3. Add optional route-level guard to hide diagnostics endpoint fetch for non-admin-only sessions.
+4. Add diagnostics export metadata with policy modes + high-severity rule IDs for audit packets.
