@@ -463,6 +463,18 @@ After implementation, MathDigitizer gains:
 - src/lib/ingestion/diagnostics.test.ts
 - package.json -> quality:ingestion now includes diagnostics test
 
+1. Added Firestore-safe optional ingestion metadata persistence foundation:
+
+- src/lib/ingestion/metadata.ts adds `buildPersistedIngestionSnapshot`
+- src/lib/ingestion/config.ts adds `resolveIngestionSnapshotPersistenceEnabled`
+- src/components/ExtractionEngine.tsx writes bounded `ingestion_snapshot` only when feature flag is enabled
+- firestore.rules updated allowlist and constraints for `ingestion_snapshot`
+- src/lib/schema.ts includes optional `ingestion_snapshot` contract
+
+1. Added rollout checklist for policy modes and snapshot persistence:
+
+- docs/INGESTION_POLICY_ROLLOUT_CHECKLIST.md
+
 1. Validation result:
 
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts`
@@ -475,7 +487,7 @@ After implementation, MathDigitizer gains:
 
 ### Next 72 hours (expert execution lane)
 
-1. Evaluate safe expansion of metadata persistence with Firestore rules update plan.
-2. Prepare production rollout checklist for env policy modes.
-3. Add minimal admin dashboard widget wired to `/api/ingestion/diagnostics`.
-4. Document runbook checks for repeated high-severity signal spikes.
+1. Add minimal admin dashboard widget wired to `/api/ingestion/diagnostics`.
+2. Document runbook checks for repeated high-severity signal spikes.
+3. Add dashboard-level trend chart for severity mix over time.
+4. Add E2E check for ingestion snapshot persistence flag behavior.

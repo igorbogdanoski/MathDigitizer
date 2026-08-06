@@ -21,7 +21,12 @@ import { collection, addDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { useNavigate } from 'react-router-dom';
-import { stripIngestionMetaForPersistence } from '../lib/ingestion/metadata';
+import {
+  stripIngestionMetaForPersistence,
+  buildPersistedIngestionSnapshot,
+  PersistedIngestionSnapshot,
+} from '../lib/ingestion/metadata';
+import { resolveIngestionSnapshotPersistenceEnabled } from '../lib/ingestion/config';
 import { trackIngestionSecurity } from '../lib/analytics';
 import { KahootMaker } from './KahootMaker';
 import { MakedoTestGenerator } from './MakedoTestGenerator';
@@ -313,11 +318,16 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
         // Save simultaneously but manage errors
         await Promise.all(extractedTasks.map(async (task, idx) => {
           try {
-            const taskToSave: MathTask = {
+            const taskToSave: MathTask & { ingestion_snapshot?: PersistedIngestionSnapshot } = {
               ...stripIngestionMetaForPersistence(task),
               author_uid: user.uid,
               created_at: new Date().toISOString()
             };
+
+            if (resolveIngestionSnapshotPersistenceEnabled()) {
+              const snapshot = buildPersistedIngestionSnapshot((task as any).__ingestion_meta);
+              if (snapshot) taskToSave.ingestion_snapshot = snapshot;
+            }
 
             try {
               const textToEmbed = `${task.title} ${task.original_text} ${(task.solution_steps || []).join(' ')} ${(task.tags || []).join(' ')} ${task.curriculum_topic || ''}`;
@@ -371,11 +381,16 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
     }
 
     try {
-      const taskToSave = {
+      const taskToSave: MathTask & { ingestion_snapshot?: PersistedIngestionSnapshot } = {
         ...stripIngestionMetaForPersistence(task),
         author_uid: user.uid,
         created_at: new Date().toISOString()
       };
+
+      if (resolveIngestionSnapshotPersistenceEnabled()) {
+        const snapshot = buildPersistedIngestionSnapshot((task as any).__ingestion_meta);
+        if (snapshot) taskToSave.ingestion_snapshot = snapshot;
+      }
       
       try {
         const textToEmbed = `${task.title} ${task.original_text} ${(task.solution_steps || []).join(' ')} ${(task.tags || []).join(' ')} ${task.curriculum_topic || ''}`;

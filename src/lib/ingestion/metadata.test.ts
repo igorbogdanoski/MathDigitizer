@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { attachIngestionMeta, stripIngestionMetaForPersistence } from './metadata';
+import {
+  attachIngestionMeta,
+  buildPersistedIngestionSnapshot,
+  stripIngestionMetaForPersistence,
+} from './metadata';
 
 describe('ingestion metadata helpers', () => {
   it('attaches metadata to tasks for in-memory diagnostics', () => {
@@ -29,5 +33,25 @@ describe('ingestion metadata helpers', () => {
 
     const safe = stripIngestionMetaForPersistence(task);
     expect('__ingestion_meta' in safe).toBe(false);
+  });
+
+  it('builds a bounded snapshot for optional persistence', () => {
+    const snapshot = buildPersistedIngestionSnapshot({
+      sourceKind: 'url',
+      parserPath: 'url->transcript->extract',
+      sanitize: { changed: true, removedInvisibleCount: 3, removedBidiCount: 2 },
+      scan: { highestSeverity: 'high', findingIds: ['prompt.ignore_previous', 'prompt.bypass_safety'] },
+      generatedAt: new Date().toISOString(),
+    });
+
+    expect(snapshot?.source_kind).toBe('url');
+    expect(snapshot?.highest_severity).toBe('high');
+    expect(snapshot?.sanitized).toBe(true);
+    expect(snapshot?.finding_count).toBe(2);
+    expect(snapshot?.finding_ids.length).toBe(2);
+  });
+
+  it('returns undefined snapshot when metadata is missing', () => {
+    expect(buildPersistedIngestionSnapshot(undefined)).toBeUndefined();
   });
 });
