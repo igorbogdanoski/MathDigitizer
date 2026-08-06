@@ -32,6 +32,7 @@ import { Skeleton } from './ui/Skeleton';
 import { useRealtimeTasks } from '../hooks/useRealtimeTasks';
 import { useToast } from '../contexts/ToastContext';
 import { WorksheetModal } from './library/WorksheetModal';
+import { ExportPanel } from './library/ExportPanel';
 import { useModalA11y } from '../hooks/useModalA11y';
 import { WorkflowSteps } from './WorkflowSteps';
 
@@ -49,6 +50,7 @@ export const Library: React.FC = () => {
   const [manipulativeType, setManipulativeType] = useState<'algebra-tiles' | 'geogebra-3d'>('algebra-tiles');
   const [isGeneratingKahoot, setIsGeneratingKahoot] = useState(false);
   const [showWorksheetModal, setShowWorksheetModal] = useState(false);
+  const [showExportPanel, setShowExportPanel] = useState(false);
 
   const graphModalRef = useModalA11y<HTMLDivElement>(() => store.setActiveGraphTask(null), !!store.activeGraphTask);
   const manipulativesModalRef = useModalA11y<HTMLDivElement>(() => setShowManipulativesModal(false), showManipulativesModal);
@@ -300,6 +302,7 @@ export const Library: React.FC = () => {
         setShowTestGenerator={store.setShowTestGenerator}
         setShowWorksheetModal={setShowWorksheetModal}
         handleExportCSV={handleExportCSV}
+        onOpenExportPanel={() => setShowExportPanel(true)}
       />
 
       {/* Task List & Side-by-Side View */}
@@ -601,6 +604,15 @@ export const Library: React.FC = () => {
         <WorksheetModal
           tasks={getSelectedTasks()}
           onClose={() => setShowWorksheetModal(false)}
+        />
+      )}
+
+      {/* Cross-App Export Panel */}
+      {showExportPanel && (
+        <ExportPanel
+          tasks={sortedAndFilteredTasks}
+          preselectedIds={store.selectedForTest}
+          onClose={() => setShowExportPanel(false)}
         />
       )}
     </div>

@@ -209,6 +209,52 @@ service cloud.firestore {
              (!('review_note' in request.resource.data) || (request.resource.data.review_note is string && request.resource.data.review_note.size() <= 2000));
     }
 
+    // ── payment_intents (invoice-based bank-transfer Pro activation) ──
+    // Create: the paying user writes their own intent, locked to
+    // pending_payment with no receipt/review fields yet.
+    function isValidPaymentIntentCreate(data) {
+      let allowedFields = ['user_id', 'email', 'customer_name', 'plan', 'amount', 'currency', 'status', 'invoice_number', 'created_at', 'updated_at'];
+
+      return data.keys().hasOnly(allowedFields) &&
+             data.user_id is string &&
+             request.auth != null &&
+             data.user_id == request.auth.uid &&
+             data.email is string && data.email.matches('^.+@.+\\..+$') &&
+             data.customer_name is string && data.customer_name.size() > 0 && data.customer_name.size() <= 120 &&
+             data.plan in ['monthly', 'annual'] &&
+             data.amount is number && data.amount > 0 && data.amount <= 1000000 &&
+             data.currency == 'MKD' &&
+             data.status == 'pending_payment' &&
+             data.invoice_number is string && data.invoice_number.size() > 0 && data.invoice_number.size() <= 40 &&
+             isValidDateString(data.created_at) &&
+             isValidDateString(data.updated_at);
+    }
+
+    // Owner path: only the payer may attach a receipt / move the intent
+    // toward review. Every other field is immutable on this path.
+    function isPaymentIntentOwnerUpdate() {
+      return isAuthenticated() &&
+             request.auth.uid == resource.data.user_id &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'receipt_url', 'updated_at']) &&
+             request.resource.data.status in ['receipt_uploaded', 'admin_review'] &&
+             (!('receipt_url' in request.resource.data) ||
+               (request.resource.data.receipt_url is string && request.resource.data.receipt_url.size() <= 950000)) &&
+             isValidDateString(request.resource.data.updated_at);
+    }
+
+    // Teacher (admin) path: review transitions only — approve/reject/expire
+    // or pick up into admin_review. Payer data is immutable here.
+    function isPaymentIntentReviewUpdate() {
+      return isTeacher() &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewed_by', 'reviewed_at', 'rejection_reason', 'updated_at']) &&
+             request.resource.data.status in ['admin_review', 'approved', 'rejected', 'expired'] &&
+             (!('reviewed_by' in request.resource.data) || request.resource.data.reviewed_by == request.auth.uid) &&
+             (!('reviewed_at' in request.resource.data) || isValidDateString(request.resource.data.reviewed_at)) &&
+             (!('rejection_reason' in request.resource.data) ||
+               (request.resource.data.rejection_reason is string && request.resource.data.rejection_reason.size() <= 2000)) &&
+             isValidDateString(request.resource.data.updated_at);
+    }
+
     function isValidSalesOpsAlertState(data) {
       let allowedFields = ['dashboard_id', 'acknowledged_signature', 'acknowledged_by', 'acknowledged_at', 'updated_at'];
 
@@ -452,6 +498,17 @@ service cloud.firestore {
       allow create: if isValidPaymentReceipt(request.resource.data);
       allow read: if isTeacher();
       allow update: if isTeacher() && isValidPaymentReceiptUpdate();
+      allow delete: if false;
+    }
+
+    match /payment_intents/{intentId} {
+      // Payer creates their own intent (locked to pending_payment);
+      // payer reads their own, teachers read all (review dashboard);
+      // updates are split into an owner path (receipt upload) and a
+      // teacher path (approve/reject/expire) — see validators above.
+      allow create: if isAuthenticated() && isValidPaymentIntentCreate(request.resource.data);
+      allow read: if isAuthenticated() && (resource.data.user_id == request.auth.uid || isTeacher());
+      allow update: if (isAuthenticated() && isPaymentIntentOwnerUpdate()) || isPaymentIntentReviewUpdate();
       allow delete: if false;
     }
 

@@ -46,6 +46,7 @@ const Gradebook = lazy(() => import('./components/Gradebook').then((m) => ({ def
 const TaskDifferentiation = lazy(() => import('./components/TaskDifferentiation').then((m) => ({ default: m.TaskDifferentiation })));
 const EarlyWarningDashboard = lazy(() => import('./components/EarlyWarningDashboard').then((m) => ({ default: m.EarlyWarningDashboard })));
 const BillingDashboard = lazy(() => import('./components/BillingDashboard').then((m) => ({ default: m.BillingDashboard })));
+const PaymentAdminDashboard = lazy(() => import('./components/PaymentAdminDashboard').then((m) => ({ default: m.PaymentAdminDashboard })));
 const BlogOcrMath = lazy(() => import('./components/blog/BlogOcrMath').then((m) => ({ default: m.BlogOcrMath })));
 const BlogLatexExtraction = lazy(() => import('./components/blog/BlogLatexExtraction').then((m) => ({ default: m.BlogLatexExtraction })));
 const BlogLiveMathKahoot = lazy(() => import('./components/blog/BlogLiveMathKahoot').then((m) => ({ default: m.BlogLiveMathKahoot })));
@@ -247,6 +248,12 @@ const AppRoutes = () => {
           <Route path="billing" element={
             <ProtectedRoute authFeatureName="Billing" authFeatureDescription="Најави се за да ја видиш твојата претплата и историја на плаќања.">
               <BillingDashboard />
+            </ProtectedRoute>
+          } />
+
+          <Route path="payment-admin" element={
+            <ProtectedRoute allowedRoles={['teacher']} authFeatureName="Payment Admin">
+              <PaymentAdminDashboard />
             </ProtectedRoute>
           } />
 
