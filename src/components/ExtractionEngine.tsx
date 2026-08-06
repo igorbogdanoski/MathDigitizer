@@ -21,6 +21,7 @@ import { collection, addDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { useNavigate } from 'react-router-dom';
+import { stripIngestionMetaForPersistence } from '../lib/ingestion/metadata';
 import { KahootMaker } from './KahootMaker';
 import { MakedoTestGenerator } from './MakedoTestGenerator';
 import { GeoGebraViewer } from './GeoGebraViewer';
@@ -291,7 +292,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
         await Promise.all(extractedTasks.map(async (task, idx) => {
           try {
             const taskToSave: MathTask = {
-              ...task,
+              ...stripIngestionMetaForPersistence(task),
               author_uid: user.uid,
               created_at: new Date().toISOString()
             };
@@ -349,7 +350,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
 
     try {
       const taskToSave = {
-        ...task,
+        ...stripIngestionMetaForPersistence(task),
         author_uid: user.uid,
         created_at: new Date().toISOString()
       };

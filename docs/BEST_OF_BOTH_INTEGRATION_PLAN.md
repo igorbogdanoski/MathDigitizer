@@ -408,12 +408,23 @@ After implementation, MathDigitizer gains:
 - URL transcript/context,
 - text source payload.
 
+1. Implemented warn/block policy layer for injection signals:
+
+- strict mode for user instruction inputs,
+- advisory mode for source/transcript content.
+
+1. Implemented Firestore-safe metadata contract:
+
+- transient `__ingestion_meta` via src/lib/ingestion/metadata.ts
+- automatic strip before persistence in src/components/ExtractionEngine.tsx
+
 1. Added unit tests:
 
 - src/lib/ingestion/sanitize.test.ts
 - src/lib/ingestion/injectionScan.test.ts
 - src/lib/ingestion/preflight.test.ts
 - src/lib/ingestion/policy.test.ts
+- src/lib/ingestion/metadata.test.ts
 
 1. Added CI and local quality gate wiring for ingestion security:
 
@@ -426,12 +437,13 @@ After implementation, MathDigitizer gains:
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts`
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts src/lib/ingestion/preflight.test.ts`
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts src/lib/ingestion/preflight.test.ts src/lib/ingestion/policy.test.ts`
+- `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts src/lib/ingestion/preflight.test.ts src/lib/ingestion/policy.test.ts src/lib/ingestion/metadata.test.ts src/components/ExtractionEngine.smoke.test.tsx`
 - `npm run quality:ingestion`
-- Status: 4 test files passed, 10 tests passed.
+- Status: 6 test files passed, 14 tests passed.
 
 ### Next 72 hours (expert execution lane)
 
-1. Add extraction metadata contract (method, fallback, sanitize counters, scan severity) to output payload.
-2. Add Safety Panel UI showing sanitize and scan summary per extraction job.
-3. Extend policy thresholds with configurable env mode for strictness by source type.
-4. Prepare Firestore-safe persistence contract for metadata without violating current rules allowlist.
+1. Add Safety Panel UI showing sanitize and scan summary per extraction job.
+2. Extend policy thresholds with configurable env mode for strictness by source type.
+3. Add lightweight analytics events for ingestion risk and sanitization counters.
+4. Add reviewer-facing docs for interpreting ingestion warnings.

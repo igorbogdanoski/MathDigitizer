@@ -10,6 +10,7 @@ import { PRO_MODEL, DEFAULT_MODEL } from './models';
 import { sanitizeIngestionText } from '../ingestion/sanitize';
 import { scanPromptInjectionSignals } from '../ingestion/injectionScan';
 import { evaluateInjectionPolicy } from '../ingestion/policy';
+import { attachIngestionMeta } from '../ingestion/metadata';
 
 /**
  * Shared curriculum-alignment instruction for extraction prompts.
@@ -272,7 +273,29 @@ export async function advancedMultimodalExtraction(
     if (!response.text) throw new Error("Нема одговор.");
     const parsedObj = parseGeminiResponse(response.text);
     const results = parsedObj.extracted_tasks || [];
-    return results.map((t: any) => ({ ...t, source_url: source.type === 'url' ? source.data : 'Прикачена датотека' }));
+    const tasks = results.map((t: any) => ({ ...t, source_url: source.type === 'url' ? source.data : 'Прикачена датотека' }));
+
+    const sourceKind = source.type === 'file'
+      ? (source.mimeType === 'application/pdf' ? 'pdf' : 'image')
+      : source.type;
+    const meta = {
+      sourceKind,
+      parserPath: source.type === 'url' ? 'url->transcript/scrape->model' : `${source.type}->multimodal`,
+      sanitize: {
+        changed: source.type === 'text' ? sanitizedSourceText !== source.data : false,
+        removedInvisibleCount: source.type === 'text'
+          ? Math.max(0, source.data.length - sanitizedSourceText.length)
+          : 0,
+        removedBidiCount: 0,
+      },
+      scan: {
+        highestSeverity: sourceScan.highestSeverity,
+        findingIds: sourceScan.findings.map((f) => f.id),
+      },
+      generatedAt: new Date().toISOString(),
+    } as const;
+
+    return attachIngestionMeta(tasks, meta);
   } catch (error) {
     console.error("Грешка при напредна екстракција:", error);
     handleGeminiError(error);
@@ -486,7 +509,22 @@ ${sanitizedInstructions ? `\nСПЕЦИФИЧНИ ИНСТРУКЦИИ ЗА ИЗ
     if (!response.text) throw new Error("Нема одговор.");
     const parsedObj = parseGeminiResponse(response.text);
     const tasks: MathTask[] = parsedObj.extracted_tasks || [];
-    return tasks.map(t => ({ ...t, source_url: url }));
+    const withSource = tasks.map(t => ({ ...t, source_url: url }));
+    const meta = {
+      sourceKind: 'url' as const,
+      parserPath: 'url->transcript/scrape->strict-json-extraction',
+      sanitize: {
+        changed: sanitizedVideoContext !== videoContext,
+        removedInvisibleCount: Math.max(0, videoContext.length - sanitizedVideoContext.length),
+        removedBidiCount: 0,
+      },
+      scan: {
+        highestSeverity: transcriptScan.highestSeverity,
+        findingIds: transcriptScan.findings.map((f) => f.id),
+      },
+      generatedAt: new Date().toISOString(),
+    };
+    return attachIngestionMeta(withSource, meta);
   } catch (error) {
     console.error("Грешка при екстракција од URL:", error);
     handleGeminiError(error);
