@@ -11,6 +11,7 @@ import { sanitizeIngestionText } from '../ingestion/sanitize';
 import { scanPromptInjectionSignals } from '../ingestion/injectionScan';
 import { evaluateInjectionPolicy } from '../ingestion/policy';
 import { attachIngestionMeta } from '../ingestion/metadata';
+import { resolveIngestionPolicyModes } from '../ingestion/config';
 
 /**
  * Shared curriculum-alignment instruction for extraction prompts.
@@ -115,12 +116,13 @@ export async function advancedMultimodalExtraction(
   model: string = PRO_MODEL,
   customInstructions: string = ""
 ): Promise<MathTask[]> {
+  const policyModes = resolveIngestionPolicyModes();
   const sanitizedCustomInstructions = sanitizeIngestionText(customInstructions).text;
   const customInstructionScan = scanPromptInjectionSignals(customInstructions);
   if (customInstructionScan.highestSeverity) {
     console.warn('[ingestion-scan] customInstructions advisory findings:', customInstructionScan.findings.map(f => f.id));
   }
-  const customInstructionPolicy = evaluateInjectionPolicy(customInstructionScan, 'strict', 'custom instructions');
+  const customInstructionPolicy = evaluateInjectionPolicy(customInstructionScan, policyModes.userInputMode, 'custom instructions');
   if (customInstructionPolicy.blocked) {
     throw new Error(customInstructionPolicy.reason || 'Небезбедни инструкции во custom input.');
   }
@@ -331,6 +333,7 @@ Rules:
 }
 
 export async function extractMathTasksFromUrl(url: string, model: string = PRO_MODEL, timeRange?: {start: string, end: string}, manualTranscript?: string, instructions?: string, outputLanguage?: string): Promise<MathTask[]> {
+  const policyModes = resolveIngestionPolicyModes();
   let timeContext = "";
   if (timeRange && (timeRange.start || timeRange.end)) {
     timeContext = `\nВНИМАНИЕ: Фокусирај се ИСКЛУЧИВО на делот од видеото/содржината од ${timeRange.start || 'почеток'} до ${timeRange.end || 'крај'}. Игнорирај го останатиот дел.`;
@@ -343,7 +346,7 @@ export async function extractMathTasksFromUrl(url: string, model: string = PRO_M
     if (manualScan.highestSeverity) {
       console.warn('[ingestion-scan] manualTranscript advisory findings:', manualScan.findings.map(f => f.id));
     }
-    const manualPolicy = evaluateInjectionPolicy(manualScan, 'advisory', 'manual transcript');
+    const manualPolicy = evaluateInjectionPolicy(manualScan, policyModes.sourceContentMode, 'manual transcript');
     if (manualPolicy.blocked) {
       throw new Error(manualPolicy.reason || 'Небезбеден manual transcript.');
     }
@@ -422,7 +425,7 @@ ${timeContext}
   if (transcriptScan.highestSeverity) {
     console.warn('[ingestion-scan] transcript advisory findings:', transcriptScan.findings.map(f => f.id));
   }
-  const transcriptPolicy = evaluateInjectionPolicy(transcriptScan, 'advisory', 'source transcript');
+  const transcriptPolicy = evaluateInjectionPolicy(transcriptScan, policyModes.sourceContentMode, 'source transcript');
   if (transcriptPolicy.blocked) {
     throw new Error(transcriptPolicy.reason || 'Небезбеден transcript input.');
   }
@@ -434,7 +437,7 @@ ${timeContext}
     if (instructionScan.highestSeverity) {
       console.warn('[ingestion-scan] extraction instructions advisory findings:', instructionScan.findings.map(f => f.id));
     }
-    const instructionPolicy = evaluateInjectionPolicy(instructionScan, 'strict', 'extraction instructions');
+    const instructionPolicy = evaluateInjectionPolicy(instructionScan, policyModes.userInputMode, 'extraction instructions');
     if (instructionPolicy.blocked) {
       throw new Error(instructionPolicy.reason || 'Небезбедни extraction instructions.');
     }
