@@ -33,7 +33,7 @@ export function attachIngestionMeta(tasks: MathTask[], meta: IngestionMeta): Tas
   return tasks.map((task) => ({ ...task, __ingestion_meta: meta }));
 }
 
-export function stripIngestionMetaForPersistence<T extends Record<string, unknown>>(task: T): T {
+export function stripIngestionMetaForPersistence<T extends object>(task: T): T {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { __ingestion_meta, ...safeTask } = task as T & { __ingestion_meta?: IngestionMeta };
   return safeTask as T;

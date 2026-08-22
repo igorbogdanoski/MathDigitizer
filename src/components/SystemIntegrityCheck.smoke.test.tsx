@@ -1,7 +1,10 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { SystemIntegrityCheck } from './SystemIntegrityCheck';
+
+const PREFLIGHT_KEY = 'ingestion_diagnostics_preflight_v1';
+const HISTORY_KEY = 'ingestion_diagnostics_history_v1';
 
 const {
   mockUseAuth,
@@ -53,6 +56,8 @@ describe('SystemIntegrityCheck smoke', () => {
     mockGetDoc.mockResolvedValue({ exists: () => true, data: () => ({}) });
     mockDeleteDoc.mockResolvedValue(undefined);
     mockCheckGeminiHealth.mockResolvedValue(true);
+    window.localStorage.removeItem(PREFLIGHT_KEY);
+    window.localStorage.removeItem(HISTORY_KEY);
 
     vi.stubGlobal(
       'fetch',
@@ -104,6 +109,13 @@ describe('SystemIntegrityCheck smoke', () => {
   });
 
   it('shows ingestion diagnostics controls for admin users and fetches diagnostics', async () => {
+    window.localStorage.setItem(
+      HISTORY_KEY,
+      JSON.stringify([
+        { stamp: '2026-08-20T10:00:00.000Z', highPct: 10, mediumPct: 30, lowPct: 60, highCount: 1, mediumCount: 3, lowCount: 6 },
+        { stamp: '2026-08-21T10:00:00.000Z', highPct: 0, mediumPct: 20, lowPct: 80, highCount: 0, mediumCount: 2, lowCount: 8 },
+      ])
+    );
     mockUseAuth.mockReturnValue({
       user: { uid: 'admin-1', email: 'igor.bogdanoski@mismath.net' },
       userProfile: { email: 'igor.bogdanoski@mismath.net' },
@@ -121,6 +133,34 @@ describe('SystemIntegrityCheck smoke', () => {
       expect(diagnosticsCalls.length).toBeGreaterThan(0);
     });
 
+    await waitFor(() => {
+      expect(screen.getByTestId('severity-window-indicator')).toBeInTheDocument();
+    });
+
     expect(screen.queryByText('Ingestion diagnostics are restricted to admins.')).not.toBeInTheDocument();
+  });
+
+  it('reads preflight preference from localStorage and persists toggle changes', async () => {
+    window.localStorage.setItem(PREFLIGHT_KEY, '1');
+    mockUseAuth.mockReturnValue({
+      user: { uid: 'admin-1', email: 'igor.bogdanoski@mismath.net' },
+      userProfile: { email: 'igor.bogdanoski@mismath.net' },
+      isLoading: false,
+    });
+
+    render(<SystemIntegrityCheck />);
+
+    const preflightButton = await screen.findByRole('button', { name: 'Preflight: ON' });
+    expect(preflightButton).toBeInTheDocument();
+
+    const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
+    await waitFor(() => {
+      const diagnosticsCalls = fetchMock.mock.calls.filter((call) => String(call[0]).includes('/api/ingestion/diagnostics'));
+      expect(diagnosticsCalls.some((call) => String(call[0]).includes('preflight=true'))).toBe(true);
+    });
+
+    fireEvent.click(preflightButton);
+    expect(window.localStorage.getItem(PREFLIGHT_KEY)).toBe('0');
+    expect(await screen.findByRole('button', { name: 'Preflight: OFF' })).toBeInTheDocument();
   });
 });
