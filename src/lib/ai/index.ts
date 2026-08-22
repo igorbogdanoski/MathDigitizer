@@ -33,4 +33,5 @@ export * from './chat';
 export * from './kahoot';
 export * from './embeddings';
 export * from './classification';
+export * from './videoAgent';
 export * from './utils';

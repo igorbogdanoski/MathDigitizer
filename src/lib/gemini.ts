@@ -20,4 +20,5 @@ export * from './ai/chat';
 export * from './ai/kahoot';
 export * from './ai/embeddings';
 export * from './ai/classification';
+export * from './ai/videoAgent';
 export * from './ai/utils';

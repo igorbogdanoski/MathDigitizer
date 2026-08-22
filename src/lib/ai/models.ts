@@ -21,6 +21,9 @@ export const DEFAULT_MODEL = 'gemini-3.5-flash';
 /** Newest flash generation model (fast + high quality). */
 export const FLASH_36_MODEL = 'gemini-3.6-flash';
 
+/** Newest agentic flash model — long-context worker for the segmented video pipeline. */
+export const FLASH_37_MODEL = 'gemini-3.7-flash';
+
 /** Legacy fast preview model — kept as a selectable "Fast" option in the UI. */
 export const FAST_MODEL = 'gemini-3-flash-preview';
 
