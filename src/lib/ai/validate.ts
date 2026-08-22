@@ -125,6 +125,7 @@ export interface KahootQuestionDraft {
 
 export interface KahootValidation {
   valid: KahootQuestionDraft[];
+  keptIndexes: number[];
   dropped: Array<{ question: string; reasons: string[] }>;
 }
 
@@ -135,9 +136,12 @@ export interface KahootValidation {
 export function validateKahootQuiz(raw: unknown): KahootValidation {
   const list = Array.isArray(raw) ? raw : [];
   const valid: KahootQuestionDraft[] = [];
+  const keptIndexes: number[] = [];
   const dropped: KahootValidation['dropped'] = [];
 
+  let index = -1;
   for (const entry of list) {
+    index += 1;
     const q = entry as Partial<KahootQuestionDraft> | null;
     const reasons: string[] = [];
     const question = typeof q?.question === 'string' ? q.question.trim() : '';
@@ -162,29 +166,30 @@ export function validateKahootQuiz(raw: unknown): KahootValidation {
         timeLimit: typeof q?.timeLimit === 'number' ? q.timeLimit : undefined,
         hints: Array.isArray(q?.hints) ? (q.hints as unknown[]).filter((h): h is string => typeof h === 'string') : undefined,
       });
+      keptIndexes.push(index);
     } else {
       dropped.push({ question: question || '<missing>', reasons });
     }
   }
 
-  return { valid, dropped };
+  return { valid, keptIndexes, dropped };
 }
 
 /**
- * Deterministic math check: flags distractors that are symbolically equal to
- * the correct option (Compute Engine), so a generated quiz can never contain
- * two "correct" answers. Non-parseable (text) options are skipped silently.
+ * Per-question flag: true when some distractor is symbolically equal to the
+ * correct option (a quiz must never have two "correct" answers).
  */
-export async function findEquivalentDistractors(questions: KahootQuestionDraft[]): Promise<string[]> {
-  const issues: string[] = [];
+export async function flagQuestionsWithEquivalentDistractors(questions: KahootQuestionDraft[]): Promise<boolean[]> {
+  const flags = questions.map(() => false);
   let ce: ComputeEngine | null = null;
 
-  for (const q of questions) {
+  for (let qi = 0; qi < questions.length; qi++) {
+    const q = questions[qi];
     const correctExpr = extractMathExpression(q.options[q.correctIndex]);
     if (!correctExpr) continue;
 
     for (let i = 0; i < q.options.length; i++) {
-      if (i === q.correctIndex) continue;
+      if (i === q.correctIndex || flags[qi]) continue;
       const optionExpr = extractMathExpression(q.options[i]);
       if (!optionExpr) continue;
       try {
@@ -192,7 +197,7 @@ export async function findEquivalentDistractors(questions: KahootQuestionDraft[]
         const option = ce.parse(optionExpr);
         const correct = ce.parse(correctExpr);
         if (option.isValid !== false && correct.isValid !== false && option.isEqual(correct)) {
-          issues.push(`"${q.question.slice(0, 60)}": option ${i + 1} equals the correct answer`);
+          flags[qi] = true;
         }
       } catch {
         // outside Compute Engine's grammar — not a duplicate we can prove
@@ -200,5 +205,14 @@ export async function findEquivalentDistractors(questions: KahootQuestionDraft[]
     }
   }
 
+  return flags;
+}
+
+export async function findEquivalentDistractors(questions: KahootQuestionDraft[]): Promise<string[]> {
+  const flags = await flagQuestionsWithEquivalentDistractors(questions);
+  const issues: string[] = [];
+  questions.forEach((q, qi) => {
+    if (flags[qi]) issues.push(`"${q.question.slice(0, 60)}": a distractor equals the correct answer`);
+  });
   return issues;
 }

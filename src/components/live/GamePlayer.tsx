@@ -6,6 +6,7 @@ import { MathRenderer } from '../MathRenderer';
 import { Button } from '../ui/Button';
 import { CheckCircle2, UserCircle2, Trophy, Loader2, Lightbulb, Zap, Volume2 } from 'lucide-react';
 import { playSound } from '../../lib/sound';
+import { generateKahootHint } from '../../lib/gemini';
 
 export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
   const [pin, setPin] = useState(sessionPin || '');
@@ -271,16 +272,15 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
     'bg-emerald-500 active:bg-emerald-700'
   ];
 
-  const requestHint = () => {
+  const requestHint = async () => {
     setIsHintLoading(true);
-    // Simulate smart AI hint generation locally based on the actual question text
-    // (In production this would call a cloud function to prevent API leak to mobile clients, 
-    // but the quiz_data already has it if generated via our MaterialPreview flow)
-    setTimeout(() => {
-      // If the quiz generator attached hints, use them, otherwise give a generic hint
-      setActiveHint(session.quiz_data.hints?.[session.current_question_index] || "Обиди се да ги елиминираш негативните вредности прво, и провери ја равенката.");
-      setIsHintLoading(false);
-    }, 1000);
+    const hint = await generateKahootHint(
+      currentQ.question,
+      currentQ.options,
+      session.quiz_data.hints?.[session.current_question_index]
+    );
+    setActiveHint(hint);
+    setIsHintLoading(false);
   };
 
   const timeProgress = timeLeft !== null && currentQ.timeLimit 
@@ -335,6 +335,7 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
           <button
             key={i}
             onClick={() => submitAnswer(i)}
+            aria-label={`Одговор ${String.fromCharCode(65 + i)}`}
             className={`${colors[i % colors.length]} rounded-2xl shadow-[0_6px_0_rgba(0,0,0,0.2)] active:shadow-none active:translate-y-[6px] transition-all flex flex-col items-center justify-center p-4 min-h-[120px]`}
           >
             <span className="text-white/50 font-black text-2xl mb-2">{String.fromCharCode(65+i)}</span>

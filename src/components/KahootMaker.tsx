@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, PlayCircle, ImageIcon, PlusCircle, CheckCircle, Smartphone } from 'lucide-react';
 import { Button } from './ui/Button';
+import { MathRenderer } from './MathRenderer';
 import { useTranslation } from 'react-i18next';
 
 export const KahootMaker = () => {
@@ -121,11 +122,13 @@ export const KahootMaker = () => {
                       {i + 1}
                     </div>
                     <div className="flex-1 space-y-4">
-                      <p className="font-bold text-slate-800 text-lg leading-relaxed">{q.question}</p>
+                      <div className="font-bold text-slate-800 text-lg leading-relaxed">
+                        <MathRenderer content={q.question} />
+                      </div>
                       <div className="grid grid-cols-2 gap-2">
                         {q.options.map((opt: string, optIdx: number) => (
                           <div key={optIdx} className={`p-3 rounded-lg text-sm font-medium border ${optIdx === q.correctIndex ? 'bg-emerald-100 border-emerald-300 text-emerald-800' : 'bg-white border-slate-200 text-slate-600'}`}>
-                            {opt}
+                            <MathRenderer content={opt} inline />
                           </div>
                         ))}
                       </div>

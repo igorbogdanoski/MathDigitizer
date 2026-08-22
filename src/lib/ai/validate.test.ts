@@ -79,7 +79,7 @@ describe('findEquivalentDistractors', () => {
     };
     const issues = await findEquivalentDistractors([q]);
     expect(issues).toHaveLength(1);
-    expect(issues[0]).toMatch(/option 2/);
+    expect(issues[0]).toMatch(/distractor equals the correct answer/);
   });
 
   it('stays silent for genuinely different options and non-math text', async () => {
