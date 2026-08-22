@@ -7,6 +7,7 @@ import {
 import { Button } from './ui/Button';
 import { extractMathTasksFromImage, extractMathTasksFromPdf, enrichTaskPedagogy } from '../lib/gemini';
 import { MathTask } from '../lib/schema';
+import { PRO_MODEL } from '../lib/ai/models';
 import { useToast } from '../contexts/ToastContext';
 import { collection, addDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
@@ -52,7 +53,7 @@ export const SmartOCR: React.FC = () => {
   // Advanced OCR Settings
   const [targetLanguage, setTargetLanguage] = useState<'auto' | 'mk' | 'en' | 'ru' | 'tr'>('mk');
   const [enableLogicalReconstruction, setEnableLogicalReconstruction] = useState(true);
-  const [ocrModel, setOcrModel] = useState<string>('gemini-3.1-pro-preview');
+  const [ocrModel, setOcrModel] = useState<string>(PRO_MODEL);
   const [visualizationMode, setVisualizationMode] = useState<'none' | 'tikz' | 'geogebra' | 'nanobanana'>('geogebra');
 
   const fileInputRef = useRef<HTMLInputElement>(null);

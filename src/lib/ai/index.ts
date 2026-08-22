@@ -34,4 +34,5 @@ export * from './kahoot';
 export * from './embeddings';
 export * from './classification';
 export * from './videoAgent';
+export * from './validate';
 export * from './utils';

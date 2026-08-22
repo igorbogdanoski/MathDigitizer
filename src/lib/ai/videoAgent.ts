@@ -196,9 +196,8 @@ Rules:
   }
 }
 
-export function normalizeLatex(latex: string): string {
-  return latex.replace(/\$/g, '').replace(/\s+/g, '').toLowerCase();
-}
+export { normalizeLatex } from './validate';
+import { normalizeLatex } from './validate';
 
 function visualSignature(item: VisualBoardItem): string {
   return `${item.kind}|${[...item.latex].map(normalizeLatex).sort().join(',')}`;

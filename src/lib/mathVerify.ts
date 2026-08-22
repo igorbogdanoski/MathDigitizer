@@ -6,7 +6,7 @@ import type { ComputeEngine } from '@cortex-js/compute-engine';
 // plausible math expression to compare (see tryFastStepVerify below), and
 // cached across calls within the session once loaded.
 let _cePromise: Promise<ComputeEngine> | null = null;
-function getComputeEngine(): Promise<ComputeEngine> {
+export function getComputeEngine(): Promise<ComputeEngine> {
   if (!_cePromise) {
     _cePromise = import('@cortex-js/compute-engine').then((mod) => new mod.ComputeEngine());
   }
@@ -26,7 +26,7 @@ function looksMostlyMathematical(segment: string): boolean {
   return mathLikeChars / nonSpace.length > 0.6;
 }
 
-function extractMathExpression(text: string): string | null {
+export function extractMathExpression(text: string): string | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
 

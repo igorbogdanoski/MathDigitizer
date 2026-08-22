@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { PRO_MODEL, FAST_MODEL } from '../../lib/ai/models';
 
 interface OCRSettingsBarProps {
   targetLanguage: 'auto' | 'mk' | 'en' | 'ru' | 'tr';
@@ -69,8 +70,8 @@ export const OCRSettingsBar: React.FC<OCRSettingsBarProps> = ({
           aria-label={t('settings.modelTitle')}
           className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 dark:text-slate-200 shadow-sm"
         >
-          <option value="gemini-3.1-pro-preview">{t('settings.modelPro')}</option>
-          <option value="gemini-3-flash-preview">{t('settings.modelFlash')}</option>
+          <option value={PRO_MODEL}>{t('settings.modelPro')}</option>
+          <option value={FAST_MODEL}>{t('settings.modelFlash')}</option>
         </select>
       </div>
 

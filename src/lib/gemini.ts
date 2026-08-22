@@ -21,4 +21,5 @@ export * from './ai/kahoot';
 export * from './ai/embeddings';
 export * from './ai/classification';
 export * from './ai/videoAgent';
+export * from './ai/validate';
 export * from './ai/utils';

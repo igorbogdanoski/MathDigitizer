@@ -126,7 +126,9 @@ export const ai: any = new Proxy({}, {
         get(mTarget, mProp) {
           return async (...args: any[]) => {
             await initAiPromise;
-            return _aiInstance[prop][mProp].apply(_aiInstance[prop], args);
+            const call = () => _aiInstance[prop][mProp].apply(_aiInstance[prop], args);
+            if (prop === 'models' && RETRYABLE_MODEL_METHODS.has(String(mProp))) return withRetry(call);
+            return call();
           };
         }
       });
@@ -140,6 +142,29 @@ export const ai: any = new Proxy({}, {
     };
   }
 });
+
+// ─── Retry with exponential backoff ─────────────────────────────────────────
+// Central retry for transient Gemini/transport failures (quota windows,
+// 5xx, network blips). 4xx like 404 (unknown model) are NOT retried so model
+// fallbacks (e.g. videoAgent's 3.7→3.6) still trigger immediately.
+const RETRYABLE_ERROR = /429|50[0-9]|quota|RESOURCE_EXHAUSTED|UNAVAILABLE|ECONNRESET|fetch failed|network/i;
+
+export async function withRetry<T>(fn: () => Promise<T>, retries = 2, baseDelayMs = 800): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      const msg = error instanceof Error ? error.message : String(error);
+      if (!RETRYABLE_ERROR.test(msg) || attempt === retries) throw error;
+      await new Promise((resolve) => setTimeout(resolve, baseDelayMs * 2 ** attempt));
+    }
+  }
+  throw lastError;
+}
+
+const RETRYABLE_MODEL_METHODS = new Set(['generateContent', 'embedContent']);
 
 export function handleGeminiError(error: any): never {
   const msg = error instanceof Error ? error.message : JSON.stringify(error);
