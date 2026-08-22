@@ -75,6 +75,7 @@ ${CURRICULUM_PROMPT_INSTRUCTION}
           items: {
             type: Type.OBJECT,
             properties: {
+              evidence_quote: { type: Type.STRING, description: "ANTI-HALLUCINATION: Quote the exact line/sentence from the document where this task appears." },
               type: { type: Type.STRING, enum: ["task", "theory"] },
               detected_language: { type: Type.STRING, description: "Auto-detected language code: mk, en, tr, al, etc." },
               title: { type: Type.STRING },
@@ -89,7 +90,7 @@ ${CURRICULUM_PROMPT_INSTRUCTION}
               grade_level: { type: Type.STRING },
               curriculum_topic: { type: Type.STRING }
             },
-            required: ["type", "detected_language", "title", "original_text", "solution_steps", "latex_formulas", "illustration_prompt", "tags", "difficulty", "dok_level", "bloom_taxonomy", "grade_level", "curriculum_topic"]
+            required: ["evidence_quote", "type", "detected_language", "title", "original_text", "solution_steps", "latex_formulas", "illustration_prompt", "tags", "difficulty", "dok_level", "bloom_taxonomy", "grade_level", "curriculum_topic"]
           }
         }
       }
@@ -274,8 +275,9 @@ export async function advancedMultimodalExtraction(
 
     if (!response.text) throw new Error("Нема одговор.");
     const parsedObj = parseGeminiResponse(response.text);
+    const confidence = typeof parsedObj.extraction_confidence === 'number' ? parsedObj.extraction_confidence : undefined;
     const results = parsedObj.extracted_tasks || [];
-    const tasks = results.map((t: any) => ({ ...t, source_url: source.type === 'url' ? source.data : 'Прикачена датотека' }));
+    const tasks = results.map((t: any) => ({ ...t, extraction_confidence: confidence, source_url: source.type === 'url' ? source.data : 'Прикачена датотека' }));
 
     const sourceKind = source.type === 'file'
       ? (source.mimeType === 'application/pdf' ? 'pdf' : 'image')
@@ -511,8 +513,9 @@ ${sanitizedInstructions ? `\nСПЕЦИФИЧНИ ИНСТРУКЦИИ ЗА ИЗ
 
     if (!response.text) throw new Error("Нема одговор.");
     const parsedObj = parseGeminiResponse(response.text);
+    const confidence = typeof parsedObj.extraction_confidence === 'number' ? parsedObj.extraction_confidence : undefined;
     const tasks: MathTask[] = parsedObj.extracted_tasks || [];
-    const withSource = tasks.map(t => ({ ...t, source_url: url }));
+    const withSource = tasks.map(t => ({ ...t, extraction_confidence: confidence, source_url: url }));
     const meta = {
       sourceKind: 'url' as const,
       parserPath: 'url->transcript/scrape->strict-json-extraction',
@@ -567,6 +570,7 @@ ${enableLogicalReconstruction
           items: {
             type: Type.OBJECT,
             properties: {
+              evidence_quote: { type: Type.STRING, description: "ANTI-HALLUCINATION: Quote the exact line/sentence from the image where this task appears." },
               type: { type: Type.STRING, enum: ["task", "theory"] },
               detected_language: { type: Type.STRING, description: "Auto-detected language code: mk, en, tr, ru, etc." },
               title: { type: Type.STRING },
@@ -582,7 +586,7 @@ ${enableLogicalReconstruction
               grade_level: { type: Type.STRING },
               curriculum_topic: { type: Type.STRING }
             },
-            required: ["type", "detected_language", "title", "original_text", "solution_steps", "latex_formulas", "illustration_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic"]
+            required: ["evidence_quote", "type", "detected_language", "title", "original_text", "solution_steps", "latex_formulas", "illustration_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic"]
           }
         }
       }

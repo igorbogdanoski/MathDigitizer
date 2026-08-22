@@ -171,6 +171,7 @@
   "create2dGraphic": "Krijo Grafikë 2D",
   "openYoutubeAt": "Hap YouTube në {{timestamp}}",
   "estimatedVideoTime": "Koha e vlerësuar në video",
+  "confidenceTitle": "Vlerësimi i qartësisë së burimit nga modeli",
   "exportOptions": "Opsionet e Eksportit:",
   "progressAnalyzingAi": "Duke analizuar përmes teknologjisë AI...",
   "progressAnalyzingDescription": "Gemini po analizon vizualisht dhe në mënyrë dëgjimore të gjitha shprehjet matematikore, grafikët dhe udhëzimet tekstuale në këtë moment. Procesi është kompleks për të ofruar saktësi maksimale 100%.",

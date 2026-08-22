@@ -116,6 +116,7 @@ export interface LessonArchitectScript {
 export interface MathTask {
   id?: string;
   evidence_quote?: string; // ANTI-HALLUCINATION: Exact quote from the source video/doc mapping to this task
+  extraction_confidence?: number; // Model self-reported clarity score 1-100 for the source material
   source_timestamp?: string; // The time (e.g. 04:15) or Page (e.g. Page 3) where the task is found
   illustration_prompt?: string; // English prompt ONLY for real-world scenarios (cars, apples, physics situations) via Image AI
   geogebra_commands?: string[]; // Array of GeoGebra commands for geometry and plotting

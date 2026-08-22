@@ -41,6 +41,14 @@ interface ExtractionEngineProps {
 
 const FREE_EXTRACTION_LIMIT = 2;
 
+const INTERPRETATIVE_SUFFIX: Record<number, string> = {
+  0: " Извлечи го материјалот 100% буквално и верно на оригиналот(Faithful).",
+  1: " Исчисти го материјалот од пелтечења и неважни зборови(Clean).",
+  2: " Реформулирај го овој материјал како професионална лекција или задачи од учебник(Reformulate).",
+  3: " Извлечи го материјалот и нужно додади свои слични примери за да се разјасни концептот(Examples).",
+  4: " Направи само кратко резиме и најважни клучни точки/задачи(Summary).",
+};
+
 export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTutorTask }) => {
   const { t } = useTranslation('extraction');
   const { user, userProfile } = useAuth();
@@ -253,14 +261,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
       const timeRange = (startTime || endTime) ? { start: startTime, end: endTime } : undefined;
       
       if (sourceType === 'url') {
-        let textInstructions = customInstructions;
-        switch(interpretativeLevel) {
-          case 0: textInstructions += " Извлечи го материјалот 100% буквално и верно на оригиналот(Faithful)."; break;
-          case 1: textInstructions += " Исчисти го материјалот од пелтечења и неважни зборови(Clean)."; break;
-          case 2: textInstructions += " Реформулирај го овој материјал како професионална лекција или задачи од учебник(Reformulate)."; break;
-          case 3: textInstructions += " Извлечи го материјалот и нужно додади свои слични примери за да се разјасни концептот(Examples)."; break;
-          case 4: textInstructions += " Направи само кратко резиме и најважни клучни точки/задачи(Summary)."; break;
-        }
+        let textInstructions = customInstructions + (INTERPRETATIVE_SUFFIX[interpretativeLevel] ?? '');
         for (let i = 0; i < urls.length; i++) {
             setStatusText(t('progressProcessingLink', { current: i + 1, total: urls.length }));
             try {
@@ -288,14 +289,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
           { type: 'file' as const, data: fileData!.base64, mimeType: fileData!.mimeType } :
           { type: 'text' as const, data: textInput };
         
-        let textInstructions = customInstructions;
-        switch(interpretativeLevel) {
-          case 0: textInstructions += " Извлечи го материјалот 100% буквално и верно на оригиналот(Faithful)."; break;
-          case 1: textInstructions += " Исчисти го материјалот од пелтечења и неважни зборови(Clean)."; break;
-          case 2: textInstructions += " Реформулирај го овој материјал како професионална лекција или задачи од учебник(Reformulate)."; break;
-          case 3: textInstructions += " Извлечи го материјалот и нужно додади свои слични примери за да се разјасни концептот(Examples)."; break;
-          case 4: textInstructions += " Направи само кратко резиме и најважни клучни точки/задачи(Summary)."; break;
-        }
+        let textInstructions = customInstructions + (INTERPRETATIVE_SUFFIX[interpretativeLevel] ?? '');
 
         const langEntryMM = OUTPUT_LANGUAGES.find(l => l.value === outputLanguage);
         if (langEntryMM) textInstructions += ` ${langEntryMM.instruction}`;
