@@ -9,14 +9,38 @@
     "selected": "Të zgjedhura"
   },
   "types": {
-    "worksheet": { "name": "Fletë pune", "description": "Detyra ushtrimore për në klasë ose shtëpi" },
-    "test": { "name": "Test / Vlerësim", "description": "Vlerësim me pikë dhe zgjidhje për mësuesin" },
-    "collection": { "name": "Koleksion detyrash", "description": "Koleksion gjithëpërfshirës i ndarë sipas temës dhe vështirësisë" },
-    "quiz": { "name": "Kuiz interaktiv", "description": "Kuiz live për nxënësit (stili Kahoot)" },
-    "presentation": { "name": "Prezantim", "description": "Sllajde me teori dhe detyra për në klasë" },
-    "flashcards": { "name": "Flashcards", "description": "Kartela për përsëritje të shpejtë të koncepteve" },
-    "homework": { "name": "Detyrë shtëpie", "description": "Detyra për punë të pavarur në shtëpi" },
-    "study_guide": { "name": "Udhëzues mësimi", "description": "Pasqyrë e detajuar e teorisë dhe detyrave kryesore" }
+    "worksheet": {
+      "name": "Fletë pune",
+      "description": "Detyra ushtrimore për në klasë ose shtëpi"
+    },
+    "test": {
+      "name": "Test / Vlerësim",
+      "description": "Vlerësim me pikë dhe zgjidhje për mësuesin"
+    },
+    "collection": {
+      "name": "Koleksion detyrash",
+      "description": "Koleksion gjithëpërfshirës i ndarë sipas temës dhe vështirësisë"
+    },
+    "quiz": {
+      "name": "Kuiz interaktiv",
+      "description": "Kuiz live për nxënësit (stili Kahoot)"
+    },
+    "presentation": {
+      "name": "Prezantim",
+      "description": "Sllajde me teori dhe detyra për në klasë"
+    },
+    "flashcards": {
+      "name": "Flashcards",
+      "description": "Kartela për përsëritje të shpejtë të koncepteve"
+    },
+    "homework": {
+      "name": "Detyrë shtëpie",
+      "description": "Detyra për punë të pavarur në shtëpi"
+    },
+    "study_guide": {
+      "name": "Udhëzues mësimi",
+      "description": "Pasqyrë e detajuar e teorisë dhe detyrave kryesore"
+    }
   },
   "settings": {
     "language": "Gjuha:",
@@ -76,5 +100,18 @@
   },
   "ariaDocumentTitle": "Titulli i dokumentit",
   "ariaAnswerKey": "Çelësi i përgjigjeve",
-  "ariaMaterialPreview": "Pamja paraprake e materialit"
+  "ariaMaterialPreview": "Pamja paraprake e materialit",
+  "copyType": "Lloji i kopjes",
+  "copyStudent": "Nxënësi",
+  "copyTeacher": "Mësuesi",
+  "vectorPdf": "Printo (vektorial)",
+  "vectorPdfHint": "Printim përmes shfletuesit — teksti dhe formulat mbeten vektoriale dhe të qarta në çdo zmadhim.",
+  "converting": "Po konvertohet...",
+  "savePdf": "Ruaj si PDF",
+  "template": {
+    "school": "Shkolla",
+    "teacher": "Mësuesi",
+    "subject": "Lënda",
+    "note": "Shënim (viti shkollor, klasa…)"
+  }
 }

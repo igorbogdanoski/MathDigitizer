@@ -132,7 +132,31 @@ body.dyscalculia-mode .katex .mop {
   body * {
     visibility: hidden;
   }
-  
+
+  /* Vector PDF path (EXPERT_LEVEL_MASTER_PLAN 6.1): printing a student copy
+     removes the answer key entirely rather than merely hiding it visually. */
+  body.printing-student-copy [data-answer-key] {
+    display: none !important;
+  }
+
+  /* A task, a formula or a section heading must not be split across pages. */
+  [data-pdf-block] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .katex-display {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
   /* Make both the ExtractionEngine tasks container and the MaterialFactory modal printable */
   .printable-tasks-container,
   .printable-tasks-container *,

@@ -3,7 +3,8 @@
  * Moved verbatim from the former gemini.ts god-object.
  */
 import { ai, handleGeminiError } from './client';
-import { buildCurriculumContextBlockRag } from './utils';
+import { buildCurriculumContextBlockRag, parseGeminiResponse } from './utils';
+import { buildMaterialResponseSchema, isMaterialEmpty, normalizeMaterial } from './materialSchemas';
 import { MathTask } from '../schema';
 import { Type } from '@google/genai';
 import { DEFAULT_MODEL, FAST_MODEL } from './models';
@@ -117,7 +118,7 @@ ${languagePrompt}
   }
 }
 
-export async function generateEducationalMaterial(tasks: MathTask[], type: MaterialType, targetGrade: string = 'Непознато', targetLanguage: string = 'mk'): Promise<any> {
+export async function generateEducationalMaterial(tasks: MathTask[], type: MaterialType, targetGrade: string = 'Непознато', targetLanguage: string = 'mk'): Promise<import('./materialSchemas').EducationalMaterial> {
   const typePrompts: Record<MaterialType, string> = {
     'worksheet': 'Креирај структуриран работен лист со простор за работа. Вклучи кратки насоки.',
     'test': 'Креирај тест со бодови за секоја задача, две верзии (Група А и Б) и клуч со решенија за наставникот.',
@@ -143,25 +144,30 @@ export async function generateEducationalMaterial(tasks: MathTask[], type: Mater
   1. Користи ${targetLanguage === 'mk' ? 'Македонски (СТРОГО МАКЕДОНСКА КИРИЛИЦА)' : targetLanguage === 'en' ? 'Англиски' : targetLanguage === 'ru' ? 'Руски' : 'Турски'} јазик за сите наслови, инструкции и објаснувања. Мораш стручно да го адаптираш тонот според одделението (${targetGrade}).
   2. ZERO-ERROR LaTeX: СИТЕ МАТЕМАТИЧКИ СИМБОЛИ, БРОЕВИ, РАВЕНКИ И ФОРМУЛИ МОРА ДА БИДАТ СТРОГО ВО LaTeX ФОРМАТ. Користи $...$ за inline математика (пр. Нека е $x=5$) и $$...$$ за математика во нов ред. ОВА Е НАЈСТРОГОТО ПРАВИЛО!
   3. Тагирај ги задачите во материјалот по тежина и одделение каде што е соодветно (пр. "[Лесна, VIII Одделение]").
-  4. Врати СТРОГО JSON објект со соодветна структура за овој тип на материјал.
-  
-  СТРУКТУРА НА ОДГОВОРОТ:
-  За 'quiz': { "questions": [ { "question": "...", "options": ["A", "B", "C", "D"], "correctIndex": 0 } ] }
-  За 'flashcards': { "cards": [ { "front": "...", "back": "..." } ] }
-  За 'presentation': { "slides": [ { "title": "...", "content": "...", "type": "theory|example|task" } ] }
-  За останатите: { "title": "...", "sections": [ { "heading": "...", "content": "..." } ], "answerKey": "..." }`;
+  4. Структурата на одговорот е дефинирана со responseSchema — придржувај се строго кон неа.
+  5. За 'quiz': ТОЧНО 4 опции по прашање и \`correctIndex\` во опсег 0–3.
+  6. Каде што има \`answerKey\`, тој е САМО за наставникот и не смее да се повторува во телото на материјалот.`;
 
   try {
     const response = await ai.models.generateContent({
       model: DEFAULT_MODEL,
       contents: prompt,
       config: {
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        // The shape is a contract now, not a paragraph of prose in the prompt.
+        responseSchema: buildMaterialResponseSchema(type),
       }
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    return JSON.parse(response.text);
+
+    // parseGeminiResponse tolerates the fenced/truncated output a raw
+    // JSON.parse used to crash on; normalizeMaterial drops malformed entries.
+    const material = normalizeMaterial(type, parseGeminiResponse(response.text));
+    if (isMaterialEmpty(material)) {
+      throw new Error('Моделот врати материјал без употреблива содржина.');
+    }
+    return material;
   } catch (error) {
     console.error(`Error generating ${type}:`, error);
     handleGeminiError(error);

@@ -9,14 +9,38 @@
     "selected": "Selected"
   },
   "types": {
-    "worksheet": { "name": "Worksheet", "description": "Practice tasks for class or homework" },
-    "test": { "name": "Test / Assessment", "description": "Grading with points and solutions for the teacher" },
-    "collection": { "name": "Task Collection", "description": "Comprehensive collection divided by topic and difficulty" },
-    "quiz": { "name": "Interactive Quiz", "description": "Live quiz for students (Kahoot style)" },
-    "presentation": { "name": "Presentation", "description": "Slides with theory and tasks for class" },
-    "flashcards": { "name": "Flashcards", "description": "Cards for quick review of concepts" },
-    "homework": { "name": "Homework", "description": "Tasks for independent work at home" },
-    "study_guide": { "name": "Study Guide", "description": "Detailed overview of theory and key tasks" }
+    "worksheet": {
+      "name": "Worksheet",
+      "description": "Practice tasks for class or homework"
+    },
+    "test": {
+      "name": "Test / Assessment",
+      "description": "Grading with points and solutions for the teacher"
+    },
+    "collection": {
+      "name": "Task Collection",
+      "description": "Comprehensive collection divided by topic and difficulty"
+    },
+    "quiz": {
+      "name": "Interactive Quiz",
+      "description": "Live quiz for students (Kahoot style)"
+    },
+    "presentation": {
+      "name": "Presentation",
+      "description": "Slides with theory and tasks for class"
+    },
+    "flashcards": {
+      "name": "Flashcards",
+      "description": "Cards for quick review of concepts"
+    },
+    "homework": {
+      "name": "Homework",
+      "description": "Tasks for independent work at home"
+    },
+    "study_guide": {
+      "name": "Study Guide",
+      "description": "Detailed overview of theory and key tasks"
+    }
   },
   "settings": {
     "language": "Language:",
@@ -76,5 +100,18 @@
   },
   "ariaDocumentTitle": "Document title",
   "ariaAnswerKey": "Answer key",
-  "ariaMaterialPreview": "Material preview"
+  "ariaMaterialPreview": "Material preview",
+  "copyType": "Copy type",
+  "copyStudent": "Student",
+  "copyTeacher": "Teacher",
+  "vectorPdf": "Print (vector)",
+  "vectorPdfHint": "Print through the browser — text and formulas stay vector and sharp at any zoom.",
+  "converting": "Converting...",
+  "savePdf": "Save as PDF",
+  "template": {
+    "school": "School",
+    "teacher": "Teacher",
+    "subject": "Subject",
+    "note": "Note (school year, class…)"
+  }
 }

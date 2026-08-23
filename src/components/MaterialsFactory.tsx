@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
-import { collection, query, getDocs, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, limit, getDocs, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { MathTask } from '../lib/schema';
 import { 
@@ -20,6 +20,7 @@ import { MathRenderer } from './MathRenderer';
 import { Edit3, Check, Printer } from 'lucide-react';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { useAuth } from '../contexts/AuthContext';
+import { groupTasksByCurriculum } from '../lib/materials/grouping';
 import { hasProAccess } from '../lib/saas';
 import { ProFeatureGate } from './ProFeatureGate';
 import { captureError } from '../lib/observability';
@@ -29,7 +30,7 @@ import { useModalA11y } from '../hooks/useModalA11y';
 export default function MaterialsFactory() {
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { userProfile } = useAuth();
+  const { user, userProfile } = useAuth();
   const { t } = useTranslation('materialsFactory');
   const setEditingTask = useLibraryStore(state => state.setEditingTask);
   const [tasks, setTasks] = useState<MathTask[]>([]);
@@ -128,17 +129,22 @@ export default function MaterialsFactory() {
     task.original_text.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const groupedTasks = filteredTasks.reduce((acc, task) => {
-    const topic = task.curriculum_topic || 'Некатегоризирано';
-    if (!acc[topic]) acc[topic] = [];
-    acc[topic].push(task);
-    return acc;
-  }, {} as Record<string, MathTask[]>);
+  // Grouped on curriculum_refs (stable topic ids + БРО codes), not on the
+  // free-text topic the model writes — see lib/materials/grouping.ts
+  const taskGroups = groupTasksByCurriculum(filteredTasks);
 
   useEffect(() => {
     async function fetchTasks() {
+      if (!user) { setLoading(false); return; }
       try {
-        const q = query(collection(db, 'tasks'), orderBy('created_at', 'desc'));
+        // Own tasks only, and bounded — this used to read every task in the
+        // database on every visit.
+        const q = query(
+          collection(db, 'tasks'),
+          where('author_uid', '==', user.uid),
+          orderBy('created_at', 'desc'),
+          limit(300)
+        );
         const querySnapshot = await getDocs(q);
         const fetchedTasks = querySnapshot.docs.map(doc => ({
           id: doc.id,
@@ -153,7 +159,7 @@ export default function MaterialsFactory() {
     }
 
     fetchTasks();
-  }, []);
+  }, [user]);
 
   const materialTypes: { id: MaterialType; name: string; icon: any; description: string; color: string; iconBg: string }[] = [
     { id: 'worksheet', name: t('types.worksheet.name'), icon: FileText, description: t('types.worksheet.description'), color: 'text-blue-600', iconBg: 'bg-blue-100' },
@@ -408,7 +414,9 @@ export default function MaterialsFactory() {
               </div>
             ) : (
               <div className="space-y-8">
-                {Object.entries(groupedTasks).map(([topic, topicTasks]) => {
+                {taskGroups.map((group) => {
+                  const topic = group.key;
+                  const topicTasks = group.tasks;
                   const isCollapsed = collapsedTopics[topic];
                   return (
                     <div key={topic} className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
@@ -421,8 +429,24 @@ export default function MaterialsFactory() {
                             <BookOpen className="w-5 h-5 text-indigo-500" />
                           </div>
                           <div>
-                            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">{topic}</h3>
-                            <p className="text-xs text-slate-500 font-bold">{topicTasks.length} {topicTasks.length === 1 ? t('step2.taskSingular') : t('step2.taskPlural')}</p>
+                            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">{group.label}</h3>
+                            <p className="text-xs text-slate-500 font-bold">
+                              {topicTasks.length} {topicTasks.length === 1 ? t('step2.taskSingular') : t('step2.taskPlural')}
+                            </p>
+                            {/* БРО outcome codes, so the teacher sees what the
+                                group actually covers rather than a bare label */}
+                            {group.outcomeCodes.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {group.outcomeCodes.slice(0, 4).map(code => (
+                                  <span key={code} className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                                    {code}
+                                  </span>
+                                ))}
+                                {group.outcomeCodes.length > 4 && (
+                                  <span className="text-[10px] font-mono text-slate-400">+{group.outcomeCodes.length - 4}</span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                         {isCollapsed ? (

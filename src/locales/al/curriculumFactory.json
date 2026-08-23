@@ -18,5 +18,9 @@
   "exitTicket": "Exit Ticket",
   "successToast": "Kurrikula u gjenerua me sukses!",
   "errorToast": "Gabim gjatë gjenerimit.",
-  "savedToast": "Të gjitha materialet u ruajtën në Bibliotekë!"
+  "savedToast": "Të gjitha materialet u ruajtën në Bibliotekë!",
+  "emptyDocument": "Nuk u nxor tekst i lexueshëm (PDF-ja mund të jetë skanim pa shtresë teksti).",
+  "savedToastCount": "U ruajt: moduli + {{count}} detyra në bibliotekë.",
+  "saveError": "Ruajtja në bibliotekë dështoi.",
+  "homeworkTasks": "Detyrë shtëpie"
 }
