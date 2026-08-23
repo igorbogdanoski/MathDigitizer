@@ -16,7 +16,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useModalA11y } from '../hooks/useModalA11y';
 import { computePageSlices, measureBlocks, waitForMathRendering } from '../lib/pdf/pagination';
-import { PrintTemplate, isTemplateEmpty, loadPrintTemplate, savePrintTemplate } from '../lib/materials/printTemplate';
+import { PrintTemplate, loadPrintTemplate, savePrintTemplate } from '../lib/materials/printTemplate';
+import { DocumentFooter, DocumentLetterhead } from './print/DocumentLetterhead';
+import { TemplateEditor } from './print/TemplateEditor';
 
 interface MaterialPreviewProps {
   type: MaterialType;
@@ -35,13 +37,16 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
   /** School/teacher header, remembered between exports. */
   const [template, setTemplate] = useState<PrintTemplate>(() => loadPrintTemplate());
 
-  const updateTemplate = (field: keyof PrintTemplate, value: string) => {
+  const updateTemplate = (patch: Partial<PrintTemplate>) => {
     setTemplate(prev => {
-      const next = { ...prev, [field]: value };
+      const next = { ...prev, ...patch };
       savePrintTemplate(next);
       return next;
     });
   };
+
+  /** Stable issue date, so the footer reference does not change per render. */
+  const issuedAtRef = useRef(new Date());
   const navigate = useNavigate();
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -371,80 +376,35 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
     // Default rendering for worksheet, test, collection, homework, study_guide, quiz
     return (
       <div ref={printRef} className="bg-white text-slate-900 p-10 rounded-2xl print:p-0">
-        {/* HEADER SECTION FOR PRINT/PDF */}
-        {/* School template — filled once by the teacher, reused on every export */}
-        {(isEditing || !isTemplateEmpty(template)) && (
-          <div data-pdf-block className="mb-6 pb-4 border-b border-slate-300">
-            {isEditing ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(['school', 'teacher', 'subject', 'note'] as const).map(field => (
-                  <input
-                    key={field}
-                    value={template[field]}
-                    onChange={(e) => updateTemplate(field, e.target.value)}
-                    aria-label={t(`materialsFactory:template.${field}`)}
-                    placeholder={t(`materialsFactory:template.${field}`)}
-                    className="text-sm border-b border-indigo-200 focus:border-indigo-500 outline-none bg-indigo-50/50 px-2 py-1"
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="flex justify-between items-start gap-4 text-sm text-slate-600">
-                <div>
-                  {template.school && <p className="font-black uppercase tracking-widest text-slate-800">{template.school}</p>}
-                  {template.note && <p className="text-xs mt-0.5">{template.note}</p>}
-                </div>
-                <div className="text-right">
-                  {template.subject && <p className="font-bold">{template.subject}</p>}
-                  {template.teacher && <p className="text-xs mt-0.5">{template.teacher}</p>}
-                </div>
-              </div>
-            )}
+        {/* Branded letterhead (school identity, marking box, grading legend) */}
+        {isEditing && (
+          <div className="mb-8 not-prose">
+            <TemplateEditor template={template} onChange={updateTemplate} />
           </div>
         )}
 
-        <div data-pdf-block className="flex flex-col mb-12 border-b-2 border-slate-900 pb-4">
-          <div className="flex justify-between items-end mb-4 gap-4">
-            <div className="flex-1">
-              {isEditing ? (
-                <input
-                  value={editedData.title}
-                  onChange={(e) => updateNestedField('title', e.target.value)}
-                  title={t('materialsFactory:ariaDocumentTitle')}
-                  aria-label={t('materialsFactory:ariaDocumentTitle')}
-                  className="text-3xl font-black text-slate-900 mb-2 border-b border-indigo-200 focus:border-indigo-500 outline-none w-full bg-indigo-50/50"
-                  placeholder="Внесете наслов..."
-                />
-              ) : (
-                <h1 className="text-3xl font-black text-slate-900">{editedData.title}</h1>
-              )}
-              <p className="text-slate-500 font-bold mt-1 uppercase tracking-widest">{type} • MathDigitizer Pro</p>
-            </div>
-            <div className="text-right text-sm border-l-2 border-slate-200 pl-4">
-              <p className="whitespace-nowrap">Освоени поени: _________ / 100</p>
-              <p className="mt-2 whitespace-nowrap">Доделена оценка: _____________</p>
-            </div>
+        <DocumentLetterhead
+          template={template}
+          title={editedData.title}
+          kind={t(`types.${type}.name`, { defaultValue: type })}
+          issuedAt={issuedAtRef.current}
+        />
+
+        {isEditing && (
+          <div className="mb-8 not-prose">
+            <label htmlFor="doc-title" className="block text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">
+              {t('materialsFactory:ariaDocumentTitle')}
+            </label>
+            <input
+              id="doc-title"
+              value={editedData.title}
+              onChange={(e) => updateNestedField('title', e.target.value)}
+              aria-label={t('materialsFactory:ariaDocumentTitle')}
+              className="w-full h-10 px-3 rounded-lg border border-indigo-200 focus:border-indigo-500 outline-none bg-indigo-50/50 text-lg font-bold text-slate-900"
+            />
           </div>
-          <div className="grid grid-cols-2 gap-x-12 gap-y-4 text-sm mt-4 font-medium text-slate-700">
-            <div className="flex items-end border-b border-slate-300 pb-1">
-              <span className="w-24">Име:</span>
-              <div className="flex-1"></div>
-            </div>
-            <div className="flex items-end border-b border-slate-300 pb-1">
-              <span className="w-24">Одделение:</span>
-              <div className="flex-1"></div>
-            </div>
-            <div className="flex items-end border-b border-slate-300 pb-1">
-              <span className="w-24">Презиме:</span>
-              <div className="flex-1"></div>
-            </div>
-            <div className="flex items-end border-b border-slate-300 pb-1">
-              <span className="w-24">Датум:</span>
-              <div className="flex-1"></div>
-            </div>
-          </div>
-        </div>
-        
+        )}
+
         {/* MAIN CONTENT */}
         <div className="space-y-10">
           {editedData.sections.map((section: any, idx: number) => (
@@ -520,6 +480,8 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
             </div>
           </div>
         )}
+
+        <DocumentFooter template={template} title={editedData.title} issuedAt={issuedAtRef.current} />
       </div>
     );
   };
