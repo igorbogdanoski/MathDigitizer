@@ -1,17 +1,20 @@
 /**
  * Firestore Security Rules Unit Tests
- * 
- * These tests require the Firebase emulator to be running.
- * They are excluded from the regular `npm run test` run.
- * 
- * To run these tests:
- *   firebase emulators:exec --only firestore "npx vitest --run src/lib/firestore.rules.test.ts"
- * 
- * Or add to CI workflow:
- *   - name: Run Firestore rules tests
- *     run: firebase emulators:exec --only firestore "npm run test -- --run src/lib/firestore.rules.test.ts"
+ *
+ * These need the Firestore emulator (which needs Java), so they are excluded
+ * from the default vitest run and have their own config and script:
+ *
+ *   npm run test:rules
+ *
+ * That starts the emulator, runs this file through vitest.rules.config.ts and
+ * shuts the emulator down again.
+ *
+ * Every test starts from an empty database (see the beforeEach below). Seed any
+ * document the test does not itself assert on via
+ * `testEnv.withSecurityRulesDisabled`, so a failing setup can never masquerade
+ * as a passing security assertion.
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import {
   initializeTestEnvironment,
   assertSucceeds,
@@ -30,6 +33,13 @@ beforeAll(async () => {
     projectId: 'mathdigitizer-test',
     firestore: { rules },
   });
+});
+
+// Without this, documents written by one test leak into the next, and a
+// `create` in the follow-up test is evaluated as an `update` of the leftover
+// document — which the rules (correctly) deny, failing the wrong assertion.
+beforeEach(async () => {
+  await testEnv.clearFirestore();
 });
 
 afterAll(async () => {
@@ -226,6 +236,16 @@ describe('Firestore Security Rules', () => {
     });
 
     it('should ALLOW a student to join (modify participants only)', async () => {
+      // Seed the session outside the rules — the setup is not what is asserted.
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'live_sessions', 'PIN123'), {
+          teacher_uid: 'teacher1',
+          quiz_data: { questions: [] },
+          status: 'waiting',
+          current_question_index: 0,
+        });
+      });
+
       const student = testEnv.authenticatedContext('student1');
       const ref = doc(student.firestore(), 'live_sessions', 'PIN123');
       await assertSucceeds(
@@ -246,6 +266,110 @@ describe('Firestore Security Rules', () => {
       const user2 = testEnv.authenticatedContext('user2');
       const ref = doc(user2.firestore(), 'whiteboard_sessions', 'wb1');
       await assertFails(updateDoc(ref, { data: { strokes: ['hacked'] } }));
+    });
+  });
+
+  // ── Exam window enforcement (EXPERT_LEVEL_MASTER_PLAN, 5.3) ───────────────
+  describe('summative_attempts collection', () => {
+    const HOUR = 60 * 60 * 1000;
+
+    /**
+     * Seeds an exam outside the rules. `opens_at` / `due_at` are epoch
+     * milliseconds, because Firestore rules cannot parse ISO date strings.
+     */
+    const seedExam = async (id: string, data: Record<string, unknown>) => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'summative_exams', id), {
+          teacher_uid: 'teacher1',
+          test_data: { title: 'Тест', questions: [] },
+          created_at: Date.now(),
+          ...data,
+        });
+      });
+    };
+
+    const submit = (examId: string, uid = 'student1') => {
+      const student = testEnv.authenticatedContext(uid);
+      return setDoc(doc(student.firestore(), 'summative_attempts', `${examId}_${uid}`), {
+        id: `${examId}_${uid}`,
+        exam_id: examId,
+        student_name: 'Student',
+        student_uid: uid,
+        answers: { 0: 'x=2' },
+        submitted_at: Date.now(),
+      });
+    };
+
+    it('should ALLOW submitting to an open exam with no window set', async () => {
+      await seedExam('open-no-window', { status: 'open' });
+      await assertSucceeds(submit('open-no-window'));
+    });
+
+    it('should ALLOW submitting inside the exam window', async () => {
+      await seedExam('open-in-window', {
+        status: 'open',
+        opens_at: Date.now() - HOUR,
+        due_at: Date.now() + HOUR,
+      });
+      await assertSucceeds(submit('open-in-window'));
+    });
+
+    it('should DENY submitting to a closed exam', async () => {
+      await seedExam('closed-exam', { status: 'closed' });
+      await assertFails(submit('closed-exam'));
+    });
+
+    it('should DENY submitting after the deadline', async () => {
+      await seedExam('past-due', { status: 'open', due_at: Date.now() - HOUR });
+      await assertFails(submit('past-due'));
+    });
+
+    it('should DENY submitting before the exam opens', async () => {
+      await seedExam('not-yet-open', { status: 'open', opens_at: Date.now() + HOUR });
+      await assertFails(submit('not-yet-open'));
+    });
+
+    it('should DENY submitting under another student uid', async () => {
+      await seedExam('impersonation', { status: 'open' });
+      const mallory = testEnv.authenticatedContext('mallory');
+      await assertFails(
+        setDoc(doc(mallory.firestore(), 'summative_attempts', 'impersonation_student1'), {
+          id: 'impersonation_student1',
+          exam_id: 'impersonation',
+          student_name: 'Not me',
+          student_uid: 'student1',
+          answers: {},
+          submitted_at: Date.now(),
+        })
+      );
+    });
+
+    it('should DENY a student from writing their own score or grade', async () => {
+      await seedExam('grading', { status: 'open' });
+      await submit('grading');
+
+      const student = testEnv.authenticatedContext('student1');
+      const ref = doc(student.firestore(), 'summative_attempts', 'grading_student1');
+      await assertFails(updateDoc(ref, { score: 100, grade: 5 }));
+    });
+
+    it('should ALLOW a teacher to write score and grade, and nothing else', async () => {
+      await seedExam('teacher-grades', { status: 'open' });
+      await submit('teacher-grades');
+
+      const teacher = testEnv.authenticatedContext('teacher1');
+      await setDoc(doc(teacher.firestore(), 'users', 'teacher1'), {
+        uid: 'teacher1',
+        email: 'teacher@test.com',
+        displayName: 'Teacher',
+        role: 'teacher',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      });
+
+      const ref = doc(teacher.firestore(), 'summative_attempts', 'teacher-grades_student1');
+      await assertSucceeds(updateDoc(ref, { score: 88, grade: 4 }));
+      // Answers must stay exactly as the student submitted them
+      await assertFails(updateDoc(ref, { answers: { 0: 'tampered' } }));
     });
   });
 });

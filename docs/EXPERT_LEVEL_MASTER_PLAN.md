@@ -34,8 +34,13 @@ whiteboard/student/exams/flashcards/mindmaps, factory/analytics/graphs/curriculu
 
 > Забелешка: mock-от во `StudentTelemetryView` (профил + историја на интервенции)
 > НЕ е дел од 5.5 — тој е експлицитно ставка **7.3** и е означен со `TODO(Phase 7.3)`.
-> Правилата за рок на испит (5.3) бараат Firebase емулатор за тестирање и не се
-> проверени локално — синтаксата е усогласена со `epoch millis` шемата.
+
+### Firestore правила — верификација
+
+`npm run test:rules` го крева Firestore емулаторот и ги пушта правилата
+(`vitest.rules.config.ts`). Вклучено и во CI (`quality-gates.yml`, со JDK 21).
+25 теста, вклучно со прозорецот на испитот од 5.3 (`opens_at`/`due_at` како
+**epoch millis** — правилата немаат парсер за ISO стрингови).
 
 Сè се работи **локално, без push** (квота + Hostinger панел/git се уредно запишани).
 
