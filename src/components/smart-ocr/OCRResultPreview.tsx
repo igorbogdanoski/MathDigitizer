@@ -1,11 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Quote, Zap, AlertTriangle, Activity, Code, Loader2
+  Quote, Zap, AlertTriangle, Activity, Code, Loader2, Microscope
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { MathRenderer } from '../MathRenderer';
 import { MathTask } from '../../lib/schema';
+import { OCR_CONFIDENCE_WARNING_THRESHOLD } from './savePayload';
 
 interface OCRResultPreviewProps {
   extractedTask: Partial<MathTask> | null;
@@ -23,8 +24,34 @@ export const OCRResultPreview: React.FC<OCRResultPreviewProps> = ({
   onOpenGeogebra,
 }) => {
   const { t } = useTranslation('smartOcr');
+  const confidence = typeof extractedTask?.extraction_confidence === 'number'
+    ? Math.round(extractedTask.extraction_confidence)
+    : null;
+
   return (
     <div className="prose prose-slate dark:prose-invert max-w-none">
+      {/* Extraction confidence badge + low-confidence warning (Phase 3.1) */}
+      {confidence !== null && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 not-prose">
+          <span
+            className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
+              confidence >= OCR_CONFIDENCE_WARNING_THRESHOLD ? 'bg-emerald-100 text-emerald-700' :
+              confidence >= 40 ? 'bg-amber-100 text-amber-700' :
+              'bg-rose-100 text-rose-700'
+            }`}
+            title={t('result.confidenceTitle')}
+          >
+            <Microscope className="w-3 h-3" /> {t('result.confidenceBadge', { value: confidence })}
+          </span>
+          {confidence < OCR_CONFIDENCE_WARNING_THRESHOLD && (
+            <span className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400" role="alert">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              {t('result.confidenceWarning')}
+            </span>
+          )}
+        </div>
+      )}
+
       {extractedTask?.evidence_quote && (
         <div className="mb-6 flex items-start gap-2 bg-amber-50/50 dark:bg-amber-900/10 p-3 rounded-lg border-l-2 border-amber-300 text-amber-700 dark:text-amber-400 text-sm italic">
           <Quote className="w-4 h-4 mt-0.5 shrink-0 opacity-50" />

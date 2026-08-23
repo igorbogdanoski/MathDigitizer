@@ -16,6 +16,7 @@ import {
   formatTimeFromMs,
   resolveTargetLanguageLabel,
   buildContextFromScrapePayload,
+  buildVisualizationInstruction,
   normalizeExtractionConfidence,
   normalizeExtractedTasks,
 } from './extraction';
@@ -73,6 +74,21 @@ describe('buildContextFromScrapePayload', () => {
   });
 });
 
+describe('buildVisualizationInstruction', () => {
+  it('emits a distinct instruction per mode', () => {
+    expect(buildVisualizationInstruction('none')).toMatch(/НЕ генерирај/);
+    expect(buildVisualizationInstruction('tikz')).toMatch(/tikzpicture/);
+    expect(buildVisualizationInstruction('geogebra')).toMatch(/geogebra_commands/);
+    expect(buildVisualizationInstruction('nanobanana')).toMatch(/illustration_prompt/);
+  });
+
+  it('defaults to GeoGebra for missing or unknown modes', () => {
+    const fallback = buildVisualizationInstruction('geogebra');
+    expect(buildVisualizationInstruction(undefined)).toBe(fallback);
+    expect(buildVisualizationInstruction('bogus')).toBe(fallback);
+  });
+});
+
 describe('normalizeExtractionConfidence', () => {
   it('clamps to the 1-100 contract and rounds', () => {
     expect(normalizeExtractionConfidence(87)).toBe(87);
@@ -105,6 +121,22 @@ describe('normalizeExtractedTasks', () => {
     expect(out).toHaveLength(2);
     expect(out.every(t => (t as any).extraction_confidence === 72)).toBe(true);
     expect(out.every(t => t.source_url === 'https://x.test/v')).toBe(true);
+  });
+
+  it('uses per-task confidence from the image/PDF array schemas', () => {
+    const out = normalizeExtractedTasks(
+      [task({ extraction_confidence: 91 }), task({ extraction_confidence: 12.6 }), task()],
+      { sourceUrl: 'Слика (Напреден OCR)' }
+    );
+    expect(out.map(t => (t as any).extraction_confidence)).toEqual([91, 13, undefined]);
+  });
+
+  it('lets per-task confidence override the response-level value', () => {
+    const out = normalizeExtractedTasks(
+      { extraction_confidence: 50, extracted_tasks: [task({ extraction_confidence: 95 }), task()] },
+      { sourceUrl: 'src' }
+    );
+    expect(out.map(t => (t as any).extraction_confidence)).toEqual([95, 50]);
   });
 
   it('omits the confidence field entirely when the model did not report one', () => {

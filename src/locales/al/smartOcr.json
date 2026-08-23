@@ -32,7 +32,8 @@
     "modelFlash": "Gemini 3 Flash (Fast)",
     "logicalReconstruction": "Rindërtimi logjik:",
     "enabled": "I aktivizuar",
-    "disabled": "I çaktivizuar"
+    "disabled": "I çaktivizuar",
+    "langAl": "Shqip"
   },
   "crop": {
     "originalImage": "Imazhi origjinal",
@@ -67,7 +68,10 @@
     "modelingScenario": "Modelim matematikor",
     "modernizationSuggestion": "Sugjerim për modernizim",
     "openInGeogebra": "Hap në GeoGebra",
-    "geogebraReady": "Ky kod është gati për ngarkim automatik të GeoGebra Applet."
+    "geogebraReady": "Ky kod është gati për ngarkim automatik të GeoGebra Applet.",
+    "confidenceBadge": "Siguria {{value}}%",
+    "confidenceTitle": "Vlerësimi i vetë modelit sa qartë u njoh detyra",
+    "confidenceWarning": "Siguri e ulët — kontrollo tekstin para ruajtjes."
   },
   "batch": {
     "results": "Rezultatet Batch: {{count}} detyra",
@@ -87,7 +91,11 @@
     "emptyState": "Teksti i dixhitalizuar do të shfaqet këtu",
     "mathEditorHint": "Editor i avancuar matematikor (Për të futur ekuacione në kod, kopjoni rezultatin këtu dhe futeni me $\\dots$):",
     "loadingMathEditor": "Duke ngarkuar editorin matematikor...",
-    "latexPlaceholder": "Kodi LaTeX do të shfaqet këtu..."
+    "latexPlaceholder": "Kodi LaTeX do të shfaqet këtu...",
+    "scannedTasks": "Detyra: {{count}}",
+    "scannedTasksLabel": "Zgjidh një detyrë nga skanimi",
+    "latexInvalidTitle": "LaTeX i pavlefshëm ({{count}}) — korrigjo para ruajtjes",
+    "latexBlocked": "Ruajtja është e bllokuar derisa ka gabime LaTeX"
   },
   "toasts": {
     "invalidFile": "Ju lutemi bashkëngjitni një imazh (JPG, PNG), PDF ose dokument Word (.docx).",
@@ -102,6 +110,8 @@
     "taskSaved": "Detyra u ruajt me sukses në Bibliotekë!",
     "taskSaveError": "Ndodhi një gabim gjatë ruajtjes.",
     "enrichSuccess": "Elementet pedagogjike u gjeneruan me sukses!",
-    "enrichError": "Ndodhi një gabim gjatë gjenerimit të pedagogjisë."
+    "enrichError": "Ndodhi një gabim gjatë gjenerimit të pedagogjisë.",
+    "scanSuccessMulti": "U nxorën {{count}} detyra",
+    "latexInvalid": "Nuk u ruajt: {{count}} segmente LaTeX të pavlefshme"
   }
 }

@@ -32,7 +32,8 @@
     "modelFlash": "Gemini 3 Flash (Fast)",
     "logicalReconstruction": "Logical Reconstruction:",
     "enabled": "Enabled",
-    "disabled": "Disabled"
+    "disabled": "Disabled",
+    "langAl": "Albanian"
   },
   "crop": {
     "originalImage": "Original Image",
@@ -67,7 +68,10 @@
     "modelingScenario": "Mathematical Modeling",
     "modernizationSuggestion": "Modernization Suggestion",
     "openInGeogebra": "Open in GeoGebra",
-    "geogebraReady": "This code is ready for automatic GeoGebra Applet loading."
+    "geogebraReady": "This code is ready for automatic GeoGebra Applet loading.",
+    "confidenceBadge": "Confidence {{value}}%",
+    "confidenceTitle": "The model's own estimate of how clearly the task was recognized",
+    "confidenceWarning": "Low confidence — review the text before saving."
   },
   "batch": {
     "results": "Batch results: {{count}} tasks",
@@ -87,7 +91,11 @@
     "emptyState": "Digitized text will appear here",
     "mathEditorHint": "Advanced Math Editor (To insert equations into the code, copy the result here and insert with $\\dots$):",
     "loadingMathEditor": "Loading math editor...",
-    "latexPlaceholder": "LaTeX code will appear here..."
+    "latexPlaceholder": "LaTeX code will appear here...",
+    "scannedTasks": "Tasks: {{count}}",
+    "scannedTasksLabel": "Select a task from the scan",
+    "latexInvalidTitle": "Invalid LaTeX ({{count}}) — fix before saving",
+    "latexBlocked": "Saving is blocked while LaTeX errors remain"
   },
   "toasts": {
     "invalidFile": "Please attach an image (JPG, PNG), PDF or Word (.docx) document.",
@@ -102,6 +110,8 @@
     "taskSaved": "Task successfully saved to the Library!",
     "taskSaveError": "An error occurred while saving.",
     "enrichSuccess": "Pedagogical elements successfully generated!",
-    "enrichError": "An error occurred while generating pedagogy."
+    "enrichError": "An error occurred while generating pedagogy.",
+    "scanSuccessMulti": "Extracted {{count}} tasks",
+    "latexInvalid": "Not saved: {{count}} invalid LaTeX segments"
   }
 }

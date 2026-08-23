@@ -70,6 +70,25 @@ export function buildContextFromScrapePayload(data: any): string {
   return '';
 }
 
+export type VisualizationMode = 'none' | 'tikz' | 'geogebra' | 'nanobanana';
+
+const VISUALIZATION_INSTRUCTIONS: Record<VisualizationMode, string> = {
+  none: `**Визуелизација (ИСКЛУЧЕНА)**: НЕ генерирај \`geogebra_commands\`, \`math_graphic_config\`, TikZ код ниту \`illustration_prompt\`. Остави ги тие полиња празни и фокусирај се исклучиво на текстот и решението.`,
+  tikz: `**Визуелизација (TikZ)**: За секоја геометриска фигура или график вклучи целосен, самостоен TikZ код во \`latex_formulas\` (обвиткан во \\begin{tikzpicture} … \\end{tikzpicture}). Не генерирај GeoGebra команди.`,
+  geogebra: `**Визуелизација (GeoGebra)**: За секој график или геометриска слика генерирај \`geogebra_commands\` — низа од валидни GeoGebra команди (пр. "f(x)=x^2", "A=(1,2)", "Polygon(A,B,C)"). Остави \`illustration_prompt\` празно за чисто математички цртежи.`,
+  nanobanana: `**Визуелизација (Илустрација)**: Пополни \`illustration_prompt\` со описен промпт на англиски за реален/животен визуелен контекст на задачата. Генерирај \`geogebra_commands\` само ако задачата навистина бара координатен систем.`,
+};
+
+/**
+ * Prompt fragment for the requested visualization mode.
+ * Wired into the image/PDF prompts so the SmartOCR control actually steers the
+ * model instead of being a dead UI toggle.
+ */
+export function buildVisualizationInstruction(mode?: string): string {
+  const key = (mode || 'geogebra') as VisualizationMode;
+  return VISUALIZATION_INSTRUCTIONS[key] ?? VISUALIZATION_INSTRUCTIONS.geogebra;
+}
+
 /** Clamps the model self-reported extraction confidence to the 1–100 contract. */
 export function normalizeExtractionConfidence(value: unknown): number | undefined {
   if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
@@ -99,14 +118,19 @@ export function normalizeExtractedTasks(
 
   return list
     .filter((t) => t && typeof t === 'object' && typeof t.original_text === 'string' && t.original_text.trim())
-    .map((t) => ({
-      ...t,
-      ...(confidence !== undefined ? { extraction_confidence: confidence } : {}),
-      source_url: options.sourceUrl,
-    })) as MathTask[];
+    .map(({ extraction_confidence, ...task }) => {
+      // Per-item confidence (image/PDF array schemas) wins over the shared
+      // response-level one (URL/advanced object schemas).
+      const resolved = normalizeExtractionConfidence(extraction_confidence) ?? confidence;
+      return {
+        ...task,
+        ...(resolved !== undefined ? { extraction_confidence: resolved } : {}),
+        source_url: options.sourceUrl,
+      };
+    }) as MathTask[];
 }
 
-export async function extractMathTasksFromPdf(base64Pdf: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, modelName: string = PRO_MODEL): Promise<MathTask[]> {
+export async function extractMathTasksFromPdf(base64Pdf: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, modelName: string = PRO_MODEL, visualizationMode: string = 'geogebra'): Promise<MathTask[]> {
   const curriculumCtx = await buildCurriculumContextBlockRag('математика македонски наставна програма');
   const prompt = `Ти си експерт за дигитализација на математички текстови, креатор на "Advanced Vision OCR" и Едукативен Технолог (EdTech).
 ${curriculumCtx ? `\n${curriculumCtx}\n` : ''}
@@ -121,7 +145,7 @@ ${enableLogicalReconstruction
    - ${targetLanguage === 'auto' ? `Бидејќи крајниот јазик е 'auto', целиот излез задржи го на тој препознаен јазик.` : `ВНИМАНИЕ: Без разлика на кој јазик е изворниот текст, ТИ МОРАШ ДА ГО ПРЕВЕДЕШ целиот математички текст СТРОГО на **${resolveTargetLanguageLabel(targetLanguage)} јазик**.`}
 3. **ZERO-ERROR LaTeX**: СИТЕ МАТЕМАТИЧКИ СИМБОЛИ, БРОЕВИ И ФОРМУЛИ МОРА ДА БИДАТ СТРОГО ВО LaTeX ФОРМАТ! Користи $...$ за inline и $$...$$ за математика во нов ред.
 4. **Комплексни Распореди и Табели**: Ако задачата содржи табела, конвертирај ја табелата во Markdown.
-5. **Геометрија и Графици**: Ако документот содржи график или геометриска слика, генерирај \`geogebra_commands\` низа од команди.
+5. ${buildVisualizationInstruction(visualizationMode)}
 6. **Педагошко подобрување и Chain-of-Thought**: За секоја извлечена задача, генерирај детално, скалилесто решение во \`solution_steps\`. Решението МОРА да содржи обрамотување на теоретската основа и педагошко појаснување (зошто се користи овој чекор) според најстрогите педагошки стандарди.
 
 ${CURRICULUM_PROMPT_INSTRUCTION}
@@ -129,7 +153,8 @@ ${CURRICULUM_PROMPT_INSTRUCTION}
 Твојата цел е ПЕРФЕКТНО да ги извлечеш сите математички задачи.
 За секоја задача, врати:
 - type: "task" (задача) или "theory" (теорија)
-- detected_language: Кратенка од детектираниот јазик (mk, en, tr...)
+- extraction_confidence: Број 1–100 — колку јасно и недвосмислено е препознаена ОВАА задача во документот.
+- detected_language: Кратенка од детектираниот јазик (mk, en, tr, al...)
 - title: Краток наслов
 - original_text: Целосниот текст со LaTeX ($...$ и $$...$$) и Markdown Табели.
 - solution_steps: Решение чекор-по-чекор (LaTeX).
@@ -155,6 +180,7 @@ ${CURRICULUM_PROMPT_INSTRUCTION}
             type: Type.OBJECT,
             properties: {
               evidence_quote: { type: Type.STRING, description: "ANTI-HALLUCINATION: Quote the exact line/sentence from the document where this task appears." },
+              extraction_confidence: { type: Type.NUMBER, description: "1-100: how clearly and unambiguously THIS task is readable in the document." },
               type: { type: Type.STRING, enum: ["task", "theory"] },
               detected_language: { type: Type.STRING, description: "Auto-detected language code: mk, en, tr, al, etc." },
               title: { type: Type.STRING },
@@ -169,7 +195,7 @@ ${CURRICULUM_PROMPT_INSTRUCTION}
               grade_level: { type: Type.STRING },
               curriculum_topic: { type: Type.STRING }
             },
-            required: ["evidence_quote", "type", "detected_language", "title", "original_text", "solution_steps", "latex_formulas", "illustration_prompt", "tags", "difficulty", "dok_level", "bloom_taxonomy", "grade_level", "curriculum_topic"]
+            required: ["evidence_quote", "extraction_confidence", "type", "detected_language", "title", "original_text", "solution_steps", "latex_formulas", "illustration_prompt", "tags", "difficulty", "dok_level", "bloom_taxonomy", "grade_level", "curriculum_topic"]
           }
         }
       }
@@ -597,7 +623,7 @@ ${sanitizedInstructions ? `\nСПЕЦИФИЧНИ ИНСТРУКЦИИ ЗА ИЗ
   }
 }
 
-export async function extractMathTasksFromImage(base64Image: string, mimeType: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, model: string = PRO_MODEL): Promise<MathTask[]> {
+export async function extractMathTasksFromImage(base64Image: string, mimeType: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, model: string = PRO_MODEL, visualizationMode: string = 'geogebra'): Promise<MathTask[]> {
   const curriculumCtx = await buildCurriculumContextBlockRag('математика македонски наставна програма');
   const prompt = `Ти си Врвен Светски Експерт за Дигитализација на Математика, "Advanced Vision OCR" и Едукативен Технолог (EdTech).
 ${curriculumCtx ? `\n${curriculumCtx}\n` : ''}
@@ -611,7 +637,7 @@ ${enableLogicalReconstruction
    - НАЈПРВО АВТОМАТСКИ ПРЕПОЗНАЈ ГО ЈАЗИКОТ на изворот. Запиши ја кратенката во \`detected_language\` ('mk', 'en', 'ru', 'tr', 'al'...).
    - ${targetLanguage === 'auto' ? `Бидејќи крајниот јазик е 'auto', целиот излез задржи го на тој препознаен јазик.` : `ВНИМАНИЕ: Без разлика на изворот, ТИ МОРАШ ДА ГО ПРЕВЕДЕШ целиот излез СТРОГО на **${resolveTargetLanguageLabel(targetLanguage)} јазик**.`}
 3. **ZERO-ERROR LaTeX**: СИТЕ МАТЕМАТИЧКИ СИМБОЛИ, БРОЕВИ И ФОРМУЛИ МОРА ДА БИДАТ СТРОГО ВО LaTeX ФОРМАТ! Користи $...$ за inline и $$...$$ за блок математика.
-4. **Визуелна Реконструкција**: Конвертирај табели во Markdown, а графици во \`geogebra_commands\`.
+4. **Визуелна Реконструкција**: Конвертирај табели во Markdown. ${buildVisualizationInstruction(visualizationMode)}
 5. **Педагошко подобрување и Chain-of-Thought**: За секоја извлечена задача, генерирај детално, скалилесто решение во \`solution_steps\`. Решението МОРА да содржи обрамотување на теоретската основа и педагошко појаснување (зошто се користи овој чекор) според најстрогите педагошки стандарди, за ученикот подобро да го разбере концептот логички, а не само механички решено.
 
 Врати ги податоците СТРОГО во JSON формат (низа од објекти).`;
@@ -631,6 +657,7 @@ ${enableLogicalReconstruction
             type: Type.OBJECT,
             properties: {
               evidence_quote: { type: Type.STRING, description: "ANTI-HALLUCINATION: Quote the exact line/sentence from the image where this task appears." },
+              extraction_confidence: { type: Type.NUMBER, description: "1-100: how clearly and unambiguously THIS task is readable in the image." },
               type: { type: Type.STRING, enum: ["task", "theory"] },
               detected_language: { type: Type.STRING, description: "Auto-detected language code: mk, en, tr, ru, etc." },
               title: { type: Type.STRING },
@@ -646,7 +673,7 @@ ${enableLogicalReconstruction
               grade_level: { type: Type.STRING },
               curriculum_topic: { type: Type.STRING }
             },
-            required: ["evidence_quote", "type", "detected_language", "title", "original_text", "solution_steps", "latex_formulas", "illustration_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic"]
+            required: ["evidence_quote", "extraction_confidence", "type", "detected_language", "title", "original_text", "solution_steps", "latex_formulas", "illustration_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic"]
           }
         }
       }

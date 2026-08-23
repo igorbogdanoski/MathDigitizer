@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { PRO_MODEL, FAST_MODEL } from '../../lib/ai/models';
 
 interface OCRSettingsBarProps {
-  targetLanguage: 'auto' | 'mk' | 'en' | 'ru' | 'tr';
-  setTargetLanguage: (v: 'auto' | 'mk' | 'en' | 'ru' | 'tr') => void;
+  targetLanguage: 'auto' | 'mk' | 'en' | 'ru' | 'tr' | 'al';
+  setTargetLanguage: (v: 'auto' | 'mk' | 'en' | 'ru' | 'tr' | 'al') => void;
   visualizationMode: 'none' | 'tikz' | 'geogebra' | 'nanobanana';
   setVisualizationMode: (v: 'none' | 'tikz' | 'geogebra' | 'nanobanana') => void;
   ocrModel: string;
@@ -38,6 +38,7 @@ export const OCRSettingsBar: React.FC<OCRSettingsBarProps> = ({
           <option value="auto">{t('settings.langAuto')}</option>
           <option value="mk">{t('settings.langMk')}</option>
           <option value="en">{t('settings.langEn')}</option>
+          <option value="al">{t('settings.langAl')}</option>
           <option value="tr">{t('settings.langTr')}</option>
           <option value="ru">{t('settings.langRu')}</option>
         </select>

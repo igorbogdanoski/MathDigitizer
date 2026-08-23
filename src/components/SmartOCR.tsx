@@ -5,11 +5,12 @@ import {
   FileText, Code, Save, ScanLine, PenTool
 } from 'lucide-react';
 import { Button } from './ui/Button';
-import { extractMathTasksFromImage, extractMathTasksFromPdf, enrichTaskPedagogy } from '../lib/gemini';
+import { extractMathTasksFromImage, extractMathTasksFromPdf, enrichTaskPedagogy, generateTaskEmbedding, classifyTaskCurriculum } from '../lib/gemini';
 import { MathTask } from '../lib/schema';
 import { PRO_MODEL } from '../lib/ai/models';
+import { validateLatex } from '../lib/ai/validate';
 import { useToast } from '../contexts/ToastContext';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { Crop as CropType, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -22,6 +23,11 @@ import { ImageCropPanel } from './smart-ocr/ImageCropPanel';
 import { LatexQuickInsertPalette } from './smart-ocr/LatexQuickInsertPalette';
 import { BatchResultsList } from './smart-ocr/BatchResultsList';
 import { OCRResultPreview } from './smart-ocr/OCRResultPreview';
+import {
+  formatOcrEditorText,
+  buildOcrTaskPayload,
+  buildOcrEmbeddingText,
+} from './smart-ocr/savePayload';
 
 export const SmartOCR: React.FC = () => {
   const { t } = useTranslation('smartOcr');
@@ -39,6 +45,10 @@ export const SmartOCR: React.FC = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [isEnriching, setIsEnriching] = useState(false);
   const [extractedTask, setExtractedTask] = useState<Partial<MathTask> | null>(null);
+  // Every task returned for the current scan (Phase 3.6 — single mode used to
+  // keep only result[0] and silently discard the rest).
+  const [scanTasks, setScanTasks] = useState<MathTask[]>([]);
+  const [activeTaskIndex, setActiveTaskIndex] = useState(0);
   const [activeGeogebraCmds, setActiveGeogebraCmds] = useState<string[] | null>(null);
   const [latexCode, setLatexCode] = useState<string>('');
   const [isCopied, setIsCopied] = useState(false);
@@ -51,7 +61,7 @@ export const SmartOCR: React.FC = () => {
   const [batchCopied, setBatchCopied] = useState<number | null>(null);
 
   // Advanced OCR Settings
-  const [targetLanguage, setTargetLanguage] = useState<'auto' | 'mk' | 'en' | 'ru' | 'tr'>('mk');
+  const [targetLanguage, setTargetLanguage] = useState<'auto' | 'mk' | 'en' | 'ru' | 'tr' | 'al'>('mk');
   const [enableLogicalReconstruction, setEnableLogicalReconstruction] = useState(true);
   const [ocrModel, setOcrModel] = useState<string>(PRO_MODEL);
   const [visualizationMode, setVisualizationMode] = useState<'none' | 'tikz' | 'geogebra' | 'nanobanana'>('geogebra');
@@ -167,13 +177,25 @@ export const SmartOCR: React.FC = () => {
     setIsSaving(true);
     try {
       await Promise.all(
-        batchTasks.map(task =>
-          addDoc(collection(db, 'tasks'), {
+        batchTasks.map(async task => {
+          const taskToSave: MathTask = {
             ...task,
             author_uid: auth.currentUser!.uid,
             created_at: new Date().toISOString()
-          })
-        )
+          };
+
+          try {
+            taskToSave.embedding = await generateTaskEmbedding(buildOcrEmbeddingText(taskToSave));
+          } catch (embedError) {
+            console.warn('Failed to generate embedding for batch OCR task', embedError);
+          }
+
+          const docRef = await addDoc(collection(db, 'tasks'), taskToSave);
+
+          classifyTaskCurriculum(taskToSave)
+            .then(async refs => { if (refs.length > 0) await updateDoc(docRef, { curriculum_refs: refs }); })
+            .catch(err => console.warn('Curriculum classification failed for batch OCR task:', err));
+        })
       );
       showToast(t('toasts.batchSaved', { count: batchTasks.length }), 'success');
     } catch {
@@ -201,6 +223,8 @@ export const SmartOCR: React.FC = () => {
   const scanImage = async (base64Data: string, mime: string) => {
     setIsScanning(true);
     setExtractedTask(null);
+    setScanTasks([]);
+    setActiveTaskIndex(0);
     setLatexCode('');
 
     try {
@@ -212,7 +236,8 @@ export const SmartOCR: React.FC = () => {
           base64String,
           targetLanguage,
           enableLogicalReconstruction,
-          ocrModel
+          ocrModel,
+          visualizationMode
         );
       } else {
         result = await extractMathTasksFromImage(
@@ -220,7 +245,8 @@ export const SmartOCR: React.FC = () => {
           mime,
           targetLanguage,
           enableLogicalReconstruction,
-          ocrModel
+          ocrModel,
+          visualizationMode
         );
       }
 
@@ -228,16 +254,15 @@ export const SmartOCR: React.FC = () => {
         throw new Error(t('toasts.noTasksFound'));
       }
 
-      const task = result[0];
-      setExtractedTask(task);
-
-      // Format the result into a clean LaTeX/Markdown string
-      let formattedText = task.original_text || '';
-      if (task.solution_steps && task.solution_steps.length > 0) {
-        formattedText += '\n\n**Решение:**\n' + task.solution_steps.join('\n');
-      }
-      setLatexCode(formattedText);
-      showToast(t('toasts.scanSuccess'), 'success');
+      // Keep every task the model returned; the editor works on the selected one.
+      setScanTasks(result);
+      selectScanTask(result, 0);
+      showToast(
+        result.length > 1
+          ? t('toasts.scanSuccessMulti', { count: result.length })
+          : t('toasts.scanSuccess'),
+        'success'
+      );
     } catch (error) {
       console.error("Грешка при скенирање:", error);
       showToast(t('toasts.scanError'), 'error');
@@ -245,6 +270,28 @@ export const SmartOCR: React.FC = () => {
       setIsScanning(false);
     }
   };
+
+  /** Loads one of the scanned tasks into the editor without losing the others. */
+  const selectScanTask = (tasks: MathTask[], index: number) => {
+    const task = tasks[index];
+    if (!task) return;
+    setActiveTaskIndex(index);
+    setExtractedTask(task);
+    setLatexCode(formatOcrEditorText(task));
+  };
+
+  /** Writes the editor text back into the task it came from (Phase 3.6). */
+  const syncEditorIntoActiveTask = (text: string) => {
+    setLatexCode(text);
+    setScanTasks(prev => prev.length === 0 ? prev : prev.map((task, i) => {
+      if (i !== activeTaskIndex) return task;
+      const merged = buildOcrTaskPayload(task, text, { authorUid: task.author_uid || '' });
+      return { ...task, original_text: merged.original_text!, solution_steps: merged.solution_steps! };
+    }));
+  };
+
+  // Phase 3.2 — LaTeX validation gate: no invalid math reaches Firestore.
+  const latexIssues = React.useMemo(() => latexCode ? validateLatex(latexCode) : [], [latexCode]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(latexCode);
@@ -291,24 +338,40 @@ export const SmartOCR: React.FC = () => {
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     }
     setExtractedTask(null);
+    setScanTasks([]);
+    setActiveTaskIndex(0);
     setLatexCode('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSave = async () => {
     if (!extractedTask || !latexCode) return;
+    if (latexIssues.length > 0) {
+      showToast(t('toasts.latexInvalid', { count: latexIssues.length }), 'error');
+      return;
+    }
 
     setIsSaving(true);
     try {
-      const taskToSave = {
-        ...extractedTask,
-        original_text: latexCode, // Use the edited code
-        author_uid: auth.currentUser?.uid || 'anonymous',
-        created_at: new Date().toISOString()
-      };
+      // Statement and solution stay in their own fields (Phase 3.3)
+      const taskToSave = buildOcrTaskPayload(extractedTask, latexCode, {
+        authorUid: auth.currentUser?.uid || 'anonymous',
+      });
 
-      await addDoc(collection(db, 'tasks'), taskToSave);
+      // Parity with ExtractionEngine: embedding for RAG, non-blocking
+      try {
+        taskToSave.embedding = await generateTaskEmbedding(buildOcrEmbeddingText(taskToSave));
+      } catch (embedError) {
+        console.warn('Failed to generate embedding for OCR task', embedError);
+      }
+
+      const docRef = await addDoc(collection(db, 'tasks'), taskToSave);
       showToast(t('toasts.taskSaved'), 'success');
+
+      // Curriculum classification — must never fail the save
+      classifyTaskCurriculum(taskToSave as MathTask)
+        .then(async refs => { if (refs.length > 0) await updateDoc(docRef, { curriculum_refs: refs }); })
+        .catch(err => console.warn('Curriculum classification failed for OCR task:', err));
     } catch (error) {
       console.error("Грешка при зачувување:", error);
       showToast(t('toasts.taskSaveError'), 'error');
@@ -469,7 +532,8 @@ export const SmartOCR: React.FC = () => {
                 variant="default"
                 size="sm"
                 onClick={handleSave}
-                disabled={!latexCode || isSaving}
+                disabled={!latexCode || isSaving || latexIssues.length > 0}
+                title={latexIssues.length > 0 ? t('view.latexBlocked') : undefined}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
@@ -485,6 +549,55 @@ export const SmartOCR: React.FC = () => {
                 setActiveGroup={setActiveGroup}
                 onInsertSymbol={insertLatex}
               />
+            )}
+
+            {/* Multi-task selector — every task from a single scan is kept (3.6) */}
+            {scanTasks.length > 1 && (
+              <div
+                className="flex items-center gap-2 px-4 py-2 border-b border-slate-100 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40 overflow-x-auto"
+                role="tablist"
+                aria-label={t('view.scannedTasksLabel')}
+              >
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider shrink-0">
+                  {t('view.scannedTasks', { count: scanTasks.length })}
+                </span>
+                {scanTasks.map((task, i) => (
+                  <button
+                    key={i}
+                    role="tab"
+                    aria-selected={i === activeTaskIndex}
+                    onClick={() => selectScanTask(scanTasks, i)}
+                    title={task.title || ''}
+                    className={`shrink-0 px-3 py-1 rounded-lg text-xs font-bold transition-colors ${
+                      i === activeTaskIndex
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-indigo-300'
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* LaTeX validation gate (3.2) */}
+            {latexIssues.length > 0 && (
+              <div
+                className="mx-4 mt-4 rounded-xl border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-900/20 p-3"
+                role="alert"
+              >
+                <p className="text-xs font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300">
+                  {t('view.latexInvalidTitle', { count: latexIssues.length })}
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {latexIssues.slice(0, 5).map((issue, i) => (
+                    <li key={i} className="text-xs text-rose-700 dark:text-rose-300">
+                      <code className="font-mono bg-rose-100 dark:bg-rose-900/40 px-1 rounded">{issue.segment}</code>
+                      <span className="opacity-80"> — {issue.error}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
 
             <div className="flex-1 p-6 overflow-y-auto">
@@ -544,7 +657,8 @@ export const SmartOCR: React.FC = () => {
                     </div>
                     <textarea
                       value={latexCode}
-                      onChange={(e) => setLatexCode(e.target.value)}
+                      onChange={(e) => syncEditorIntoActiveTask(e.target.value)}
+                      aria-invalid={latexIssues.length > 0}
                       className="w-full flex-1 p-4 font-mono text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-slate-800 dark:text-slate-200"
                       placeholder={t('view.latexPlaceholder')}
                     />

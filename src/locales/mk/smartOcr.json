@@ -32,7 +32,8 @@
     "modelFlash": "Gemini 3 Flash (Fast)",
     "logicalReconstruction": "Логичка Реконструкција:",
     "enabled": "Вклучена",
-    "disabled": "Исклучена"
+    "disabled": "Исклучена",
+    "langAl": "Албански"
   },
   "crop": {
     "originalImage": "Оригинална Слика",
@@ -67,7 +68,10 @@
     "modelingScenario": "Математичко Моделирање",
     "modernizationSuggestion": "Предлог за модернизација",
     "openInGeogebra": "Отвори во GeoGebra",
-    "geogebraReady": "Овој код е подготвен за автоматско полнење на GeoGebra Applet."
+    "geogebraReady": "Овој код е подготвен за автоматско полнење на GeoGebra Applet.",
+    "confidenceBadge": "Сигурност {{value}}%",
+    "confidenceTitle": "Самопроценка на моделот колку јасно е препознаена задачата",
+    "confidenceWarning": "Ниска сигурност — провери го текстот пред зачувување."
   },
   "batch": {
     "results": "Batch резултати: {{count}} задачи",
@@ -87,7 +91,11 @@
     "emptyState": "Дигитализираниот текст ќе се појави овде",
     "mathEditorHint": "Напреден Математички Едитор (За вметнување равенки во кодот, копирај го резултатот тука и вметни го со $\\dots$):",
     "loadingMathEditor": "Вчитување на математички едитор...",
-    "latexPlaceholder": "LaTeX кодот ќе се појави овде..."
+    "latexPlaceholder": "LaTeX кодот ќе се појави овде...",
+    "scannedTasks": "Задачи: {{count}}",
+    "scannedTasksLabel": "Избери задача од скенот",
+    "latexInvalidTitle": "Невалиден LaTeX ({{count}}) — поправи пред зачувување",
+    "latexBlocked": "Зачувувањето е блокирано додека има LaTeX грешки"
   },
   "toasts": {
     "invalidFile": "Ве молиме прикачете слика (JPG, PNG), PDF или Word (.docx) документ.",
@@ -102,6 +110,8 @@
     "taskSaved": "Задачата е успешно зачувана во Библиотеката!",
     "taskSaveError": "Настана грешка при зачувувањето.",
     "enrichSuccess": "Педагошките елементи се успешно генерирани!",
-    "enrichError": "Настана грешка при генерирање на педагогијата."
+    "enrichError": "Настана грешка при генерирање на педагогијата.",
+    "scanSuccessMulti": "Извлечени се {{count}} задачи",
+    "latexInvalid": "Не е зачувано: {{count}} невалидни LaTeX сегменти"
   }
 }
