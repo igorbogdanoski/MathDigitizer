@@ -21,5 +21,30 @@
   "promptLabel": "2. Prompt dhe Rregulla",
   "promptPlaceholder": "p.sh. Krijo 5 pyetje nga funksionet lineare...",
   "generating": "Duke gjeneruar MathKahoot...",
-  "generateAndStart": "Gjenero dhe Fillo Lojën!"
+  "generateAndStart": "Gjenero dhe Fillo Lojën!",
+  "host": {
+    "loading": "Duke ngarkuar sesionin…",
+    "waitingRoom": "Dhoma e pritjes për sesionin live",
+    "gamePinLabel": "Game PIN (lojtarët bashkohen në {{host}}/play)",
+    "gamePinAria": "PIN i lojës: {{pin}}",
+    "qrAlt": "Kodi QR për t'u bashkuar me sesionin",
+    "scanToJoin": "Skano për t'u bashkuar",
+    "joinedCount": "{{count}} të bashkuar",
+    "participantsList": "Lista e nxënësve të bashkuar",
+    "start": "Fillo",
+    "questionProgress": "Pyetja {{current}} nga {{total}}",
+    "answersProgress": "{{answered}} nga {{total}} u përgjigjën",
+    "timeRemaining": "Koha e mbetur për këtë pyetje",
+    "endGame": "Përfundo lojën",
+    "lockAndDiscuss": "Mbyll përgjigjet dhe diskuto",
+    "showPodium": "Shfaq podiumin",
+    "nextQuestion": "Pyetja tjetër",
+    "optionAria": "Opsioni {{letter}}: {{text}}",
+    "correctAria": "përgjigje e saktë",
+    "votesAria": "{{count}} vota",
+    "finalPodium": "Podiumi final",
+    "podiumPlace": "Vendi {{place}}: {{name}}, {{score}} pikë",
+    "points": "{{score}} pikë",
+    "leaveGame": "Dil nga loja"
+  }
 }

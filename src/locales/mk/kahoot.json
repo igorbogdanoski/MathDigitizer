@@ -21,5 +21,30 @@
   "promptLabel": "2. Промпт и Правила",
   "promptPlaceholder": "пр. Направи 5 прашања од областа на линеарни функции...",
   "generating": "Се генерира MathKahoot...",
-  "generateAndStart": "Генерирај и Започни Игра!"
+  "generateAndStart": "Генерирај и Започни Игра!",
+  "host": {
+    "loading": "Се вчитува сесијата…",
+    "waitingRoom": "Чекална за живата сесија",
+    "gamePinLabel": "Game PIN (се приклучуваат на {{host}}/play)",
+    "gamePinAria": "PIN на играта: {{pin}}",
+    "qrAlt": "QR код за приклучување кон сесијата",
+    "scanToJoin": "Скенирај за да се приклучиш",
+    "joinedCount": "{{count}} приклучени",
+    "participantsList": "Листа на приклучени ученици",
+    "start": "Започни",
+    "questionProgress": "Прашање {{current}} од {{total}}",
+    "answersProgress": "{{answered}} од {{total}} одговорија",
+    "timeRemaining": "Преостанато време за прашањето",
+    "endGame": "Заврши игра",
+    "lockAndDiscuss": "Заклучи одговори и дискутирај",
+    "showPodium": "Прикажи подиум",
+    "nextQuestion": "Следно прашање",
+    "optionAria": "Опција {{letter}}: {{text}}",
+    "correctAria": "точен одговор",
+    "votesAria": "{{count}} гласови",
+    "finalPodium": "Финален подиум",
+    "podiumPlace": "{{place}}. место: {{name}}, {{score}} бодови",
+    "points": "{{score}} бодови",
+    "leaveGame": "Напушти ја играта"
+  }
 }

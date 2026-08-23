@@ -21,5 +21,30 @@
   "promptLabel": "2. Prompt & Rules",
   "promptPlaceholder": "e.g. Create 5 questions about linear functions...",
   "generating": "Generating MathKahoot...",
-  "generateAndStart": "Generate & Start Game!"
+  "generateAndStart": "Generate & Start Game!",
+  "host": {
+    "loading": "Loading session…",
+    "waitingRoom": "Live session waiting room",
+    "gamePinLabel": "Game PIN (players join at {{host}}/play)",
+    "gamePinAria": "Game PIN: {{pin}}",
+    "qrAlt": "QR code for joining the session",
+    "scanToJoin": "Scan to join",
+    "joinedCount": "{{count}} joined",
+    "participantsList": "List of joined students",
+    "start": "Start",
+    "questionProgress": "Question {{current}} of {{total}}",
+    "answersProgress": "{{answered}} of {{total}} answered",
+    "timeRemaining": "Time remaining for this question",
+    "endGame": "End game",
+    "lockAndDiscuss": "Lock answers & discuss",
+    "showPodium": "Show podium",
+    "nextQuestion": "Next question",
+    "optionAria": "Option {{letter}}: {{text}}",
+    "correctAria": "correct answer",
+    "votesAria": "{{count}} votes",
+    "finalPodium": "Final podium",
+    "podiumPlace": "Place {{place}}: {{name}}, {{score}} points",
+    "points": "{{score}} points",
+    "leaveGame": "Leave game"
+  }
 }
