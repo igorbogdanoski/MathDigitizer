@@ -408,6 +408,22 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Intervention plans a teacher assigns to a student (Phase 7.3)
+    match /intervention_plans/{planId} {
+      // The student sees their own plans; teachers see the ones they wrote.
+      allow read: if isAuthenticated() && (
+        resource.data.student_id == request.auth.uid ||
+        resource.data.teacher_uid == request.auth.uid
+      );
+      allow create: if isTeacher() &&
+        request.resource.data.teacher_uid == request.auth.uid;
+      // Only the author may update, and only the resolution fields.
+      allow update: if isTeacher() &&
+        resource.data.teacher_uid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['resolved_at', 'action']);
+      allow delete: if isTeacher() && resource.data.teacher_uid == request.auth.uid;
+    }
+
     match /task_attempts/{attemptId} {
       // Scoped to the authenticated student who owns the attempt
       allow read: if isAuthenticated() && (

@@ -35,6 +35,12 @@ export interface GradedSubmission {
   };
   feedback_summary: string;
   created_at: string;
+  /**
+   * Curriculum attribution, copied from the graded task (Phase 7.1).
+   * Without it, analytics can say a student is struggling but not with what.
+   */
+  curriculum_refs?: CurriculumRef[];
+  curriculum_topic?: string;
 }
 
 export interface UserProfile {
@@ -74,6 +80,8 @@ export interface TaskAttempt {
   mistake_count: number;
   curriculum_topic?: string; // Cache topic for fast aggregation in Factory
   curriculum_topic_id?: string; // Cache of curriculum_refs[0].topic_id for fast aggregation
+  /** Full curriculum attribution, so per-code mastery can be rolled up (7.1). */
+  curriculum_refs?: CurriculumRef[];
   tags?: string[];
   cognitive_score?: number; // Calculated field based on hints/time/errors
 }
@@ -156,6 +164,24 @@ export interface MathTask {
     finding_count: number;
     generated_at: string;
   };
+}
+
+/**
+ * A pedagogical intervention a teacher assigned to a student (Phase 7.3).
+ * Persisted, so the telemetry timeline is a record rather than a mock.
+ */
+export interface InterventionPlan {
+  id?: string;
+  student_id: string;
+  teacher_uid: string;
+  /** What triggered it, e.g. the weak curriculum domain or topic. */
+  reason: string;
+  /** What the teacher assigned. */
+  action: string;
+  kind: 'targeted_tasks' | 'message' | 'note';
+  task_ids?: string[];
+  created_at: string;
+  resolved_at?: string;
 }
 
 export interface Flashcard {

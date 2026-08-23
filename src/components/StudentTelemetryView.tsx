@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Trans } from 'react-i18next';
-import { db } from '../lib/firebase';
-import { collection, query, where, getDocs, orderBy, onSnapshot } from 'firebase/firestore';
-import { TaskAttempt, UserProfile, MathTask } from '../lib/schema';
+import { db, auth } from '../lib/firebase';
+import { collection, query, where, getDocs, getDoc, addDoc, doc, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { TaskAttempt, UserProfile, MathTask, InterventionPlan } from '../lib/schema';
 import { ChevronLeft, BrainCircuit, Activity, Clock, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
@@ -22,20 +22,40 @@ export const StudentTelemetryView: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [interventionTasks, setInterventionTasks] = useState<MathTask[]>([]);
+  const [interventions, setInterventions] = useState<InterventionPlan[]>([]);
+  const [isAssigning, setIsAssigning] = useState(false);
   const libraryTasks = useLibraryStore((state) => state.tasks);
 
   useEffect(() => {
     if (!studentId) return;
     setIsLoading(true);
 
-    // Mock student profile setup
-    setStudentProfile({
-      uid: studentId,
-      role: 'student',
-      displayName: t('telemetry.studentFallbackName', { id: studentId.substring(0, 4) }),
-      email: 'student@example.com',
-      createdAt: new Date().toISOString()
-    });
+    // Real profile from `users` (Phase 7.3) — this was a mock that invented an
+    // email and a display name for every student a teacher opened.
+    getDoc(doc(db, 'users', studentId))
+      .then(snap => {
+        setStudentProfile(snap.exists()
+          ? (snap.data() as UserProfile)
+          : {
+              // The student may never have signed in (a Kahoot guest uid).
+              uid: studentId,
+              role: 'student',
+              displayName: t('telemetry.studentFallbackName', { id: studentId.substring(0, 4) }),
+              email: '',
+              createdAt: '',
+            });
+      })
+      .catch(err => console.warn('Failed to load student profile', err));
+
+    // Intervention plans the teacher has assigned, newest first (Phase 7.3)
+    getDocs(query(
+      collection(db, 'intervention_plans'),
+      where('student_id', '==', studentId),
+      orderBy('created_at', 'desc'),
+      limit(10)
+    ))
+      .then(snap => setInterventions(snap.docs.map(d => ({ id: d.id, ...d.data() } as InterventionPlan))))
+      .catch(err => console.warn('Failed to load intervention plans', err));
 
     const qAttempts = query(
       collection(db, 'task_attempts'),
@@ -54,6 +74,35 @@ export const StudentTelemetryView: React.FC = () => {
 
     return () => unsubscribe();
   }, [studentId]);
+
+  /**
+   * Persists the assignment (Phase 7.3): the button previously did nothing, so
+   * the intervention history could only ever be placeholder content.
+   */
+  const assignIntervention = async (task: MathTask) => {
+    const teacher = auth.currentUser;
+    if (!studentId || !teacher) return;
+
+    setIsAssigning(true);
+    try {
+      const plan: Omit<InterventionPlan, 'id'> = {
+        student_id: studentId,
+        teacher_uid: teacher.uid,
+        reason: stats?.struggleTopic?.name || t('telemetry.fallbackStruggle'),
+        action: task.title,
+        kind: 'targeted_tasks',
+        ...(task.id ? { task_ids: [task.id] } : {}),
+        created_at: new Date().toISOString(),
+      };
+
+      const docRef = await addDoc(collection(db, 'intervention_plans'), plan);
+      setInterventions(prev => [{ id: docRef.id, ...plan }, ...prev]);
+    } catch (err) {
+      console.error('Failed to save intervention plan', err);
+    } finally {
+      setIsAssigning(false);
+    }
+  };
 
   const stats = useMemo(() => {
     if (attempts.length === 0) return null;
@@ -301,24 +350,23 @@ export const StudentTelemetryView: React.FC = () => {
                  
                  <div className="pt-2">
                    <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 uppercase tracking-wide">{t('telemetry.interventionHistory')}</h4>
-                   {/* TODO(Phase 7.3): this timeline is still placeholder content.
-                       It is deliberately NOT translated — the strings are fake data,
-                       and 7.3 replaces them with persisted intervention plans. */}
-                   <div className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-3 pl-4 space-y-4 opacity-60">
-                     <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                       {t('telemetry.placeholderData')}
-                     </p>
-                     <div className="relative">
-                       <div className="absolute -left-[21px] top-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-800"></div>
-                       <p className="text-xs font-bold text-slate-800 dark:text-white">Автоматски тест: Основни операции</p>
-                       <p className="text-[10px] text-slate-500">Пред 2 дена • Успешност 85%</p>
-                     </div>
-                     <div className="relative">
-                       <div className="absolute -left-[21px] top-1 w-3 h-3 bg-indigo-500 rounded-full border-2 border-white dark:border-slate-800"></div>
-                       <p className="text-xs font-bold text-slate-800 dark:text-white">Порака од наставник</p>
-                       <p className="text-[10px] text-slate-500">Пред 5 дена • Прочитано</p>
-                     </div>
-                   </div>
+                   {interventions.length === 0 ? (
+                     <p className="text-xs text-slate-500">{t('telemetry.noInterventions')}</p>
+                   ) : (
+                     <ol className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-3 pl-4 space-y-4">
+                       {interventions.map(plan => (
+                         <li key={plan.id} className="relative">
+                           <div className={`absolute -left-[21px] top-1 w-3 h-3 rounded-full border-2 border-white dark:border-slate-800 ${
+                             plan.resolved_at ? 'bg-emerald-500' : 'bg-indigo-500'
+                           }`} />
+                           <p className="text-xs font-bold text-slate-800 dark:text-white">{plan.action}</p>
+                           <p className="text-[10px] text-slate-500">
+                             {new Date(plan.created_at).toLocaleDateString('mk-MK')} • {plan.reason}
+                           </p>
+                         </li>
+                       ))}
+                     </ol>
+                   )}
                  </div>
                </div>
                
@@ -375,8 +423,14 @@ export const StudentTelemetryView: React.FC = () => {
                          <p className="text-[10px] font-bold text-slate-500 uppercase">{t('telemetry.scaffolding')}</p>
                          <p className="text-xs text-slate-700 dark:text-slate-400 mt-1">{task.hints?.[0]}</p>
                        </div>
-                       <Button size="sm" variant="outline" className="w-full mt-4 text-xs font-bold">
-                         {t('telemetry.assignToStudent')}
+                       <Button
+                         size="sm"
+                         variant="outline"
+                         disabled={isAssigning}
+                         onClick={() => assignIntervention(task)}
+                         className="w-full mt-4 text-xs font-bold"
+                       >
+                         {isAssigning ? t('telemetry.assigning') : t('telemetry.assignToStudent')}
                        </Button>
                      </CardContent>
                    </Card>

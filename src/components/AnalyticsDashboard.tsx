@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit, startAfter, QueryDocumentSnapshot } from 'firebase/firestore';
+import { CurriculumMasteryPanel } from './analytics/CurriculumMasteryPanel';
+import { GradedEvidence, buildMasteryRollup } from '../lib/analytics/masteryRollup';
+import { buildMasteryCsv, downloadCsv, masteryCsvFilename } from '../lib/analytics/exportAnalytics';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -43,12 +46,21 @@ const MATH_STRAND_COLORS: Record<string, string> = {
   productive: '#ec4899',
 };
 
+/** Graded submissions read per page. */
+const PAGE_SIZE = 200;
+
 export const AnalyticsDashboard: React.FC = () => {
   const { t } = useTranslation('analytics');
   const { user, userProfile } = useAuth();
   const { showToast } = useToast();
   const [submissions, setSubmissions] = useState<GradedSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // Pagination + date filter over graded_submissions (Phase 7.5)
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const lastDocRef = useRef<QueryDocumentSnapshot | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
 
   // Dark mode detection: theme is toggled via a `dark` class on <html> (see Layout.tsx),
@@ -69,27 +81,70 @@ export const AnalyticsDashboard: React.FC = () => {
   const isPro = hasProAccess(userProfile);
   const interventionModalRef = useModalA11y<HTMLDivElement>(() => setInterventionPlan(null), !!interventionPlan);
 
+  /** Graded submissions as curriculum evidence for the mastery rollup (7.2). */
+  const masteryEvidence = useMemo<GradedEvidence[]>(() => submissions.map(sub => ({
+    studentId: sub.student_identifier,
+    studentName: sub.student_identifier,
+    score: sub.score,
+    curriculum_refs: sub.curriculum_refs,
+    curriculum_topic: sub.curriculum_topic,
+    created_at: sub.created_at,
+  })), [submissions]);
+
+  const handleExportMastery = () => {
+    const scoped = selectedStudent ? masteryEvidence.filter(e => e.studentId === selectedStudent) : masteryEvidence;
+    const csv = buildMasteryCsv(buildMasteryRollup(scoped), {
+      headers: {
+        domain: t('mastery.csv.domain'),
+        code: t('mastery.csv.code'),
+        outcome: t('mastery.csv.outcome'),
+        grade: t('mastery.csv.grade'),
+        attempts: t('mastery.csv.attempts'),
+        average: t('mastery.csv.average'),
+        worst: t('mastery.csv.worst'),
+      },
+      unclassifiedLabel: t('mastery.csv.unclassified'),
+    });
+    downloadCsv(csv, masteryCsvFilename(selectedStudent ? 'sovladanost-ucenik' : 'sovladanost-klasa'));
+  };
+
+  /**
+   * Paginated, date-filtered read (Phase 7.5).
+   * This used to pull a teacher's entire grading history on every visit, which
+   * grows without bound over a school year.
+   */
+  const fetchSubmissions = useCallback(async (mode: 'reset' | 'more') => {
+    if (!user) return;
+    mode === 'reset' ? setIsLoading(true) : setIsLoadingMore(true);
+
+    try {
+      const constraints: any[] = [
+        where('teacher_uid', '==', user.uid),
+        ...(dateFrom ? [where('created_at', '>=', new Date(dateFrom).toISOString())] : []),
+        ...(dateTo ? [where('created_at', '<=', new Date(dateTo + 'T23:59:59.999Z').toISOString())] : []),
+        orderBy('created_at', 'asc'),
+        ...(mode === 'more' && lastDocRef.current ? [startAfter(lastDocRef.current)] : []),
+        limit(PAGE_SIZE),
+      ];
+
+      const snapshot = await getDocs(query(collection(db, 'graded_submissions'), ...constraints));
+      const page = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GradedSubmission));
+
+      lastDocRef.current = snapshot.docs[snapshot.docs.length - 1] ?? null;
+      setHasMore(snapshot.docs.length === PAGE_SIZE);
+      setSubmissions(prev => (mode === 'reset' ? page : [...prev, ...page]));
+    } catch (error) {
+      console.error("Error fetching submissions:", error);
+    } finally {
+      setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  }, [user, dateFrom, dateTo]);
+
   useEffect(() => {
-    const fetchSubmissions = async () => {
-      if (!user) return;
-      setIsLoading(true);
-      try {
-        const q = query(
-          collection(db, 'graded_submissions'),
-          where('teacher_uid', '==', user.uid),
-          orderBy('created_at', 'asc')
-        );
-        const snapshot = await getDocs(q);
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GradedSubmission));
-        setSubmissions(data);
-      } catch (error) {
-        console.error("Error fetching submissions:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchSubmissions();
-  }, [user]);
+    lastDocRef.current = null;
+    fetchSubmissions('reset');
+  }, [fetchSubmissions]);
 
   // Aggregate stats per student
   const studentStats = useMemo<StudentStats[]>(() => {
@@ -342,6 +397,67 @@ export const AnalyticsDashboard: React.FC = () => {
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-6 pb-20">
+      {/* Date range, export and paging over graded work (Phase 7.4 / 7.5) */}
+      <div className="flex flex-wrap items-end gap-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+        <div>
+          <label htmlFor="an-from" className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
+            {t('filters.from')}
+          </label>
+          <input
+            id="an-from"
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-800 dark:text-slate-100"
+          />
+        </div>
+        <div>
+          <label htmlFor="an-to" className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
+            {t('filters.to')}
+          </label>
+          <input
+            id="an-to"
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-800 dark:text-slate-100"
+          />
+        </div>
+
+        {(dateFrom || dateTo) && (
+          <button
+            type="button"
+            onClick={() => { setDateFrom(''); setDateTo(''); }}
+            className="h-9 px-3 rounded-lg text-sm font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white"
+          >
+            {t('filters.clear')}
+          </button>
+        )}
+
+        <span className="text-xs text-slate-500 ml-auto">
+          {t('filters.loadedCount', { count: submissions.length })}
+        </span>
+
+        {hasMore && (
+          <button
+            type="button"
+            onClick={() => fetchSubmissions('more')}
+            disabled={isLoadingMore}
+            className="h-9 px-4 rounded-lg text-sm font-bold border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-indigo-400"
+          >
+            {isLoadingMore ? t('filters.loadingMore') : t('filters.loadMore')}
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={handleExportMastery}
+          className="h-9 px-4 rounded-lg text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
+        >
+          {t('filters.exportCsv')}
+        </button>
+      </div>
+
       {/* Header Panel */}
       <div className="bg-slate-950 text-white rounded-5xl p-8 md:p-12 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 border border-slate-800 shadow-2xl">
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:40px_40px]" />
@@ -437,6 +553,10 @@ export const AnalyticsDashboard: React.FC = () => {
               zpdNextSteps={zpdNextSteps}
               onReset={() => { setZpdAvg(activeStudentData?.averageScore || 50); setZpdVel(activeStudentAdvancedStats?.velocity || 0); }}
             />
+
+            {/* Curriculum mastery: weaknesses named in the language of the
+                programme, with the prerequisite each one rests on (7.2) */}
+            <CurriculumMasteryPanel evidence={masteryEvidence} studentId={selectedStudent ?? undefined} />
 
             {/* Pedagogue Architect Control */}
             <InterventionRadarPanel

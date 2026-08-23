@@ -90,6 +90,9 @@
     "scaffolding": "Scaffolding",
     "assignToStudent": "Assign to student",
     "interventionPrompt": "The student averages {{avg}} mistakes per task and asks for too much help. Easier tasks are needed to return to the basics.",
-    "placeholderData": "Showing placeholder data"
+    "placeholderData": "Showing placeholder data",
+    "noInterventions": "No interventions recorded for this student yet.",
+    "assigning": "Assigning…",
+    "interventionSaved": "The intervention was saved to the history."
   }
 }

@@ -90,6 +90,9 @@
     "scaffolding": "Lehtësim (Scaffolding)",
     "assignToStudent": "Cakto nxënësit",
     "interventionPrompt": "Nxënësi ka mesatarisht {{avg}} gabime për detyrë dhe kërkon shumë ndihmë. Nevojiten detyra më të lehta për t'u kthyer te bazat.",
-    "placeholderData": "Po shfaqen të dhëna demo"
+    "placeholderData": "Po shfaqen të dhëna demo",
+    "noInterventions": "Ende nuk ka ndërhyrje të regjistruara për këtë nxënës.",
+    "assigning": "Po caktohet…",
+    "interventionSaved": "Ndërhyrja u ruajt në histori."
   }
 }

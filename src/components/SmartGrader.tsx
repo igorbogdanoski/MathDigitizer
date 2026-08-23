@@ -182,7 +182,11 @@ Feedback: ${doc.feedback_summary}`;
                 identified_weaknesses: analysisResult.identified_weaknesses || [],
                 rubric_breakdown: analysisResult.rubric_breakdown,
                 feedback_summary: analysisResult.analysis,
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                // Curriculum attribution travels with the grade (Phase 7.1), so
+                // analytics can roll mastery up per БРО outcome code.
+                ...(selectedTask?.curriculum_refs?.length ? { curriculum_refs: selectedTask.curriculum_refs } : {}),
+                ...(selectedTask?.curriculum_topic ? { curriculum_topic: selectedTask.curriculum_topic } : {}),
              };
              await addDoc(collection(db, 'graded_submissions'), submission);
 
@@ -220,7 +224,9 @@ Feedback: ${doc.feedback_summary}`;
                   identified_weaknesses: br.identified_weaknesses || [],
                   rubric_breakdown: br.rubric_breakdown,
                   feedback_summary: br.analysis,
-                  created_at: new Date().toISOString()
+                  created_at: new Date().toISOString(),
+                  ...(selectedTask?.curriculum_refs?.length ? { curriculum_refs: selectedTask.curriculum_refs } : {}),
+                  ...(selectedTask?.curriculum_topic ? { curriculum_topic: selectedTask.curriculum_topic } : {}),
                };
                await addDoc(collection(db, 'graded_submissions'), submission);
 

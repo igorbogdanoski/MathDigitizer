@@ -4,7 +4,7 @@
  */
 import { ai, handleGeminiError } from './client';
 import { MATH_PLOT_INSTRUCTION, parseGeminiResponse } from './utils';
-import { MathTask } from '../schema';
+import { CurriculumRef, MathTask } from '../schema';
 import { Type } from '@google/genai';
 import { PRO_MODEL, DEFAULT_MODEL } from './models';
 import { flagQuestionsWithEquivalentDistractors, validateKahootQuiz } from './validate';
@@ -20,6 +20,12 @@ export interface LiveKahootQuiz {
   title: string;
   questions: LiveKahootQuestion[];
   hints: string[];
+  /**
+   * Curriculum attribution of the tasks the quiz was built from (Phase 7.1),
+   * so a live session's telemetry rolls up per БРО outcome code like any other
+   * graded work. Absent for quizzes generated from uploaded files.
+   */
+  curriculum_refs?: CurriculumRef[];
 }
 
 /**
@@ -185,11 +191,34 @@ ${tasks.map((t, i) => `Задача ${i+1}:\nТекст: ${t.original_text}\nР�
     });
 
     if (!response.text) throw new Error("Нема одговор од AI.");
-    return finalizeQuiz(parseGeminiResponse(response.text));
+    const quiz = await finalizeQuiz(parseGeminiResponse(response.text));
+
+    // Carry the source tasks' curriculum refs onto the quiz, deduped by topic.
+    const refs = dedupeRefs(tasks.flatMap(task => task.curriculum_refs ?? []));
+    return refs.length > 0 ? { ...quiz, curriculum_refs: refs } : quiz;
   } catch (error) {
     console.error("Грешка при генерирање Kahoot од задачи:", error);
     handleGeminiError(error);
   }
+}
+
+/** One ref per curriculum topic, merging the outcome codes seen for it. */
+function dedupeRefs(refs: readonly CurriculumRef[]): CurriculumRef[] {
+  const byTopic = new Map<string, CurriculumRef>();
+
+  for (const ref of refs) {
+    if (!ref?.topic_id) continue;
+    const existing = byTopic.get(ref.topic_id);
+    if (!existing) {
+      byTopic.set(ref.topic_id, { ...ref, outcome_codes: [...(ref.outcome_codes ?? [])] });
+      continue;
+    }
+    for (const code of ref.outcome_codes ?? []) {
+      if (!existing.outcome_codes.includes(code)) existing.outcome_codes.push(code);
+    }
+  }
+
+  return [...byTopic.values()];
 }
 
 /**

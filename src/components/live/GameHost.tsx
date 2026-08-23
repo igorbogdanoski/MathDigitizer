@@ -97,7 +97,12 @@ export const GameHost = ({ sessionPin }: { sessionPin: string }) => {
              total_hints_used: 0,
              mistake_count: Math.floor((1 - (p.score / (questionCount * 1000))) * questionCount), // Estimate
              cognitive_score: p.score,
-             curriculum_topic: session.quiz_data.title
+             curriculum_topic: session.quiz_data.title,
+             // Attribution reaches the live session too (Phase 7.1), so a Kahoot
+             // round counts towards per-code mastery like any other graded work.
+             ...(session.quiz_data.curriculum_refs?.length
+               ? { curriculum_refs: session.quiz_data.curriculum_refs }
+               : {})
           })
         );
       }

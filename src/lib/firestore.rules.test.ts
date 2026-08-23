@@ -269,6 +269,74 @@ describe('Firestore Security Rules', () => {
     });
   });
 
+  // ── Intervention plans (EXPERT_LEVEL_MASTER_PLAN, 7.3) ────────────────────
+  describe('intervention_plans collection', () => {
+    const asTeacher = async (uid = 'teacher1') => {
+      const teacher = testEnv.authenticatedContext(uid);
+      await setDoc(doc(teacher.firestore(), 'users', uid), {
+        uid, email: `${uid}@test.com`, displayName: 'Teacher', role: 'teacher',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      });
+      return teacher;
+    };
+
+    const plan = (over: Record<string, unknown> = {}) => ({
+      student_id: 'student1',
+      teacher_uid: 'teacher1',
+      reason: 'Геометрија',
+      action: 'Основни конструкции',
+      kind: 'targeted_tasks',
+      created_at: '2026-08-23T10:00:00.000Z',
+      ...over,
+    });
+
+    it('should ALLOW a teacher to assign a plan under their own uid', async () => {
+      const teacher = await asTeacher();
+      await assertSucceeds(setDoc(doc(teacher.firestore(), 'intervention_plans', 'p1'), plan()));
+    });
+
+    it('should DENY assigning a plan under another teacher uid', async () => {
+      const teacher = await asTeacher();
+      await assertFails(
+        setDoc(doc(teacher.firestore(), 'intervention_plans', 'p2'), plan({ teacher_uid: 'someone-else' }))
+      );
+    });
+
+    it('should DENY a student from creating a plan for themselves', async () => {
+      const student = testEnv.authenticatedContext('student1');
+      await assertFails(
+        setDoc(doc(student.firestore(), 'intervention_plans', 'p3'), plan({ teacher_uid: 'student1' }))
+      );
+    });
+
+    it('should ALLOW the student it is about to read it', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'intervention_plans', 'p4'), plan());
+      });
+
+      const student = testEnv.authenticatedContext('student1');
+      await assertSucceeds(getDoc(doc(student.firestore(), 'intervention_plans', 'p4')));
+    });
+
+    it('should DENY an unrelated student from reading it', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'intervention_plans', 'p5'), plan());
+      });
+
+      const other = testEnv.authenticatedContext('student2');
+      await assertFails(getDoc(doc(other.firestore(), 'intervention_plans', 'p5')));
+    });
+
+    it('should ALLOW the author to resolve it, but not rewrite who it is about', async () => {
+      const teacher = await asTeacher();
+      await setDoc(doc(teacher.firestore(), 'intervention_plans', 'p6'), plan());
+
+      const ref = doc(teacher.firestore(), 'intervention_plans', 'p6');
+      await assertSucceeds(updateDoc(ref, { resolved_at: '2026-08-30T10:00:00.000Z' }));
+      await assertFails(updateDoc(ref, { student_id: 'someone-else' }));
+    });
+  });
+
   // ── Exam window enforcement (EXPERT_LEVEL_MASTER_PLAN, 5.3) ───────────────
   describe('summative_attempts collection', () => {
     const HOUR = 60 * 60 * 1000;
