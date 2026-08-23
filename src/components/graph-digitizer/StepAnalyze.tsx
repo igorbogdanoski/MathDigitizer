@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { EquationVerification } from './EquationVerification';
 import {
   ChevronRight, Sparkles, Loader2, BarChart2, Activity, BookOpen,
 } from 'lucide-react';
@@ -10,13 +11,16 @@ import { DOK_COLORS } from './types';
 
 interface StepAnalyzeProps {
   analysis: GraphAnalysis | null;
+  /** Digitized points, so the equation can be checked against them (8.1). */
+  points?: Array<{ x: number; y: number }>;
+  onUseFit?: (latex: string) => void;
   isAnalyzing: boolean;
   onRunAnalysis: () => void;
   onNext: () => void;
 }
 
 export const StepAnalyze: React.FC<StepAnalyzeProps> = ({
-  analysis, isAnalyzing, onRunAnalysis, onNext,
+  analysis, points = [], onUseFit, isAnalyzing, onRunAnalysis, onNext,
 }) => {
   const { t } = useTranslation('graphDigitizer');
   return (
@@ -61,6 +65,13 @@ export const StepAnalyze: React.FC<StepAnalyzeProps> = ({
                 </span>
               </div>
             )}
+
+            {/* Verified against the digitized points, plus a computed fit */}
+            <EquationVerification
+              detectedEquation={analysis.detected_equation}
+              points={points}
+              onUseFit={onUseFit}
+            />
 
             {/* Curriculum */}
             {analysis.curriculum_topic && (

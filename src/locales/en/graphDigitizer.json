@@ -39,7 +39,13 @@
     "clickOnImage": "Click on the image →",
     "waiting": "Waiting...",
     "digitizePoints": "Digitize points",
-    "setBothPoints": "Set both points"
+    "setBothPoints": "Set both points",
+    "thirdPointTitle": "Third reference point (optional)",
+    "thirdPointHint": "With three points the calibration is a least-squares fit — an imprecise click is averaged out and revealed.",
+    "addThirdPoint": "Add",
+    "remove": "Remove",
+    "residual": "Disagreement between the points: {{value}}",
+    "residualWarning": "check whether one point is misplaced"
   },
   "digitize": {
     "title": "Digitize",
@@ -93,7 +99,8 @@
     "geogebraCopied": "GeoGebra commands copied!",
     "loginToSave": "Log in to save",
     "savedToLibrary": "Saved to Library!",
-    "errorSaving": "Error saving"
+    "errorSaving": "Error saving",
+    "badCalibration": "The calibration is not usable — the two points must be at different places with different values."
   },
   "dataset": {
     "default": "Dataset {{num}}"
@@ -125,5 +132,30 @@
       "digitization": "digitization"
     },
     "coordSystem": "Coordinate system"
+  },
+  "verify": {
+    "invalidLatex": "The formula is not valid LaTeX",
+    "checking": "Checking against the digitized points…",
+    "verdict": {
+      "good": "The equation matches the points",
+      "approximate": "The equation approximately matches",
+      "poor": "The equation does NOT describe the points",
+      "unverifiable": "The equation could not be verified"
+    },
+    "residualDetail": "Deviation {{percent}}% of the range · {{evaluated}} points · max {{max}}",
+    "skipped": "Skipped {{count}} points (the equation cannot be evaluated there).",
+    "fitKind": {
+      "linear": "Computed linear fit",
+      "quadratic": "Computed quadratic fit",
+      "exponential": "Computed exponential fit",
+      "power": "Computed power fit"
+    },
+    "fitDetail": "Computed from {{points}} points · RMSE {{rmse}}",
+    "useFit": "Use the computed fit"
+  },
+  "replot": {
+    "title": "Re-plotted on real axes",
+    "pointCount": "{{count}} points",
+    "noCurve": "No curve to draw — the equation cannot be evaluated and the points support no fit."
   }
 }

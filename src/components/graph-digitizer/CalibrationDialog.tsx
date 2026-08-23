@@ -7,7 +7,7 @@ import { AxisConfig } from './types';
 interface CalibrationDialogProps {
   calibDialog: boolean;
   pendingPixel: { x: number; y: number } | null;
-  waitingCalib: 1 | 2 | null;
+  waitingCalib: 1 | 2 | 3 | null;
   calibInput: { x: string; y: string };
   setCalibInput: React.Dispatch<React.SetStateAction<{ x: string; y: string }>>;
   onConfirm: () => void;

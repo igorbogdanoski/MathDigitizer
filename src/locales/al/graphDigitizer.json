@@ -39,7 +39,13 @@
     "clickOnImage": "Klikoni në imazh →",
     "waiting": "Duke pritur...",
     "digitizePoints": "Dixhitalizo pikat",
-    "setBothPoints": "Vendosni të dyja pikat"
+    "setBothPoints": "Vendosni të dyja pikat",
+    "thirdPointTitle": "Pika e tretë referuese (opsionale)",
+    "thirdPointHint": "Me tri pika kalibrimi llogaritet me katrorët më të vegjël — një klikim i pasaktë mesatarizohet dhe zbulohet.",
+    "addThirdPoint": "Shto",
+    "remove": "Hiq",
+    "residual": "Mospërputhje mes pikave: {{value}}",
+    "residualWarning": "kontrollo nëse ndonjë pikë është vendosur gabim"
   },
   "digitize": {
     "title": "Dixhitalizo",
@@ -93,7 +99,8 @@
     "geogebraCopied": "Komandat GeoGebra u kopjuan!",
     "loginToSave": "Identifikohuni për të ruajtur",
     "savedToLibrary": "U ruajt në Bibliotekë!",
-    "errorSaving": "Gabim gjatë ruajtjes"
+    "errorSaving": "Gabim gjatë ruajtjes",
+    "badCalibration": "Kalibrimi nuk është i vlefshëm — dy pikat duhet të jenë në vende të ndryshme me vlera të ndryshme."
   },
   "dataset": {
     "default": "Seti {{num}}"
@@ -125,5 +132,30 @@
       "digitization": "dixhitalizim"
     },
     "coordSystem": "Sistem koordinativ"
+  },
+  "verify": {
+    "invalidLatex": "Formula nuk është LaTeX i vlefshëm",
+    "checking": "Po kontrollohet me pikat e dixhitalizuara…",
+    "verdict": {
+      "good": "Ekuacioni përputhet me pikat",
+      "approximate": "Ekuacioni përputhet përafërsisht",
+      "poor": "Ekuacioni NUK i përshkruan pikat",
+      "unverifiable": "Ekuacioni nuk mund të verifikohet"
+    },
+    "residualDetail": "Devijim {{percent}}% i diapazonit · {{evaluated}} pika · maks. {{max}}",
+    "skipped": "U anashkaluan {{count}} pika (ekuacioni nuk llogaritet atje).",
+    "fitKind": {
+      "linear": "Përshtatje lineare e llogaritur",
+      "quadratic": "Përshtatje kuadratike e llogaritur",
+      "exponential": "Përshtatje eksponenciale e llogaritur",
+      "power": "Përshtatje fuqie e llogaritur"
+    },
+    "fitDetail": "Llogaritur nga {{points}} pika · RMSE {{rmse}}",
+    "useFit": "Përdor përshtatjen e llogaritur"
+  },
+  "replot": {
+    "title": "Rivizatim në boshte reale",
+    "pointCount": "{{count}} pika",
+    "noCurve": "Nuk ka kurbë për të vizatuar — ekuacioni nuk llogaritet dhe pikat nuk mbështesin një përshtatje."
   }
 }

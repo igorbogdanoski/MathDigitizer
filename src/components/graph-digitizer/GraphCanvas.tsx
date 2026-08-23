@@ -16,7 +16,7 @@ interface GraphCanvasProps {
   mode: DigitizeMode;
   calibP1: CalibPoint | null;
   calibP2: CalibPoint | null;
-  waitingCalib: 1 | 2 | null;
+  waitingCalib: 1 | 2 | 3 | null;
   pendingPixel: { x: number; y: number } | null;
   calibDialog: boolean;
   analysis: GraphAnalysis | null;

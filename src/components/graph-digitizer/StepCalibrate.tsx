@@ -8,14 +8,18 @@ import { CalibPoint } from './types';
 interface StepCalibrateProps {
   calibP1: CalibPoint | null;
   calibP2: CalibPoint | null;
-  waitingCalib: 1 | 2 | null;
-  onSetWaitingCalib: (w: 1 | 2 | null) => void;
-  onClearPoint: (slot: 1 | 2) => void;
+  /** Optional third reference; enables the least-squares calibration (8.2). */
+  calibP3?: CalibPoint | null;
+  /** How far the three references disagree, in real units. */
+  affineResidual?: number | null;
+  waitingCalib: 1 | 2 | 3 | null;
+  onSetWaitingCalib: (w: 1 | 2 | 3 | null) => void;
+  onClearPoint: (slot: 1 | 2 | 3) => void;
   onNext: () => void;
 }
 
 export const StepCalibrate: React.FC<StepCalibrateProps> = ({
-  calibP1, calibP2, waitingCalib, onSetWaitingCalib, onClearPoint, onNext,
+  calibP1, calibP2, calibP3 = null, affineResidual = null, waitingCalib, onSetWaitingCalib, onClearPoint, onNext,
 }) => {
   const { t } = useTranslation('graphDigitizer');
   const calibrated = !!(calibP1 && calibP2);
@@ -61,6 +65,46 @@ export const StepCalibrate: React.FC<StepCalibrateProps> = ({
               )}
             </div>
           ))}
+
+        {/* Optional third reference: turns an exact two-point mapping into a
+            least-squares fit, and reveals a misplaced click. */}
+        {calibrated && (
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                {t('calibrate.thirdPointTitle')}
+              </span>
+              {calibP3 ? (
+                <button
+                  type="button"
+                  onClick={() => onClearPoint(3)}
+                  className="text-[11px] font-bold text-rose-600 hover:underline"
+                >
+                  {t('calibrate.remove')}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onSetWaitingCalib(3)}
+                  className="text-[11px] font-bold text-indigo-600 hover:underline"
+                >
+                  {waitingCalib === 3 ? t('calibrate.clickOnImage') : t('calibrate.addThirdPoint')}
+                </button>
+              )}
+            </div>
+
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              {t('calibrate.thirdPointHint')}
+            </p>
+
+            {calibP3 && affineResidual !== null && (
+              <p className={`text-[11px] font-bold ${affineResidual > 0.5 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                {t('calibrate.residual', { value: Math.round(affineResidual * 1000) / 1000 })}
+                {affineResidual > 0.5 && ` — ${t('calibrate.residualWarning')}`}
+              </p>
+            )}
+          </div>
+        )}
 
         <Button
           className="w-full"
