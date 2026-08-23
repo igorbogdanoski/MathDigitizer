@@ -1,19 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Stage, Layer, Line } from 'react-konva';
 import { collection, query, onSnapshot, addDoc, serverTimestamp, orderBy, deleteDoc, doc, getDocs } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { Pen, Eraser, Trash2, Undo2 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useTranslation } from 'react-i18next';
+import {
+  InkPoint,
+  buildWidthRuns,
+  fromFlatArray,
+  shouldIgnorePointer,
+} from '../lib/whiteboard/ink';
+import { StrokeBuilder } from '../lib/whiteboard/strokeBuilder';
 
 interface Stroke {
   id: string;
   tool: 'pen' | 'eraser';
   points: number[];
+  /** Per-point widths for pressure/velocity ink; absent on legacy strokes. */
+  widths?: number[];
   color: string;
   strokeWidth: number;
   userId?: string;
 }
+
+const MIN_SAMPLE_DISTANCE = 2;
 
 interface LiveCanvasProps {
   classroomId: string;
@@ -30,6 +41,10 @@ export const LiveCanvas: React.FC<LiveCanvasProps> = ({ classroomId }) => {
   
   const containerRef = useRef<HTMLDivElement>(null);
   const currentStrokeRef = useRef<Stroke | null>(null);
+  // Ink pipeline for the stroke in progress, plus palm-rejection state.
+  const builderRef = useRef<StrokeBuilder | null>(null);
+  const pointerTypeRef = useRef<string>('mouse');
+  const penLastSeenRef = useRef<number | null>(null);
 
   // Resize observer for responsive canvas
   useEffect(() => {
@@ -67,42 +82,85 @@ export const LiveCanvas: React.FC<LiveCanvasProps> = ({ classroomId }) => {
     return () => unsubscribe();
   }, [classroomId]);
 
-  const handleMouseDown = (e: any) => {
+  /** Reads a Konva pointer event into an ink sample, or null if it must be ignored. */
+  const readSample = (e: any): InkPoint | null => {
+    const evt: PointerEvent | undefined = e?.evt;
+    const pointerType = evt?.pointerType || 'mouse';
+    const now = evt?.timeStamp ?? performance.now();
+
+    if (pointerType === 'pen') penLastSeenRef.current = now;
+    // Palm rejection: the hand resting on the tablet is not drawing input.
+    if (shouldIgnorePointer({ pointerType, penLastSeenAt: penLastSeenRef.current, now })) return null;
+
+    const pos = e?.target?.getStage?.()?.getPointerPosition?.();
+    if (!pos) return null;
+
+    pointerTypeRef.current = pointerType;
+    return { x: pos.x, y: pos.y, pressure: evt?.pressure, t: now };
+  };
+
+  const handlePointerDown = (e: any) => {
+    const sample = readSample(e);
+    if (!sample) return;
+
     setIsDrawing(true);
-    const pos = e.target.getStage().getPointerPosition();
+    const baseWidth = tool === 'eraser' ? 20 : strokeWidth;
+    const builder = new StrokeBuilder(sample, {
+      baseWidth,
+      pointerType: pointerTypeRef.current,
+      minSampleDistance: MIN_SAMPLE_DISTANCE,
+    });
+
     const newStroke: Stroke = {
       id: `temp_${Date.now()}`,
       tool,
-      points: [pos.x, pos.y],
+      points: [sample.x, sample.y],
+      widths: [builder.initialWidth],
       color: tool === 'eraser' ? '#ffffff' : color,
-      strokeWidth: tool === 'eraser' ? 20 : strokeWidth,
+      strokeWidth: baseWidth,
       userId: auth.currentUser?.uid
     };
     currentStrokeRef.current = newStroke;
+    builderRef.current = builder;
     setStrokes([...strokes, newStroke]);
   };
 
-  const handleMouseMove = (e: any) => {
-    if (!isDrawing || !currentStrokeRef.current) return;
+  const handlePointerMove = (e: any) => {
+    if (!isDrawing || !currentStrokeRef.current || !builderRef.current) return;
 
-    const stage = e.target.getStage();
-    const point = stage.getPointerPosition();
-    
-    const lastStroke = { ...currentStrokeRef.current };
-    lastStroke.points = lastStroke.points.concat([point.x, point.y]);
-    
-    currentStrokeRef.current = lastStroke;
+    const sample = readSample(e);
+    if (!sample) return;
+
+    const increment = builderRef.current.addSample(sample);
+    if (!increment) return;
+
+    const updated: Stroke = {
+      ...currentStrokeRef.current,
+      points: currentStrokeRef.current.points.concat(increment.points),
+      widths: (currentStrokeRef.current.widths ?? []).concat(increment.widths),
+    };
+    currentStrokeRef.current = updated;
 
     // Optimistic update
-    setStrokes(strokes.map(s => s.id === lastStroke.id ? lastStroke : s));
+    setStrokes(prev => prev.map(s => s.id === updated.id ? updated : s));
   };
 
-  const handleMouseUp = async () => {
+  const handlePointerUp = async () => {
     setIsDrawing(false);
     if (!currentStrokeRef.current) return;
 
+    const closing = builderRef.current?.finish();
+    if (closing) {
+      currentStrokeRef.current = {
+        ...currentStrokeRef.current,
+        points: currentStrokeRef.current.points.concat(closing.points),
+        widths: (currentStrokeRef.current.widths ?? []).concat(closing.widths),
+      };
+    }
+
     const strokeToSave = { ...currentStrokeRef.current };
     currentStrokeRef.current = null;
+    builderRef.current = null;
 
     try {
       // Remove temp id and save to Firestore
@@ -155,6 +213,19 @@ export const LiveCanvas: React.FC<LiveCanvasProps> = ({ classroomId }) => {
       }
     }
   };
+
+  /**
+   * Variable-width strokes render as a few constant-width runs; strokes saved
+   * before this feature carry no widths and keep their single line.
+   */
+  const renderedStrokes = useMemo(() => strokes.map((stroke, i) => ({
+    id: stroke.id || `stroke-${i}`,
+    color: stroke.color,
+    tool: stroke.tool,
+    runs: stroke.widths?.length
+      ? buildWidthRuns(fromFlatArray(stroke.points), stroke.widths)
+      : [{ points: stroke.points, width: stroke.strokeWidth }],
+  })), [strokes]);
 
   return (
     <div className="flex flex-col h-full w-full bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
@@ -228,32 +299,36 @@ export const LiveCanvas: React.FC<LiveCanvasProps> = ({ classroomId }) => {
       </div>
 
       {/* Canvas Area */}
-      <div ref={containerRef} className="flex-1 w-full relative bg-white cursor-crosshair">
+      <div
+        ref={containerRef}
+        className="flex-1 w-full relative bg-white cursor-crosshair touch-none select-none [overscroll-behavior:none]"
+        onContextMenu={(e) => e.preventDefault()}
+      >
         <Stage
           width={containerSize.width}
           height={containerSize.height}
-          onMouseDown={handleMouseDown}
-          onMousemove={handleMouseMove}
-          onMouseup={handleMouseUp}
-          onTouchStart={handleMouseDown}
-          onTouchMove={handleMouseMove}
-          onTouchEnd={handleMouseUp}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
+          onPointerCancel={handlePointerUp}
         >
           <Layer>
-            {strokes.map((stroke, i) => (
-              <Line
-                key={stroke.id || i}
-                points={stroke.points}
-                stroke={stroke.color}
-                strokeWidth={stroke.strokeWidth}
-                tension={0.5}
-                lineCap="round"
-                lineJoin="round"
-                globalCompositeOperation={
-                  stroke.tool === 'eraser' ? 'destination-out' : 'source-over'
-                }
-              />
-            ))}
+            {renderedStrokes.map(stroke =>
+              stroke.runs.map((run, i) => (
+                <Line
+                  key={`${stroke.id}-${i}`}
+                  points={run.points}
+                  stroke={stroke.color}
+                  strokeWidth={run.width}
+                  lineCap="round"
+                  lineJoin="round"
+                  globalCompositeOperation={
+                    stroke.tool === 'eraser' ? 'destination-out' : 'source-over'
+                  }
+                />
+              ))
+            )}
           </Layer>
         </Stage>
       </div>

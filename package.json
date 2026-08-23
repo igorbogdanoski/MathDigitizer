@@ -9,7 +9,7 @@
     "start": "NODE_ENV=production tsx server.ts",
     "preview": "vite preview",
     "test": "vitest",
-    "test:smoke": "vitest --run src/components/ProtectedRoute.smoke.test.tsx src/components/TutorChat.smoke.test.tsx src/components/MaterialsFactory.smoke.test.tsx src/lib/export.smoke.test.ts src/hooks/useTaskFilters.test.ts src/components/ExtractionEngine.smoke.test.tsx src/components/SmartGrader.smoke.test.tsx src/components/AnalyticsDashboard.smoke.test.tsx src/components/MathRenderer.smoke.test.tsx src/components/SystemIntegrityCheck.smoke.test.tsx src/components/KahootMaker.smoke.test.tsx src/components/SmartOCR.smoke.test.tsx src/components/smart-ocr/savePayload.test.ts src/lib/mathVerify.test.ts",
+    "test:smoke": "vitest --run src/components/ProtectedRoute.smoke.test.tsx src/components/TutorChat.smoke.test.tsx src/components/MaterialsFactory.smoke.test.tsx src/lib/export.smoke.test.ts src/hooks/useTaskFilters.test.ts src/components/ExtractionEngine.smoke.test.tsx src/components/SmartGrader.smoke.test.tsx src/components/AnalyticsDashboard.smoke.test.tsx src/components/MathRenderer.smoke.test.tsx src/components/SystemIntegrityCheck.smoke.test.tsx src/components/KahootMaker.smoke.test.tsx src/components/SmartOCR.smoke.test.tsx src/components/smart-ocr/savePayload.test.ts src/lib/whiteboard/ink.test.ts src/lib/whiteboard/sync.test.ts src/lib/whiteboard/strokeBuilder.test.ts src/lib/whiteboard/shapeParser.test.ts src/lib/mathVerify.test.ts",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "postinstall": "node scripts/fix-vitest-runner.cjs",
