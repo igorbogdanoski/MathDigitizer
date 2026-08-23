@@ -95,17 +95,32 @@ export function classifyDomain(topicName: string, extraKeywords: readonly string
   return null;
 }
 
-/** Parsed shape of an outcome code such as `МА.7.5.2`. */
+/** Parsed shape of an outcome code such as `МА.7.5.2` or `МА.8.1.1.1`. */
 export interface ParsedOutcomeCode {
   grade: string;
   topicIndex: number;
   outcomeIndex: number;
+  /** Present where the programme numbers a subtopic level, as grade 8 does. */
+  subtopicIndex?: number;
 }
 
+/**
+ * Parses an outcome code.
+ *
+ * Two numbering depths exist in the corpus: most programmes number
+ * `PREFIX.GRADE.TOPIC.OUTCOME`, while grade 8 carries an extra subtopic level
+ * (`МА.8.1.1.1`). Both are legitimate; a parser that only knew the shorter one
+ * left every grade-8 outcome ungraded in the mastery rollup.
+ */
 export function parseOutcomeCode(code: string): ParsedOutcomeCode | null {
-  const match = /^МА\.([0-9]+(?:год)?(?:-миг|-струк)?)\.(\d+)\.(\d+)$/.exec((code || '').trim());
+  const match = /^[А-ШA-Z]{2}\.([^.]+)\.(\d+)\.(\d+)(?:\.(\d+))?$/.exec((code || '').trim());
   if (!match) return null;
-  return { grade: match[1], topicIndex: Number(match[2]), outcomeIndex: Number(match[3]) };
+
+  const [, grade, topic, third, fourth] = match;
+
+  return fourth === undefined
+    ? { grade, topicIndex: Number(topic), outcomeIndex: Number(third) }
+    : { grade, topicIndex: Number(topic), subtopicIndex: Number(third), outcomeIndex: Number(fourth) };
 }
 
 /** Grade token out of an outcome code, for grouping a rollup by year. */
