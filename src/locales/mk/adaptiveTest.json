@@ -43,7 +43,12 @@
     "conceptualError": "Концептуална грешка детектирана",
     "generateTargeted": "Генерирај Фокусирани Задачи",
     "focusedTraining": "Фокусиран Тренинг",
-    "startNewSession": "Започни нова сесија"
+    "startNewSession": "Започни нова сесија",
+    "abilityTitle": "Проценета способност по тема",
+    "abilityValue": "{{value}}% ± {{error}} ({{count}} задачи)",
+    "stopConfident": "Сесијата заврши бидејќи проценката се стабилизира.",
+    "stopMaxItems": "Сесијата го достигна максималниот број задачи.",
+    "practiceWeakest": "Вежбај „{{topic}}\""
   },
   "toasts": {
     "timeUpGradeError": "Грешка при оценување по истекот на времето.",

@@ -26,5 +26,24 @@
   "recentAttempts": "Përpjekjet e fundit",
   "noMistakes": "✓ Pa gabime",
   "mistakesCount": "{{count}} gabime",
-  "refresh": "Rifresko"
+  "refresh": "Rifresko",
+  "skillTree": {
+    "badge": "Fushata e nxënësit",
+    "title": "Grafi i njohurive",
+    "subtitle": "Zhblloko koncepte të reja matematikore duke zotëruar temat paraardhëse dhe duke mbledhur XP.",
+    "statusMastered": "E zotëruar",
+    "statusInProgress": "Në proces",
+    "statusLocked": "E kyçur",
+    "required": "Kërkohet:",
+    "missingPrerequisites": "Mbetet për t'u zotëruar:",
+    "startTraining": "Fillo trajnimin"
+  },
+  "knowledgePath": {
+    "title": "Rruga e njohurive",
+    "mastered": "{{count}} / {{total}} tema të zotëruara",
+    "legendMastered": "E zotëruar",
+    "legendUnlocked": "E zhbllokuar",
+    "legendLocked": "E kyçur",
+    "hint": "Zgjidh detyrat për të zhbllokuar temat në rrugën tënde."
+  }
 }

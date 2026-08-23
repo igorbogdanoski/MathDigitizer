@@ -43,7 +43,12 @@
     "conceptualError": "U zbulua një gabim konceptual",
     "generateTargeted": "Gjenero Detyra të Fokusuara",
     "focusedTraining": "Stërvitje e Fokusuar",
-    "startNewSession": "Fillo një sesion të ri"
+    "startNewSession": "Fillo një sesion të ri",
+    "abilityTitle": "Aftësia e vlerësuar sipas temës",
+    "abilityValue": "{{value}}% ± {{error}} ({{count}} detyra)",
+    "stopConfident": "Sesioni përfundoi sepse vlerësimi u stabilizua.",
+    "stopMaxItems": "Sesioni arriti numrin maksimal të detyrave.",
+    "practiceWeakest": "Ushtro \"{{topic}}\""
   },
   "toasts": {
     "timeUpGradeError": "Gabim në vlerësim pasi koha skadoi.",

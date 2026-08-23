@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Brain, Plus, Loader2, Sparkles, Layers, Trophy, Activity, X } from 'lucide-react';
 import { Button } from './ui/Button';
@@ -6,8 +6,14 @@ import { db, auth } from '../lib/firebase';
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, orderBy } from 'firebase/firestore';
 import { Flashcard } from '../lib/schema';
 import { motion, AnimatePresence } from 'motion/react';
-import { calculateSM2 } from '../lib/srsAlgorithm';
-import { generateFlashcards } from '../lib/gemini';
+import {
+  CardSchedule,
+  ReviewGrade,
+  dueCards,
+  gradeFromOutcome,
+  scheduleReview,
+} from '../lib/fsrsLite';
+import { generateFlashcards, generateSpeech } from '../lib/gemini';
 import { useToast } from '../contexts/ToastContext';
 import { useModalA11y } from '../hooks/useModalA11y';
 // NOTE: import the barrel via its explicit index path — on case-insensitive
@@ -46,6 +52,8 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newFront, setNewFront] = useState('');
   const [newBack, setNewBack] = useState('');
+  const [newDeck, setNewDeck] = useState('');
+  const [deckFilter, setDeckFilter] = useState('');
 
   // AI Modal State
   const [showAIModal, setShowAIModal] = useState(false);
@@ -66,17 +74,15 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
   const [matchItems, setMatchItems] = useState<MatchItem[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<string | null>(null);
   const [matchStartTime, setMatchStartTime] = useState<number>(0);
+  /** When the current quiz question appeared — response time grades the card. */
+  const quizQuestionStartRef = useRef<number>(0);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [matchTimeElapsed, setMatchTimeElapsed] = useState<number>(0);
   const [isMatchFinished, setIsMatchFinished] = useState(false);
 
-  // Calculate due flashcards
-  const dueFlashcards = useMemo(() => {
-    const now = new Date();
-    return flashcards.filter(card => {
-      if (!card.next_review) return true;
-      return new Date(card.next_review) <= now;
-    });
-  }, [flashcards]);
+  // Calculate due flashcards (learning steps make this sub-day, so it uses the
+  // scheduler's own rule rather than a date comparison here)
+  const dueFlashcards = useMemo(() => dueCards(flashcards), [flashcards]);
 
   const [frozenStudyCards, setFrozenStudyCards] = useState<Flashcard[]>([]);
   const studyCards = isStudying ? frozenStudyCards : flashcards;
@@ -113,9 +119,10 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
         e.preventDefault();
         setIsFlipped(prev => !prev);
       } else if (isFlipped) {
-        if (e.key === '1') handleReview(1);
-        if (e.key === '2') handleReview(3);
-        if (e.key === '3') handleReview(5);
+        if (e.key === '1') handleReview('again');
+        if (e.key === '2') handleReview('hard');
+        if (e.key === '3') handleReview('good');
+        if (e.key === '4') handleReview('easy');
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -133,7 +140,11 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
         created_at: new Date().toISOString(),
         ease_factor: 2.5,
         interval: 0,
-        next_review: new Date().toISOString()
+        phase: 'learning',
+        step: 0,
+        lapses: 0,
+        next_review: new Date().toISOString(),
+        ...(newDeck.trim() ? { deck: newDeck.trim() } : {})
       };
 
       const docRef = await addDoc(collection(db, 'flashcards'), newCard);
@@ -170,7 +181,35 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
     setActiveTab('flashcards');
   };
 
-  const handleReview = async (quality: number) => {
+  /** Current FSRS-lite state of a card, defaulted for pre-FSRS documents. */
+  const scheduleOf = (card: Flashcard): CardSchedule => ({
+    phase: card.phase ?? (card.interval && card.interval > 0 ? 'review' : 'learning'),
+    step: card.step ?? 0,
+    interval: card.interval ?? 0,
+    easeFactor: card.ease_factor ?? 2.5,
+    lapses: card.lapses ?? 0,
+    nextReview: card.next_review ?? new Date().toISOString(),
+  });
+
+  /** Applies one review to a card and persists the new schedule. */
+  const applyReview = async (card: Flashcard, grade: ReviewGrade) => {
+    if (!card.id) return;
+    const next = scheduleReview(scheduleOf(card), grade);
+
+    const update = {
+      phase: next.phase,
+      step: next.step,
+      interval: next.interval,
+      ease_factor: next.easeFactor,
+      lapses: next.lapses,
+      next_review: next.nextReview,
+    };
+
+    await updateDoc(doc(db, 'flashcards', card.id), update);
+    setFlashcards(prev => prev.map(c => (c.id === card.id ? { ...c, ...update } : c)));
+  };
+
+  const handleReview = async (grade: ReviewGrade) => {
     const card = studyCards[currentIndex];
     if (!card.id) return;
 
@@ -178,29 +217,13 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
     setSessionStats(prev => ({
       ...prev,
       reviewed: prev.reviewed + 1,
-      hard: prev.hard + (quality === 1 ? 1 : 0),
-      good: prev.good + (quality === 3 ? 1 : 0),
-      easy: prev.easy + (quality === 5 ? 1 : 0),
+      hard: prev.hard + (grade === 'again' || grade === 'hard' ? 1 : 0),
+      good: prev.good + (grade === 'good' ? 1 : 0),
+      easy: prev.easy + (grade === 'easy' ? 1 : 0),
     }));
 
-    const { interval, easeFactor, nextReview } = calculateSM2(
-      quality,
-      card.interval || 0,
-      card.ease_factor || 2.5
-    );
-
     try {
-      await updateDoc(doc(db, 'flashcards', card.id), {
-        interval,
-        ease_factor: easeFactor,
-        next_review: nextReview
-      });
-
-      setFlashcards(prev => prev.map(c =>
-        c.id === card.id
-          ? { ...c, interval, ease_factor: easeFactor, next_review: nextReview }
-          : c
-      ));
+      await applyReview(card, grade);
 
       if (currentIndex < studyCards.length - 1) {
         setCurrentIndex(currentIndex + 1);
@@ -242,6 +265,7 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
     });
 
     setQuizQuestions(questions);
+    quizQuestionStartRef.current = Date.now();
     setQuizIndex(0);
     setQuizScore(0);
     setIsQuizFinished(false);
@@ -253,8 +277,19 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
     if (selectedAnswer) return; // Prevent clicking again
     setSelectedAnswer(answer);
 
-    const isCorrect = answer === quizQuestions[quizIndex].correctAnswer;
+    const question = quizQuestions[quizIndex];
+    const isCorrect = answer === question.correctAnswer;
     if (isCorrect) setQuizScore(prev => prev + 1);
+
+    // Quiz answers feed the same scheduler as the flashcard reviews — the mode
+    // is practice with consequences, not a throwaway game.
+    const card = flashcards.find(c => c.id === question.id);
+    if (card) {
+      const elapsed = quizQuestionStartRef.current ? Date.now() - quizQuestionStartRef.current : undefined;
+      applyReview(card, gradeFromOutcome(isCorrect, elapsed))
+        .catch(err => console.warn('Failed to record quiz review', err));
+    }
+    quizQuestionStartRef.current = Date.now();
 
     setTimeout(() => {
       if (quizIndex < quizQuestions.length - 1) {
@@ -304,6 +339,31 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
     return () => clearInterval(timer);
   }, [activeTab, isMatchFinished, matchStartTime]);
 
+  /** Match-game outcomes feed the scheduler, like every other review mode. */
+  const recordMatchOutcome = (cardId: string, correct: boolean) => {
+    const card = flashcards.find(c => c.id === cardId);
+    if (!card) return;
+    applyReview(card, gradeFromOutcome(correct))
+      .catch(err => console.warn('Failed to record match review', err));
+  };
+
+  /** Reads a card side aloud using the existing speech generator. */
+  const handleSpeak = async (text: string) => {
+    if (!text.trim() || isSpeaking) return;
+    setIsSpeaking(true);
+    try {
+      const audioUrl = await generateSpeech(text);
+      const audio = new Audio(audioUrl);
+      audio.onended = () => setIsSpeaking(false);
+      audio.onerror = () => setIsSpeaking(false);
+      await audio.play();
+    } catch (err) {
+      console.error('TTS failed', err);
+      showToast(t('ttsError'), 'error');
+      setIsSpeaking(false);
+    }
+  };
+
   const handleMatchClick = (item: MatchItem) => {
     if (item.isMatched || isMatchFinished) return;
 
@@ -325,13 +385,15 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
       );
       setMatchItems(newItems);
       setSelectedMatch(null);
+      recordMatchOutcome(item.cardId, true);
 
       if (newItems.every(i => i.isMatched)) {
         setIsMatchFinished(true);
         if (onReviewComplete) onReviewComplete();
       }
     } else {
-      // Wrong match
+      // Wrong pairing — the card the student reached for was not recalled
+      recordMatchOutcome(selectedItem.cardId, false);
       setSelectedMatch(item.id); // Or just null to reset, let's reset or change selection
       setTimeout(() => setSelectedMatch(null), 500);
     }
@@ -508,6 +570,8 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
           onFlip={() => setIsFlipped(!isFlipped)}
           onReview={handleReview}
           onExit={() => {setIsStudying(false); setActiveTab('library');}}
+          onSpeak={handleSpeak}
+          isSpeaking={isSpeaking}
         />
       )}
 
@@ -520,6 +584,8 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
           onStartQuiz={startQuiz}
           onShowAddModal={() => setShowAddModal(true)}
           onDeleteFlashcard={handleDeleteFlashcard}
+          deckFilter={deckFilter}
+          onDeckFilterChange={setDeckFilter}
         />
       )}
 
@@ -532,6 +598,9 @@ export const Flashcards: React.FC<FlashcardsProps> = ({ onReviewComplete }) => {
             newBack={newBack}
             onFrontChange={setNewFront}
             onBackChange={setNewBack}
+            newDeck={newDeck}
+            onDeckChange={setNewDeck}
+            existingDecks={Array.from(new Set(flashcards.map(c => c.deck?.trim()).filter(Boolean))) as string[]}
             onSave={handleAddFlashcard}
             onClose={() => setShowAddModal(false)}
           />

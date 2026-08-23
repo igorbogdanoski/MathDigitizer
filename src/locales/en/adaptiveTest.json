@@ -43,7 +43,12 @@
     "conceptualError": "Conceptual error detected",
     "generateTargeted": "Generate Focused Tasks",
     "focusedTraining": "Focused Training",
-    "startNewSession": "Start a new session"
+    "startNewSession": "Start a new session",
+    "abilityTitle": "Estimated ability per topic",
+    "abilityValue": "{{value}}% ± {{error}} ({{count}} tasks)",
+    "stopConfident": "The session ended because the estimate settled.",
+    "stopMaxItems": "The session reached the maximum number of tasks.",
+    "practiceWeakest": "Practise \"{{topic}}\""
   },
   "toasts": {
     "timeUpGradeError": "Error grading after time expired.",

@@ -382,16 +382,29 @@ service cloud.firestore {
     }
 
     match /summative_attempts/{attemptId} {
+      // The exam must be open and inside its window for a submission to count.
+      // The client blocks a closed exam in the UI; this is the actual gate.
+      // opens_at / due_at are epoch milliseconds, matching created_at in the
+      // same collection — rules have no parser for ISO strings.
+      function examIsOpen(examId) {
+        let exam = get(/databases/$(database)/documents/summative_exams/$(examId)).data;
+        return exam.status == 'open'
+          && (!('opens_at' in exam) || request.time.toMillis() >= exam.opens_at)
+          && (!('due_at' in exam) || request.time.toMillis() <= exam.due_at);
+      }
+
       // Students read their own attempt; teachers read all (for dashboard query)
       allow read: if isAuthenticated() && (
         resource.data.student_uid == request.auth.uid || isTeacher()
       );
-      // Student can only submit under their own Firebase UID (anonymous auth enforced client-side)
+      // Student can only submit under their own Firebase UID (anonymous auth
+      // enforced client-side) and only while the exam is actually open.
       allow create: if isAuthenticated() &&
-        request.resource.data.student_uid == request.auth.uid;
-      // Only the owning teacher can update (to write score); only the score field
+        request.resource.data.student_uid == request.auth.uid &&
+        examIsOpen(request.resource.data.exam_id);
+      // Only the owning teacher can update, and only the grading fields
       allow update: if isTeacher() &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score']);
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score', 'grade']);
       allow delete: if false;
     }
 

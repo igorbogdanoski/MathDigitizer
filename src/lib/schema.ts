@@ -168,6 +168,14 @@ export interface Flashcard {
   interval?: number;
   ease_factor?: number;
   created_at?: string;
+  /** FSRS-lite scheduling state; absent on cards created before it existed. */
+  phase?: 'learning' | 'review' | 'relearning';
+  step?: number;
+  /** Times this card was forgotten after graduating. */
+  lapses?: number;
+  /** Deck this card belongs to; empty means the default deck. */
+  deck?: string;
+  tags?: string[];
 }
 
 export interface DailyQuest {
@@ -248,6 +256,14 @@ export interface SummativeExam {
   test_data: any; // MakedoTestDocument
   created_at: number;
   status: 'open' | 'closed';
+  /**
+   * Epoch milliseconds bounding when students may sit the exam (both optional).
+   * Numeric, not ISO, because Firestore rules cannot parse date strings.
+   */
+  opens_at?: number;
+  due_at?: number;
+  /** Total points available, used for the 1–5 grade mapping. */
+  total_points?: number;
 }
 
 export interface SummativeAttempt {
@@ -258,6 +274,8 @@ export interface SummativeAttempt {
   answers: Record<string, any>; // Map question index to student answer
   submitted_at: number;
   score?: number; // Calculated later by teacher or auto-grader
+  /** Macedonian 1–5 grade derived from score/total_points. */
+  grade?: 1 | 2 | 3 | 4 | 5;
   anti_cheat?: {
     tab_switches: number;
     time_spent_seconds: number;

@@ -13,6 +13,9 @@ interface FlashcardLibraryViewProps {
   onStartQuiz: () => void;
   onShowAddModal: () => void;
   onDeleteFlashcard: (id: string) => void;
+  /** Deck filter — empty string means every deck. */
+  deckFilter: string;
+  onDeckFilterChange: (deck: string) => void;
 }
 
 export const FlashcardLibraryView: React.FC<FlashcardLibraryViewProps> = ({
@@ -22,8 +25,17 @@ export const FlashcardLibraryView: React.FC<FlashcardLibraryViewProps> = ({
   onStartQuiz,
   onShowAddModal,
   onDeleteFlashcard,
+  deckFilter,
+  onDeckFilterChange,
 }) => {
   const { t } = useTranslation('flashcards');
+
+  // Decks are just a label on the card; the list is derived, never configured.
+  const decks = Array.from(new Set(flashcards.map(c => c.deck?.trim()).filter(Boolean))) as string[];
+  const visibleCards = deckFilter
+    ? flashcards.filter(c => (c.deck?.trim() || '') === deckFilter)
+    : flashcards;
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -72,11 +84,26 @@ export const FlashcardLibraryView: React.FC<FlashcardLibraryViewProps> = ({
 
       <div className="space-y-4">
         <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <Layers className="w-5 h-5 text-slate-400" />
-          {t('allCards', { count: flashcards.length })}
+          <Layers className="w-5 h-5 text-slate-400" aria-hidden="true" />
+          {t('allCards', { count: visibleCards.length })}
+
+          {decks.length > 0 && (
+            <select
+              value={deckFilter}
+              onChange={(e) => onDeckFilterChange(e.target.value)}
+              aria-label={t('deckLabel')}
+              title={t('deckLabel')}
+              className="ml-auto h-9 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">{t('deckAll')}</option>
+              {decks.map(deck => (
+                <option key={deck} value={deck}>{deck}</option>
+              ))}
+            </select>
+          )}
         </h3>
 
-        {flashcards.length === 0 ? (
+        {visibleCards.length === 0 ? (
           <div className="py-20 text-center bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700">
             <Brain className="w-16 h-16 text-slate-300 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{t('noSavedCards')}</h3>
@@ -87,12 +114,12 @@ export const FlashcardLibraryView: React.FC<FlashcardLibraryViewProps> = ({
           </div>
         ) : (
           <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
-            {flashcards.map((card) => (
+            {visibleCards.map((card) => (
               <div key={card.id} className="break-inside-avoid shadow-none">
                 <Card className="group hover:-translate-y-1 transition-all duration-300 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
-                      <div className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] uppercase font-bold px-2 py-1 rounded">Q&A</div>
+                      <div className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] uppercase font-bold px-2 py-1 rounded truncate max-w-[10rem]">{card.deck?.trim() || 'Q&A'}</div>
                       <button
                         type="button"
                         onClick={() => card.id && onDeleteFlashcard(card.id)}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { pointsToGrade } from '../lib/exams/shuffle';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,6 +13,7 @@ import { useToast } from '../contexts/ToastContext';
 
 export const TeacherExamsDashboard = () => {
   const { t } = useTranslation('common');
+  const { t: tExams } = useTranslation('exams');
   const { user } = useAuth();
   const { showToast } = useToast();
   const [exams, setExams] = useState<SummativeExam[]>([]);
@@ -60,16 +62,25 @@ export const TeacherExamsDashboard = () => {
     }
   };
 
+  /** Points available on this exam — the denominator for the 1–5 grade. */
+  const examTotalPoints = (exam: any): number => {
+    if (typeof exam?.total_points === 'number' && exam.total_points > 0) return exam.total_points;
+    const questions: any[] = exam?.test_data?.questions || [];
+    const summed = questions.reduce((sum, q) => sum + (Number(q?.points) || 0), 0);
+    return summed > 0 ? summed : 100;
+  };
+
   const handleUpdateScore = async (attemptId: string, score: number) => {
      try {
-       await updateDoc(doc(db, 'summative_attempts', attemptId), {
-          score: score
-       });
-       setAttempts(prev => prev.map(a => a.id === attemptId ? { ...a, score } : a));
+       // Points and the Macedonian 1–5 grade are stored together, so the
+       // gradebook does not have to re-derive the mapping.
+       const grade = pointsToGrade(score, examTotalPoints(selectedExam));
+       await updateDoc(doc(db, 'summative_attempts', attemptId), { score, grade });
+       setAttempts(prev => prev.map(a => a.id === attemptId ? { ...a, score, grade } : a));
        setIsGrading(null);
      } catch(e) {
        console.error(e);
-       showToast("Грешка при зачувување на поените.", 'error');
+       showToast(tExams('errors.saveScoreFailed'), 'error');
      }
   };
 
@@ -192,15 +203,25 @@ export const TeacherExamsDashboard = () => {
                            <div className="flex items-center gap-4 w-full md:w-auto">
                               {attempt.score !== undefined ? (
                                  <div className="text-center px-4 py-2 bg-emerald-50 rounded-xl border border-emerald-200">
-                                    <div className="text-xs font-bold text-emerald-600 uppercase">Оценето</div>
-                                    <div className="text-2xl font-black text-emerald-700">{attempt.score} <span className="text-sm">поени</span></div>
+                                    <div className="text-xs font-bold text-emerald-600 uppercase">
+                                       {tExams('dashboard.points', { earned: attempt.score, total: examTotalPoints(selectedExam) })}
+                                    </div>
+                                    <div className="text-2xl font-black text-emerald-700">
+                                       {tExams('dashboard.grade')} {attempt.grade ?? pointsToGrade(attempt.score, examTotalPoints(selectedExam))}
+                                    </div>
                                  </div>
                               ) : (
                                  <div className="text-center px-4 py-2 bg-amber-50 rounded-xl border border-amber-200">
-                                    <div className="text-xs font-bold text-amber-600 uppercase">Очекува Преглед</div>
+                                    <div className="text-xs font-bold text-amber-600 uppercase">{tExams('dashboard.notGraded')}</div>
                                  </div>
                               )}
-                              <Button onClick={() => setIsGrading(attempt)} className="bg-indigo-600 hover:bg-indigo-700">Отвори <ChevronRight className="w-4 h-4 ml-1" /></Button>
+                              <a
+                                 href={`/gradebook?student=${encodeURIComponent(attempt.student_uid)}`}
+                                 className="text-sm font-bold text-indigo-700 hover:underline whitespace-nowrap"
+                              >
+                                 {tExams('dashboard.openGradebook')}
+                              </a>
+                              <Button onClick={() => setIsGrading(attempt)} className="bg-indigo-600 hover:bg-indigo-700">{tExams('dashboard.openAttempt')} <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" /></Button>
                            </div>
                         </div>
                      ))}

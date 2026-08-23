@@ -1,0 +1,50 @@
+{
+  "errors": {
+    "notFound": "Exam not found.",
+    "loadFailed": "Failed to load the exam.",
+    "unknown": "Unknown error",
+    "submitFailed": "Failed to send your answers. Check your internet connection.",
+    "saveScoreFailed": "Failed to save the score."
+  },
+  "closed": {
+    "not-published": "This exam has not been opened by the teacher yet.",
+    "not-started": "The exam has not started yet. Try again at the scheduled time.",
+    "closed": "The deadline for this exam has passed."
+  },
+  "backHome": "Back to home",
+  "confirmSubmit": "Are you sure you want to submit the test? You cannot take it again.",
+  "antiCheatWarning": "WARNING: Leaving the window during an exam is not allowed. This event has been recorded for your teacher.",
+  "submittedTitle": "Done!",
+  "submittedBody": "Your answers have been recorded and sent to your teacher.",
+  "examMode": "Exam mode",
+  "studentLabel": "Student: {{name}}",
+  "answeredCount": "Answered: {{answered}} of {{total}}",
+  "submitting": "Submitting...",
+  "submit": "Submit exam",
+  "true": "True",
+  "false": "False",
+  "placeholderShort": "Type your answer here...",
+  "placeholderEssay": "Type your full answer or working steps...",
+  "placeholderFill": "Fill in...",
+  "officialExam": "Official exam",
+  "dashboard": {
+    "grade": "Grade",
+    "gradeValue": "{{grade}}",
+    "points": "{{earned}} / {{total}} points",
+    "notGraded": "Not graded",
+    "openGradebook": "Open in gradebook",
+    "deadline": "Due: {{date}}",
+    "noDeadline": "No deadline",
+    "statusOpen": "Open",
+    "statusClosed": "Closed",
+    "openAttempt": "Open"
+  },
+  "joinTitle": "Join exam",
+  "joinDescription": "Join the exam in Dugga mode.",
+  "examDescription": "Official online exam via MathDigitizer Pro.",
+  "officialExamMode": "Official exam • Dugga mode",
+  "nameLabel": "Your full name",
+  "namePlaceholder": "e.g. Igor Mishevski",
+  "startSolving": "Start solving",
+  "blurNotice": "Every time you leave the window it is recorded."
+}
