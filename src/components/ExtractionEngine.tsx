@@ -27,7 +27,7 @@ import {
   PersistedIngestionSnapshot,
 } from '../lib/ingestion/metadata';
 import { resolveIngestionSnapshotPersistenceEnabled } from '../lib/ingestion/config';
-import { trackIngestionSecurity } from '../lib/analytics';
+import { trackActivation, trackIngestionSecurity } from '../lib/analytics';
 import { KahootMaker } from './KahootMaker';
 import { MakedoTestGenerator } from './MakedoTestGenerator';
 import { GeoGebraViewer } from './GeoGebraViewer';
@@ -348,6 +348,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
               taskToSave.folder_id = targetFolder.trim().toLowerCase().replace(/\s+/g, '-');
             }
             const docRef = await addDoc(collection(db, 'tasks'), taskToSave);
+                trackActivation('first_task');
             newSavedSet.add(idx);
 
             // Curriculum classification — NON-BLOCKING: runs after the save and
@@ -407,6 +408,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
       }
       
       await addDoc(collection(db, 'tasks'), taskToSave);
+                trackActivation('first_task');
       
       setSavedTasks(prev => {
         const newSet = new Set(prev);

@@ -120,6 +120,38 @@ function buildPricingStructuredData(): Array<Record<string, unknown>> {
   ];
 }
 
+/**
+ * Article markup for a blog post.
+ *
+ * These three pages are the only ones written to be found by search rather than
+ * reached from inside the app, and they were describing themselves with the
+ * same Organization / WebSite / SoftwareApplication block as every other route.
+ * That is true but useless for them: it tells a search engine what the product
+ * is, not what the page says.
+ */
+function buildArticleStructuredData(path: string, headline: string, description: string) {
+  return [
+    ...buildDefaultStructuredData(path),
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline,
+      description,
+      inLanguage: 'mk',
+      url: absoluteUrl(path),
+      mainEntityOfPage: { '@type': 'WebPage', '@id': absoluteUrl(path) },
+      image: absoluteUrl('/og-image.png'),
+      datePublished: '2026-05-16',
+      author: { '@type': 'Person', name: 'Игор Богданоски' },
+      publisher: {
+        '@type': 'Organization',
+        name: SITE_NAME,
+        logo: { '@type': 'ImageObject', url: absoluteUrl('/pwa-icon.svg') },
+      },
+    },
+  ];
+}
+
 const routeEntries: Array<{ match: RegExp; seo: RouteSeoConfig }> = [
   {
     match: /^\/$/,
@@ -211,7 +243,7 @@ const routeEntries: Array<{ match: RegExp; seo: RouteSeoConfig }> = [
   {
     match: /^\/pricing$/,
     seo: {
-      title: 'Pricing',
+      title: 'Цени и претплата',
       description: 'Изберете помеѓу месечен и годишен Pro Teacher план, со school licensing и локални payment опции.',
       keywords: 'pricing, saas, pro teacher, annual plan, school licensing, банка, bank transfer, македонија',
       canonical: '/pricing',
@@ -381,7 +413,11 @@ const routeEntries: Array<{ match: RegExp; seo: RouteSeoConfig }> = [
       description: 'Практичен водич за наставници: претворете ракописни задачи, фотографии и PDF документи во дигитален LaTeX формат за секунди со AI OCR.',
       keywords: 'OCR математика, дигитализација математички задачи, AI OCR наставници, LaTeX конвертор, математика македонија',
       canonical: '/blog/ocr-matematika',
-      structuredData: buildDefaultStructuredData('/blog/ocr-matematika'),
+      structuredData: buildArticleStructuredData(
+        '/blog/ocr-matematika',
+        'Како да дигитализирате математички задачи со AI',
+        'Практичен водич за наставници: претворете ракописни задачи, фотографии и PDF документи во дигитален LaTeX формат за секунди со AI OCR.',
+      ),
     },
   },
   {
@@ -391,7 +427,11 @@ const routeEntries: Array<{ match: RegExp; seo: RouteSeoConfig }> = [
       description: 'Научете како да извлечете LaTeX формули и математички задачи директно од YouTube образовни видеа со еден клик. Без рачно препишување.',
       keywords: 'LaTeX екстракција, YouTube математика, LaTeX генератор македонија, математика видеа, автоматска дигитализација LaTeX',
       canonical: '/blog/latex-ekstrakcija',
-      structuredData: buildDefaultStructuredData('/blog/latex-ekstrakcija'),
+      structuredData: buildArticleStructuredData(
+        '/blog/latex-ekstrakcija',
+        'LaTeX екстракција од YouTube видеа — автоматска дигитализација',
+        'Научете како да извлечете LaTeX формули и математички задачи директно од YouTube образовни видеа со еден клик. Без рачно препишување.',
+      ),
     },
   },
   {
@@ -401,7 +441,11 @@ const routeEntries: Array<{ match: RegExp; seo: RouteSeoConfig }> = [
       description: 'Организирајте интерактивни live математички квизови за ученици во реално време — без потреба за посебна апликација.',
       keywords: 'математички квиз, live натпревар ученици, Math Kahoot македонија, интерактивна настава математика, live classroom математика',
       canonical: '/blog/live-mathkahoot',
-      structuredData: buildDefaultStructuredData('/blog/live-mathkahoot'),
+      structuredData: buildArticleStructuredData(
+        '/blog/live-mathkahoot',
+        'Live математички натпревари во училница',
+        'Организирајте интерактивни live математички квизови за ученици во реално време — без потреба за посебна апликација.',
+      ),
     },
   },
 ];

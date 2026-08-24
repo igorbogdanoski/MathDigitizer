@@ -1,3 +1,4 @@
+import { trackActivation } from '../../lib/analytics';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/Button';
@@ -9,23 +10,33 @@ interface ExportBarProps {
 }
 
 export const ExportBar: React.FC<ExportBarProps> = ({ tasks }) => {
+  /**
+   * The milestone that matters most: something left the app as a file the
+   * teacher can take to class. Recorded once per device, whichever button did
+   * it — the format is not the point, leaving the screen is.
+   */
+  const exported = <T,>(run: (value: T) => void) => (value: T) => {
+    trackActivation('first_export');
+    run(value);
+  };
+
   const { t } = useTranslation('extraction');
   return (
     <div className="flex flex-wrap gap-2 shrink-0 max-w-sm justify-end">
       <span className="w-full text-right text-xs font-bold text-slate-400 mb-1">{t('exportOptions')}</span>
-      <Button variant="outline" onClick={() => exportToMarkdown(tasks)} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm text-xs h-8 px-3">
+      <Button variant="outline" onClick={() => exported(exportToMarkdown)(tasks)} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm text-xs h-8 px-3">
         Markdown
       </Button>
-      <Button variant="outline" onClick={() => exportToLatex(tasks)} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm text-xs h-8 px-3">
+      <Button variant="outline" onClick={() => exported(exportToLatex)(tasks)} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm text-xs h-8 px-3">
         LaTeX
       </Button>
-      <Button variant="outline" onClick={() => window.print()} className="bg-slate-900 border-slate-800 hover:bg-slate-800 text-white shadow-sm text-xs h-8 px-3">
+      <Button variant="outline" onClick={() => exported(() => window.print())(undefined)} className="bg-slate-900 border-slate-800 hover:bg-slate-800 text-white shadow-sm text-xs h-8 px-3">
         A4 PDF
       </Button>
-      <Button variant="outline" onClick={() => exportToTxt(tasks)} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm text-xs h-8 px-3">
+      <Button variant="outline" onClick={() => exported(exportToTxt)(tasks)} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm text-xs h-8 px-3">
         TXT
       </Button>
-      <Button variant="outline" onClick={() => exportToJson(tasks)} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm text-xs h-8 px-3">
+      <Button variant="outline" onClick={() => exported(exportToJson)(tasks)} className="bg-white border-slate-200 hover:border-slate-300 shadow-sm text-xs h-8 px-3">
         JSON
       </Button>
     </div>

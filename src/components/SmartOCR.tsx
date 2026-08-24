@@ -1,5 +1,6 @@
 import React, { lazy, Suspense, useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { trackActivation } from '../lib/analytics';
 import {
   Image as ImageIcon, Copy, Check, Loader2,
   FileText, Code, Save, ScanLine, PenTool
@@ -191,6 +192,7 @@ export const SmartOCR: React.FC = () => {
           }
 
           const docRef = await addDoc(collection(db, 'tasks'), taskToSave);
+                trackActivation('first_task');
 
           classifyTaskCurriculum(taskToSave)
             .then(async refs => { if (refs.length > 0) await updateDoc(docRef, { curriculum_refs: refs }); })
@@ -366,6 +368,7 @@ export const SmartOCR: React.FC = () => {
       }
 
       const docRef = await addDoc(collection(db, 'tasks'), taskToSave);
+                trackActivation('first_task');
       showToast(t('toasts.taskSaved'), 'success');
 
       // Curriculum classification — must never fail the save

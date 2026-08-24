@@ -8,6 +8,16 @@ RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 # Assets folder: never redirect to index.html (return real 404 for missing chunks)
 RewriteRule ^assets/ - [L]
 
+# Prerendered public routes (scripts/prerender-seo.mts).
+#
+# Each public URL has its own index.html carrying that route's title,
+# description, og:* and JSON-LD. Serve it directly, without the redirect Apache
+# would otherwise issue for a directory reached without a trailing slash — the
+# sitemap and every canonical link use the slashless form, and a redirect would
+# put a hop between a shared link and its card.
+RewriteCond %{REQUEST_FILENAME}/index.html -f
+RewriteRule ^(.+?)/?$ /$1/index.html [L]
+
 # Serve existing files and directories directly
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

@@ -1,3 +1,5 @@
+import { ActivationMilestone, markReached, milestoneStep } from './activation';
+
 declare function gtag(...args: any[]): void;
 
 function g(...args: any[]) {
@@ -54,4 +56,29 @@ export function trackTrialExpired() {
 
 export function trackTrialUrgency(days_left: number) {
   g('event', 'trial_urgency_shown', { event_category: 'conversion_funnel', days_left });
+}
+
+/**
+ * Records the first time a teacher reaches an activation milestone.
+ *
+ * Idempotent per device: safe to call from any of the paths that can produce a
+ * task, an export or a grade, without each one needing to know whether it is
+ * the first. Only the first call sends anything.
+ *
+ * This is the half of the funnel that was missing. Everything above measures
+ * whether someone paid; without these, a low conversion rate cannot be read —
+ * it looks the same whether teachers never got value or got it and balked at
+ * the price, and those need opposite fixes.
+ */
+export function trackActivation(milestone: ActivationMilestone): void {
+  const store = typeof localStorage !== 'undefined' ? localStorage : null;
+  if (!store) return;
+
+  if (!markReached(store, milestone)) return;
+
+  g('event', 'activation_milestone', {
+    event_category: 'activation_funnel',
+    milestone,
+    step: milestoneStep(milestone),
+  });
 }
