@@ -467,9 +467,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
                 <div className="mt-6 pt-6 border-t border-slate-200 w-full text-left">
                   <button
                     onClick={togglePrompt}
-                    className="text-[10px] text-slate-400 uppercase tracking-widest font-bold hover:text-indigo-600 flex justify-between items-center w-full focus:outline-none"
+                    className="text-[10px] text-slate-400 uppercase tracking-widest font-bold hover:text-indigo-600 flex justify-between items-center w-full rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1"
                   >
-                    Prompt Settings <span className="bg-white px-2 py-0.5 rounded-full border border-slate-200">{expandedPrompts[index] ? '▲' : '▼'}</span>
+                    {t('taskCard.promptSettings')} <span className="bg-white px-2 py-0.5 rounded-full border border-slate-200">{expandedPrompts[index] ? '▲' : '▼'}</span>
                   </button>
                   {expandedPrompts[index] && (
                     <div className="mt-3 text-xs font-mono text-slate-600 bg-white p-3 rounded-xl border border-slate-200 h-28 overflow-y-auto leading-relaxed shadow-inner">

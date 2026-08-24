@@ -37,7 +37,12 @@ const VARIANTS: Array<{ variant: TemplateVariant; kind: string }> = [
 ];
 
 export const LetterheadProbe: React.FC = () => (
-  <div style={{ background: '#e2e8f0', padding: 24, minHeight: '100vh' }}>
+  // `overflowX: auto` mirrors how MaterialPreview wraps the document on the real
+  // screen. A sheet is 210mm wide by definition, so on a phone it must scroll
+  // inside its own frame rather than carrying the page sideways with it — and
+  // the probe has to reproduce that, or the mobile test measures the probe
+  // instead of the product.
+  <div style={{ background: '#e2e8f0', padding: 24, minHeight: '100vh', overflowX: 'auto' }}>
     <h1 style={{ fontFamily: 'system-ui', fontSize: 18, marginBottom: 16 }}>Letterhead Probe</h1>
 
     {VARIANTS.map(({ variant, kind }) => (
