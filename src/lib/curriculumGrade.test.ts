@@ -17,6 +17,9 @@ describe('resolveGradeToken', () => {
 
     const failures = CURRICULUM_INDEX
       .filter(grade => !ambiguousByDesign(grade.level_label))
+      // A superseded programme's label resolves to its replacement, by design —
+      // see the test below.
+      .filter(grade => !grade.superseded_by)
       .filter(grade => resolveGradeToken(grade.level_label) !== grade.grade)
       .map(grade => `${grade.level_label} -> ${resolveGradeToken(grade.level_label)} (want ${grade.grade})`);
 
@@ -31,7 +34,7 @@ describe('resolveGradeToken', () => {
   });
 
   it('resolves a secondary year only when the track is named', () => {
-    expect(resolveGradeToken('II година гимназија')).toBe('2год');
+    expect(resolveGradeToken('I година гимназија')).toBe('1год');
     expect(resolveGradeToken('II година МИГ')).toBe('2год-миг');
     expect(resolveGradeToken('I година — стручно 3-годишно')).toBe('1год-струк3');
   });
@@ -55,6 +58,38 @@ describe('resolveGradeToken', () => {
     expect(resolveGradeToken(undefined)).toBeNull();
     expect(resolveGradeToken('математика')).toBeNull();
     expect(resolveGradeToken('12 одделение')).toBeNull();
+  });
+});
+
+describe('superseded programmes', () => {
+  const retired = CURRICULUM_INDEX.find(grade => grade.superseded_by);
+
+  it('has at least one, or these tests describe nothing', () => {
+    expect(retired).toBeDefined();
+  });
+
+  it('reads free text as the programme in force, not the retired one', () => {
+    // A teacher writing `II година гимназија` means what their students follow
+    // now. Classifying new work against a retired programme would tag it with
+    // outcomes that no longer apply.
+    expect(resolveGradeToken('II година гимназија')).toBe('2год-2026');
+    expect(resolveGradeToken('втора година гимназија')).toBe('2год-2026');
+  });
+
+  it('never redirects an exact token', () => {
+    // The distinction that keeps old work readable: a task tagged
+    // `МА.2год.4.1` belongs to the programme that code came from. Retrieving it
+    // against the replacement would answer with outcomes that did not exist
+    // when the task was written.
+    expect(resolveGradeToken('2год')).toBe('2год');
+    expect(resolveGradeToken(retired!.grade)).toBe(retired!.grade);
+  });
+
+  it('follows a chain of replacements without looping', () => {
+    // If the replacement is itself replaced one day, free text must land on the
+    // last one — and a cycle in the data must not hang the app.
+    expect(resolveGradeToken('II година гимназија')).toBe('2год-2026');
+    expect(CURRICULUM_INDEX.find(g => g.grade === '2год-2026')?.superseded_by).toBeUndefined();
   });
 });
 

@@ -29,11 +29,14 @@ const grades = ALL_MK_CURRICULUM.map(grade => {
     `keywords: [${(topic.keywords ?? []).map(lit).join(', ')}] },`
   ).join('\n');
 
+  const superseded = grade.superseded_by ? `
+    superseded_by: ${lit(grade.superseded_by)},` : '';
+
   return `  {
     grade: ${lit(grade.grade)},
     level_label: ${lit(grade.level_label)},
     education_track: ${lit(grade.education_track)},
-    hours_per_week: ${grade.hours_per_week},
+    hours_per_week: ${grade.hours_per_week},${superseded}
     topics: [
 ${topics}
     ],
@@ -72,6 +75,14 @@ export interface CurriculumGradeIndex {
   education_track: string;
   hours_per_week: number;
   topics: CurriculumTopicIndex[];
+  /**
+   * Grade key of the programme that replaced this one.
+   *
+   * Carried into the index because resolving a teacher's free-text grade should
+   * land on the programme in force, while an outcome code that names the
+   * superseded one must still resolve to it.
+   */
+  superseded_by?: string;
 }
 
 export const CURRICULUM_INDEX: CurriculumGradeIndex[] = [

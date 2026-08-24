@@ -260,7 +260,7 @@ export const CURRICULUM_PROVENANCE = {
   identical: 998,
   repaired: 97,
   renumbered: 404,
-  navigator: 142,
+  navigator: 162,
   unverified: 22,
 } as const;
 

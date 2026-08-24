@@ -61,7 +61,33 @@ const PROGRAMMES: Array<{
   gradeToken: string;
   track: string;
   levelLabel: string;
+  /** The БРО decision this programme comes from, where it is known. */
+  document?: { number: string; date: string; inForceFrom: string };
 }> = [
+  /**
+   * II година гимназија, the programme in force from 2026/2027.
+   *
+   * Imported under its own token rather than replacing `2год`. The grade token
+   * is part of every outcome code, so writing this programme onto `2год` would
+   * either collide with the superseded codes or silently redefine them — and
+   * every `curriculum_refs` a teacher saved against the old programme points at
+   * exactly those codes. `2год` is marked `superseded_by` instead, and stays
+   * resolvable.
+   *
+   * The navigator's transcription was checked against the signed document
+   * (бр. 13-13739/9, 28.10.2025) before this import: six topics, the same
+   * titles, hours 23/20/20/10/15/20 summing to 108, and 6/4/3/2/3/2 learning
+   * outcomes. Every figure matches.
+   */
+  {
+    module: 'gymnasium',
+    exportName: 'gymnasiumGrade11',
+    gradeToken: '2год-2026',
+    track: 'secondary_general',
+    levelLabel: 'II година гимназија',
+    document: { number: '13-13739/9', date: '2025-10-28', inForceFrom: '2026/2027' },
+  },
+
   { module: 'vocational2', exportName: 'vocational2Grade10', gradeToken: '1год-струк2', track: 'secondary_vocational_2', levelLabel: 'I година — стручно 2-годишно' },
   { module: 'vocational2', exportName: 'vocational2Grade11', gradeToken: '2год-струк2', track: 'secondary_vocational_2', levelLabel: 'II година — стручно 2-годишно' },
 
@@ -160,12 +186,19 @@ ${prerequisites.length ? `      prerequisite_concept_ids: [${prerequisites.map(l
     );
   });
 
+  const documentLine = programme.document
+    ? `
+    document: { number: ${lit(programme.document.number)}, `
+      + `date: ${lit(programme.document.date)}, `
+      + `inForceFrom: ${lit(programme.document.inForceFrom)} },`
+    : '';
+
   blocks.push(
 `  {
     grade: ${lit(programme.gradeToken)},
     level_label: ${lit(programme.levelLabel)},
     education_track: '${programme.track}',
-    hours_per_week: ${source.weeklyHours ?? 2},
+    hours_per_week: ${source.weeklyHours ?? 2},${documentLine}
     topics: [
 ${topics.join('\n')}
     ],

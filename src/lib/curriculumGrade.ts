@@ -77,6 +77,10 @@ export function resolveGradeToken(hint?: string | null): string | null {
   if (!raw) return null;
 
   const known = knownTokens();
+  // An exact token is honoured as given, superseded or not. A task tagged
+  // `МА.2год.4.1` belongs to the programme that code came from, and retrieving
+  // it against the replacement would answer with outcomes that never existed
+  // when the task was written.
   if (known.has(raw)) return raw;
 
   const text = raw.toLowerCase();
@@ -110,11 +114,40 @@ export function resolveGradeToken(hint?: string | null): string | null {
     // different programmes start with a first year.
     if (!/гимназ/.test(text)) return null;
     const token = `${number}год`;
-    return known.has(token) ? token : null;
+    return known.has(token) ? inForce(token) : null;
   }
 
   const token = `${number}год${track.suffix}`;
-  return known.has(token) ? token : null;
+  return known.has(token) ? inForce(token) : null;
+}
+
+let replacements: Map<string, string> | null = null;
+
+/**
+ * Follows a superseded programme to the one that replaced it.
+ *
+ * Applied only to a resolution from free text — a teacher writing
+ * `II година гимназија` means the programme their students follow now, not the
+ * one that was in force two years ago. An exact token is never redirected; that
+ * distinction is what keeps old tags resolving to the outcomes they were
+ * written against.
+ */
+function inForce(token: string): string {
+  if (!replacements) {
+    replacements = new Map(
+      CURRICULUM_INDEX
+        .filter(grade => grade.superseded_by)
+        .map(grade => [grade.grade, grade.superseded_by as string]),
+    );
+  }
+
+  const seen = new Set<string>();
+  let current = token;
+  while (replacements.has(current) && !seen.has(current)) {
+    seen.add(current);
+    current = replacements.get(current) as string;
+  }
+  return current;
 }
 
 /**

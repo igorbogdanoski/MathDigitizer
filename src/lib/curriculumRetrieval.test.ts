@@ -119,6 +119,10 @@ describe('the grade a generator asks for is the grade it retrieves from', () => 
     const failures: string[] = [];
 
     for (const grade of ALL_MK_CURRICULUM) {
+      // A superseded programme's label deliberately resolves to its
+      // replacement; the assertion for those is the one below.
+      if (grade.superseded_by) continue;
+
       const token = resolveGradeToken(grade.level_label);
       if (token === null) continue; // deliberately unresolvable, e.g. electives
 
@@ -128,5 +132,21 @@ describe('the grade a generator asks for is the grade it retrieves from', () => 
     }
 
     expect(failures).toEqual([]);
+  });
+
+  it('still retrieves a superseded programme from its own token', () => {
+    // This is what keeps a teacher's old work readable. Their task carries a
+    // code like `МА.2год.4.1`; retrieval on that token must return the topics
+    // that code was written against, not the replacement's.
+    const retired = ALL_MK_CURRICULUM.filter(grade => grade.superseded_by);
+    expect(retired.length).toBeGreaterThan(0);
+
+    for (const grade of retired) {
+      const hits = searchCurriculumKeyword(grade.topics[0].name, grade.grade);
+      const foreign = hits.filter(topic => !grade.topics.some(t => t.id === topic.id));
+
+      expect(hits.length, grade.grade).toBeGreaterThan(0);
+      expect(foreign.map(t => t.id), grade.grade).toEqual([]);
+    }
   });
 });

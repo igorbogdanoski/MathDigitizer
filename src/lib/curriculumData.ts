@@ -31,12 +31,33 @@ export interface CurriculumTopic {
   example_tasks: string[]; // Typical task phrasings in Macedonian
 }
 
+/** The БРО decision that enacted a programme. */
+export interface CurriculumDocument {
+  /** Document number, e.g. `13-13739/9`. */
+  number: string;
+  /** ISO date the minister signed it. */
+  date: string;
+  /** School year it takes effect, e.g. `2026/2027`. */
+  inForceFrom: string;
+}
+
 export interface CurriculumGrade {
   grade: string;          // "1", "2", ... "9", "1год", "2год", "3год", "4год"
   level_label: string;    // "VI одделение", "I година гимназија"
   education_track: EducationTrack;
   hours_per_week: number;
   topics: CurriculumTopic[];
+  /** The document this programme was transcribed from, where it is known. */
+  document?: CurriculumDocument;
+  /**
+   * Grade key of the programme that replaced this one.
+   *
+   * A superseded programme is kept, never deleted. Its outcome codes carry its
+   * own grade token, so a task a teacher tagged against it still resolves —
+   * deleting it would strand every one of those refs. What changes is only that
+   * new work is classified against the replacement.
+   */
+  superseded_by?: string;
 }
 
 export type EducationTrack =
@@ -962,7 +983,8 @@ const SECONDARY_GENERAL_GRADES: CurriculumGrade[] = [
     ],
   },
   {
-    grade: '2год', level_label: 'II година гимназија', education_track: 'secondary_general', hours_per_week: 3,
+    grade: '2год', level_label: 'II година гимназија (до 2025/2026)', education_track: 'secondary_general', hours_per_week: 3,
+    superseded_by: '2год-2026',
     topics: [
     {
       id: 'mk-2год-1-trigonometriski-funkcii-od-ostar-agol-vo-pravoagolen-triagolnik',

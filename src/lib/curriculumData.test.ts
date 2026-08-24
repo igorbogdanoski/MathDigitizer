@@ -148,11 +148,20 @@ describe('grade tokens reach the model', () => {
     const inCorpus = new Set(ALL_MK_CURRICULUM.map(g => g.grade));
     const inPrompt = new Set<string>(CURRICULUM_PROMPT_GRADE_TOKENS);
 
-    const missingFromPrompt = [...inCorpus].filter(g => !inPrompt.has(g));
+    // Superseded programmes are deliberately absent. The model classifies work
+    // a teacher is setting now, and offering a retired programme invites it to
+    // tag new content against outcomes that no longer apply. The corpus keeps
+    // them so old tags still resolve; the prompt does not offer them.
+    const inForce = ALL_MK_CURRICULUM.filter(g => !g.superseded_by).map(g => g.grade);
+    const superseded = ALL_MK_CURRICULUM.filter(g => g.superseded_by).map(g => g.grade);
+
+    const missingFromPrompt = inForce.filter(g => !inPrompt.has(g));
     const missingFromCorpus = [...inPrompt].filter(g => !inCorpus.has(g));
+    const offeredButRetired = superseded.filter(g => inPrompt.has(g));
 
     expect(missingFromPrompt).toEqual([]);
     expect(missingFromCorpus).toEqual([]);
+    expect(offeredButRetired).toEqual([]);
   });
 });
 

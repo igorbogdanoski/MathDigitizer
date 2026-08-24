@@ -1,8 +1,8 @@
 // GENERATED — do not edit by hand.
 // Regenerate with: npx tsx scripts/build-curriculum-index.mts
 //
-// A light index over the БРО curriculum: 31 programmes,
-// 205 topics, 1663 outcome codes — identifying data only.
+// A light index over the БРО curriculum: 32 programmes,
+// 211 topics, 1683 outcome codes — identifying data only.
 //
 // Import this wherever you need to *name* or *count* curriculum entries;
 // import curriculumData only where the actual wording is used (RAG context,
@@ -26,6 +26,14 @@ export interface CurriculumGradeIndex {
   education_track: string;
   hours_per_week: number;
   topics: CurriculumTopicIndex[];
+  /**
+   * Grade key of the programme that replaced this one.
+   *
+   * Carried into the index because resolving a teacher's free-text grade should
+   * land on the programme in force, while an outcome code that names the
+   * superseded one must still resolve to it.
+   */
+  superseded_by?: string;
 }
 
 export const CURRICULUM_INDEX: CurriculumGradeIndex[] = [
@@ -164,9 +172,10 @@ export const CURRICULUM_INDEX: CurriculumGradeIndex[] = [
   },
   {
     grade: '2год',
-    level_label: 'II година гимназија',
+    level_label: 'II година гимназија (до 2025/2026)',
     education_track: 'secondary_general',
     hours_per_week: 3,
+    superseded_by: '2год-2026',
     topics: [
       { id: 'mk-2год-1-trigonometriski-funkcii-od-ostar-agol-vo-pravoagolen-triagolnik', name: 'Тригонометриски функции од остар агол во правоаголен триаголник', name_short: 'Тригонометриски функции', hours: 12, outcome_count: 12, outcome_codes: ['МА.2год.1.1', 'МА.2год.1.2', 'МА.2год.1.3', 'МА.2год.1.4', 'МА.2год.1.5', 'МА.2год.1.6', 'МА.2год.1.7', 'МА.2год.1.8', 'МА.2год.1.9', 'МА.2год.1.10', 'МА.2год.1.11', 'МА.2год.1.12'], keywords: ['Тригонометрија', 'агол', 'радијан', 'степен', 'синус', 'косинус', 'тангенс', 'котангенс', 'правоаголен триаголник', 'комплементни агли', 'калкулатор'] },
       { id: 'mk-2год-2-kompleksni-broevi', name: 'Комплексни броеви', name_short: 'Комплексни броеви', hours: 9, outcome_count: 19, outcome_codes: ['МА.2год.2.1', 'МА.2год.2.2', 'МА.2год.2.3', 'МА.2год.2.4', 'МА.2год.2.5', 'МА.2год.2.6', 'МА.2год.2.7', 'МА.2год.2.8', 'МА.2год.2.9', 'МА.2год.2.10', 'МА.2год.2.11', 'МА.2год.2.12', 'МА.2год.2.13', 'МА.2год.2.14', 'МА.2год.2.15', 'МА.2год.2.16', 'МА.2год.2.17', 'МА.2год.2.18', 'МА.2год.2.19'], keywords: ['Комплексни броеви', 'имагинарна единица', 'реален дел', 'имагинарен дел', 'алгебарска форма', 'комплексна рамнина', 'конјугиран број', 'модул', 'операции со комплексни броеви', 'векторско претставување'] },
@@ -354,6 +363,20 @@ export const CURRICULUM_INDEX: CurriculumGradeIndex[] = [
       { id: 'mk-4год-струк-елементарни-реални-функции', name: 'ЕЛЕМЕНТАРНИ РЕАЛНИ ФУНКЦИИ', name_short: 'Елементарни функции', hours: 10, outcome_count: 3, outcome_codes: ['МА.4год-струк.2.1', 'МА.4год-струк.2.2', 'МА.4год-струк.2.3'], keywords: ['функција', 'дефинициона област', 'нули', 'множество вредности', 'монотоност', 'конвексност', 'линеарна функција', 'квадратна функција', 'степенска функција', 'експоненцијална функција', 'логаритамска функција', 'инверзна функција', 'тригонометриски функции', 'периодичност', 'график', 'природен експонент', 'реален експонент'] },
       { id: 'mk-4год-струк-гранична-вредност-на-функција', name: 'ГРАНИЧНА ВРЕДНОСТ НА ФУНКЦИЈА', name_short: 'Гранична вредност', hours: 16, outcome_count: 3, outcome_codes: ['МА.4год-струк.3.1', 'МА.4год-струк.3.2', 'МА.4год-струк.3.3'], keywords: ['гранична вредност на функција', 'непрекинатост', 'асимптота', 'вертикална асимптота', 'хоризонтална асимптота', 'коса асимптота', 'граници на елементарни функции', 'специјални гранични вредности', 'график'] },
       { id: 'mk-4год-струк-извод-на-функција', name: 'ИЗВОД НА ФУНКЦИЈА', name_short: 'Извод на функција', hours: 25, outcome_count: 3, outcome_codes: ['МА.4год-струк.4.1', 'МА.4год-струк.4.2', 'МА.4год-струк.4.3'], keywords: ['извод на функција', 'дефиниција на извод', 'геометриско толкување', 'таблица на изводи', 'основни елементарни функции', 'извод од збир', 'извод од разлика', 'извод од производ', 'извод од количник', 'сложена функција', 'логаритамски извод', 'равенка на тангента', 'нормала', 'примена на изводи во физика', 'испитување тек на функција', 'график на функција', 'екстреми', 'оптимизација'] },
+    ],
+  },
+  {
+    grade: '2год-2026',
+    level_label: 'II година гимназија',
+    education_track: 'secondary_general',
+    hours_per_week: 3,
+    topics: [
+      { id: 'mk-2год-2026-koreni-i-kompleksni-broevi', name: 'КОРЕНИ И КОМПЛЕКСНИ БРОЕВИ', name_short: 'Корени и комплексни броеви', hours: 23, outcome_count: 6, outcome_codes: ['МА.2год-2026.1.1', 'МА.2год-2026.1.2', 'МА.2год-2026.1.3', 'МА.2год-2026.1.4', 'МА.2год-2026.1.5', 'МА.2год-2026.1.6'], keywords: ['степени', 'корен', 'комплексен', 'број', 'операции', 'корени', 'комплексни', 'броеви', 'ирационални', 'изрази'] },
+      { id: 'mk-2год-2026-kvadratni-ravenki-i-ravenki-shto-se-sveduvaat-na-kvadratni', name: 'КВАДРАТНИ РАВЕНКИ И РАВЕНКИ ШТО СЕ СВЕДУВААТ НА КВАДРАТНИ', name_short: 'Квадратни равенки и равенки', hours: 20, outcome_count: 4, outcome_codes: ['МА.2год-2026.2.1', 'МА.2год-2026.2.2', 'МА.2год-2026.2.3', 'МА.2год-2026.2.4'], keywords: ['квадратна', 'равенка', 'видови', 'квадратни', 'равенки', 'решавање', 'виетови', 'формули', 'сведуваат', 'систем', 'една', 'линеарна'] },
+      { id: 'mk-2год-2026-kvadratna-funkcija-kvadratna-neravenka-i-sistem-od-kvadratni', name: 'КВАДРАТНА ФУНКЦИЈА, КВАДРАТНА НЕРАВЕНКА И СИСТЕМ ОД КВАДРАТНИ НЕРАВЕНКИ СО ЕДНА НЕПОЗНАТА', name_short: 'Квадратна функција, квадратна неравенка', hours: 20, outcome_count: 3, outcome_codes: ['МА.2год-2026.3.1', 'МА.2год-2026.3.2', 'МА.2год-2026.3.3'], keywords: ['квадратна', 'функција', 'квадратни', 'неравенки', 'систем', 'една', 'непозната'] },
+      { id: 'mk-2год-2026-elementi-od-verojatnost', name: 'ЕЛЕМЕНТИ ОД ВЕРОЈАТНОСТ', name_short: 'Елементи од веројатност', hours: 10, outcome_count: 2, outcome_codes: ['МА.2год-2026.4.1', 'МА.2год-2026.4.2'], keywords: ['пермутација', 'варијација', 'комбинација', 'веројатност'] },
+      { id: 'mk-2год-2026-geometrija', name: 'ГЕОМЕТРИЈА', name_short: 'Геометрија', hours: 15, outcome_count: 3, outcome_codes: ['МА.2год-2026.5.1', 'МА.2год-2026.5.2', 'МА.2год-2026.5.3'], keywords: ['тригонометрија', 'права', 'рамнина', 'пресеци', 'форма'] },
+      { id: 'mk-2год-2026-merenje', name: 'МЕРЕЊЕ', name_short: 'Мерење', hours: 20, outcome_count: 2, outcome_codes: ['МА.2год-2026.6.1', 'МА.2год-2026.6.2'], keywords: ['периметар', 'плоштина', 'форми', 'пирамида', 'потсечена', 'конус', 'потсечен', 'топка', 'сфера'] },
     ],
   },
   {
