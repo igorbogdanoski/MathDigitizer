@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { motion, AnimatePresence } from 'motion/react';
 import { checkGeminiHealth } from '../lib/gemini';
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, type TooltipValueType } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
 import { isPaymentAdmin } from '../lib/paymentIntents';
 
@@ -70,6 +70,13 @@ interface WeeklySeveritySummary {
   avgMediumPct: number;
   avgLowPct: number;
   posture: 'stable' | 'watch' | 'critical';
+}
+
+interface SeverityWindowSummary {
+  count: number;
+  cap: number;
+  oldestStamp: string | null;
+  newestStamp: string | null;
 }
 
 function readSeverityHistory(): SeverityTrendPoint[] {
@@ -164,6 +171,19 @@ function buildWeeklySummary(points: SeverityTrendPoint[]): WeeklySeveritySummary
   };
 }
 
+function buildSeverityWindowSummary(points: SeverityTrendPoint[]): SeverityWindowSummary {
+  const sorted = [...points]
+    .filter((item) => Number.isFinite(Date.parse(item.stamp)))
+    .sort((a, b) => Date.parse(a.stamp) - Date.parse(b.stamp));
+
+  return {
+    count: sorted.length,
+    cap: INGESTION_HISTORY_LIMIT,
+    oldestStamp: sorted[0]?.stamp ?? null,
+    newestStamp: sorted[sorted.length - 1]?.stamp ?? null,
+  };
+}
+
 export const SystemIntegrityCheck: React.FC = () => {
   const { user, userProfile } = useAuth();
   const canViewIngestionDiagnostics = isPaymentAdmin(userProfile?.email ?? user?.email);
@@ -183,6 +203,7 @@ export const SystemIntegrityCheck: React.FC = () => {
   const [severityHistory, setSeverityHistory] = useState<SeverityTrendPoint[]>([]);
   const [includePreflight, setIncludePreflight] = useState(() => readPreflightPreference());
   const weeklySummary = buildWeeklySummary(severityHistory);
+  const severityWindow = buildSeverityWindowSummary(severityHistory);
 
   const handleResetSeverityHistory = () => {
     clearSeverityHistory();
@@ -195,6 +216,16 @@ export const SystemIntegrityCheck: React.FC = () => {
         exportedAt: new Date().toISOString(),
         includePreflight,
         latestDiagnosticsGeneratedAt: ingestionDiagnostics?.generatedAt ?? null,
+        policyModes: ingestionDiagnostics?.policyModes ?? null,
+        scannerSummary: ingestionDiagnostics
+          ? {
+              totalRules: ingestionDiagnostics.scanner.totalRules,
+              bySeverity: ingestionDiagnostics.scanner.bySeverity,
+              highSeverityRuleIds: ingestionDiagnostics.scanner.highSeverityRuleIds,
+            }
+          : null,
+        advisories: ingestionDiagnostics?.advisories ?? [],
+        window: severityWindow,
         snapshots: severityHistory,
       };
 
@@ -524,6 +555,12 @@ export const SystemIntegrityCheck: React.FC = () => {
                       </Button>
                     </div>
                   </div>
+                  <div className="mb-2 text-[11px] text-slate-500" data-testid="severity-window-indicator">
+                    Retention window: {severityWindow.count}/{severityWindow.cap}
+                    {severityWindow.oldestStamp && severityWindow.newestStamp
+                      ? ` | ${new Date(severityWindow.oldestStamp).toLocaleString('mk-MK')} -> ${new Date(severityWindow.newestStamp).toLocaleString('mk-MK')}`
+                      : ''}
+                  </div>
                   <div className="h-52 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={severityHistory} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
@@ -550,7 +587,7 @@ export const SystemIntegrityCheck: React.FC = () => {
                         />
                         <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} tick={{ fontSize: 11, fill: '#64748b' }} />
                         <Tooltip
-                          formatter={(value: number, name: string, item: any) => {
+                          formatter={(value: TooltipValueType | undefined, name: string | number | undefined, item: any) => {
                             const label = name === 'highPct' ? 'High' : name === 'mediumPct' ? 'Medium' : 'Low';
                             const countKey = name === 'highPct' ? 'highCount' : name === 'mediumPct' ? 'mediumCount' : 'lowCount';
                             const count = item?.payload?.[countKey] ?? 0;

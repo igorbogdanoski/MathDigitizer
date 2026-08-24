@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, GraduationCap, Inbox, Settings as SettingsIcon, Check, Sparkles, TrendingUp, AlertTriangle, Search } from 'lucide-react';
+import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, GraduationCap, Inbox, Settings as SettingsIcon, Check, Sparkles, TrendingUp, AlertTriangle, Search, Network } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccessibility } from '../contexts/AccessibilityContext';
@@ -102,6 +102,8 @@ export const Layout: React.FC = () => {
     { path: '/curriculum', icon: BookOpen, label: 'Државни Стандарди', show: userProfile?.role === 'teacher', group: 'digitize' as ToolGroupKey },
     { path: '/graph-digitizer', icon: TrendingUp, label: 'Graph Digitizer', show: !userProfile || userProfile.role === 'teacher', group: 'digitize' as ToolGroupKey },
     { path: '/curriculum-admin', icon: BookOpen, label: 'Curriculum БРО', show: userProfile?.role === 'teacher', group: 'digitize' as ToolGroupKey },
+    { path: '/textbooks', icon: BookOpen, label: 'Учебници', show: userProfile?.role === 'teacher', group: 'digitize' as ToolGroupKey },
+    { path: '/mind-maps', icon: Network, label: 'Концепт-мапи', show: userProfile?.role === 'teacher', group: 'generate' as ToolGroupKey },
     { path: '/factory', icon: Factory, label: 'Фабрика', show: !userProfile || userProfile.role === 'teacher', group: 'generate' as ToolGroupKey },
     { path: '/mass-factory', icon: Layers, label: 'PDF Фабрика', show: !userProfile || userProfile.role === 'teacher', group: 'generate' as ToolGroupKey },
     { path: '/live-board', icon: Monitor, label: 'В. Табла', show: true, group: 'teach' as ToolGroupKey },

@@ -10,6 +10,11 @@ interface AddFlashcardModalProps {
   newBack: string;
   onFrontChange: (value: string) => void;
   onBackChange: (value: string) => void;
+  /** Optional deck label; empty means the default deck. */
+  newDeck: string;
+  onDeckChange: (value: string) => void;
+  /** Decks that already exist, offered as suggestions. */
+  existingDecks: string[];
   onSave: () => void;
   onClose: () => void;
 }
@@ -20,6 +25,9 @@ export const AddFlashcardModal: React.FC<AddFlashcardModalProps> = ({
   newBack,
   onFrontChange,
   onBackChange,
+  newDeck,
+  onDeckChange,
+  existingDecks,
   onSave,
   onClose,
 }) => {
@@ -74,6 +82,24 @@ export const AddFlashcardModal: React.FC<AddFlashcardModalProps> = ({
                 placeholder={t('backPlaceholder')}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="flashcard-deck" className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest">
+              <div className="w-2 h-2 bg-amber-500 rounded-full"></div> {t('deckLabel')}
+            </label>
+            <input
+              id="flashcard-deck"
+              type="text"
+              list="flashcard-decks"
+              value={newDeck}
+              onChange={(e) => onDeckChange(e.target.value)}
+              placeholder={t('deckPlaceholder')}
+              className="w-full h-12 px-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-4 focus:ring-amber-100 dark:focus:ring-amber-900/30 focus:border-amber-500 outline-none text-base transition-all"
+            />
+            <datalist id="flashcard-decks">
+              {existingDecks.map(deck => <option key={deck} value={deck} />)}
+            </datalist>
           </div>
         </div>
 

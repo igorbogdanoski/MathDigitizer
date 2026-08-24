@@ -27,7 +27,7 @@ export async function buildCurriculumContextBlockRag(query: string, gradeHint?: 
     console.warn('RAG curriculum search failed, falling back to keyword search:', e);
   }
   // Fallback to static keyword search
-  return buildCurriculumContextBlock(query, gradeHint);
+  return await buildCurriculumContextBlock(query, gradeHint);
 }
 
 // ─── Иницијализација на Gemini клиентот ──────────────────────────────────────

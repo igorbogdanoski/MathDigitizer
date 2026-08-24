@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Lock, BookOpen } from 'lucide-react';
 import { TaskAttempt } from '../../lib/schema';
-import { ALL_MK_CURRICULUM, CurriculumTopic } from '../../lib/curriculumData';
+// Matches on topic ids and names only; see curriculumIndex.
+import { CURRICULUM_INDEX, type CurriculumTopicIndex } from '../../lib/curriculumIndex';
 
 interface KnowledgePathProps {
   completedAttempts: TaskAttempt[];
@@ -9,6 +11,7 @@ interface KnowledgePathProps {
 }
 
 export const KnowledgePath: React.FC<KnowledgePathProps> = ({ completedAttempts, userXP }) => {
+  const { t } = useTranslation('studentDashboard');
   // Build set of mastered topic names/ids from completed attempts
   const masteredKeys = useMemo(() => {
     const keys = new Set<string>();
@@ -22,13 +25,13 @@ export const KnowledgePath: React.FC<KnowledgePathProps> = ({ completedAttempts,
 
   // Show primary grades 5-9, max 24 topics
   const displayTopics = useMemo(() => {
-    const grades = ALL_MK_CURRICULUM.filter(
+    const grades = CURRICULUM_INDEX.filter(
       g => g.education_track === 'primary' && ['5', '6', '7', '8', '9'].includes(g.grade)
     );
     return grades.flatMap(g => g.topics).slice(0, 24);
   }, []);
 
-  const isMastered = (topic: CurriculumTopic) =>
+  const isMastered = (topic: CurriculumTopicIndex) =>
     masteredKeys.has(topic.id.toLowerCase()) ||
     masteredKeys.has(topic.name.toLowerCase()) ||
     masteredKeys.has(topic.name_short.toLowerCase());
@@ -37,7 +40,7 @@ export const KnowledgePath: React.FC<KnowledgePathProps> = ({ completedAttempts,
   const pct = displayTopics.length > 0 ? Math.round((masteredCount / displayTopics.length) * 100) : 0;
 
   // Simple unlock logic: first topic is always unlocked, rest require previous or XP
-  const isUnlocked = (topic: CurriculumTopic, idx: number) =>
+  const isUnlocked = (topic: CurriculumTopicIndex, idx: number) =>
     isMastered(topic) || idx === 0 || masteredCount >= idx || userXP >= idx * 50;
 
   return (
@@ -46,8 +49,8 @@ export const KnowledgePath: React.FC<KnowledgePathProps> = ({ completedAttempts,
       <div className="bg-indigo-50 rounded-2xl p-5 border border-indigo-100">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h3 className="font-bold text-indigo-900">Знаење Пат</h3>
-            <p className="text-sm text-indigo-600">{masteredCount} / {displayTopics.length} теми совладани</p>
+            <h3 className="font-bold text-indigo-900">{t('knowledgePath.title')}</h3>
+            <p className="text-sm text-indigo-600">{t('knowledgePath.mastered', { count: masteredCount, total: displayTopics.length })}</p>
           </div>
           <span className="text-3xl font-black text-indigo-300">{pct}%</span>
         </div>
@@ -61,9 +64,9 @@ export const KnowledgePath: React.FC<KnowledgePathProps> = ({ completedAttempts,
 
       {/* Legend */}
       <div className="flex items-center gap-4 text-xs text-slate-500">
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />Совладано</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-indigo-400 inline-block" />Отклучено</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-slate-300 inline-block" />Заклучено</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />{t('knowledgePath.legendMastered')}</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-indigo-400 inline-block" />{t('knowledgePath.legendUnlocked')}</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-slate-300 inline-block" />{t('knowledgePath.legendLocked')}</span>
       </div>
 
       {/* Topic grid */}
@@ -104,7 +107,7 @@ export const KnowledgePath: React.FC<KnowledgePathProps> = ({ completedAttempts,
 
       {completedAttempts.length === 0 && (
         <p className="text-center text-sm text-slate-400 py-4">
-          Реши ги задачите за да ги отклучиш темите на твојот пат.
+          {t('knowledgePath.hint')}
         </p>
       )}
     </div>

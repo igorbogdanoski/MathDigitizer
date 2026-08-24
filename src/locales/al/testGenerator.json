@@ -1,5 +1,5 @@
 {
-  "title": "Gjenerues i Testeve",
+  "title": "Gjeneruesi MakedoTest",
   "selectedTasks": "Detyrat e zgjedhura:",
   "closeAriaLabel": "Mbyll gjeneruesin",
   "randomTest": {
@@ -59,5 +59,17 @@
   "ariaBloomTaxonomy": "Taksonomia e Bloom-it",
   "ariaSectionText": "Teksti i seksionit",
   "ariaQuestionText": "Teksti i pyetjes",
-  "ariaListItem": "Element i listës"
+  "ariaListItem": "Element i listës",
+  "defaultInstructions": "Krijo një test formal me lloje të ndryshme pyetjesh (multiple choice, true/false, short answer, equation solving). Rendit sipas vështirësisë. Shto seksione.",
+  "errorNoTasks": "Ju lutemi së pari nxirrni ose zgjidhni detyra për të gjeneruar një test.",
+  "errorPrefix": "Gabim: {{message}}",
+  "generatedNotice": "Testi u gjenerua me sukses! Mund ta printoni (Ctrl+P) drejtpërdrejt nga shfletuesi juaj.",
+  "goBack": "Kthehu prapa",
+  "description": "Shndërroni automatikisht detyrat e nxjerra në një test profesional gati për printim. AI do të zgjedhë një strukturë të përshtatshme nga të 16 llojet (multiple choice, true/false, lidhje etj.).",
+  "sourceTasks": "1. Detyrat burimore",
+  "taskCount": "Aktualisht ka {{count}} detyra të nxjerra gati për t'u përfshirë në këtë test.",
+  "promptSection": "2. Prompti dhe struktura (udhëzime)",
+  "promptPlaceholder": "p.sh. Krijo 4 seksione: Zgjedhje e shumëfishtë, E saktë/E pasaktë, Përgjigje e shkurtër dhe Ese...",
+  "generating": "Po gjenerohet MakedoTest...",
+  "generate": "Krijo test"
 }

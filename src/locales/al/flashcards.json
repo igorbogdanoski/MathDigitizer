@@ -80,9 +80,6 @@
   "studySession": "Seanca e mësimit",
   "clickOrSpace": "Klikoni ose Space për përgjigje",
   "tryAnswerFirst": "Mundohuni t'i përgjigjeni pyetjes para se ta ktheni.",
-  "hard1": "Vështirë (1)",
-  "good2": "Mirë (2)",
-  "easy3": "Lehtë (3)",
   "cancelSession": "Anulo seancën",
   "excellentSession": "Seancë e shkëlqyer!",
   "sessionCompleteDesc": "Keni përfunduar me sukses kartelat e sotme inteligjente. Truri juaj është një hap më i fortë.",
@@ -119,5 +116,15 @@
   "frontPlaceholder": "P.sh.: Çfarë është teorema e Pitagorës?",
   "backPlaceholder": "P.sh.: a² + b² = c² (Katrori i hipotenuzës është i barabartë me shumën e katrorëve të kateteve)",
   "saveToCollection": "Ruaj në koleksion",
-  "close": "Mbyll"
+  "close": "Mbyll",
+  "again1": "Përsërit (1)",
+  "hard2": "Vështirë (2)",
+  "good3": "Mirë (3)",
+  "easy4": "Lehtë (4)",
+  "speakCard": "Lexo kartën me zë",
+  "ttsError": "Leximi me zë dështoi.",
+  "deckLabel": "Kuti",
+  "deckAll": "Të gjitha kutitë",
+  "deckDefault": "Kutia bazë",
+  "deckPlaceholder": "p.sh. Trigonometri"
 }

@@ -524,6 +524,27 @@ After implementation, MathDigitizer gains:
 - src/components/SystemIntegrityCheck.tsx now stores admin preflight ON/OFF preference in localStorage
 - diagnostics fetch now reuses saved preflight mode automatically on subsequent visits
 
+1. Added ingestion diagnostics UI smoke test coverage for admin/non-admin visibility:
+
+- src/components/SystemIntegrityCheck.smoke.test.tsx validates restricted-access rendering for non-admin users
+- same test file validates admin controls visibility (`Refresh`, `Preflight`) and diagnostics API fetch path
+- package.json `test:smoke` now includes SystemIntegrityCheck smoke coverage
+
+1. Added severity-trend retention cap indicator in diagnostics UI:
+
+- src/components/SystemIntegrityCheck.tsx now shows a compact retention window line (`count/cap`) with oldest/newest snapshot timestamps
+- indicator is rendered next to the trend chart controls and is export-aligned through shared summary metadata
+
+1. Added richer diagnostics export metadata for audit packets:
+
+- src/components/SystemIntegrityCheck.tsx export payload now includes `policyModes`, `scannerSummary`, `highSeverityRuleIds`, advisories, and trend-window metadata
+- keeps existing snapshot timeline while making exported JSON self-describing for reviewer handoff
+
+1. Added smoke coverage for preflight preference persistence:
+
+- src/components/SystemIntegrityCheck.smoke.test.tsx now verifies localStorage preload (`Preflight: ON`) and persisted toggle write-back (`1 -> 0`)
+- same test asserts diagnostics fetch uses `preflight=true` when saved preference is enabled
+
 1. Validation result:
 
 - `npx vitest run src/lib/ingestion/sanitize.test.ts src/lib/ingestion/injectionScan.test.ts`
@@ -536,7 +557,7 @@ After implementation, MathDigitizer gains:
 
 ### Next 72 hours (expert execution lane)
 
-1. Add ingestion diagnostics UI smoke test with admin/non-admin visibility checks.
-2. Add severity-trend retention cap indicator in UI (show oldest/newest snapshot window).
-3. Add optional route-level guard to hide diagnostics endpoint fetch for non-admin-only sessions.
-4. Add diagnostics export metadata with policy modes + high-severity rule IDs for audit packets.
+1. Add explicit empty-state copy when retention history is missing or fully reset.
+2. Add diagnostics export version tag and schema marker for downstream tooling.
+3. Add smoke test for diagnostics export action error-path (Blob/URL failures).
+4. Evaluate whether route-level admin gate should hide full diagnostics card or preserve current restricted-access card UX.

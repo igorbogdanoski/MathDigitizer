@@ -107,6 +107,18 @@ export default defineConfig(async ({mode}) => {
         output: {
           codeSplitting: true,
           manualChunks(id: string) {
+            // The БРО curriculum corpus is a large, stable data asset (31
+            // programmes, 1663 outcomes). Its own chunk keeps it out of the AI
+            // code chunk — which it pushed over the size budget — and lets it
+            // cache independently of code that changes far more often.
+            if (
+              id.includes('curriculumData') ||
+              id.includes('curriculumSecondary') ||
+              id.includes('operationalCurriculum')
+            ) {
+              return 'curriculum-data';
+            }
+
             if (!id.includes('node_modules')) return undefined;
 
             if (id.includes('react-dom') || id.includes('react-router-dom') || id.includes('react')) {

@@ -4,5 +4,28 @@
   "eraser": "Eraser",
   "thickness": "Thickness",
   "undo": "Undo",
-  "clearAll": "Clear all"
+  "clearAll": "Clear all",
+  "board": {
+    "pen": "Pen",
+    "eraser": "Eraser",
+    "undo": "Undo my last stroke",
+    "redo": "Redo the stroke I undid",
+    "setColor": "Set colour: {{color}}",
+    "colorIndigo": "Indigo",
+    "colorRose": "Rose",
+    "colorGreen": "Green",
+    "colorDark": "Dark",
+    "shapeFromText": "Shape from text",
+    "shapePlaceholder": "e.g. triangle ABC",
+    "shapeHint": "Deterministic drawing from text (no AI)",
+    "drawShape": "Draw shape from text",
+    "inkFailed": "The handwriting could not be recognised.",
+    "shapeNotUnderstood": "That shape was not understood: \"{{description}}\"",
+    "shapePartial": "Drawn, except: {{items}}",
+    "pdfFailed": "PDF export failed.",
+    "sessionUpdated": "Session updated.",
+    "sessionSaved": "Session saved permanently.",
+    "sessionSaveFailed": "The session could not be saved.",
+    "sessionName": "Session {{date}}"
+  }
 }

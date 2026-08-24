@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { generateKahootFromFiles } from '../lib/gemini';
+import type { LiveKahootQuiz } from '../lib/ai/kahoot';
 import { LiveKahootSession } from '../lib/schema';
 import { db } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -7,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, PlayCircle, ImageIcon, PlusCircle, CheckCircle, Smartphone } from 'lucide-react';
 import { Button } from './ui/Button';
+import { MathRenderer } from './MathRenderer';
 import { useTranslation } from 'react-i18next';
 
 export const KahootMaker = () => {
@@ -18,7 +20,7 @@ export const KahootMaker = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [draftQuiz, setDraftQuiz] = useState<any | null>(null);
+  const [draftQuiz, setDraftQuiz] = useState<LiveKahootQuiz | null>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
@@ -54,14 +56,14 @@ export const KahootMaker = () => {
       const quizJson = await generateKahootFromFiles(files, prompt);
       
       // Default time limit to 60s if not provided by gemini
-      const normalizedQuiz = {
+      const normalizedQuiz: LiveKahootQuiz = {
         ...quizJson,
-        questions: quizJson.questions.map((q: any) => ({
+        questions: quizJson.questions.map(q => ({
           ...q,
           timeLimit: q.timeLimit || 60
         }))
-      }
-      
+      };
+
       setDraftQuiz(normalizedQuiz);
     } catch (err: any) {
       console.error(err);
@@ -94,10 +96,10 @@ export const KahootMaker = () => {
   };
   
   const updateQuestionTime = (index: number, time: number) => {
-    if (!draftQuiz) return;
-    const updated = { ...draftQuiz };
-    updated.questions[index].timeLimit = time;
-    setDraftQuiz(updated);
+    setDraftQuiz(prev => prev ? {
+      ...prev,
+      questions: prev.questions.map((q, i) => i === index ? { ...q, timeLimit: time } : q)
+    } : prev);
   };
 
   if (draftQuiz) {
@@ -115,17 +117,19 @@ export const KahootMaker = () => {
              </div>
              
              <div className="space-y-6">
-               {draftQuiz.questions.map((q: any, i: number) => (
+               {draftQuiz.questions.map((q, i) => (
                  <div key={i} className="flex gap-6 items-start p-6 bg-slate-50 border border-slate-100 rounded-2xl">
                     <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 font-black flex items-center justify-center shrink-0">
                       {i + 1}
                     </div>
                     <div className="flex-1 space-y-4">
-                      <p className="font-bold text-slate-800 text-lg leading-relaxed">{q.question}</p>
+                      <div className="font-bold text-slate-800 text-lg leading-relaxed">
+                        <MathRenderer content={q.question} />
+                      </div>
                       <div className="grid grid-cols-2 gap-2">
                         {q.options.map((opt: string, optIdx: number) => (
                           <div key={optIdx} className={`p-3 rounded-lg text-sm font-medium border ${optIdx === q.correctIndex ? 'bg-emerald-100 border-emerald-300 text-emerald-800' : 'bg-white border-slate-200 text-slate-600'}`}>
-                            {opt}
+                            <MathRenderer content={opt} inline />
                           </div>
                         ))}
                       </div>

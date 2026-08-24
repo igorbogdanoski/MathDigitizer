@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { handleGeminiError, apiUrl } from './client';
+import { describe, it, expect, vi } from 'vitest';
+import { handleGeminiError, apiUrl, withRetry } from './client';
 
 describe('handleGeminiError', () => {
   it('maps a 429 error to the friendly quota message', () => {
@@ -34,6 +34,43 @@ describe('handleGeminiError', () => {
     expect(() => handleGeminiError({ code: 500, detail: 'server broke' })).toThrowError(
       /server broke/
     );
+  });
+});
+
+describe('withRetry', () => {
+  it('retries transient 429 failures and resolves', async () => {
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('429 quota exceeded'))
+      .mockRejectedValueOnce(new Error('429 quota exceeded'))
+      .mockResolvedValueOnce('ok');
+
+    await expect(withRetry(fn, 2, 1)).resolves.toBe('ok');
+    expect(fn).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not retry non-transient errors like 404', async () => {
+    const fn = vi.fn().mockRejectedValue(new Error('404 model not found'));
+
+    await expect(withRetry(fn, 2, 1)).rejects.toThrow('404 model not found');
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries 5xx and network failures', async () => {
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('503 UNAVAILABLE'))
+      .mockResolvedValueOnce('ok');
+
+    await expect(withRetry(fn, 2, 1)).resolves.toBe('ok');
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('gives up after the retry budget is spent', async () => {
+    const fn = vi.fn().mockRejectedValue(new Error('429 still throttled'));
+
+    await expect(withRetry(fn, 1, 1)).rejects.toThrow('429 still throttled');
+    expect(fn).toHaveBeenCalledTimes(2);
   });
 });
 

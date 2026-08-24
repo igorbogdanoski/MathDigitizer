@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { ReplotPanel } from './ReplotPanel';
 import {
   Download, Save, Loader2, Check, Copy, FileText,
 } from 'lucide-react';
@@ -9,6 +10,8 @@ import { GraphAnalysis } from '../../lib/gemini';
 
 interface StepExportProps {
   analysis: GraphAnalysis | null;
+  /** Digitized datasets, re-plotted on real axes (8.4). */
+  replotSeries?: Array<{ points: Array<{ x: number; y: number }>; color: string; name?: string }>;
   onExportCSV: () => void;
   onCopyGeoGebra: () => void;
   onSaveToLibrary: () => void;
@@ -21,7 +24,7 @@ interface StepExportProps {
 }
 
 export const StepExport: React.FC<StepExportProps> = ({
-  analysis, onExportCSV, onCopyGeoGebra, onSaveToLibrary,
+  analysis, replotSeries = [], onExportCSV, onCopyGeoGebra, onSaveToLibrary,
   copiedGeo, isSaving, savedId, buildGeoGebraCommands, autoSave, setAutoSave,
 }) => {
   const { t } = useTranslation('graphDigitizer');
@@ -31,6 +34,9 @@ export const StepExport: React.FC<StepExportProps> = ({
         <div className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
           <Download className="w-4 h-4 text-indigo-500" /> {t('export.title')}
         </div>
+
+        {/* The data on real axes, with SVG/PNG/CSV export */}
+        <ReplotPanel series={replotSeries} detectedEquation={analysis?.detected_equation} />
 
         <Button variant="outline" className="w-full justify-start" onClick={onExportCSV}>
           <FileText className="w-4 h-4 mr-2 text-emerald-600" /> {t('export.exportCSV')}

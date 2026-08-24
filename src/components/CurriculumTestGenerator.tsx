@@ -13,7 +13,13 @@ const TRACK_LABEL_KEYS: Record<EducationTrack, string> = {
   primary: 'curriculumTestGen.trackPrimary',
   secondary_general: 'curriculumTestGen.trackSecondaryGeneral',
   secondary_math_info: 'curriculumTestGen.trackSecondaryMathInfo',
-  secondary_vocational: 'curriculumTestGen.trackSecondaryVocational',
+  // Vocational is three separate БРО programmes; the bare key is the four-year
+  // one, kept so existing saved tasks keep resolving.
+  secondary_vocational: 'curriculumTestGen.trackVocational4',
+  secondary_vocational_2: 'curriculumTestGen.trackVocational2',
+  secondary_vocational_3: 'curriculumTestGen.trackVocational3',
+  secondary_vocational_4: 'curriculumTestGen.trackVocational4',
+  gymnasium_elective: 'curriculumTestGen.trackGymnasiumElective',
 };
 
 export const CurriculumTestGenerator: React.FC = () => {

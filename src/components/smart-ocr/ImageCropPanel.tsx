@@ -161,6 +161,8 @@ export const ImageCropPanel: React.FC<ImageCropPanelProps> = ({
           <div className="flex-1 relative w-full h-full bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden touch-none">
             <canvas
               ref={canvasRef}
+              role="img"
+              aria-label={t('crop.canvasLabel')}
               className="w-full h-full cursor-crosshair touch-none mix-blend-multiply dark:mix-blend-normal"
               onPointerDown={(e) => {
                 setIsDrawing(true);

@@ -1,3 +1,4 @@
+import { pixelToReal as mapPixelToReal } from '../../lib/graph/calibration';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type ScaleType = 'linear' | 'log';
@@ -62,31 +63,21 @@ export const STEPS: { id: Step; label: string }[] = [
 
 // ─── Coordinate transform ──────────────────────────────────────────────────────
 
+/**
+ * Pixel → real coordinates.
+ *
+ * Delegates to lib/graph/calibration, which validates the calibration first —
+ * this used to divide by `p2.pixel.x - p1.pixel.x` with no guard, so two clicks
+ * on the same vertical line produced Infinity and then NaN through every
+ * digitized point. Returns null now, and the caller reports it.
+ */
 export function pixelToReal(
   px: number, py: number,
   p1: CalibPoint, p2: CalibPoint,
   xScale: ScaleType, yScale: ScaleType,
-): { x: number; y: number } {
-  const dx = p2.pixel.x - p1.pixel.x;
-  const dy = p2.pixel.y - p1.pixel.y;
+): { x: number; y: number } | null {
+  const real = mapPixelToReal(px, py, p1, p2, xScale, yScale);
+  if (!real) return null;
 
-  let rx: number;
-  if (xScale === 'log') {
-    const logR1 = Math.log10(p1.real.x);
-    const logR2 = Math.log10(p2.real.x);
-    rx = Math.pow(10, logR1 + (px - p1.pixel.x) / dx * (logR2 - logR1));
-  } else {
-    rx = p1.real.x + (px - p1.pixel.x) / dx * (p2.real.x - p1.real.x);
-  }
-
-  let ry: number;
-  if (yScale === 'log') {
-    const logR1 = Math.log10(p1.real.y);
-    const logR2 = Math.log10(p2.real.y);
-    ry = Math.pow(10, logR1 + (py - p1.pixel.y) / dy * (logR2 - logR1));
-  } else {
-    ry = p1.real.y + (py - p1.pixel.y) / dy * (p2.real.y - p1.real.y);
-  }
-
-  return { x: Math.round(rx * 10000) / 10000, y: Math.round(ry * 10000) / 10000 };
+  return { x: Math.round(real.x * 10000) / 10000, y: Math.round(real.y * 10000) / 10000 };
 }

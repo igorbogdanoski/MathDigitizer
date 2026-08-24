@@ -4,11 +4,25 @@
  */
 import { GoogleGenAI } from "@google/genai";
 
-// ─── Curriculum RAG helper (synchronous — no extra API call) ─────────────────
-import { searchCurriculumKeyword, buildCurriculumChunkText, ALL_MK_CURRICULUM } from "../curriculumData";
+// ─── Curriculum RAG helper (no extra API call) ───────────────────────────────
+//
+// The corpus is loaded on demand rather than imported at module scope. It is
+// 571 KB of curriculum prose, and this module is on the import path of nearly
+// every feature — a static import put the whole corpus into every route bundle,
+// including ones that never build curriculum context at all.
+export async function buildCurriculumContextBlock(query: string, gradeHint?: string): Promise<string> {
+  const { searchCurriculumKeyword, buildCurriculumChunkText, ALL_MK_CURRICULUM } =
+    await import("../curriculumData");
 
-export function buildCurriculumContextBlock(query: string, gradeHint?: string): string {
-  const topics = searchCurriculumKeyword(query + (gradeHint ? ` ${gradeHint}` : ''));
+  // The grade restricts which programme is searched; it is not a search term.
+  // Appending it to the query — which is what this did — scored every topic
+  // that merely mentioned that number higher, and still searched all 31
+  // programmes, so a third-grade task could be "aligned" against gymnasium
+  // outcomes that the prompt then presented to the model as mandatory.
+  const { resolveGradeToken } = await import('../curriculumGrade');
+  const gradeToken = resolveGradeToken(gradeHint);
+
+  const topics = searchCurriculumKeyword(query, gradeToken ?? undefined);
   if (topics.length === 0) return '';
 
   const lines = [
@@ -126,7 +140,9 @@ export const ai: any = new Proxy({}, {
         get(mTarget, mProp) {
           return async (...args: any[]) => {
             await initAiPromise;
-            return _aiInstance[prop][mProp].apply(_aiInstance[prop], args);
+            const call = () => _aiInstance[prop][mProp].apply(_aiInstance[prop], args);
+            if (prop === 'models' && RETRYABLE_MODEL_METHODS.has(String(mProp))) return withRetry(call);
+            return call();
           };
         }
       });
@@ -140,6 +156,29 @@ export const ai: any = new Proxy({}, {
     };
   }
 });
+
+// ─── Retry with exponential backoff ─────────────────────────────────────────
+// Central retry for transient Gemini/transport failures (quota windows,
+// 5xx, network blips). 4xx like 404 (unknown model) are NOT retried so model
+// fallbacks (e.g. videoAgent's 3.7→3.6) still trigger immediately.
+const RETRYABLE_ERROR = /429|50[0-9]|quota|RESOURCE_EXHAUSTED|UNAVAILABLE|ECONNRESET|fetch failed|network/i;
+
+export async function withRetry<T>(fn: () => Promise<T>, retries = 2, baseDelayMs = 800): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      const msg = error instanceof Error ? error.message : String(error);
+      if (!RETRYABLE_ERROR.test(msg) || attempt === retries) throw error;
+      await new Promise((resolve) => setTimeout(resolve, baseDelayMs * 2 ** attempt));
+    }
+  }
+  throw lastError;
+}
+
+const RETRYABLE_MODEL_METHODS = new Set(['generateContent', 'embedContent']);
 
 export function handleGeminiError(error: any): never {
   const msg = error instanceof Error ? error.message : JSON.stringify(error);

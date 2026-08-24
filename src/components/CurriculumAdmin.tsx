@@ -28,6 +28,7 @@ import {
   type CoverageTaskEntry,
 } from '../lib/curriculumCoverage';
 import type { MathTask, CurriculumRef } from '../lib/schema';
+import CurriculumRefBadge from './curriculum/CurriculumRefBadge';
 import { SEO } from './SEO';
 
 type IngestStatus = 'idle' | 'running' | 'done' | 'error';
@@ -235,6 +236,32 @@ export const CurriculumAdmin: React.FC = () => {
     }
   };
 
+  /**
+   * Accepts the AI's mapping as it stands.
+   *
+   * Rewrites `source` to `manual`, which is the only thing that separates a
+   * proposal from knowledge in the shared contract. Confidence goes to 1 for
+   * the same reason: after a teacher has looked, the model's own estimate of
+   * how sure it was is no longer what the number means.
+   */
+  const handleConfirm = async (entry: CoverageTaskEntry) => {
+    const refs = entry.curriculum_refs ?? [];
+    if (refs.length === 0 || busyTaskId) return;
+
+    setBusyTaskId(entry.id);
+    try {
+      const confirmed: CurriculumRef[] = refs.map(r => ({ ...r, source: 'manual', confidence: 1 }));
+      await updateDoc(doc(db, 'tasks', entry.id), { curriculum_refs: confirmed });
+      applyLocalRefs(entry.id, confirmed);
+      showToast(t('curriculumAdmin.queue.confirmSuccess'), 'success');
+    } catch (e) {
+      console.error('Confirm error:', e);
+      showToast(t('curriculumAdmin.queue.confirmError'), 'error');
+    } finally {
+      setBusyTaskId(null);
+    }
+  };
+
   const handleManualAssign = async (entryId: string, value: string) => {
     if (!value || busyTaskId) return;
     const [education_track, grade, topic_id] = value.split('|');
@@ -288,13 +315,21 @@ export const CurriculumAdmin: React.FC = () => {
     return [
       ...snapshot.unmappedList.map(e => ({ entry: e, kind: 'unmapped' as const, confidence: undefined as number | undefined })),
       ...snapshot.lowConfidenceList.map(e => ({ entry: e, kind: 'low' as const, confidence: e.bestConfidence })),
+      // Confident AI mappings nobody has looked at. They never reached this
+      // queue before — it held only unmapped and low-confidence tasks — so a
+      // confident wrong guess counted as coverage and was shown to no one.
+      ...snapshot.suggestedList.map(e => ({
+        entry: e,
+        kind: 'suggested' as const,
+        confidence: Math.max(...(e.curriculum_refs ?? []).map(r => r.confidence ?? 0)),
+      })),
     ];
   }, [snapshot]);
 
   if (userProfile?.role !== 'teacher') {
     return (
       <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
-        <AlertCircle className="w-4 h-4 mr-2" /> Само за наставници.
+        <AlertCircle className="w-4 h-4 mr-2" /> {t('curriculumAdmin.status.teachersOnly')}
       </div>
     );
   }
@@ -312,7 +347,7 @@ export const CurriculumAdmin: React.FC = () => {
             Curriculum Knowledge Base
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Официјални наставни програми — БРО.ГОВ.МК · <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">curriculum_knowledge</code> Firestore колекција
+            {t('curriculumAdmin.status.officialSource')} <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">curriculum_knowledge</code> Firestore колекција
           </p>
         </div>
 
@@ -462,14 +497,18 @@ export const CurriculumAdmin: React.FC = () => {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{entry.title}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          {kind === 'unmapped' ? (
+                          {kind === 'unmapped' && (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
                               {t('curriculumAdmin.queue.unmapped')}
                             </span>
-                          ) : (
+                          )}
+                          {kind === 'low' && (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                               {t('curriculumAdmin.queue.lowConfidence', { value: confidence })}
                             </span>
+                          )}
+                          {kind === 'suggested' && (
+                            <CurriculumRefBadge ref_={entry.curriculum_refs?.[0]} showConfidence />
                           )}
                           {entry.curriculum_topic && (
                             <span className="text-[11px] text-slate-400 truncate">{entry.curriculum_topic}</span>
@@ -478,6 +517,16 @@ export const CurriculumAdmin: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
+                        {kind === 'suggested' && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleConfirm(entry)}
+                            disabled={busyTaskId !== null}
+                          >
+                            <Check className="w-3.5 h-3.5 mr-1.5" />
+                            {t('curriculumAdmin.queue.confirm')}
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
@@ -579,7 +628,7 @@ export const CurriculumAdmin: React.FC = () => {
                                   <div key={tp.id} className="flex flex-wrap items-center justify-between gap-2 text-xs px-3 py-2 bg-slate-50 dark:bg-slate-800/30 rounded-lg">
                                     <span className="font-medium text-slate-700 dark:text-slate-200">{tp.name}</span>
                                     <span className="flex items-center gap-2 text-slate-400">
-                                      <span title="Часови">{tp.hours}{t('curriculumAdmin.browser.hoursShort')}</span>
+                                      <span title={t('curriculumAdmin.status.hours')}>{tp.hours}{t('curriculumAdmin.browser.hoursShort')}</span>
                                       <span>·</span>
                                       <span>{tp.outcomes.length} {t('curriculumAdmin.browser.outcomes')}</span>
                                       <span>·</span>
@@ -627,17 +676,17 @@ export const CurriculumAdmin: React.FC = () => {
                 <p className="text-3xl font-black text-indigo-600">
                   {firestoreCount === null ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : firestoreCount}
                 </p>
-                <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide">Во Firestore</p>
+                <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide">{t('curriculumAdmin.status.inFirestore')}</p>
               </div>
               <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
                 <p className="text-3xl font-black text-slate-700 dark:text-slate-200">{staticTotal}</p>
-                <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide">Static теми</p>
+                <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide">{t('curriculumAdmin.status.staticTopics')}</p>
               </div>
               <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
                 <p className={`text-3xl font-black ${pct >= 90 ? 'text-emerald-600' : pct > 0 ? 'text-amber-600' : 'text-red-500'}`}>
                   {firestoreCount === null ? '—' : `${pct}%`}
                 </p>
-                <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide">Покриеност</p>
+                <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide">{t('curriculumAdmin.status.coverage')}</p>
               </div>
             </div>
 
@@ -654,7 +703,7 @@ export const CurriculumAdmin: React.FC = () => {
             {firestoreCount === 0 && (
               <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>Firestore е празен — AI генерацијата користи само static keyword RAG. Изврши ингестија за да ги активираш embedding пребарувањата.</span>
+                <span>{t('curriculumAdmin.status.firestoreEmpty')}</span>
               </div>
             )}
           </CardContent>
@@ -686,7 +735,7 @@ export const CurriculumAdmin: React.FC = () => {
                       ts.richPct >= 40 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
                       'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                     }`}>
-                      {ts.richPct}% — {ts.richPct >= 80 ? 'добро' : ts.richPct >= 40 ? 'делумно' : 'недостасува'}
+                      {ts.richPct}% — {ts.richPct >= 80 ? t('curriculumAdmin.status.rich_good') : ts.richPct >= 40 ? t('curriculumAdmin.status.rich_partial') : t('curriculumAdmin.status.rich_missing')}
                     </span>
                   </span>
                 </button>
@@ -723,30 +772,30 @@ export const CurriculumAdmin: React.FC = () => {
                 </div>
                 <div className="mt-2 space-y-1 text-xs text-slate-500">
                   <div className="flex items-center gap-2">
-                    <span className="w-28 text-slate-400">Модел:</span>
+                    <span className="w-28 text-slate-400">{t('curriculumAdmin.status.model')}</span>
                     <code className="bg-slate-900 text-emerald-400 px-2 py-0.5 rounded">gemini-embedding-2</code>
                     <span className="text-emerald-600 font-semibold text-[10px] bg-emerald-100 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded-full">GA</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-28 text-slate-400">Димензии:</span>
+                    <span className="w-28 text-slate-400">{t('curriculumAdmin.status.dimensions')}</span>
                     <span>128–3072 (Matryoshka)</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-28 text-slate-400">Контекст:</span>
-                    <span>8 192 токени</span>
+                    <span className="w-28 text-slate-400">{t('curriculumAdmin.status.context')}</span>
+                    <span>{t('curriculumAdmin.status.contextValue')}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-28 text-slate-400">Мулти-модален:</span>
+                    <span className="w-28 text-slate-400">{t('curriculumAdmin.status.multimodal')}</span>
                     <span>Text · Image · Video · Audio · Documents</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-28 text-slate-400">Јазици:</span>
-                    <span>100+ (вклучувајќи македонски)</span>
+                    <span className="w-28 text-slate-400">{t('curriculumAdmin.status.languages')}</span>
+                    <span>{t('curriculumAdmin.status.languagesValue')}</span>
                   </div>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Конзистентност</div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">{t('curriculumAdmin.status.consistency')}</div>
                 <div className="flex flex-col gap-1 text-[10px]">
                   <span className="flex items-center gap-1 text-emerald-600">
                     <Check className="w-3 h-3" /> gemini.ts ✓
@@ -792,7 +841,7 @@ export const CurriculumAdmin: React.FC = () => {
             {status === 'running' && (
               <div className="space-y-2">
                 <div className="flex justify-between text-xs text-slate-500">
-                  <span>Внесување...</span>
+                  <span>{t('curriculumAdmin.status.ingesting')}</span>
                   <span>{progress.done}/{progress.total} теми ({progressPct}%)</span>
                 </div>
                 <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5">
@@ -812,7 +861,7 @@ export const CurriculumAdmin: React.FC = () => {
               <div className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800 text-sm">
                 <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span className="text-emerald-800 dark:text-emerald-300">
-                  <strong>{lastResult.ingested}</strong> теми внесени
+                  <strong>{lastResult.ingested}</strong> {t('curriculumAdmin.status.ingested')}
                   {lastResult.errors > 0 && <span className="text-amber-600 ml-2">({lastResult.errors} грешки)</span>}
                 </span>
               </div>
@@ -825,8 +874,8 @@ export const CurriculumAdmin: React.FC = () => {
                 disabled={status === 'running' || isClearing}
               >
                 {status === 'running'
-                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Работи...</>
-                  : <><Play className="w-4 h-4 mr-2" /> Ингестирај {staticTotal} теми</>}
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('curriculumAdmin.status.working')}</>
+                  : <><Play className="w-4 h-4 mr-2" /> {t('curriculumAdmin.status.ingestTopics', { count: staticTotal })}</>}
               </Button>
               <Button
                 variant="outline"
@@ -840,7 +889,7 @@ export const CurriculumAdmin: React.FC = () => {
 
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                <strong className="text-slate-500">Следен чекор (богата содржина):</strong> Додај <code>serviceAccount.json</code> во <code>scripts/secrets/</code> и изврши:
+                <strong className="text-slate-500">{t('curriculumAdmin.status.nextStep')}</strong> Додај <code>serviceAccount.json</code> во <code>scripts/secrets/</code> и изврши:
                 <br />
                 <code className="block mt-1 bg-slate-900 text-emerald-400 p-2 rounded text-[10px]">
                   npx tsx scripts/ingest-curriculum.mjs --pdf --clear

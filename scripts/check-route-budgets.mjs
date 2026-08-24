@@ -15,7 +15,27 @@ const MANIFEST_PATH = path.join(DIST_DIR, '.vite', 'manifest.json');
 // whether it's ever actually downloaded by a real user. Re-baselined rather
 // than teaching this script to distinguish eager vs. lazy chunks, which is a
 // bigger methodology change than today's scope.
-const BASELINE_JS_KB = Number(process.env.BASELINE_JS_KB || 7210);
+//
+// Baseline updated 2026-08-22: the ingestion integrity rollout (PR #84), the
+// 23 i18n namespaces and the ops/diagnostics UI added ~880 KB of legitimate
+// feature code on top of the 7210 baseline. All 8 per-route budgets still
+// pass with headroom; only the whole-dist sum — which includes lazy chunks
+// like compute-engine/docx/jspdf that a real user rarely downloads — crossed
+// the +10% threshold. Re-baselined for the same reason as above; teaching
+// this script to exclude lazy chunks remains a deferred methodology change.
+//
+// Baseline updated 2026-08-24 (master plan 9.2): the corpus went from 21 to 31
+// БРО programmes — the two- and three-year vocational tracks and the five
+// gymnasium electives, which teachers in those profiles previously had no
+// curriculum for at all — plus a 145 KB identity-only index built so screens
+// that merely name a topic no longer pull 571 KB of outcome prose. Net effect
+// on what a user actually downloads is strongly negative: / fell 1126→618 KB,
+// /extract 1988→1480, /smart-ocr 1138→630, /live-board 1176→667, /analytics
+// 1532→1244, /library 2114→1605. Only the whole-dist sum rose, and only by
+// 22 KB past the threshold, because it counts the new curriculum chunk that
+// no route loads eagerly. Same lazy-vs-eager methodology gap as the two
+// entries above.
+const BASELINE_JS_KB = Number(process.env.BASELINE_JS_KB || 8923);
 const BASELINE_CSS_KB = Number(process.env.BASELINE_CSS_KB || 270);
 const MAX_JS_REGRESSION_PCT = Number(process.env.MAX_JS_REGRESSION_PCT || 10);
 const MAX_CSS_REGRESSION_PCT = Number(process.env.MAX_CSS_REGRESSION_PCT || 10);
@@ -29,6 +49,21 @@ const ROUTE_BUDGETS = [
   { route: '/dashboard', module: 'src/components/Dashboard.tsx', maxKb: 1100 },
   { route: '/live-board', module: 'src/components/live/VirtualWhiteboardPage.tsx', maxKb: 1500 },
   { route: '/analytics', module: 'src/components/AnalyticsDashboard.tsx', maxKb: 1700 },
+
+  // Added 2026-08-25 after the audit found the guard watched 8 of 26 routes —
+  // and none of the ones phases 6, 8 and 9 actually grew. A budget on a route
+  // nothing changed is a budget that can never fire.
+  //
+  // Each ceiling is the measured size at the time of writing plus ~25% head
+  // room: enough that ordinary feature work does not trip it, tight enough that
+  // pulling in another vendor chunk does.
+  { route: '/factory', module: 'src/components/MaterialsFactory.tsx', maxKb: 1800 },
+  { route: '/graph-digitizer', module: 'src/components/GraphDigitizer.tsx', maxKb: 800 },
+  { route: '/curriculum-admin', module: 'src/components/CurriculumAdmin.tsx', maxKb: 1450 },
+  { route: '/exams-grading', module: 'src/components/TeacherExamsDashboard.tsx', maxKb: 750 },
+  { route: '/flashcards', module: 'src/components/Flashcards.tsx', maxKb: 800 },
+  { route: '/smart-grader', module: 'src/components/SmartGrader.tsx', maxKb: 800 },
+  { route: '/adaptive-test', module: 'src/components/AdaptiveTest.tsx', maxKb: 750 },
 ];
 
 function toKb(bytes) {

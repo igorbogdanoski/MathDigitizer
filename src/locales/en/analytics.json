@@ -58,7 +58,8 @@
     "description": "A deficit has been identified in the mathematical competence framework. Activate the Socratic Intervention Mechanism to generate a precise ZPD plan.",
     "generating": "Generating Metacognitive Plan...",
     "constructPlan": "Construct Intervention Plan",
-    "proficiency": "Proficiency"
+    "proficiency": "Proficiency",
+    "estimateDisclaimer": "Only \"conceptual\" and \"procedural\" are measured from graded work. The other three strands are estimates derived from those, until direct measurements exist."
   },
   "leaderboard": {
     "title": "Analytics Leaderboard",
@@ -118,7 +119,42 @@
     "summary": {
       "totalTopics": "Curriculum topics",
       "coveredTopics": "Covered topics",
-      "coveragePct": "Coverage"
+      "coveragePct": "Coverage",
+      "confirmedTopics": "Confirmed topics",
+      "confirmedPct": "Confirmed coverage",
+      "awaitingReview": "{{tasks}} tasks were mapped by AI and await confirmation. They touch a further {{topics}} topics, which are not counted until a teacher reviews them."
     }
+  },
+  "mastery": {
+    "title": "Curriculum mastery",
+    "subtitle": "Grouped by the official БРО domains and by outcome codes.",
+    "coverage": "Classified: {{percent}}% ({{classified}}/{{total}})",
+    "lowCoverageWarning": "Fewer than half of the graded items carry a curriculum reference — treat these numbers as a hint, not a finding. Classification is added automatically when grading tasks that have a mapped topic.",
+    "domainMeta": "{{score}}% · {{attempts}} attempts",
+    "codeMeta": "{{score}}% · {{attempts}}",
+    "weaknessesTitle": "Weaknesses that need intervention",
+    "prerequisiteTitle": "Prerequisite knowledge (grade {{grade}})",
+    "noWeaknesses": "No domain is below the intervention threshold.",
+    "noEvidence": "No graded work to analyse yet.",
+    "allUnclassified": "The graded work carries no curriculum reference, so no per-outcome view can be built.",
+    "csv": {
+      "domain": "Domain",
+      "code": "Outcome code",
+      "outcome": "Outcome",
+      "grade": "Grade",
+      "attempts": "Attempts",
+      "average": "Average (%)",
+      "worst": "Worst (%)",
+      "unclassified": "Unclassified"
+    }
+  },
+  "filters": {
+    "from": "From date",
+    "to": "To date",
+    "clear": "Clear",
+    "loadedCount": "Loaded: {{count}}",
+    "loadMore": "Load more",
+    "loadingMore": "Loading…",
+    "exportCsv": "Export CSV"
   }
 }

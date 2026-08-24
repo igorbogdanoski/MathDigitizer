@@ -9,14 +9,38 @@
     "selected": "Të zgjedhura"
   },
   "types": {
-    "worksheet": { "name": "Fletë pune", "description": "Detyra ushtrimore për në klasë ose shtëpi" },
-    "test": { "name": "Test / Vlerësim", "description": "Vlerësim me pikë dhe zgjidhje për mësuesin" },
-    "collection": { "name": "Koleksion detyrash", "description": "Koleksion gjithëpërfshirës i ndarë sipas temës dhe vështirësisë" },
-    "quiz": { "name": "Kuiz interaktiv", "description": "Kuiz live për nxënësit (stili Kahoot)" },
-    "presentation": { "name": "Prezantim", "description": "Sllajde me teori dhe detyra për në klasë" },
-    "flashcards": { "name": "Flashcards", "description": "Kartela për përsëritje të shpejtë të koncepteve" },
-    "homework": { "name": "Detyrë shtëpie", "description": "Detyra për punë të pavarur në shtëpi" },
-    "study_guide": { "name": "Udhëzues mësimi", "description": "Pasqyrë e detajuar e teorisë dhe detyrave kryesore" }
+    "worksheet": {
+      "name": "Fletë pune",
+      "description": "Detyra ushtrimore për në klasë ose shtëpi"
+    },
+    "test": {
+      "name": "Test / Vlerësim",
+      "description": "Vlerësim me pikë dhe zgjidhje për mësuesin"
+    },
+    "collection": {
+      "name": "Koleksion detyrash",
+      "description": "Koleksion gjithëpërfshirës i ndarë sipas temës dhe vështirësisë"
+    },
+    "quiz": {
+      "name": "Kuiz interaktiv",
+      "description": "Kuiz live për nxënësit (stili Kahoot)"
+    },
+    "presentation": {
+      "name": "Prezantim",
+      "description": "Sllajde me teori dhe detyra për në klasë"
+    },
+    "flashcards": {
+      "name": "Flashcards",
+      "description": "Kartela për përsëritje të shpejtë të koncepteve"
+    },
+    "homework": {
+      "name": "Detyrë shtëpie",
+      "description": "Detyra për punë të pavarur në shtëpi"
+    },
+    "study_guide": {
+      "name": "Udhëzues mësimi",
+      "description": "Pasqyrë e detajuar e teorisë dhe detyrave kryesore"
+    }
   },
   "settings": {
     "language": "Gjuha:",
@@ -76,5 +100,76 @@
   },
   "ariaDocumentTitle": "Titulli i dokumentit",
   "ariaAnswerKey": "Çelësi i përgjigjeve",
-  "ariaMaterialPreview": "Pamja paraprake e materialit"
+  "ariaMaterialPreview": "Pamja paraprake e materialit",
+  "copyType": "Lloji i kopjes",
+  "copyStudent": "Nxënësi",
+  "copyTeacher": "Mësuesi",
+  "vectorPdf": "Printo (vektorial)",
+  "vectorPdfHint": "Printim përmes shfletuesit — teksti dhe formulat mbeten vektoriale dhe të qarta në çdo zmadhim.",
+  "converting": "Po konvertohet...",
+  "savePdf": "Ruaj si PDF",
+  "template": {
+    "title": "Shabllon i markuar për printim",
+    "hint": "Plotësojeni një herë — çdo dokument i eksportuar do të mbajë identitetin e shkollës suaj.",
+    "uploadLogo": "Ngarko logon",
+    "removeLogo": "Hiq logon",
+    "logoAlt": "Logoja e shkollës",
+    "logoTooLarge": "Logoja është shumë e madhe (maksimum ~{{kb}} KB pas zvogëlimit).",
+    "logoFailed": "Ngarkimi i logos dështoi.",
+    "school": "Shkolla",
+    "municipality": "Komuna / vendi",
+    "schoolYear": "Viti shkollor",
+    "subject": "Lënda",
+    "grade": "Klasa / paralelja",
+    "teacher": "Mësuesi",
+    "note": "Rresht shtesë (opsional)",
+    "variant": "Pamja",
+    "variant_official": "Zyrtar",
+    "variant_compact": "Kompakt",
+    "variant_minimal": "Minimal",
+    "accent": "Ngjyra e theksit",
+    "showStudentFields": "Fushat e nxënësit",
+    "showPointsBox": "Kutia e pikëve dhe notës",
+    "showGradingScale": "Shkalla e vlerësimit",
+    "showFooter": "Fundfaqja me referencë",
+    "totalPoints": "Pikët gjithsej"
+  },
+  "letterhead": {
+    "subject": "Lënda",
+    "grade": "Klasa",
+    "schoolYear": "Viti shkollor",
+    "teacher": "Mësuesi",
+    "studentName": "Emri",
+    "studentSurname": "Mbiemri",
+    "studentClass": "Paralelja",
+    "date": "Data",
+    "assessment": "Vlerësimi",
+    "points": "Pikë",
+    "gradingScale": "Shkalla e vlerësimit (pikë)",
+    "generatedBy": "Përgatitur me MathDigitizer Pro",
+    "gradeLabel": "Nota"
+  },
+  "preview": {
+    "enterQuestion": "Shkruani pyetjen",
+    "enterOption": "Shkruani opsionin",
+    "front": "Ana e parme",
+    "back": "Ana e pasme (zgjidhja)",
+    "enterSolution": "Shkruani zgjidhjen",
+    "enterSectionTitle": "Shkruani titullin e seksionit",
+    "enterContent": "Shkruani përmbajtjen",
+    "enterAnswerKey": "Shkruani çelësin e zgjidhjeve",
+    "save": "Ruaj",
+    "editText": "Redakto tekstin"
+  },
+  "grades": {
+    "allMixed": "Të gjitha klasat / të përziera",
+    "primary": "Klasa {{roman}}",
+    "secondary": "Viti {{roman}} (i mesëm)"
+  },
+  "languages": {
+    "mk": "Maqedonisht",
+    "en": "Anglisht",
+    "ru": "Rusisht",
+    "tr": "Turqisht"
+  }
 }

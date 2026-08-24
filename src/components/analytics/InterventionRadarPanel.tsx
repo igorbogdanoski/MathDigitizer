@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { BrainCircuit, Zap } from 'lucide-react';
+import { BrainCircuit, Zap, Info } from 'lucide-react';
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer,
   Tooltip as RechartsTooltip
@@ -31,8 +31,15 @@ export const InterventionRadarPanel: React.FC<InterventionRadarPanelProps> = ({ 
           <span className="text-indigo-200 block text-lg font-bold mb-2 uppercase tracking-widest">{t('radar.primaryFocus')}</span>
           {primaryDeficit}
         </h3>
-        <p className="text-indigo-100 text-sm leading-relaxed mb-10 max-w-sm font-medium">
+        <p className="text-indigo-100 text-sm leading-relaxed mb-4 max-w-sm font-medium">
            {t('radar.description')}
+        </p>
+        {/* Only two of the five Kilpatrick strands are measured; the rest are
+            derived from those. Saying so is the difference between a model and
+            a claim. */}
+        <p role="note" className="flex items-start gap-2 text-[11px] leading-relaxed text-indigo-100/90 bg-white/10 border border-white/20 rounded-xl p-3 mb-8 max-w-sm">
+          <Info className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+          {t('radar.estimateDisclaimer')}
         </p>
         <Button
           onClick={onGenerate}

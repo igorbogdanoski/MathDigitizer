@@ -26,5 +26,24 @@
   "recentAttempts": "Recent attempts",
   "noMistakes": "✓ No mistakes",
   "mistakesCount": "{{count}} mistakes",
-  "refresh": "Refresh"
+  "refresh": "Refresh",
+  "skillTree": {
+    "badge": "Student campaign",
+    "title": "Knowledge graph",
+    "subtitle": "Unlock new mathematical concepts by mastering the topics before them and earning XP.",
+    "statusMastered": "Mastered",
+    "statusInProgress": "In progress",
+    "statusLocked": "Locked",
+    "required": "Required:",
+    "missingPrerequisites": "Still to master:",
+    "startTraining": "Start training"
+  },
+  "knowledgePath": {
+    "title": "Knowledge path",
+    "mastered": "{{count}} / {{total}} topics mastered",
+    "legendMastered": "Mastered",
+    "legendUnlocked": "Unlocked",
+    "legendLocked": "Locked",
+    "hint": "Solve tasks to unlock the topics along your path."
+  }
 }

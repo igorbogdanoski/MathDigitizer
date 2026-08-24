@@ -80,9 +80,6 @@
   "studySession": "Study Session",
   "clickOrSpace": "Click or Space for answer",
   "tryAnswerFirst": "Try to answer the question before flipping.",
-  "hard1": "Hard (1)",
-  "good2": "Good (2)",
-  "easy3": "Easy (3)",
   "cancelSession": "Cancel session",
   "excellentSession": "Excellent Session!",
   "sessionCompleteDesc": "You have successfully completed today's smart cards. Your brain is one step stronger.",
@@ -119,5 +116,15 @@
   "frontPlaceholder": "E.g.: What is the Pythagorean theorem?",
   "backPlaceholder": "E.g.: a² + b² = c² (The square of the hypotenuse equals the sum of the squares of the legs)",
   "saveToCollection": "Save to collection",
-  "close": "Close"
+  "close": "Close",
+  "again1": "Again (1)",
+  "hard2": "Hard (2)",
+  "good3": "Good (3)",
+  "easy4": "Easy (4)",
+  "speakCard": "Read the card aloud",
+  "ttsError": "Reading aloud failed.",
+  "deckLabel": "Deck",
+  "deckAll": "All decks",
+  "deckDefault": "Default deck",
+  "deckPlaceholder": "e.g. Trigonometry"
 }

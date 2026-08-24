@@ -26,5 +26,24 @@
   "recentAttempts": "Последни обиди",
   "noMistakes": "✓ Без грешки",
   "mistakesCount": "{{count}} грешки",
-  "refresh": "Освежи"
+  "refresh": "Освежи",
+  "skillTree": {
+    "badge": "Студентска кампања",
+    "title": "Граф на знаење",
+    "subtitle": "Отклучувај нови математички концепти со совладување на претходните теми и собирање XP.",
+    "statusMastered": "Совладано",
+    "statusInProgress": "Во тек",
+    "statusLocked": "Заклучено",
+    "required": "Потребно:",
+    "missingPrerequisites": "Недостасува совладување на:",
+    "startTraining": "Започни тренинг"
+  },
+  "knowledgePath": {
+    "title": "Пат на знаењето",
+    "mastered": "{{count}} / {{total}} теми совладани",
+    "legendMastered": "Совладано",
+    "legendUnlocked": "Отклучено",
+    "legendLocked": "Заклучено",
+    "hint": "Реши ги задачите за да ги отклучиш темите на твојот пат."
+  }
 }

@@ -15,6 +15,10 @@ import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useModalA11y } from '../hooks/useModalA11y';
+import { computePageSlices, measureBlocks, waitForMathRendering } from '../lib/pdf/pagination';
+import { PrintTemplate, loadPrintTemplate, savePrintTemplate } from '../lib/materials/printTemplate';
+import { DocumentFooter, DocumentLetterhead } from './print/DocumentLetterhead';
+import { TemplateEditor } from './print/TemplateEditor';
 
 interface MaterialPreviewProps {
   type: MaterialType;
@@ -28,6 +32,21 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
   const [editedData, setEditedData] = useState<any>(JSON.parse(JSON.stringify(data)));
   const [isEditing, setIsEditing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  /** Teacher copy includes the answer key; student copy never does. */
+  const [includeAnswerKey, setIncludeAnswerKey] = useState(true);
+  /** School/teacher header, remembered between exports. */
+  const [template, setTemplate] = useState<PrintTemplate>(() => loadPrintTemplate());
+
+  const updateTemplate = (patch: Partial<PrintTemplate>) => {
+    setTemplate(prev => {
+      const next = { ...prev, ...patch };
+      savePrintTemplate(next);
+      return next;
+    });
+  };
+
+  /** Stable issue date, so the footer reference does not change per render. */
+  const issuedAtRef = useRef(new Date());
   const navigate = useNavigate();
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -57,10 +76,23 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
     }
   };
 
+  /**
+   * Vector path: the browser's own print pipeline keeps text selectable and
+   * formulas sharp at any zoom, which a rasterised canvas never will. Offered
+   * as a first-class option alongside the image export (Phase 6.1).
+   */
+  const printAsVectorPDF = () => {
+    // The answer key is excluded from a student print via a body class.
+    document.body.classList.toggle('printing-student-copy', !includeAnswerKey);
+    window.print();
+    // Safari fires afterprint late; the class is idempotent, so clear on a tick.
+    window.setTimeout(() => document.body.classList.remove('printing-student-copy'), 0);
+  };
+
   const exportHighFidelityPDF = async () => {
     if (!printRef.current) return;
     setIsExporting(true);
-    
+
     try {
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
         import('html2canvas'),
@@ -98,11 +130,18 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
          }
       });
 
+      // A student copy leaves the answer key out entirely, rather than relying
+      // on the teacher not to hand out the wrong file.
+      if (!includeAnswerKey) {
+        clone.querySelectorAll('[data-answer-key]').forEach(el => el.remove());
+      }
+
       tempContainer.appendChild(clone);
       document.body.appendChild(tempContainer);
 
-      // We wait for KaTeX to finish any asynchronous renders
-      await new Promise(r => setTimeout(r, 600));
+      // Wait for KaTeX to actually finish, instead of guessing at 600ms —
+      // too long on a fast machine, too short for a formula-heavy document.
+      await waitForMathRendering(tempContainer);
 
       const canvas = await html2canvas(tempContainer, {
         scale: 3, // Very high resolution for math formulas (Retina quality)
@@ -112,35 +151,50 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
         windowWidth: 794 // Approx pixels for 210mm
       });
 
+      // Block geometry decides where pages break — measured on the live clone,
+      // before it is removed.
+      const blocks = measureBlocks(clone);
+      const scaleToCanvas = canvas.height / tempContainer.offsetHeight;
+
       document.body.removeChild(tempContainer);
 
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      let heightLeft = pdfHeight;
-      let position = 0;
-      let pageHeight = pdf.internal.pageSize.getHeight();
+      const pdfPageHeight = pdf.internal.pageSize.getHeight();
 
-      // Add first page
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-      heightLeft -= pageHeight;
+      // Work in canvas pixels, then convert each slice back to mm.
+      const pxPerMm = canvas.width / pdfWidth;
+      const slices = computePageSlices(
+        blocks.map(b => ({ top: b.top * scaleToCanvas, height: b.height * scaleToCanvas })),
+        { pageHeight: pdfPageHeight * pxPerMm, totalHeight: canvas.height }
+      );
 
-      // Handle multi-page math documents correctly by cutting the canvas
-      while (heightLeft > 0) {
-        position = heightLeft - pdfHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-        heightLeft -= pageHeight;
+      // Each page gets its own cropped canvas, so nothing is drawn off-page.
+      for (let i = 0; i < slices.length; i++) {
+        const slice = slices[i];
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = Math.max(1, Math.round(slice.height));
+
+        const ctx = pageCanvas.getContext('2d');
+        if (!ctx) continue;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+        ctx.drawImage(
+          canvas,
+          0, Math.round(slice.offset), canvas.width, pageCanvas.height,
+          0, 0, canvas.width, pageCanvas.height
+        );
+
+        if (i > 0) pdf.addPage();
+        pdf.addImage(
+          pageCanvas.toDataURL('image/png'), 'PNG',
+          0, 0, pdfWidth, pageCanvas.height / pxPerMm
+        );
       }
 
-      pdf.save(`MathDigitizer_${editedData.title || type}.pdf`);
+      const suffix = includeAnswerKey ? 'nastavnik' : 'ucenik';
+      pdf.save(`MathDigitizer_${editedData.title || type}_${suffix}.pdf`);
     } catch (error) {
       console.error("Грешка при генерирање PDF:", error);
       showToast("Не успеав да го генерирам PDF. Обидете се преку Print → Save as PDF.", 'error');
@@ -194,7 +248,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                         onChange={(e) => updateNestedField(`questions.${idx}.question`, e.target.value)}
                         title={`Прашање ${idx + 1}`}
                         aria-label={`Прашање ${idx + 1}`}
-                        placeholder="Внеси прашање"
+                        placeholder={t('materialsFactory:preview.enterQuestion')}
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                       />
                     ) : (
@@ -218,7 +272,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                               onChange={(e) => updateNestedField(`questions.${idx}.options.${optIdx}`, e.target.value)}
                               title={`Опција ${String.fromCharCode(65 + optIdx)} за прашање ${idx + 1}`}
                               aria-label={`Опција ${String.fromCharCode(65 + optIdx)} за прашање ${idx + 1}`}
-                              placeholder="Внеси опција"
+                              placeholder={t('materialsFactory:preview.enterOption')}
                               className="flex-1 bg-transparent border-none focus:ring-0 text-sm outline-none"
                             />
                           ) : (
@@ -246,14 +300,14 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                 {/* Front */}
                 <Card className="absolute inset-0 h-full w-full bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 [backface-visibility:hidden]">
                   <CardContent className="h-full flex flex-col items-center justify-center p-6 text-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Предна страна</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">{t('materialsFactory:preview.front')}</span>
                     {isEditing ? (
                       <textarea
                         value={card.front}
                         onChange={(e) => updateNestedField(`cards.${idx}.front`, e.target.value)}
                         title={`Предна страна на картичка ${idx + 1}`}
                         aria-label={`Предна страна на картичка ${idx + 1}`}
-                        placeholder="Внеси прашање"
+                        placeholder={t('materialsFactory:preview.enterQuestion')}
                         className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none h-32"
                       />
                     ) : (
@@ -266,14 +320,14 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                 {/* Back */}
                 <Card className="absolute inset-0 h-full w-full bg-indigo-600 text-white [backface-visibility:hidden] [transform:rotateY(180deg)]">
                   <CardContent className="h-full flex flex-col items-center justify-center p-6 text-center">
-                    <span className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-4">Задна страна (Решение)</span>
+                    <span className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-4">{t('materialsFactory:preview.back')}</span>
                     {isEditing ? (
                       <textarea
                         value={card.back}
                         onChange={(e) => updateNestedField(`cards.${idx}.back`, e.target.value)}
                         title={`Задна страна на картичка ${idx + 1}`}
                         aria-label={`Задна страна на картичка ${idx + 1}`}
-                        placeholder="Внеси решение"
+                        placeholder={t('materialsFactory:preview.enterSolution')}
                         className="w-full bg-indigo-700 border border-indigo-500 rounded-xl p-3 text-sm text-white focus:ring-2 focus:ring-white/30 outline-none h-32"
                       />
                     ) : (
@@ -322,53 +376,39 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
     // Default rendering for worksheet, test, collection, homework, study_guide, quiz
     return (
       <div ref={printRef} className="bg-white text-slate-900 p-10 rounded-2xl print:p-0">
-        {/* HEADER SECTION FOR PRINT/PDF */}
-        <div className="flex flex-col mb-12 border-b-2 border-slate-900 pb-4">
-          <div className="flex justify-between items-end mb-4 gap-4">
-            <div className="flex-1">
-              {isEditing ? (
-                <input
-                  value={editedData.title}
-                  onChange={(e) => updateNestedField('title', e.target.value)}
-                  title={t('materialsFactory:ariaDocumentTitle')}
-                  aria-label={t('materialsFactory:ariaDocumentTitle')}
-                  className="text-3xl font-black text-slate-900 mb-2 border-b border-indigo-200 focus:border-indigo-500 outline-none w-full bg-indigo-50/50"
-                  placeholder="Внесете наслов..."
-                />
-              ) : (
-                <h1 className="text-3xl font-black text-slate-900">{editedData.title}</h1>
-              )}
-              <p className="text-slate-500 font-bold mt-1 uppercase tracking-widest">{type} • MathDigitizer Pro</p>
-            </div>
-            <div className="text-right text-sm border-l-2 border-slate-200 pl-4">
-              <p className="whitespace-nowrap">Освоени поени: _________ / 100</p>
-              <p className="mt-2 whitespace-nowrap">Доделена оценка: _____________</p>
-            </div>
+        {/* Branded letterhead (school identity, marking box, grading legend) */}
+        {isEditing && (
+          <div className="mb-8 not-prose">
+            <TemplateEditor template={template} onChange={updateTemplate} />
           </div>
-          <div className="grid grid-cols-2 gap-x-12 gap-y-4 text-sm mt-4 font-medium text-slate-700">
-            <div className="flex items-end border-b border-slate-300 pb-1">
-              <span className="w-24">Име:</span>
-              <div className="flex-1"></div>
-            </div>
-            <div className="flex items-end border-b border-slate-300 pb-1">
-              <span className="w-24">Одделение:</span>
-              <div className="flex-1"></div>
-            </div>
-            <div className="flex items-end border-b border-slate-300 pb-1">
-              <span className="w-24">Презиме:</span>
-              <div className="flex-1"></div>
-            </div>
-            <div className="flex items-end border-b border-slate-300 pb-1">
-              <span className="w-24">Датум:</span>
-              <div className="flex-1"></div>
-            </div>
+        )}
+
+        <DocumentLetterhead
+          template={template}
+          title={editedData.title}
+          kind={t(`types.${type}.name`, { defaultValue: type })}
+          issuedAt={issuedAtRef.current}
+        />
+
+        {isEditing && (
+          <div className="mb-8 not-prose">
+            <label htmlFor="doc-title" className="block text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">
+              {t('materialsFactory:ariaDocumentTitle')}
+            </label>
+            <input
+              id="doc-title"
+              value={editedData.title}
+              onChange={(e) => updateNestedField('title', e.target.value)}
+              aria-label={t('materialsFactory:ariaDocumentTitle')}
+              className="w-full h-10 px-3 rounded-lg border border-indigo-200 focus:border-indigo-500 outline-none bg-indigo-50/50 text-lg font-bold text-slate-900"
+            />
           </div>
-        </div>
-        
+        )}
+
         {/* MAIN CONTENT */}
         <div className="space-y-10">
           {editedData.sections.map((section: any, idx: number) => (
-            <div key={idx} className="space-y-4 relative">
+            <div key={idx} data-pdf-block className="space-y-4 relative">
               
               <div className="flex items-start gap-4">
                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-sm">
@@ -382,7 +422,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                            onChange={(e) => updateNestedField(`sections.${idx}.heading`, e.target.value)}
                            title={`Наслов на секција ${idx + 1}`}
                            aria-label={`Наслов на секција ${idx + 1}`}
-                           placeholder="Внеси наслов на секција"
+                           placeholder={t('materialsFactory:preview.enterSectionTitle')}
                            className="bg-indigo-50/50 border-b border-indigo-200 focus:border-indigo-500 outline-none font-bold w-full"
                          />
                        ) : (
@@ -396,7 +436,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                           onChange={(e) => updateNestedField(`sections.${idx}.content`, e.target.value)}
                           title={`Содржина на секција ${idx + 1}`}
                           aria-label={`Содржина на секција ${idx + 1}`}
-                          placeholder="Внеси содржина"
+                          placeholder={t('materialsFactory:preview.enterContent')}
                           className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-4 text-sm focus:ring-2 focus:ring-amber-500 outline-none h-40"
                         />
                       ) : (
@@ -417,7 +457,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
         </div>
 
         {editedData.answerKey && (
-          <div className="mt-16 pt-8 border-t-[3px] border-slate-900 page-break-before-always">
+          <div data-answer-key className="mt-16 pt-8 border-t-[3px] border-slate-900 page-break-before-always">
             <h3 className="text-xl font-black text-slate-900 mb-6 uppercase tracking-widest flex items-center gap-2">
                <Target className="w-5 h-5 text-rose-600" />
                Клуч со решенија (Само за Наставникот)
@@ -429,7 +469,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                   onChange={(e) => updateNestedField('answerKey', e.target.value)}
                   title={t('materialsFactory:ariaAnswerKey')}
                   aria-label={t('materialsFactory:ariaAnswerKey')}
-                  placeholder="Внеси клуч со решенија"
+                  placeholder={t('materialsFactory:preview.enterAnswerKey')}
                   className="w-full bg-white border border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-indigo-500 outline-none h-64"
                 />
               ) : (
@@ -440,6 +480,8 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
             </div>
           </div>
         )}
+
+        <DocumentFooter template={template} title={editedData.title} issuedAt={issuedAtRef.current} />
       </div>
     );
   };
@@ -485,7 +527,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
               onClick={() => setIsEditing(!isEditing)}
               className={`${isEditing ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-inner' : 'bg-white text-slate-700 hover:bg-slate-50 hover:text-indigo-600'} rounded-xl h-11`}
             >
-              {isEditing ? <><Save className="w-4 h-4 mr-2" />Зачувај</> : <><Edit3 className="w-4 h-4 mr-2" />Уреди Текст</>}
+              {isEditing ? <><Save className="w-4 h-4 mr-2" />{t('materialsFactory:preview.save')}</> : <><Edit3 className="w-4 h-4 mr-2" />{t('materialsFactory:preview.editText')}</>}
             </Button>
 
             {type === 'quiz' && (
@@ -495,17 +537,48 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
               </Button>
             )}
             
+            {editedData.answerKey && (
+              <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl" role="group" aria-label={t('materialsFactory:copyType')}>
+                <button
+                  type="button"
+                  onClick={() => setIncludeAnswerKey(false)}
+                  aria-pressed={!includeAnswerKey}
+                  className={`px-3 h-9 rounded-lg text-sm font-bold transition-colors ${!includeAnswerKey ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-white shadow-sm' : 'text-slate-500'}`}
+                >
+                  {t('materialsFactory:copyStudent')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIncludeAnswerKey(true)}
+                  aria-pressed={includeAnswerKey}
+                  className={`px-3 h-9 rounded-lg text-sm font-bold transition-colors ${includeAnswerKey ? 'bg-white dark:bg-slate-700 text-indigo-700 dark:text-white shadow-sm' : 'text-slate-500'}`}
+                >
+                  {t('materialsFactory:copyTeacher')}
+                </button>
+              </div>
+            )}
+
+            <Button
+              onClick={printAsVectorPDF}
+              variant="outline"
+              title={t('materialsFactory:vectorPdfHint')}
+              className="rounded-xl h-11 border-slate-200 dark:border-slate-700"
+            >
+              <FileText className="w-4 h-4 mr-2" aria-hidden="true" />
+              {t('materialsFactory:vectorPdf')}
+            </Button>
+
             <Button
               onClick={exportHighFidelityPDF}
               disabled={isExporting}
               className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 rounded-xl h-11"
             >
               {isExporting ? (
-                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                 <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />
               ) : (
-                <FileText className="w-4 h-4 mr-2" />
+                <Download className="w-4 h-4 mr-2" aria-hidden="true" />
               )}
-              {isExporting ? 'Конвертирање...' : 'Зачувај како PDF'}
+              {isExporting ? t('materialsFactory:converting') : t('materialsFactory:savePdf')}
             </Button>
             
             <button onClick={onClose} title={t('common:ariaClosePreview')} aria-label={t('common:ariaClosePreview')} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-200 rounded-xl transition-all ml-2 bg-white">

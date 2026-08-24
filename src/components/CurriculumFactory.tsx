@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { hasProAccess } from '../lib/saas';
 import { ProFeatureGate } from './ProFeatureGate';
 import { useTranslation } from 'react-i18next';
+import { clipForPrompt, extractDocumentText } from '../lib/documents/extractText';
 
 interface LessonPlan {
   title: string;
@@ -28,6 +29,7 @@ export const CurriculumFactory = () => {
   const { t } = useTranslation('curriculumFactory');
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [curriculum, setCurriculum] = useState<Curriculum | null>(null);
   const { showToast } = useToast();
 
@@ -40,17 +42,33 @@ export const CurriculumFactory = () => {
   const parseCurriculum = async () => {
     if (!file) return;
     setIsProcessing(true);
-    
+
     try {
-      // In a real scenario we'd extract text from the PDF using pdf.js or cloud functions.
-      // Here we simulate the extraction for the demo or use Gemini if it supports files (Gemini 1.5 Pro).
-      // We will simulate the raw text processing via a robust prompt
-      const prompt = `Ти си Стручен Дизајнер на Курикулум. Твојата мисија е да разглобиш голем текстуален материјал (PDF книга) и да го претвориш во дигитален курикулум.
-Поради демо цели, креирај хипотетички курикулум базиран на името на фајлот: ${file.name}.
+      // Read the actual document. Previously only the FILE NAME was sent to the
+      // model with a "create a hypothetical curriculum" prompt — extraction in
+      // name, invention in fact.
+      const extracted = await extractDocumentText(file);
+
+      if (extracted.empty) {
+        showToast(t('emptyDocument'), 'error');
+        return;
+      }
+
+      const prompt = `Ти си Стручен Дизајнер на Курикулум. Разглоби го приложениот материјал и претвори го во дигитален курикулум.
+
+ПРАВИЛА ПРОТИВ ИЗМИСЛУВАЊЕ:
+- Користи ИСКЛУЧИВО содржина што постои во текстот подолу.
+- Ако нешто не е покриено во материјалот, НЕ го измислувај.
+- Задржи ја оригиналната терминологија и редоследот на темите.
+
+ИЗВОРЕН МАТЕРИЈАЛ (${file.name}${extracted.pageCount > 1 ? `, ${extracted.pageCount} страници` : ''}):
+==================
+${clipForPrompt(extracted.text)}
+==================
+
 Врати исклучиво валиден JSON кој содржи:
-- module_title: Наслов (на пр. "Модул 3: Геометрија")
-- lessons: Низа од објекти (title, theory_summary, class_tasks (низа стрингови), homework_tasks (низа стрингови), exit_ticket (стринг)).
-Обезбеди 2 до 3 детални лекции.`;
+- module_title: Наслов изведен од материјалот
+- lessons: Низа од објекти (title, theory_summary, class_tasks (низа стрингови), homework_tasks (низа стрингови), exit_ticket (стринг)).`;
 
       const data = await generateCurriculumModule(prompt);
       setCurriculum(data);
@@ -64,14 +82,51 @@ export const CurriculumFactory = () => {
     }
   };
 
+  /** Persists the module and its tasks — this used to only show a toast. */
   const handleSaveToDB = async () => {
     if (!curriculum || !auth.currentUser) return;
+    setIsSaving(true);
     try {
-      // In a real app we would map this to the MathTask schema and dump it to the library.
-      // E.g., batch write to firestore
-      showToast(t('savedToast'), 'success');
+      const uid = auth.currentUser.uid;
+      const createdAt = new Date().toISOString();
+
+      const moduleRef = await addDoc(collection(db, 'curriculum_modules'), {
+        module_title: curriculum.module_title,
+        lessons: curriculum.lessons,
+        author_uid: uid,
+        source_file: file?.name ?? null,
+        created_at: createdAt,
+      });
+
+      // Class and homework tasks become real library tasks the teacher can use.
+      const tasks = curriculum.lessons.flatMap((lesson, lessonIndex) => [
+        ...(lesson.class_tasks ?? []).map((text, i) => ({ lesson, lessonIndex, text, kind: 'class', i })),
+        ...(lesson.homework_tasks ?? []).map((text, i) => ({ lesson, lessonIndex, text, kind: 'homework', i })),
+      ]);
+
+      await Promise.all(tasks.map(({ lesson, lessonIndex, text, kind, i }) =>
+        addDoc(collection(db, 'tasks'), {
+          title: `${lesson.title} — ${kind === 'class' ? t('classTasks') : t('homeworkTasks')} ${i + 1}`,
+          original_text: text,
+          solution_steps: [],
+          type: 'task',
+          difficulty: 'medium',
+          curriculum_topic: lesson.title,
+          tags: [curriculum.module_title, lesson.title],
+          source_url: file?.name ? `Курикулум: ${file.name}` : 'CurriculumFactory',
+          author_uid: uid,
+          created_at: createdAt,
+          curriculum_module_id: moduleRef.id,
+          lesson_index: lessonIndex,
+        })
+      ));
+
+      showToast(t('savedToastCount', { count: tasks.length }), 'success');
     } catch(e) {
       console.error(e);
+      showToast(t('saveError'), 'error');
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -167,7 +222,8 @@ export const CurriculumFactory = () => {
               <FileQuestion className="w-6 h-6 text-emerald-500" />
               {curriculum.module_title}
             </h2>
-            <Button onClick={handleSaveToDB} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md">
+            <Button onClick={handleSaveToDB} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md">
+              {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />}
               {t('saveToLibrary')}
             </Button>
           </div>

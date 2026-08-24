@@ -10,8 +10,11 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { useToast } from '../../contexts/ToastContext';
+import { useTranslation } from 'react-i18next';
+import { evaluateExamAvailability, shuffleWithinSections } from '../../lib/exams/shuffle';
 
 export const SummativeExam = ({ examId }: { examId: string }) => {
+  const { t } = useTranslation('exams');
   const { showToast } = useToast();
   const [exam, setExam] = useState<SummativeExamType | null>(null);
   const [studentName, setStudentName] = useState('');
@@ -58,7 +61,17 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
         const docRef = doc(db, 'summative_exams', examId);
         const snap = await getDoc(docRef);
         if (snap.exists()) {
-          setExam(snap.data() as SummativeExamType);
+          const examData = snap.data() as SummativeExamType;
+
+          // Status and deadline are enforced here for the UI and mirrored in
+          // Firestore rules, which are the actual gate.
+          const availability = evaluateExamAvailability(examData);
+          if (!availability.open) {
+            setError(t(`closed.${availability.reason}`));
+            return;
+          }
+
+          setExam(examData);
 
           // Check if already submitted
           const attemptRef = doc(db, 'summative_attempts', `${examId}_${uid}`);
@@ -68,11 +81,11 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
              setIsStarted(true);
           }
         } else {
-          setError('Испитот не е пронајден или изминал неговиот рок.');
+          setError(t('errors.notFound'));
         }
       } catch (err) {
         console.error(err);
-        setError('Грешка при вчитување на испитот.');
+        setError(t('errors.loadFailed'));
       } finally {
         setIsLoading(false);
       }
@@ -88,7 +101,7 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
      const handleVisibility = () => {
         if (document.hidden) {
            setTabSwitches(prev => prev + 1);
-           alert("ВНИМАНИЕ: Напуштањето на прозорецот за време на испит е забрането! Овој настан е забележан во системот на наставникот.");
+           alert(t('antiCheatWarning'));
         }
      };
 
@@ -122,7 +135,7 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
   };
 
   const submitExam = async () => {
-     if (!window.confirm("Дали сте сигурни дека сакате да го предадете тестот? Нема можност за повторно решавање.")) return;
+     if (!window.confirm(t('confirmSubmit'))) return;
      
      setIsSubmitting(true);
      try {
@@ -147,22 +160,22 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
         localStorage.removeItem(`dugga_answers_${examId}`);
      } catch (err) {
         console.error(err);
-        showToast("Грешка при испраќање на одговорите. Проверете ја вашата интернет конекција.", 'error');
+        showToast(t('errors.submitFailed'), 'error');
      } finally {
         setIsSubmitting(false);
      }
   };
 
   if (isLoading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-indigo-500" /></div>;
-  if (error || !exam) return <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 text-center"><div className="bg-white p-8 rounded-2xl shadow-xl max-w-md"><h2 className="text-red-500 font-bold text-xl mb-4">{error || 'Непозната грешка'}</h2><Button onClick={() => navigate('/')}>Врати се почетна</Button></div></div>;
+  if (error || !exam) return <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 text-center"><div className="bg-white p-8 rounded-2xl shadow-xl max-w-md"><h2 className="text-red-500 font-bold text-xl mb-4">{error || t('errors.unknown')}</h2><Button onClick={() => navigate('/')}>{t('backHome')}</Button></div></div>;
 
   // Screen 1: Start / Join screen
   if (!isStarted) {
     return (
       <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6 text-slate-800">
          <Helmet>
-           <title>Влез во Испит | {exam.test_data.title}</title>
-           <meta name="description" content="Придружете се на испитот преку Dugga режим." />
+           <title>{t('joinTitle')} | {exam.test_data.title}</title>
+           <meta name="description" content={t('joinDescription')} />
            <meta name="robots" content="noindex, nofollow" />
          </Helmet>
          <motion.div 
@@ -176,27 +189,28 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
                </div>
             </div>
             <h1 className="text-3xl font-black text-center mb-2">{exam.test_data.title}</h1>
-            <p className="text-center text-slate-500 font-medium mb-8 uppercase tracking-widest text-sm">Официјален Испит • Dugga Режим</p>
+            <p className="text-center text-slate-500 font-medium mb-8 uppercase tracking-widest text-sm">{t('officialExamMode')}</p>
             
             <form onSubmit={handleStart} className="space-y-6">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Вашето Име и Презиме</label>
+                <label htmlFor="student-name" className="block text-sm font-bold text-slate-700 mb-2">{t('nameLabel')}</label>
                 <input 
+                  id="student-name"
                   type="text" 
                   value={studentName}
                   onChange={e => setStudentName(e.target.value)}
-                  placeholder="пр. Игор Мишевски"
+                  placeholder={t('namePlaceholder')}
                   className="w-full h-14 px-4 text-lg font-bold rounded-xl bg-slate-50 border border-slate-300 text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all placeholder:text-slate-400 placeholder:font-normal"
                   required
                 />
               </div>
               <Button type="submit" className="w-full h-14 text-lg font-black bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-600/30">
-                 Започни со Решавање
+                 {t('startSolving')}
               </Button>
             </form>
          </motion.div>
          <p className="mt-8 text-slate-400 font-medium text-sm flex items-center gap-2">
-            <Clock className="w-4 h-4" /> Секое напуштање на прозорецот се бележи.
+            <Clock className="w-4 h-4" aria-hidden="true" /> {t('blurNotice')}
          </p>
       </div>
     );
@@ -212,21 +226,24 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
            className="bg-white p-10 rounded-5xl shadow-xl border border-emerald-100 max-w-md w-full"
          >
             <CheckCircle className="w-20 h-20 text-emerald-500 mx-auto mb-6" />
-            <h2 className="text-3xl font-black text-slate-800 mb-4">Успешно!</h2>
-            <p className="text-slate-600 font-medium text-lg">Вашите одговори се забележани и испратени кај наставникот.</p>
+            <h2 className="text-3xl font-black text-slate-800 mb-4">{t('submittedTitle')}</h2>
+            <p className="text-slate-600 font-medium text-lg">{t('submittedBody')}</p>
          </motion.div>
       </div>
     );
   }
 
   // Screen 2: Test taking view (Dugga like layout)
-  const questions = exam.test_data.questions;
+  // Per-student paper: questions shuffled inside their section and options
+  // shuffled per question. Deterministic, so a reload never reorders it.
+  const questions = shuffleWithinSections(exam.test_data.questions || [], examId, studentUid);
+  let questionNumber = 0;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
        <Helmet>
-         <title>{exam.test_data.title} | Официјален Испит</title>
-         <meta name="description" content="Официјален онлајн испит / Dugga режим преку MathDigitizer Pro." />
+         <title>{exam.test_data.title} | {t('officialExam')}</title>
+         <meta name="description" content={t('examDescription')} />
          <meta name="robots" content="noindex, nofollow" />
        </Helmet>
        {/* Top Lockdown Header */}
@@ -236,9 +253,9 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
              {exam.test_data.title}
           </div>
           <div className="flex border border-white/20 rounded-lg overflow-hidden">
-             <div className="bg-white/10 px-4 py-2 font-bold text-sm">Студент: {studentName}</div>
+             <div className="bg-white/10 px-4 py-2 font-bold text-sm">{t('studentLabel', { name: studentName })}</div>
              <div className="hidden md:flex bg-indigo-600 px-4 py-2 font-bold text-sm items-center gap-2">
-               <HelpCircle className="w-4 h-4" /> Испитен Режим
+               <HelpCircle className="w-4 h-4" aria-hidden="true" /> {t('examMode')}
              </div>
           </div>
        </header>
@@ -246,6 +263,7 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
        <main className="flex-1 max-w-4xl w-full mx-auto p-4 md:p-8 pb-32">
           <div className="space-y-8">
              {questions.map((q: any, idx: number) => {
+                const answerKey = q.originalIndex;
                 if (q.type === 'section') {
                   return (
                      <div key={idx} className="pt-8 pb-4 border-b-2 border-indigo-100">
@@ -258,7 +276,7 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
                   <div key={idx} className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
                      <div className="flex gap-4">
                         <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 font-bold flex items-center justify-center shrink-0 border border-indigo-100">
-                           {idx + 1}
+                           {++questionNumber}
                         </div>
                         <div className="flex-1 space-y-6">
                            <div className="text-lg font-medium text-slate-800 leading-relaxed">
@@ -270,12 +288,12 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
                               {q.type === 'multiple' && q.options && (
                                 <div className="space-y-3">
                                    {q.options.map((opt: string, optIdx: number) => (
-                                     <label key={optIdx} className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer border-2 transition-all ${answers[idx] === optIdx ? 'bg-indigo-50 border-indigo-500' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
+                                     <label key={optIdx} className={`flex items-center gap-3 p-4 rounded-xl cursor-pointer border-2 transition-all ${answers[answerKey] === (q.optionOrder?.[optIdx] ?? optIdx) ? 'bg-indigo-50 border-indigo-500' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
                                        <input 
                                          type="radio" 
-                                         name={`q_${idx}`} 
-                                         checked={answers[idx] === optIdx}
-                                         onChange={() => handleAnswerChange(idx, optIdx)}
+                                         name={`q_${answerKey}`} 
+                                         checked={answers[answerKey] === (q.optionOrder?.[optIdx] ?? optIdx)}
+                                         onChange={() => handleAnswerChange(answerKey, q.optionOrder?.[optIdx] ?? optIdx)}
                                          aria-label={opt}
                                          className="w-5 h-5 text-indigo-600 focus:ring-indigo-500 border-slate-300"
                                        />
@@ -287,16 +305,16 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
 
                               {q.type === 'true-false' && (
                                 <div className="flex flex-wrap md:flex-nowrap gap-4">
-                                   {['Точно', 'Неточно'].map((opt, optIdx) => (
-                                     <label key={optIdx} className={`flex-1 flex items-center justify-center gap-3 p-5 rounded-xl cursor-pointer border-2 transition-all ${answers[idx] === optIdx ? 'bg-indigo-50 border-indigo-500' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
+                                   {[t('true'), t('false')].map((opt, optIdx) => (
+                                     <label key={optIdx} className={`flex-1 flex items-center justify-center gap-3 p-5 rounded-xl cursor-pointer border-2 transition-all ${answers[answerKey] === (q.optionOrder?.[optIdx] ?? optIdx) ? 'bg-indigo-50 border-indigo-500' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
                                        <input 
                                          type="radio" 
-                                         name={`tf_${idx}`} 
-                                         checked={answers[idx] === optIdx}
-                                         onChange={() => handleAnswerChange(idx, optIdx)}
+                                         name={`tf_${answerKey}`} 
+                                         checked={answers[answerKey] === optIdx}
+                                         onChange={() => handleAnswerChange(answerKey, optIdx)}
                                          className="hidden" // Hiding native radio for big button feel
                                        />
-                                       <span className={`font-bold text-xl ${answers[idx] === optIdx ? 'text-indigo-700' : 'text-slate-600'}`}>{opt}</span>
+                                       <span className={`font-bold text-xl ${answers[answerKey] === optIdx ? 'text-indigo-700' : 'text-slate-600'}`}>{opt}</span>
                                      </label>
                                    ))}
                                 </div>
@@ -304,18 +322,18 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
 
                               {q.type === 'short-answer' && (
                                 <textarea 
-                                  value={answers[idx] || ''}
-                                  onChange={e => handleAnswerChange(idx, e.target.value)}
-                                  placeholder="Внесете го вашиот одговор тука..."
+                                  value={answers[answerKey] || ''}
+                                  onChange={e => handleAnswerChange(answerKey, e.target.value)}
+                                  placeholder={t('placeholderShort')}
                                   className="w-full h-32 p-4 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-0 text-lg font-medium text-slate-800 resize-y"
                                 />
                               )}
 
                               {q.type === 'essay' && (
                                 <textarea 
-                                  value={answers[idx] || ''}
-                                  onChange={e => handleAnswerChange(idx, e.target.value)}
-                                  placeholder="Внесете го вашиот обемен одговор или кратки постапки..."
+                                  value={answers[answerKey] || ''}
+                                  onChange={e => handleAnswerChange(answerKey, e.target.value)}
+                                  placeholder={t('placeholderEssay')}
                                   className="w-full h-64 p-5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-0 text-lg font-medium text-slate-800 resize-y leading-relaxed"
                                 />
                               )}
@@ -323,9 +341,9 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
                               {q.type === 'fill-blanks' && (
                                 <input 
                                   type="text"
-                                  value={answers[idx] || ''}
-                                  onChange={e => handleAnswerChange(idx, e.target.value)}
-                                  placeholder="Дополни..."
+                                  value={answers[answerKey] || ''}
+                                  onChange={e => handleAnswerChange(answerKey, e.target.value)}
+                                  placeholder={t('placeholderFill')}
                                   className="w-full max-w-sm h-14 px-4 bg-slate-50 border-b-4 border-slate-300 focus:border-indigo-500 rounded-t-xl text-xl font-bold text-slate-800 outline-none transition-colors"
                                 />
                               )}
@@ -342,10 +360,10 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
        <div className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-40">
           <div className="max-w-4xl mx-auto flex justify-between items-center">
              <div className="text-slate-500 font-bold text-sm hidden md:block">
-                Одговорени: <span className="text-indigo-600">{Object.keys(answers).length}</span> од <span className="text-slate-800">{questions.filter((q:any) => q.type !== 'section').length}</span>
+                {t('answeredCount', { answered: Object.keys(answers).length, total: questions.filter((q: any) => q.type !== 'section').length })}
              </div>
              <Button onClick={submitExam} disabled={isSubmitting} size="lg" className="w-full md:w-auto px-12 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-500/20 text-lg font-black">
-                {isSubmitting ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Се предава...</> : <><Save className="w-5 h-5 mr-2" /> Предај го Испитот</>}
+                {isSubmitting ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" aria-hidden="true" /> {t('submitting')}</> : <><Save className="w-5 h-5 mr-2" aria-hidden="true" /> {t('submit')}</>}
              </Button>
           </div>
        </div>

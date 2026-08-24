@@ -18,16 +18,139 @@ import { resolveIngestionPolicyModes } from '../ingestion/config';
  * Normalizes grade_level to the valid MK curriculum grade tokens and points
  * the model at the official curriculum context injected alongside it.
  */
+/**
+ * Grade tokens the model is allowed to return.
+ *
+ * Exported so a test can hold this list and the curriculum corpus to each
+ * other: a programme absent here can never be assigned, and a token here that
+ * no programme uses produces references that resolve to nothing.
+ */
+export const CURRICULUM_PROMPT_GRADE_TOKENS = [
+  '1', '2', '3', '4', '5', '6', '7', '8', '9',
+  '1год', '2год-2026', '3год', '4год',
+  '1год-миг', '2год-миг', '3год-миг', '4год-миг',
+  '1год-струк', '2год-струк', '3год-струк', '4год-струк',
+  '1год-струк3', '2год-струк3', '3год-струк3',
+  '1год-струк2', '2год-струк2',
+  '2год-изб-еалг', '2год-изб-еалгео', '3год-изб-алг', '3год-изб-лааг', '4год-изб-манал',
+] as const;
+
 const CURRICULUM_PROMPT_INSTRUCTION = `ПРАВИЛА ЗА НАСТАВНА ПРОГРАМА (БРО):
 - ЗАДОЛЖИТЕЛНО: Во \`grade_level\` врати ТОЧНО еден од следните валидни токени (без друг текст):
   • Основно образование (1–9 одделение): '1', '2', '3', '4', '5', '6', '7', '8', '9'
-  • Општа гимназија: '1год', '2год', '3год', '4год'
+  • Општа гимназија: '1год', '2год-2026', '3год', '4год'
   • Математичко-информатичка гимназија: '1год-миг', '2год-миг', '3год-миг', '4год-миг'
-  • Средно стручно образование: '1год-струк', '2год-струк', '3год-струк', '4год-струк'
+  • Средно стручно 4-годишно: '1год-струк', '2год-струк', '3год-струк', '4год-струк'
+  • Средно стручно 3-годишно: '1год-струк3', '2год-струк3', '3год-струк3'
+  • Средно стручно 2-годишно: '1год-струк2', '2год-струк2'
+  • Гимназиски изборни: '2год-изб-еалг', '2год-изб-еалгео', '3год-изб-алг', '3год-изб-лааг', '4год-изб-манал'
   Ако не можеш со сигурност да го одредиш нивото, процени го најблискиот токен.
 - ЗАДОЛЖИТЕЛНО: Во \`curriculum_topic\` напиши ја темата усогласена со официјалната наставна програма дадена во контекстот (ако е приложена).`;
 
-export async function extractMathTasksFromPdf(base64Pdf: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, modelName: string = PRO_MODEL): Promise<MathTask[]> {
+/**
+ * Macedonian labels for the supported output languages, used inside the
+ * extraction prompts. Single source of truth — previously each prompt carried
+ * its own ternary chain which silently mapped Albanian ('al'/'sq') to Turkish.
+ */
+const TARGET_LANGUAGE_LABELS: Record<string, string> = {
+  mk: 'Македонски (СТРОГО МАКЕДОНСКА КИРИЛИЦА)',
+  en: 'Англиски',
+  ru: 'Руски',
+  tr: 'Турски',
+  al: 'Албански',
+  sq: 'Албански',
+  de: 'Германски',
+  fr: 'Француски',
+  es: 'Шпански',
+  ar: 'Арапски',
+};
+
+/** Human-readable (Macedonian) name of the requested output language. */
+export function resolveTargetLanguageLabel(code: string): string {
+  const key = (code || '').trim().toLowerCase();
+  return TARGET_LANGUAGE_LABELS[key] ?? `јазикот со ISO код '${key || 'unknown'}'`;
+}
+
+/**
+ * Flattens a /api/scrape payload into transcript text.
+ * Shared by the URL branches of advancedMultimodalExtraction and
+ * extractMathTasksFromUrl (previously duplicated verbatim).
+ */
+export function buildContextFromScrapePayload(data: any): string {
+  if (!data || typeof data !== 'object') return '';
+  if (Array.isArray(data.fragments) && data.fragments.length > 0) {
+    return data.fragments
+      .map((f: any) => `[${formatTimeFromMs(Number(f?.offset) || 0)}] ${f?.text ?? ''}`)
+      .join('\n');
+  }
+  if (typeof data.transcript === 'string' && data.transcript) return data.transcript;
+  if (typeof data.content === 'string' && data.content) {
+    return `${data.title ?? ''}\n\n${data.content}`;
+  }
+  return '';
+}
+
+export type VisualizationMode = 'none' | 'tikz' | 'geogebra' | 'nanobanana';
+
+const VISUALIZATION_INSTRUCTIONS: Record<VisualizationMode, string> = {
+  none: `**Визуелизација (ИСКЛУЧЕНА)**: НЕ генерирај \`geogebra_commands\`, \`math_graphic_config\`, TikZ код ниту \`illustration_prompt\`. Остави ги тие полиња празни и фокусирај се исклучиво на текстот и решението.`,
+  tikz: `**Визуелизација (TikZ)**: За секоја геометриска фигура или график вклучи целосен, самостоен TikZ код во \`latex_formulas\` (обвиткан во \\begin{tikzpicture} … \\end{tikzpicture}). Не генерирај GeoGebra команди.`,
+  geogebra: `**Визуелизација (GeoGebra)**: За секој график или геометриска слика генерирај \`geogebra_commands\` — низа од валидни GeoGebra команди (пр. "f(x)=x^2", "A=(1,2)", "Polygon(A,B,C)"). Остави \`illustration_prompt\` празно за чисто математички цртежи.`,
+  nanobanana: `**Визуелизација (Илустрација)**: Пополни \`illustration_prompt\` со описен промпт на англиски за реален/животен визуелен контекст на задачата. Генерирај \`geogebra_commands\` само ако задачата навистина бара координатен систем.`,
+};
+
+/**
+ * Prompt fragment for the requested visualization mode.
+ * Wired into the image/PDF prompts so the SmartOCR control actually steers the
+ * model instead of being a dead UI toggle.
+ */
+export function buildVisualizationInstruction(mode?: string): string {
+  const key = (mode || 'geogebra') as VisualizationMode;
+  return VISUALIZATION_INSTRUCTIONS[key] ?? VISUALIZATION_INSTRUCTIONS.geogebra;
+}
+
+/** Clamps the model self-reported extraction confidence to the 1–100 contract. */
+export function normalizeExtractionConfidence(value: unknown): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
+  return Math.min(100, Math.max(1, Math.round(value)));
+}
+
+/**
+ * Normalizes a parsed Gemini extraction payload into MathTask[].
+ * Accepts both response shapes (bare array from the PDF/image schemas, and the
+ * `{ extraction_confidence, extracted_tasks }` object from the URL/advanced
+ * schemas), stamps the source and the shared confidence onto every task, and
+ * drops entries with no usable text so malformed rows never reach Firestore.
+ */
+export function normalizeExtractedTasks(
+  parsed: any,
+  options: { sourceUrl: string; confidence?: unknown }
+): MathTask[] {
+  const list: any[] = Array.isArray(parsed)
+    ? parsed
+    : Array.isArray(parsed?.extracted_tasks)
+      ? parsed.extracted_tasks
+      : [];
+
+  const confidence = normalizeExtractionConfidence(
+    options.confidence !== undefined ? options.confidence : parsed?.extraction_confidence
+  );
+
+  return list
+    .filter((t) => t && typeof t === 'object' && typeof t.original_text === 'string' && t.original_text.trim())
+    .map(({ extraction_confidence, ...task }) => {
+      // Per-item confidence (image/PDF array schemas) wins over the shared
+      // response-level one (URL/advanced object schemas).
+      const resolved = normalizeExtractionConfidence(extraction_confidence) ?? confidence;
+      return {
+        ...task,
+        ...(resolved !== undefined ? { extraction_confidence: resolved } : {}),
+        source_url: options.sourceUrl,
+      };
+    }) as MathTask[];
+}
+
+export async function extractMathTasksFromPdf(base64Pdf: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, modelName: string = PRO_MODEL, visualizationMode: string = 'geogebra'): Promise<MathTask[]> {
   const curriculumCtx = await buildCurriculumContextBlockRag('математика македонски наставна програма');
   const prompt = `Ти си експерт за дигитализација на математички текстови, креатор на "Advanced Vision OCR" и Едукативен Технолог (EdTech).
 ${curriculumCtx ? `\n${curriculumCtx}\n` : ''}
@@ -38,11 +161,11 @@ ${enableLogicalReconstruction
   ? `1. **Напредно Препознавање и Логичка Реконструкција (ВКЛУЧЕНО)**: Доколку наидеш на оштетен, нејасен текст, табели или комплексен распоред во скениран учебник, направи дедукција и логичка реконструкција врз основа на математичкиот контекст.`
   : `1. **Класично Препознавање OCR (Без Реконструкција)**: Препиши го точно тоа што е на документот.`}
 2. **Јазични Поставки (Мултијазичност)**: 
-   - НАЈПРВО АВТОМАТСКИ ПРЕПОЗНАЈ ГО ЈАЗИКОТ на изворниот документ и запиши ја кратенката ('mk', 'en', 'ru', 'tr') во \`detected_language\`.
-   - ${targetLanguage === 'auto' ? `Бидејќи крајниот јазик е 'auto', целиот излез задржи го на тој препознаен јазик.` : `ВНИМАНИЕ: Без разлика на кој јазик е изворниот текст, ТИ МОРАШ ДА ГО ПРЕВЕДЕШ целиот математички текст СТРОГО на **${targetLanguage === 'mk' ? 'Македонски (СТРОГО МАКЕДОНСКА КИРИЛИЦА)' : targetLanguage === 'en' ? 'Англиски' : targetLanguage === 'ru' ? 'Руски' : 'Турски'} јазик**.`}
+   - НАЈПРВО АВТОМАТСКИ ПРЕПОЗНАЈ ГО ЈАЗИКОТ на изворниот документ и запиши ја кратенката ('mk', 'en', 'ru', 'tr', 'al') во \`detected_language\`.
+   - ${targetLanguage === 'auto' ? `Бидејќи крајниот јазик е 'auto', целиот излез задржи го на тој препознаен јазик.` : `ВНИМАНИЕ: Без разлика на кој јазик е изворниот текст, ТИ МОРАШ ДА ГО ПРЕВЕДЕШ целиот математички текст СТРОГО на **${resolveTargetLanguageLabel(targetLanguage)} јазик**.`}
 3. **ZERO-ERROR LaTeX**: СИТЕ МАТЕМАТИЧКИ СИМБОЛИ, БРОЕВИ И ФОРМУЛИ МОРА ДА БИДАТ СТРОГО ВО LaTeX ФОРМАТ! Користи $...$ за inline и $$...$$ за математика во нов ред.
 4. **Комплексни Распореди и Табели**: Ако задачата содржи табела, конвертирај ја табелата во Markdown.
-5. **Геометрија и Графици**: Ако документот содржи график или геометриска слика, генерирај \`geogebra_commands\` низа од команди.
+5. ${buildVisualizationInstruction(visualizationMode)}
 6. **Педагошко подобрување и Chain-of-Thought**: За секоја извлечена задача, генерирај детално, скалилесто решение во \`solution_steps\`. Решението МОРА да содржи обрамотување на теоретската основа и педагошко појаснување (зошто се користи овој чекор) според најстрогите педагошки стандарди.
 
 ${CURRICULUM_PROMPT_INSTRUCTION}
@@ -50,7 +173,8 @@ ${CURRICULUM_PROMPT_INSTRUCTION}
 Твојата цел е ПЕРФЕКТНО да ги извлечеш сите математички задачи.
 За секоја задача, врати:
 - type: "task" (задача) или "theory" (теорија)
-- detected_language: Кратенка од детектираниот јазик (mk, en, tr...)
+- extraction_confidence: Број 1–100 — колку јасно и недвосмислено е препознаена ОВАА задача во документот.
+- detected_language: Кратенка од детектираниот јазик (mk, en, tr, al...)
 - title: Краток наслов
 - original_text: Целосниот текст со LaTeX ($...$ и $$...$$) и Markdown Табели.
 - solution_steps: Решение чекор-по-чекор (LaTeX).
@@ -75,6 +199,8 @@ ${CURRICULUM_PROMPT_INSTRUCTION}
           items: {
             type: Type.OBJECT,
             properties: {
+              evidence_quote: { type: Type.STRING, description: "ANTI-HALLUCINATION: Quote the exact line/sentence from the document where this task appears." },
+              extraction_confidence: { type: Type.NUMBER, description: "1-100: how clearly and unambiguously THIS task is readable in the document." },
               type: { type: Type.STRING, enum: ["task", "theory"] },
               detected_language: { type: Type.STRING, description: "Auto-detected language code: mk, en, tr, al, etc." },
               title: { type: Type.STRING },
@@ -89,22 +215,21 @@ ${CURRICULUM_PROMPT_INSTRUCTION}
               grade_level: { type: Type.STRING },
               curriculum_topic: { type: Type.STRING }
             },
-            required: ["type", "detected_language", "title", "original_text", "solution_steps", "latex_formulas", "illustration_prompt", "tags", "difficulty", "dok_level", "bloom_taxonomy", "grade_level", "curriculum_topic"]
+            required: ["evidence_quote", "extraction_confidence", "type", "detected_language", "title", "original_text", "solution_steps", "latex_formulas", "illustration_prompt", "tags", "difficulty", "dok_level", "bloom_taxonomy", "grade_level", "curriculum_topic"]
           }
         }
       }
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    const parsedTasks = parseGeminiResponse(response.text);
-    return parsedTasks.map((task: any) => ({ ...task, source_url: "PDF Документ" }));
+    return normalizeExtractedTasks(parseGeminiResponse(response.text), { sourceUrl: 'PDF Документ' });
   } catch (error) {
     console.error("Грешка при екстракција од PDF:", error);
     handleGeminiError(error);
   }
 }
 
-function formatTimeFromMs(ms: number): string {
+export function formatTimeFromMs(ms: number): string {
     const totalSeconds = Math.floor(ms / 1000);
     const m = Math.floor(totalSeconds / 60);
     const s = Math.floor(totalSeconds % 60);
@@ -169,14 +294,7 @@ export async function advancedMultimodalExtraction(
              if (res.ok) {
                const text = await res.text();
                if (!text.startsWith('<')) {
-                 const data = JSON.parse(text);
-                 if (data.fragments && data.fragments.length > 0) {
-                   urlContext = data.fragments.map((f: any) => `[${formatTimeFromMs(f.offset)}] ${f.text}`).join("\n");
-                 } else if (data.transcript) {
-                   urlContext = data.transcript;
-                 } else if (data.content) {
-                   urlContext = data.title + "\n\n" + data.content;
-                 }
+                 urlContext = buildContextFromScrapePayload(JSON.parse(text));
                }
              }
            } catch (e) {
@@ -273,9 +391,9 @@ export async function advancedMultimodalExtraction(
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    const parsedObj = parseGeminiResponse(response.text);
-    const results = parsedObj.extracted_tasks || [];
-    const tasks = results.map((t: any) => ({ ...t, source_url: source.type === 'url' ? source.data : 'Прикачена датотека' }));
+    const tasks = normalizeExtractedTasks(parseGeminiResponse(response.text), {
+      sourceUrl: source.type === 'url' ? source.data : 'Прикачена датотека',
+    });
 
     const sourceKind = source.type === 'file'
       ? (source.mimeType === 'application/pdf' ? 'pdf' : 'image')
@@ -373,14 +491,7 @@ export async function extractMathTasksFromUrl(url: string, model: string = PRO_M
          if (res.ok) {
            const text = await res.text();
            if (!text.startsWith('<')) {
-             const data = JSON.parse(text);
-             if (data.fragments && data.fragments.length > 0) {
-               videoContext = data.fragments.map((f: any) => `[${formatTimeFromMs(f.offset)}] ${f.text}`).join("\n");
-             } else if (data.transcript) {
-               videoContext = data.transcript;
-             } else if (data.content) {
-               videoContext = data.title + "\n\n" + data.content;
-             }
+             videoContext = buildContextFromScrapePayload(JSON.parse(text));
            }
          }
        } catch (e) {
@@ -510,9 +621,7 @@ ${sanitizedInstructions ? `\nСПЕЦИФИЧНИ ИНСТРУКЦИИ ЗА ИЗ
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    const parsedObj = parseGeminiResponse(response.text);
-    const tasks: MathTask[] = parsedObj.extracted_tasks || [];
-    const withSource = tasks.map(t => ({ ...t, source_url: url }));
+    const withSource = normalizeExtractedTasks(parseGeminiResponse(response.text), { sourceUrl: url });
     const meta = {
       sourceKind: 'url' as const,
       parserPath: 'url->transcript/scrape->strict-json-extraction',
@@ -534,7 +643,7 @@ ${sanitizedInstructions ? `\nСПЕЦИФИЧНИ ИНСТРУКЦИИ ЗА ИЗ
   }
 }
 
-export async function extractMathTasksFromImage(base64Image: string, mimeType: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, model: string = PRO_MODEL): Promise<MathTask[]> {
+export async function extractMathTasksFromImage(base64Image: string, mimeType: string, targetLanguage: string = 'auto', enableLogicalReconstruction: boolean = true, model: string = PRO_MODEL, visualizationMode: string = 'geogebra'): Promise<MathTask[]> {
   const curriculumCtx = await buildCurriculumContextBlockRag('математика македонски наставна програма');
   const prompt = `Ти си Врвен Светски Експерт за Дигитализација на Математика, "Advanced Vision OCR" и Едукативен Технолог (EdTech).
 ${curriculumCtx ? `\n${curriculumCtx}\n` : ''}
@@ -545,10 +654,10 @@ ${enableLogicalReconstruction
   ? `1. **Напредно Препознавање, Ракопис и Логичка Реконструкција (ВКЛУЧЕНО)**: Направи **ЛОГИЧКА РЕКОНСТРУКЦИЈА** на можните оштетувања. Поправи ги текстуалните или нотациски грешки водејќи се строго според меѓународни математички стандарди.`
   : `1. **Класично Препознавање OCR (Без Реконструкција)**: Препиши го точно тоа што е на сликата.`}
 2. **Јазични Поставки (Мултијазичност)**: 
-   - НАЈПРВО АВТОМАТСКИ ПРЕПОЗНАЈ ГО ЈАЗИКОТ на изворот. Запиши ја кратенката во \`detected_language\`.
-   - ${targetLanguage === 'auto' ? `Бидејќи крајниот јазик е 'auto', целиот излез задржи го на тој препознаен јазик.` : `ВНИМАНИЕ: Без разлика на изворот, ТИ МОРАШ ДА ГО ПРЕВЕДЕШ целиот излез СТРОГО на **${targetLanguage === 'mk' ? 'Македонски (СТРОГО МАКЕДОНСКА КИРИЛИЦА)' : targetLanguage === 'en' ? 'Англиски' : targetLanguage === 'ru' ? 'Руски' : 'Турски'} јазик**.`}
+   - НАЈПРВО АВТОМАТСКИ ПРЕПОЗНАЈ ГО ЈАЗИКОТ на изворот. Запиши ја кратенката во \`detected_language\` ('mk', 'en', 'ru', 'tr', 'al'...).
+   - ${targetLanguage === 'auto' ? `Бидејќи крајниот јазик е 'auto', целиот излез задржи го на тој препознаен јазик.` : `ВНИМАНИЕ: Без разлика на изворот, ТИ МОРАШ ДА ГО ПРЕВЕДЕШ целиот излез СТРОГО на **${resolveTargetLanguageLabel(targetLanguage)} јазик**.`}
 3. **ZERO-ERROR LaTeX**: СИТЕ МАТЕМАТИЧКИ СИМБОЛИ, БРОЕВИ И ФОРМУЛИ МОРА ДА БИДАТ СТРОГО ВО LaTeX ФОРМАТ! Користи $...$ за inline и $$...$$ за блок математика.
-4. **Визуелна Реконструкција**: Конвертирај табели во Markdown, а графици во \`geogebra_commands\`.
+4. **Визуелна Реконструкција**: Конвертирај табели во Markdown. ${buildVisualizationInstruction(visualizationMode)}
 5. **Педагошко подобрување и Chain-of-Thought**: За секоја извлечена задача, генерирај детално, скалилесто решение во \`solution_steps\`. Решението МОРА да содржи обрамотување на теоретската основа и педагошко појаснување (зошто се користи овој чекор) според најстрогите педагошки стандарди, за ученикот подобро да го разбере концептот логички, а не само механички решено.
 
 Врати ги податоците СТРОГО во JSON формат (низа од објекти).`;
@@ -567,6 +676,8 @@ ${enableLogicalReconstruction
           items: {
             type: Type.OBJECT,
             properties: {
+              evidence_quote: { type: Type.STRING, description: "ANTI-HALLUCINATION: Quote the exact line/sentence from the image where this task appears." },
+              extraction_confidence: { type: Type.NUMBER, description: "1-100: how clearly and unambiguously THIS task is readable in the image." },
               type: { type: Type.STRING, enum: ["task", "theory"] },
               detected_language: { type: Type.STRING, description: "Auto-detected language code: mk, en, tr, ru, etc." },
               title: { type: Type.STRING },
@@ -582,15 +693,14 @@ ${enableLogicalReconstruction
               grade_level: { type: Type.STRING },
               curriculum_topic: { type: Type.STRING }
             },
-            required: ["type", "detected_language", "title", "original_text", "solution_steps", "latex_formulas", "illustration_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic"]
+            required: ["evidence_quote", "extraction_confidence", "type", "detected_language", "title", "original_text", "solution_steps", "latex_formulas", "illustration_prompt", "tags", "difficulty", "dok_level", "grade_level", "curriculum_topic"]
           }
         }
       }
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    const tasks: MathTask[] = parseGeminiResponse(response.text);
-    return tasks.map(t => ({ ...t, source_url: "Слика (Напреден OCR)" }));
+    return normalizeExtractedTasks(parseGeminiResponse(response.text), { sourceUrl: 'Слика (Напреден OCR)' });
   } catch (error) {
     console.error("Грешка при екстракција од слика:", error);
     handleGeminiError(error);

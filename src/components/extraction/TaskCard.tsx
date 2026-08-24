@@ -73,6 +73,18 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, onEnrich, onSav
               DoK {task.dok_level}
             </span>
           )}
+          {typeof task.extraction_confidence === 'number' && (
+            <span
+              className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                task.extraction_confidence >= 70 ? 'bg-emerald-100 text-emerald-700' :
+                task.extraction_confidence >= 40 ? 'bg-amber-100 text-amber-700' :
+                'bg-rose-100 text-rose-700'
+              }`}
+              title={t('confidenceTitle')}
+            >
+              <Microscope className="w-3 h-3" /> {Math.round(task.extraction_confidence)}%
+            </span>
+          )}
           {task.bloom_taxonomy && (
             <span className="bg-pink-100 flex items-center gap-1 text-pink-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
               {task.bloom_taxonomy}

@@ -58,7 +58,8 @@
     "description": "Është identifikuar një deficit në kornizën e kompetencës matematikore. Aktivizoni Mekanizmin e Ndërhyrjes Sokratike për të gjeneruar një plan të saktë ZPD.",
     "generating": "Duke gjeneruar Plan Metakonjitiv...",
     "constructPlan": "Ndërto Plan Ndërhyrjeje",
-    "proficiency": "Zotërim"
+    "proficiency": "Zotërim",
+    "estimateDisclaimer": "Vetëm \"konceptuale\" dhe \"procedurale\" maten nga punët e vlerësuara. Tri fijet e tjera janë vlerësime të nxjerra prej tyre, derisa të ketë matje të drejtpërdrejta."
   },
   "leaderboard": {
     "title": "Tabela Analitike e Renditjes",
@@ -118,7 +119,42 @@
     "summary": {
       "totalTopics": "Tema mësimore",
       "coveredTopics": "Tema të mbuluara",
-      "coveragePct": "Mbulimi"
+      "coveragePct": "Mbulimi",
+      "confirmedTopics": "Tema të konfirmuara",
+      "confirmedPct": "Mbulim i konfirmuar",
+      "awaitingReview": "{{tasks}} detyra u lidhën nga AI dhe presin konfirmim. Ato prekin edhe {{topics}} tema, të cilat nuk numërohen derisa një mësues t'i shqyrtojë."
     }
+  },
+  "mastery": {
+    "title": "Zotërimi sipas programit",
+    "subtitle": "Grupuar sipas fushave zyrtare të BRO-së dhe sipas kodeve të rezultateve.",
+    "coverage": "E klasifikuar: {{percent}}% ({{classified}}/{{total}})",
+    "lowCoverageWarning": "Më pak se gjysma e punëve të vlerësuara mbajnë lidhje me programin — trajtojini këto shifra si orientim, jo si përfundim. Klasifikimi shtohet automatikisht kur vlerësohen detyra me temë të hartuar.",
+    "domainMeta": "{{score}}% · {{attempts}} përpjekje",
+    "codeMeta": "{{score}}% · {{attempts}}",
+    "weaknessesTitle": "Dobësi që kërkojnë ndërhyrje",
+    "prerequisiteTitle": "Njohuri paraprake (klasa {{grade}})",
+    "noWeaknesses": "Asnjë fushë nuk është nën pragun e ndërhyrjes.",
+    "noEvidence": "Ende nuk ka punë të vlerësuara për analizë.",
+    "allUnclassified": "Punët e vlerësuara nuk kanë lidhje me programin, prandaj nuk mund të ndërtohet pamja sipas rezultateve.",
+    "csv": {
+      "domain": "Fusha",
+      "code": "Kodi i rezultatit",
+      "outcome": "Rezultati",
+      "grade": "Klasa",
+      "attempts": "Përpjekje",
+      "average": "Mesatarja (%)",
+      "worst": "Më e dobëta (%)",
+      "unclassified": "E paklasifikuar"
+    }
+  },
+  "filters": {
+    "from": "Nga data",
+    "to": "Deri më",
+    "clear": "Pastro",
+    "loadedCount": "Të ngarkuara: {{count}}",
+    "loadMore": "Ngarko më shumë",
+    "loadingMore": "Po ngarkohet…",
+    "exportCsv": "Eksporto CSV"
   }
 }

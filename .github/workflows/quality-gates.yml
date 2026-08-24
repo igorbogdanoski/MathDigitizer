@@ -29,6 +29,16 @@ jobs:
       - name: Run tests
         run: npm run test -- --run
 
+      # Security rules run against the Firestore emulator, which needs a JDK.
+      - name: Setup Java (Firestore emulator)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Firestore rules gate
+        run: npm run test:rules
+
       - name: Build
         run: npm run build
 

@@ -382,17 +382,46 @@ service cloud.firestore {
     }
 
     match /summative_attempts/{attemptId} {
+      // The exam must be open and inside its window for a submission to count.
+      // The client blocks a closed exam in the UI; this is the actual gate.
+      // opens_at / due_at are epoch milliseconds, matching created_at in the
+      // same collection — rules have no parser for ISO strings.
+      function examIsOpen(examId) {
+        let exam = get(/databases/$(database)/documents/summative_exams/$(examId)).data;
+        return exam.status == 'open'
+          && (!('opens_at' in exam) || request.time.toMillis() >= exam.opens_at)
+          && (!('due_at' in exam) || request.time.toMillis() <= exam.due_at);
+      }
+
       // Students read their own attempt; teachers read all (for dashboard query)
       allow read: if isAuthenticated() && (
         resource.data.student_uid == request.auth.uid || isTeacher()
       );
-      // Student can only submit under their own Firebase UID (anonymous auth enforced client-side)
+      // Student can only submit under their own Firebase UID (anonymous auth
+      // enforced client-side) and only while the exam is actually open.
       allow create: if isAuthenticated() &&
-        request.resource.data.student_uid == request.auth.uid;
-      // Only the owning teacher can update (to write score); only the score field
+        request.resource.data.student_uid == request.auth.uid &&
+        examIsOpen(request.resource.data.exam_id);
+      // Only the owning teacher can update, and only the grading fields
       allow update: if isTeacher() &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score']);
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score', 'grade']);
       allow delete: if false;
+    }
+
+    // Intervention plans a teacher assigns to a student (Phase 7.3)
+    match /intervention_plans/{planId} {
+      // The student sees their own plans; teachers see the ones they wrote.
+      allow read: if isAuthenticated() && (
+        resource.data.student_id == request.auth.uid ||
+        resource.data.teacher_uid == request.auth.uid
+      );
+      allow create: if isTeacher() &&
+        request.resource.data.teacher_uid == request.auth.uid;
+      // Only the author may update, and only the resolution fields.
+      allow update: if isTeacher() &&
+        resource.data.teacher_uid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['resolved_at', 'action']);
+      allow delete: if isTeacher() && resource.data.teacher_uid == request.auth.uid;
     }
 
     match /task_attempts/{attemptId} {
@@ -542,6 +571,64 @@ service cloud.firestore {
       // Only teachers can ingest / clear curriculum chunks
       allow create, delete: if isTeacher();
       allow update: if false;
+    }
+
+    // Distilled textbooks (EXPERT_LEVEL_MASTER_PLAN, 10.1).
+    //
+    // Unlike curriculum_knowledge, which holds the state curriculum and is
+    // readable by everyone, this holds a derived version of a book someone
+    // uploaded under their own declared right to use it. That declaration
+    // covers their teaching, not redistribution — so a record is visible only
+    // to the teacher who imported it, and the rules, not the query, are what
+    // enforce it.
+    match /knowledge_skills/{skillId} {
+      function isOwner() {
+        return isAuthenticated() && request.auth.uid == resource.data.ownerId;
+      }
+
+      allow read, delete: if isOwner();
+
+      allow create: if isTeacher()
+        && request.resource.data.ownerId == request.auth.uid
+        // The right-to-use declaration is not optional and must name the
+        // person who made it: a record without one cannot answer for itself.
+        && request.resource.data.usage.declaredBy == request.auth.uid
+        && request.resource.data.usage.basis is string
+        && request.resource.data.usage.declaredAt is string;
+
+      // Only the teacher's own curriculum links may change; the distilled
+      // content and the declaration are what they were when it was written.
+      allow update: if isOwner()
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.usage == resource.data.usage
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['outcomeCodes']);
+    }
+
+    // Concept maps a teacher authors (EXPERT_LEVEL_MASTER_PLAN, 11.1).
+    //
+    // The whole document is rewritten on save, so unlike knowledge_skills there
+    // is no field-level restriction — the map *is* the teacher's edit. What the
+    // rules hold is that it stays theirs and cannot be handed to someone else.
+    match /concept_maps/{mapId} {
+      function ownsExisting() {
+        return isAuthenticated() && request.auth.uid == resource.data.ownerId;
+      }
+
+      allow read, delete: if ownsExisting();
+
+      allow create: if isTeacher()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.nodes is list
+        && request.resource.data.edges is list;
+
+      // A map cannot change hands: reassigning ownerId would move a teacher's
+      // work into another account, and no edit in this feature needs to.
+      allow update: if ownsExisting()
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.nodes is list
+        && request.resource.data.edges is list;
     }
   }
 }

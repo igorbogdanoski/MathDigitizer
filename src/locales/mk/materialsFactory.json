@@ -9,14 +9,38 @@
     "selected": "Селектирани"
   },
   "types": {
-    "worksheet": { "name": "Работен лист", "description": "Задачи за вежбање на час или домашно" },
-    "test": { "name": "Тест / Проверка", "description": "Оценување со бодови и решенија за наставникот" },
-    "collection": { "name": "Збирка задачи", "description": "Сеопфатна збирка поделена по теми и тежина" },
-    "quiz": { "name": "Интерактивен квиз", "description": "Квиз во живо за учениците (Kahoot стил)" },
-    "presentation": { "name": "Презентација", "description": "Слајдови со теорија и задачи за на час" },
-    "flashcards": { "name": "Флешкарти", "description": "Картички за брзо повторување на концепти" },
-    "homework": { "name": "Домашна работа", "description": "Задачи за самостојна работа дома" },
-    "study_guide": { "name": "Водич за учење", "description": "Детален преглед на теорија и клучни задачи" }
+    "worksheet": {
+      "name": "Работен лист",
+      "description": "Задачи за вежбање на час или домашно"
+    },
+    "test": {
+      "name": "Тест / Проверка",
+      "description": "Оценување со бодови и решенија за наставникот"
+    },
+    "collection": {
+      "name": "Збирка задачи",
+      "description": "Сеопфатна збирка поделена по теми и тежина"
+    },
+    "quiz": {
+      "name": "Интерактивен квиз",
+      "description": "Квиз во живо за учениците (Kahoot стил)"
+    },
+    "presentation": {
+      "name": "Презентација",
+      "description": "Слајдови со теорија и задачи за на час"
+    },
+    "flashcards": {
+      "name": "Флешкарти",
+      "description": "Картички за брзо повторување на концепти"
+    },
+    "homework": {
+      "name": "Домашна работа",
+      "description": "Задачи за самостојна работа дома"
+    },
+    "study_guide": {
+      "name": "Водич за учење",
+      "description": "Детален преглед на теорија и клучни задачи"
+    }
   },
   "settings": {
     "language": "Јазик:",
@@ -76,5 +100,76 @@
   },
   "ariaDocumentTitle": "Наслов на документ",
   "ariaAnswerKey": "Клуч со решенија",
-  "ariaMaterialPreview": "Преглед на материјал"
+  "ariaMaterialPreview": "Преглед на материјал",
+  "copyType": "Тип на примерок",
+  "copyStudent": "Ученички",
+  "copyTeacher": "Наставнички",
+  "vectorPdf": "Печати (векторски)",
+  "vectorPdfHint": "Печатење преку прелистувачот — текстот и формулите остануваат векторски и остри при зумирање.",
+  "converting": "Конвертирање...",
+  "savePdf": "Зачувај како PDF",
+  "template": {
+    "title": "Брендиран шаблон за печатење",
+    "hint": "Пополнете еднаш — секој извезен документ ќе го носи идентитетот на вашето училиште.",
+    "uploadLogo": "Прикачи лого",
+    "removeLogo": "Отстрани лого",
+    "logoAlt": "Лого на училиштето",
+    "logoTooLarge": "Логото е преголемо (максимум ~{{kb}} KB по намалување).",
+    "logoFailed": "Не успеа вчитувањето на логото.",
+    "school": "Училиште",
+    "municipality": "Општина / место",
+    "schoolYear": "Учебна година",
+    "subject": "Предмет",
+    "grade": "Одделение / паралелка",
+    "teacher": "Наставник",
+    "note": "Дополнителна линија (по избор)",
+    "variant": "Изглед",
+    "variant_official": "Официјален",
+    "variant_compact": "Компактен",
+    "variant_minimal": "Минимален",
+    "accent": "Акцентна боја",
+    "showStudentFields": "Полиња за ученикот",
+    "showPointsBox": "Поле за поени и оценка",
+    "showGradingScale": "Скала на оценување",
+    "showFooter": "Подножје со ознака",
+    "totalPoints": "Вкупно поени"
+  },
+  "letterhead": {
+    "subject": "Предмет",
+    "grade": "Одделение",
+    "schoolYear": "Учебна година",
+    "teacher": "Наставник",
+    "studentName": "Име",
+    "studentSurname": "Презиме",
+    "studentClass": "Паралелка",
+    "date": "Датум",
+    "assessment": "Оценување",
+    "points": "Поени",
+    "gradingScale": "Скала на оценување (поени)",
+    "generatedBy": "Изготвено со MathDigitizer Pro",
+    "gradeLabel": "Оценка"
+  },
+  "preview": {
+    "enterQuestion": "Внеси прашање",
+    "enterOption": "Внеси опција",
+    "front": "Предна страна",
+    "back": "Задна страна (Решение)",
+    "enterSolution": "Внеси решение",
+    "enterSectionTitle": "Внеси наслов на секција",
+    "enterContent": "Внеси содржина",
+    "enterAnswerKey": "Внеси клуч со решенија",
+    "save": "Зачувај",
+    "editText": "Уреди Текст"
+  },
+  "grades": {
+    "allMixed": "Сите Одделенија / Мешано",
+    "primary": "{{roman}} Одделение",
+    "secondary": "{{roman}} Година (Средно)"
+  },
+  "languages": {
+    "mk": "Македонски",
+    "en": "English (Англиски)",
+    "ru": "Русский (Руски)",
+    "tr": "Türkçe (Турски)"
+  }
 }

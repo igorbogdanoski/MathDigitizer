@@ -10,8 +10,8 @@ import {
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { MathTask } from '../lib/schema';
-import { extractMathTasksFromUrl, generateImage, generateMathGraphicConfig, advancedMultimodalExtraction, enrichTaskPedagogy, generateTaskEmbedding, classifyTaskCurriculum } from '../lib/gemini';
-import { PRO_MODEL, FLASH_36_MODEL, FAST_MODEL, LITE_MODEL } from '../lib/ai/models';
+import { extractMathTasksFromUrl, extractMathTasksFromVideoAgentic, generateImage, generateMathGraphicConfig, advancedMultimodalExtraction, enrichTaskPedagogy, generateTaskEmbedding, classifyTaskCurriculum } from '../lib/gemini';
+import { PRO_MODEL, FLASH_37_MODEL, FLASH_36_MODEL, FAST_MODEL, LITE_MODEL } from '../lib/ai/models';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useGamification } from '../contexts/GamificationContext';
@@ -41,6 +41,14 @@ interface ExtractionEngineProps {
 
 const FREE_EXTRACTION_LIMIT = 2;
 
+const INTERPRETATIVE_SUFFIX: Record<number, string> = {
+  0: " Извлечи го материјалот 100% буквално и верно на оригиналот(Faithful).",
+  1: " Исчисти го материјалот од пелтечења и неважни зборови(Clean).",
+  2: " Реформулирај го овој материјал како професионална лекција или задачи од учебник(Reformulate).",
+  3: " Извлечи го материјалот и нужно додади свои слични примери за да се разјасни концептот(Examples).",
+  4: " Направи само кратко резиме и најважни клучни точки/задачи(Summary).",
+};
+
 export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTutorTask }) => {
   const { t } = useTranslation('extraction');
   const { user, userProfile } = useAuth();
@@ -59,6 +67,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
   const [sourceType, setSourceType] = useState<'url' | 'file' | 'text'>('url');
   const [fileData, setFileData] = useState<{base64: string, mimeType: string, name: string} | null>(null);
   const [model, setModel] = useState(PRO_MODEL);
+  const [agenticVideo, setAgenticVideo] = useState(true);
   
   // Progress States
   const [statusText, setStatusText] = useState<string>('');
@@ -252,18 +261,23 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
       const timeRange = (startTime || endTime) ? { start: startTime, end: endTime } : undefined;
       
       if (sourceType === 'url') {
-        let textInstructions = customInstructions;
-        switch(interpretativeLevel) {
-          case 0: textInstructions += " Извлечи го материјалот 100% буквално и верно на оригиналот(Faithful)."; break;
-          case 1: textInstructions += " Исчисти го материјалот од пелтечења и неважни зборови(Clean)."; break;
-          case 2: textInstructions += " Реформулирај го овој материјал како професионална лекција или задачи од учебник(Reformulate)."; break;
-          case 3: textInstructions += " Извлечи го материјалот и нужно додади свои слични примери за да се разјасни концептот(Examples)."; break;
-          case 4: textInstructions += " Направи само кратко резиме и најважни клучни точки/задачи(Summary)."; break;
-        }
+        let textInstructions = customInstructions + (INTERPRETATIVE_SUFFIX[interpretativeLevel] ?? '');
         for (let i = 0; i < urls.length; i++) {
             setStatusText(t('progressProcessingLink', { current: i + 1, total: urls.length }));
             try {
-              const singleTasks = await extractMathTasksFromUrl(urls[i], model, timeRange, urls.length === 1 ? manualTranscript : '', textInstructions, outputLanguage);
+              const isVideoUrl = urls[i].includes('youtube.com') || urls[i].includes('youtu.be') || urls[i].includes('vimeo.com');
+              const hasManualTranscript = urls.length === 1 && !!manualTranscript;
+              const singleTasks = (agenticVideo && isVideoUrl && !hasManualTranscript)
+                ? await extractMathTasksFromVideoAgentic(urls[i], {
+                    model,
+                    instructions: textInstructions,
+                    outputLanguage,
+                    onProgress: (pct, label) => {
+                      setProgress(Math.max(10, Math.min(90, pct)));
+                      setStatusText(label);
+                    },
+                  })
+                : await extractMathTasksFromUrl(urls[i], model, timeRange, urls.length === 1 ? manualTranscript : '', textInstructions, outputLanguage);
               extractedTasks = [...extractedTasks, ...singleTasks];
             } catch (urlErr) {
               console.error(`Failed to extract from URL ${i + 1}:`, urlErr);
@@ -275,14 +289,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
           { type: 'file' as const, data: fileData!.base64, mimeType: fileData!.mimeType } :
           { type: 'text' as const, data: textInput };
         
-        let textInstructions = customInstructions;
-        switch(interpretativeLevel) {
-          case 0: textInstructions += " Извлечи го материјалот 100% буквално и верно на оригиналот(Faithful)."; break;
-          case 1: textInstructions += " Исчисти го материјалот од пелтечења и неважни зборови(Clean)."; break;
-          case 2: textInstructions += " Реформулирај го овој материјал како професионална лекција или задачи од учебник(Reformulate)."; break;
-          case 3: textInstructions += " Извлечи го материјалот и нужно додади свои слични примери за да се разјасни концептот(Examples)."; break;
-          case 4: textInstructions += " Направи само кратко резиме и најважни клучни точки/задачи(Summary)."; break;
-        }
+        let textInstructions = customInstructions + (INTERPRETATIVE_SUFFIX[interpretativeLevel] ?? '');
 
         const langEntryMM = OUTPUT_LANGUAGES.find(l => l.value === outputLanguage);
         if (langEntryMM) textInstructions += ` ${langEntryMM.instruction}`;
@@ -674,10 +681,24 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                       className="h-10 px-3 rounded-xl bg-white/10 border border-white/20 text-indigo-50 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 [&>option]:text-slate-800 backdrop-blur-sm cursor-pointer hover:bg-white/20 transition-colors"
                     >
                       <option value={PRO_MODEL}>Gemini 3.1 Pro (World-Class)</option>
+                      <option value={FLASH_37_MODEL}>Gemini 3.7 Flash (Agentic)</option>
                       <option value={FLASH_36_MODEL}>Gemini 3.6 Flash (Newest)</option>
                       <option value={FAST_MODEL}>Gemini 3 Flash (Fast)</option>
                       <option value={LITE_MODEL}>Gemini 3.5 Flash Lite (Economy)</option>
                     </select>
+                    <label
+                      className="flex items-center gap-1.5 text-xs text-indigo-100 cursor-pointer select-none"
+                      title={t('engine.segmentedHint')}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={agenticVideo}
+                        onChange={(e) => setAgenticVideo(e.target.checked)}
+                        disabled={isLoading}
+                        className="rounded border-white/30 bg-white/10 text-indigo-500 focus:ring-indigo-400"
+                      />
+                      Агентски режим (долги видеа)
+                    </label>
                     <div className="flex items-center gap-1.5">
                       <Globe className="w-4 h-4 text-indigo-300 shrink-0" />
                       <select

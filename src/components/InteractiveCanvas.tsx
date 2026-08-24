@@ -305,10 +305,11 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
       )}
       
       {/* Canvas Area */}
-      <div 
-        ref={containerRef} 
-        className="flex-1 relative bg-white touch-none"
+      <div
+        ref={containerRef}
+        className="flex-1 relative bg-white touch-none select-none [overscroll-behavior:none]"
         style={{ cursor: tool === 'select' ? 'default' : 'crosshair' }}
+        onContextMenu={(e) => e.preventDefault()}
       >
         {dimensions.width > 0 && dimensions.height > 0 && (
           <Stage

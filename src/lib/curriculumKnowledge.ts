@@ -2,31 +2,40 @@
 // Collection: curriculum_knowledge
 // Populated by: scripts/ingest-curriculum.mjs + CurriculumAdmin.tsx UI
 //
-// STATUS (Phase 4): This module is functional for ingestion and search,
-// but is NOT YET wired into the main generation functions in gemini.ts.
-// Currently, generation functions use the simpler `buildCurriculumContextBlock`
-// (static keyword search from curriculumData.ts).
+// Retrieval runs in three tiers, each falling through to the next: embedding
+// search over ingested chunks, keyword search over those same chunks, and —
+// when Firestore holds nothing — keyword search over the static corpus. The
+// generators reach all three through `buildCurriculumContextBlockRag`.
 //
-// TODO: Wire `searchCurriculum` + `formatCurriculumContext` into generation
-// functions for true RAG-based curriculum alignment. This requires:
-// 1. Passing an embedQuery function to searchCurriculum
-// 2. Replacing buildCurriculumContextBlock calls with searchCurriculum
-// 3. Testing that generated content quality improves
-//
-// The admin UI (CurriculumAdmin.tsx) allows ingesting curriculum chunks
-// with embeddings, which is useful preparation for the full RAG integration.
+// Whatever comes back is put in front of the model as the outcomes the task
+// MUST comply with, so retrieving from the wrong programme is not a quality
+// issue — it is the app asserting something untrue about a state curriculum.
+// That is why the grade filter is applied in every tier and why a hint that
+// names no single programme filters nothing rather than picking one.
 
 import { collection, query, where, getDocs, addDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 import { cosineSimilarity } from './ragContext';
-import {
-  ALL_MK_CURRICULUM,
-  buildCurriculumChunkText,
-  searchCurriculumKeyword,
-  type CurriculumGrade,
-  type CurriculumTopic,
-  type EducationTrack,
+import type {
+  CurriculumGrade,
+  CurriculumTopic,
+  EducationTrack,
 } from './curriculumData';
+import { CURRICULUM_INDEX } from './curriculumIndex';
+import { resolveGradeToken } from './curriculumGrade';
+
+/**
+ * The corpus is loaded on demand.
+ *
+ * Only two functions here need the wording of the outcomes, and both are async.
+ * A static import put all 571 KB into every bundle that can reach this module —
+ * which, through the AI client, is nearly all of them.
+ */
+async function loadCorpus() {
+  const { ALL_MK_CURRICULUM, searchCurriculumKeyword, buildCurriculumChunkText } =
+    await import('./curriculumData');
+  return { ALL_MK_CURRICULUM, searchCurriculumKeyword, buildCurriculumChunkText };
+}
 
 export interface CurriculumChunk {
   id?: string;
@@ -61,18 +70,15 @@ export async function getCurriculumChunks(
   grade?: string,
 ): Promise<CurriculumChunk[]> {
   try {
-    let q;
-    if (track && grade) {
-      q = query(
-        collection(db, COLLECTION),
-        where('education_track', '==', track),
-        where('grade', '==', grade),
-      );
-    } else if (track) {
-      q = query(collection(db, COLLECTION), where('education_track', '==', track));
-    } else {
-      q = query(collection(db, COLLECTION));
-    }
+    // Each filter is applied on its own merit. The previous shape only honoured
+    // `grade` when `track` was also given, and the RAG path never passes a
+    // track — so every retrieval searched all 31 programmes while looking as
+    // though it were scoped to one.
+    const constraints = [
+      ...(track ? [where('education_track', '==', track)] : []),
+      ...(grade ? [where('grade', '==', grade)] : []),
+    ];
+    const q = query(collection(db, COLLECTION), ...constraints);
     const snap = await getDocs(q);
     return snap.docs.map(d => ({ id: d.id, ...d.data() } as CurriculumChunk));
   } catch {
@@ -102,8 +108,14 @@ export async function searchCurriculum(
 ): Promise<CurriculumSearchResult[]> {
   const maxResults = options.maxResults ?? 3;
 
+  // A hint that names no single programme resolves to null and filters nothing,
+  // which leaves retrieval as wide as it was. Guessing a programme would be
+  // worse: the prompt presents whatever comes back as the outcomes the task
+  // must comply with.
+  const gradeToken = resolveGradeToken(options.gradeFilter);
+
   // 1. Try Firestore embedding search
-  const chunks = await getCurriculumChunks(options.trackFilter, options.gradeFilter);
+  const chunks = await getCurriculumChunks(options.trackFilter, gradeToken ?? undefined);
 
   if (chunks.length > 0 && options.embedQuery) {
     try {
@@ -142,10 +154,11 @@ export async function searchCurriculum(
   }
 
   // 3. Fallback: static keyword search (no Firestore)
-  const staticTopics = searchCurriculumKeyword(query);
+  const { ALL_MK_CURRICULUM, searchCurriculumKeyword, buildCurriculumChunkText } = await loadCorpus();
+  const staticTopics = searchCurriculumKeyword(query, gradeToken ?? undefined);
   return staticTopics.slice(0, maxResults).map(topic => {
     const grade = ALL_MK_CURRICULUM.find(g => g.topics.some(t => t.id === topic.id))!;
-    const chunk = buildStaticChunk(grade, topic);
+    const chunk = buildStaticChunk(grade, topic, buildCurriculumChunkText);
     return { chunk, score: 0.5, retrieval_mode: 'keyword' as const };
   });
 }
@@ -170,7 +183,11 @@ export function formatCurriculumContext(results: CurriculumSearchResult[]): stri
 
 // ─── Ingest: populate from static data (fallback, no PDF needed) ──────────────
 
-function buildStaticChunk(grade: CurriculumGrade, topic: CurriculumTopic): CurriculumChunk {
+function buildStaticChunk(
+  grade: CurriculumGrade,
+  topic: CurriculumTopic,
+  buildChunkText: (g: CurriculumGrade, t: CurriculumTopic) => string,
+): CurriculumChunk {
   return {
     source: 'STATIC',
     education_track: grade.education_track,
@@ -178,7 +195,7 @@ function buildStaticChunk(grade: CurriculumGrade, topic: CurriculumTopic): Curri
     level_label: grade.level_label,
     topic_id: topic.id,
     topic_name: topic.name,
-    content: buildCurriculumChunkText(grade, topic),
+    content: buildChunkText(grade, topic),
     keywords: topic.keywords,
     example_tasks: topic.example_tasks,
     learning_outcomes: topic.outcomes.map(o => `[${o.code}] ${o.text}`),
@@ -192,10 +209,11 @@ export async function ingestStaticCurriculum(
   embedFn?: (text: string) => Promise<number[]>,
 ): Promise<{ ingested: number; errors: number }> {
   // Build all chunks
+  const { ALL_MK_CURRICULUM, buildCurriculumChunkText } = await loadCorpus();
   const allChunks: CurriculumChunk[] = [];
   for (const grade of ALL_MK_CURRICULUM) {
     for (const topic of grade.topics) {
-      allChunks.push(buildStaticChunk(grade, topic));
+      allChunks.push(buildStaticChunk(grade, topic, buildCurriculumChunkText));
     }
   }
 
@@ -243,5 +261,6 @@ export async function clearAllCurriculumChunks(): Promise<void> {
 }
 
 export function getTotalStaticChunkCount(): number {
-  return ALL_MK_CURRICULUM.reduce((sum, g) => sum + g.topics.length, 0);
+  // A count needs no prose — the index carries it.
+  return CURRICULUM_INDEX.reduce((sum, g) => sum + g.topics.length, 0);
 }

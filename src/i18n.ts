@@ -42,6 +42,7 @@ import mkLessonPlan from './locales/mk/lessonPlan.json';
 import mkCurriculumFactory from './locales/mk/curriculumFactory.json';
 import mkTestGenerator from './locales/mk/testGenerator.json';
 import mkGlobalTutor from './locales/mk/globalTutor.json';
+import mkExams from './locales/mk/exams.json';
 
 import enCommon from './locales/en/common.json';
 import enNavigation from './locales/en/navigation.json';
@@ -74,6 +75,7 @@ import enLessonPlan from './locales/en/lessonPlan.json';
 import enCurriculumFactory from './locales/en/curriculumFactory.json';
 import enTestGenerator from './locales/en/testGenerator.json';
 import enGlobalTutor from './locales/en/globalTutor.json';
+import enExams from './locales/en/exams.json';
 
 import alCommon from './locales/al/common.json';
 import alNavigation from './locales/al/navigation.json';
@@ -106,6 +108,7 @@ import alLessonPlan from './locales/al/lessonPlan.json';
 import alCurriculumFactory from './locales/al/curriculumFactory.json';
 import alTestGenerator from './locales/al/testGenerator.json';
 import alGlobalTutor from './locales/al/globalTutor.json';
+import alExams from './locales/al/exams.json';
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'mk', name: 'Македонски', flag: '🇲🇰' },
@@ -152,6 +155,7 @@ i18n
         curriculumFactory: mkCurriculumFactory,
         testGenerator: mkTestGenerator,
         globalTutor: mkGlobalTutor,
+        exams: mkExams,
       },
       en: {
         common: enCommon,
@@ -185,6 +189,7 @@ i18n
         curriculumFactory: enCurriculumFactory,
         testGenerator: enTestGenerator,
         globalTutor: enGlobalTutor,
+        exams: enExams,
       },
       al: {
         common: alCommon,
@@ -218,11 +223,12 @@ i18n
         curriculumFactory: alCurriculumFactory,
         testGenerator: alTestGenerator,
         globalTutor: alGlobalTutor,
+        exams: alExams,
       },
     },
     fallbackLng: 'mk',
     defaultNS: 'common',
-    ns: ['common', 'navigation', 'pricing', 'home', 'library', 'extraction', 'dashboard', 'flashcards', 'gradebook', 'differentiation', 'earlyWarning', 'billing', 'schoolInquiries', 'smartOcr', 'smartGrader', 'graphDigitizer', 'analytics', 'pedagogue', 'materialsFactory', 'tutorChat', 'adaptiveTest', 'classrooms', 'teacherDashboard', 'studentDashboard', 'kahoot', 'liveCanvas', 'interactiveSolver', 'lessonPlan', 'curriculumFactory', 'testGenerator', 'globalTutor'],
+    ns: ['common', 'navigation', 'pricing', 'home', 'library', 'extraction', 'dashboard', 'flashcards', 'gradebook', 'differentiation', 'earlyWarning', 'billing', 'schoolInquiries', 'smartOcr', 'smartGrader', 'graphDigitizer', 'analytics', 'pedagogue', 'materialsFactory', 'tutorChat', 'adaptiveTest', 'classrooms', 'teacherDashboard', 'studentDashboard', 'kahoot', 'liveCanvas', 'interactiveSolver', 'lessonPlan', 'curriculumFactory', 'testGenerator', 'globalTutor', 'exams'],
     
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],

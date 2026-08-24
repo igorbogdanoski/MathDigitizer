@@ -1,5 +1,5 @@
 {
-  "title": "Test Generator",
+  "title": "MakedoTest generator",
   "selectedTasks": "Selected tasks:",
   "closeAriaLabel": "Close generator",
   "randomTest": {
@@ -59,5 +59,17 @@
   "ariaBloomTaxonomy": "Bloom's taxonomy",
   "ariaSectionText": "Section text",
   "ariaQuestionText": "Question text",
-  "ariaListItem": "List item"
+  "ariaListItem": "List item",
+  "defaultInstructions": "Create a formal test with a mix of question types (multiple choice, true/false, short answer, equation solving). Order them by difficulty. Add sections.",
+  "errorNoTasks": "Please extract or select tasks first so a test can be generated.",
+  "errorPrefix": "Error: {{message}}",
+  "generatedNotice": "The test was generated. You can print it (Ctrl+P) straight from your browser.",
+  "goBack": "Go back",
+  "description": "Turn your extracted tasks into a professional, print-ready test. The AI picks a suitable structure from all 16 question types (multiple choice, true/false, matching and so on).",
+  "sourceTasks": "1. Source tasks",
+  "taskCount": "There are currently {{count}} extracted tasks ready to include in this test.",
+  "promptSection": "2. Prompt and structure (instructions)",
+  "promptPlaceholder": "e.g. Make 4 sections: Multiple choice, True/False, Short answer and Essay...",
+  "generating": "Generating MakedoTest...",
+  "generate": "Create test"
 }

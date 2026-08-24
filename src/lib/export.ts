@@ -1,6 +1,7 @@
 import { saveAs } from 'file-saver';
 import { MathTask } from "./schema";
 import { Document, Paragraph, TextRun, Packer, HeadingLevel, AlignmentType } from 'docx';
+import { buildRichChildren, latexToDocxMath } from './docx/mathRuns';
 
 export function exportToJson(tasks: MathTask[], filename: string = "math_tasks.json") {
   const dataStr = JSON.stringify(tasks, null, 2);
@@ -46,7 +47,8 @@ export async function exportToWord(tasks: MathTask[], filename: string = "math_m
         spacing: { before: 200 }
       }),
       new Paragraph({
-        text: task.original_text,
+        // LaTeX becomes real Word equations (OMML) rather than literal source
+        children: buildRichChildren(task.original_text),
         spacing: { after: 200 }
       }),
       new Paragraph({
@@ -58,10 +60,11 @@ export async function exportToWord(tasks: MathTask[], filename: string = "math_m
     task.solution_steps.forEach((step, stepIndex) => {
       children.push(
         new Paragraph({
-          text: `${stepIndex + 1}. ${step}`,
-          bullet: {
-            level: 0
-          }
+          children: [
+            new TextRun({ text: `${stepIndex + 1}. ` }),
+            ...buildRichChildren(step),
+          ],
+          bullet: { level: 0 }
         })
       );
     });
@@ -75,11 +78,10 @@ export async function exportToWord(tasks: MathTask[], filename: string = "math_m
         })
       );
       task.latex_formulas.forEach(formula => {
-        // Outputting LaTeX string inside docx text nodes as we don't have direct OMML compilation without heavy processing.
-        // It provides standard readable math expressions for copy/paste.
+        // Compiled to OMML, so Word renders (and can edit) the equation.
         children.push(
           new Paragraph({
-            text: formula,
+            children: [latexToDocxMath(formula.replace(/^\$+|\$+$/g, ''))],
             bullet: { level: 0 }
           })
         );

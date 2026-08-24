@@ -51,6 +51,11 @@ const BlogOcrMath = lazy(() => import('./components/blog/BlogOcrMath').then((m) 
 const BlogLatexExtraction = lazy(() => import('./components/blog/BlogLatexExtraction').then((m) => ({ default: m.BlogLatexExtraction })));
 const BlogLiveMathKahoot = lazy(() => import('./components/blog/BlogLiveMathKahoot').then((m) => ({ default: m.BlogLiveMathKahoot })));
 const IngestionSnapshotFlagProbe = lazy(() => import('./components/dev/IngestionSnapshotFlagProbe').then((m) => ({ default: m.IngestionSnapshotFlagProbe })));
+const InkPipelineProbe = lazy(() => import('./components/dev/InkPipelineProbe').then((m) => ({ default: m.InkPipelineProbe })));
+const LetterheadProbe = lazy(() => import('./components/dev/LetterheadProbe').then((m) => ({ default: m.LetterheadProbe })));
+const ConceptMapProbe = lazy(() => import('./components/dev/ConceptMapProbe').then((m) => ({ default: m.ConceptMapProbe })));
+const ConceptMapsPage = lazy(() => import('./components/mindmap/ConceptMapsPage').then((m) => ({ default: m.ConceptMapsPage })));
+const TextbookImportPage = lazy(() => import('./components/knowledge/TextbookImportPage').then((m) => ({ default: m.TextbookImportPage })));
 
 const RouteFallback = () => (
   <div className="min-h-[40vh] flex items-center justify-center text-slate-500 text-sm">Loading...</div>
@@ -197,6 +202,18 @@ const AppRoutes = () => {
               <MaterialsFactory />
             </ProtectedRoute>
           } />
+
+          <Route path="mind-maps" element={
+            <ProtectedRoute allowedRoles={['teacher']} authFeatureName="Концепт-мапи">
+              <ConceptMapsPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="textbooks" element={
+            <ProtectedRoute allowedRoles={['teacher']} authFeatureName="Учебници">
+              <TextbookImportPage />
+            </ProtectedRoute>
+          } />
           
           <Route path="mass-factory" element={
             <ProtectedRoute
@@ -301,6 +318,15 @@ const AppRoutes = () => {
 
         {import.meta.env.DEV && (
           <Route path="/__e2e__/ingestion-snapshot" element={<IngestionSnapshotFlagProbe />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/__e2e__/ink-pipeline" element={<InkPipelineProbe />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/__e2e__/letterhead" element={<LetterheadProbe />} />
+        )}
+        {import.meta.env.DEV && (
+          <Route path="/__e2e__/concept-map" element={<ConceptMapProbe />} />
         )}
 
         {/* Public blog posts — no auth required */}

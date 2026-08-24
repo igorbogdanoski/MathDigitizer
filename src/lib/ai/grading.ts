@@ -3,22 +3,41 @@
  * Moved verbatim from the former gemini.ts god-object.
  */
 import { ai } from './client';
-import { MATH_PLOT_INSTRUCTION, ALGEBRA_TILES_INSTRUCTION } from './utils';
+import { MATH_PLOT_INSTRUCTION, ALGEBRA_TILES_INSTRUCTION, parseGeminiResponse } from './utils';
 import { MathTask } from '../schema';
 import { Type } from '@google/genai';
 import { DEFAULT_MODEL, PRO_MODEL } from './models';
 
+/**
+ * Grades one answer.
+ *
+ * `ownerId` opts this call into the teacher's own distilled textbooks
+ * (EXPERT_LEVEL_MASTER_PLAN, 10.1). Grading is where that material is worth
+ * most: a distilled chapter carries the specific wrong moves students make on
+ * that content, which is the difference between telling a student they are
+ * wrong and telling them why. Omitted, or with nothing imported, the prompt is
+ * exactly what it was.
+ */
 export async function autoGradeSubmission(
   question: any,
-  studentAnswer: any
+  studentAnswer: any,
+  ownerId?: string
 ): Promise<{ score: number, feedback: string, socratic_hint?: string, error_detected?: string }> {
   try {
+    const { buildKnowledgeContextBlock } = await import('../knowledge/context');
+    const knowledge = await buildKnowledgeContextBlock(
+      [question?.question, question?.title, question?.curriculum_topic].filter(Boolean).join(' '),
+      ownerId,
+      question?.curriculum_refs?.flatMap((r: any) => r?.outcome_codes ?? []) ?? [],
+    );
+
     const prompt = `Ти си Стручен Оценувач и Интерактивен Сократски Ментор по математика. 
 За дадената задача и одговорот на ученикот, треба да пресметаш поени и да дадеш фидбек.
 Ако одговорот не е целосно точен, ТИ НЕ СМЕЕШ ДА ГО ДАДЕШ ГОТОВИОТ ОДГОВОР. 
 Наместо тоа, детектирај каде точно ученикот згрешил во чекорите (error_detected) и дај му Сократски хинт (socratic_hint) за да се поправи сам. 
 
-ПОДАТОЦИ:
+${knowledge ? `${knowledge}
+` : ''}ПОДАТОЦИ:
 ЗАДАЧА: ${JSON.stringify(question, null, 2)}
 УЧЕНИК ОДГОВАРА: ${JSON.stringify(studentAnswer)}
 МАКСИМАЛНИ ПОЕНИ: ${question.points || 100}
@@ -28,6 +47,9 @@ export async function autoGradeSubmission(
 2. ДЕТЕКТИРАЈ ГРЕШКА: Ако згрешил, објасни прецизно каде е грешката (пр. "Заборави да го промениш знакот при префрлање од другата страна").
 3. СОКРАТСКИ ХИНТ: Постави прашање што ќе го наведе сам да ја најде грешката.
 4. Ако одговорот е целосно точен (100 поени), пофали го и не мораш да даваш socratic_hint.
+4а. Ако има белешки од учебникот погоре и грешката на ученикот се совпаѓа со
+    типична грешка наведена таму, искористи го тоа објаснување — тоа е
+    материјалот по кој наставникот предава.
 5. Врати СТРОГО JSON формат: 
 { 
   "score": <број>, 
@@ -45,10 +67,25 @@ export async function autoGradeSubmission(
     });
     
     if (!response.text) throw new Error("Нема одговор.");
-    return JSON.parse(response.text);
+
+    const parsed = parseGeminiResponse(response.text);
+    const score = typeof parsed?.score === 'number' ? parsed.score : Number(parsed?.score);
+    if (!Number.isFinite(score)) {
+      throw new Error('Оценувачот не врати важечки број на поени.');
+    }
+
+    return { ...parsed, score: Math.min(100, Math.max(0, score)) };
   } catch (error) {
+    // Deliberately rethrown rather than answered with `{ score: 0 }`.
+    //
+    // This used to swallow its own failure and return a zero, which the caller
+    // consumed as a real result: the try/catch around the call never fired, so
+    // a malformed response was recorded as a wrong answer. In AdaptiveTest that
+    // fed the ability estimate, and a student's estimated level fell because of
+    // a stray markdown fence. A grade is a claim about a person — when it
+    // cannot be made, the honest answer is that no grade was produced.
     console.error("Auto grading error:", error);
-    return { score: 0, feedback: "Грешка при автоматското оценување. Потребен е рачен преглед." };
+    throw error;
   }
 }
 
@@ -110,7 +147,7 @@ ${userStep}
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    return JSON.parse(response.text);
+    return parseGeminiResponse(response.text);
   } catch (error) {
     console.error("Error verifying step:", error);
     throw error;
@@ -247,7 +284,7 @@ ${studentHistory ? `ИСТОРИЈА И АНАЛИТИКА НА УЧЕНИКОТ
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    return JSON.parse(response.text);
+    return parseGeminiResponse(response.text);
   } catch (error) {
     console.error("Error analyzing solution image:", error);
     throw error;
@@ -354,7 +391,7 @@ ${studentHistory ? `\nИСТОРИЈА И АНАЛИТИКА НА УЧЕНИКО
     });
 
     if (!response.text) throw new Error("Нема одговор на сликата.");
-    const parsed = JSON.parse(response.text);
+    const parsed = parseGeminiResponse(response.text);
     return Array.isArray(parsed) ? parsed : [parsed];
   } catch (error) {
     console.error("Грешка при batch анализа на сликата:", error);

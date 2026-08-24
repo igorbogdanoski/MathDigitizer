@@ -18,5 +18,9 @@
   "exitTicket": "Exit Ticket",
   "successToast": "Curriculum generated successfully!",
   "errorToast": "Error generating curriculum.",
-  "savedToast": "All materials saved to the Library!"
+  "savedToast": "All materials saved to the Library!",
+  "emptyDocument": "No readable text could be extracted (the PDF may be a scan with no text layer).",
+  "savedToastCount": "Saved: module + {{count}} tasks to the library.",
+  "saveError": "Failed to save to the library.",
+  "homeworkTasks": "Homework"
 }

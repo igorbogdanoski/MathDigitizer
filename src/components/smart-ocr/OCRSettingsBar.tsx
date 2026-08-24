@@ -1,9 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { PRO_MODEL, FAST_MODEL } from '../../lib/ai/models';
 
 interface OCRSettingsBarProps {
-  targetLanguage: 'auto' | 'mk' | 'en' | 'ru' | 'tr';
-  setTargetLanguage: (v: 'auto' | 'mk' | 'en' | 'ru' | 'tr') => void;
+  targetLanguage: 'auto' | 'mk' | 'en' | 'ru' | 'tr' | 'al';
+  setTargetLanguage: (v: 'auto' | 'mk' | 'en' | 'ru' | 'tr' | 'al') => void;
   visualizationMode: 'none' | 'tikz' | 'geogebra' | 'nanobanana';
   setVisualizationMode: (v: 'none' | 'tikz' | 'geogebra' | 'nanobanana') => void;
   ocrModel: string;
@@ -37,6 +38,7 @@ export const OCRSettingsBar: React.FC<OCRSettingsBarProps> = ({
           <option value="auto">{t('settings.langAuto')}</option>
           <option value="mk">{t('settings.langMk')}</option>
           <option value="en">{t('settings.langEn')}</option>
+          <option value="al">{t('settings.langAl')}</option>
           <option value="tr">{t('settings.langTr')}</option>
           <option value="ru">{t('settings.langRu')}</option>
         </select>
@@ -69,8 +71,8 @@ export const OCRSettingsBar: React.FC<OCRSettingsBarProps> = ({
           aria-label={t('settings.modelTitle')}
           className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 dark:text-slate-200 shadow-sm"
         >
-          <option value="gemini-3.1-pro-preview">{t('settings.modelPro')}</option>
-          <option value="gemini-3-flash-preview">{t('settings.modelFlash')}</option>
+          <option value={PRO_MODEL}>{t('settings.modelPro')}</option>
+          <option value={FAST_MODEL}>{t('settings.modelFlash')}</option>
         </select>
       </div>
 

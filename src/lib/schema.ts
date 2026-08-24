@@ -35,6 +35,12 @@ export interface GradedSubmission {
   };
   feedback_summary: string;
   created_at: string;
+  /**
+   * Curriculum attribution, copied from the graded task (Phase 7.1).
+   * Without it, analytics can say a student is struggling but not with what.
+   */
+  curriculum_refs?: CurriculumRef[];
+  curriculum_topic?: string;
 }
 
 export interface UserProfile {
@@ -74,6 +80,8 @@ export interface TaskAttempt {
   mistake_count: number;
   curriculum_topic?: string; // Cache topic for fast aggregation in Factory
   curriculum_topic_id?: string; // Cache of curriculum_refs[0].topic_id for fast aggregation
+  /** Full curriculum attribution, so per-code mastery can be rolled up (7.1). */
+  curriculum_refs?: CurriculumRef[];
   tags?: string[];
   cognitive_score?: number; // Calculated field based on hints/time/errors
 }
@@ -116,6 +124,7 @@ export interface LessonArchitectScript {
 export interface MathTask {
   id?: string;
   evidence_quote?: string; // ANTI-HALLUCINATION: Exact quote from the source video/doc mapping to this task
+  extraction_confidence?: number; // Model self-reported clarity score 1-100 for the source material
   source_timestamp?: string; // The time (e.g. 04:15) or Page (e.g. Page 3) where the task is found
   illustration_prompt?: string; // English prompt ONLY for real-world scenarios (cars, apples, physics situations) via Image AI
   geogebra_commands?: string[]; // Array of GeoGebra commands for geometry and plotting
@@ -157,6 +166,24 @@ export interface MathTask {
   };
 }
 
+/**
+ * A pedagogical intervention a teacher assigned to a student (Phase 7.3).
+ * Persisted, so the telemetry timeline is a record rather than a mock.
+ */
+export interface InterventionPlan {
+  id?: string;
+  student_id: string;
+  teacher_uid: string;
+  /** What triggered it, e.g. the weak curriculum domain or topic. */
+  reason: string;
+  /** What the teacher assigned. */
+  action: string;
+  kind: 'targeted_tasks' | 'message' | 'note';
+  task_ids?: string[];
+  created_at: string;
+  resolved_at?: string;
+}
+
 export interface Flashcard {
   id?: string;
   front: string;
@@ -167,6 +194,14 @@ export interface Flashcard {
   interval?: number;
   ease_factor?: number;
   created_at?: string;
+  /** FSRS-lite scheduling state; absent on cards created before it existed. */
+  phase?: 'learning' | 'review' | 'relearning';
+  step?: number;
+  /** Times this card was forgotten after graduating. */
+  lapses?: number;
+  /** Deck this card belongs to; empty means the default deck. */
+  deck?: string;
+  tags?: string[];
 }
 
 export interface DailyQuest {
@@ -247,6 +282,14 @@ export interface SummativeExam {
   test_data: any; // MakedoTestDocument
   created_at: number;
   status: 'open' | 'closed';
+  /**
+   * Epoch milliseconds bounding when students may sit the exam (both optional).
+   * Numeric, not ISO, because Firestore rules cannot parse date strings.
+   */
+  opens_at?: number;
+  due_at?: number;
+  /** Total points available, used for the 1–5 grade mapping. */
+  total_points?: number;
 }
 
 export interface SummativeAttempt {
@@ -257,6 +300,8 @@ export interface SummativeAttempt {
   answers: Record<string, any>; // Map question index to student answer
   submitted_at: number;
   score?: number; // Calculated later by teacher or auto-grader
+  /** Macedonian 1–5 grade derived from score/total_points. */
+  grade?: 1 | 2 | 3 | 4 | 5;
   anti_cheat?: {
     tab_switches: number;
     time_spent_seconds: number;

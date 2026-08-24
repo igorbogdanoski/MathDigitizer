@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { collection, query, getDocs, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, limit, getDocs, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { MathTask, UserStats } from '../lib/schema';
 import { MathRenderer } from './MathRenderer';
@@ -9,8 +9,24 @@ import { Brain, Trophy, Loader2, ArrowRight, Zap, RefreshCw, AlertTriangle, Tren
 import { useGamification } from '../contexts/GamificationContext';
 import { autoGradeSubmission, generateTargetedPracticeTasks } from '../lib/gemini';
 import { calculateSM2 } from '../lib/srsAlgorithm';
+import {
+  AbilityEstimate,
+  Difficulty,
+  createAbilityEstimate,
+  foldObservation,
+  selectNextDifficulty,
+  shouldStopSession,
+  weakestTopics,
+} from '../lib/adaptive/ability';
 import { useToast } from '../contexts/ToastContext';
 import { motion, AnimatePresence } from 'motion/react';
+
+/** Items in one session before the confidence rule gets a say. */
+const SESSION_TASK_COUNT = 5;
+/** Upper bound on documents read per query — never scan the whole collection. */
+const TASK_FETCH_LIMIT = 40;
+
+const shuffle = <T,>(items: T[]): T[] => [...items].sort(() => Math.random() - 0.5);
 
 export const AdaptiveTest: React.FC = () => {
   const { t } = useTranslation('adaptiveTest');
@@ -28,6 +44,11 @@ export const AdaptiveTest: React.FC = () => {
   
   const [trajectory, setTrajectory] = useState<{score: number, difficulty: string}[]>([]);
   const [adaptationState, setAdaptationState] = useState<'neutral' | 'hardening' | 'softening'>('neutral');
+
+  // Running per-topic ability estimates — difficulty now follows accumulated
+  // evidence instead of the single most recent answer.
+  const [abilities, setAbilities] = useState<Record<string, AbilityEstimate>>({});
+  const [stopReason, setStopReason] = useState<'confident' | 'max-items' | null>(null);
 
   // Kahoot (Time Race) Mode
   const [isKahootMode, setIsKahootMode] = useState(false);
@@ -87,56 +108,46 @@ export const AdaptiveTest: React.FC = () => {
     try {
       let tasksToLoad: MathTask[] = [];
       const user = auth.currentUser;
-      
-      const tasksQuery = query(collection(db, 'tasks'));
-      const tasksSnapshot = await getDocs(tasksQuery);
-      const allTasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MathTask));
 
       if (user) {
-        // Fetch mastery for current user
-        const masteryQuery = query(collection(db, 'user_mastery'));
-        const masterySnapshot = await getDocs(masteryQuery);
-        const userMastery = masterySnapshot.docs
-          .map(doc => doc.data())
-          .filter(d => d.uid === user.uid);
+        // Mastery for THIS user only — previously the whole collection was read
+        // and filtered in the browser.
+        const masterySnapshot = await getDocs(
+          query(collection(db, 'user_mastery'), where('uid', '==', user.uid))
+        );
+        const userMastery = masterySnapshot.docs.map(d => d.data());
 
         const now = new Date().toISOString();
-        // Topics due for review
+        // Firestore allows at most 10 values in an `in` filter.
         const dueTopics = userMastery
           .filter(m => m.next_review && m.next_review <= now)
-          .map(m => m.topic);
-
-        // Separate tasks by topic
-        const tasksByTopic = allTasks.reduce((acc, task) => {
-          const topic = task.curriculum_topic || 'Општо';
-          if (!acc[topic]) acc[topic] = [];
-          acc[topic].push(task);
-          return acc;
-        }, {} as Record<string, MathTask[]>);
+          .map(m => m.topic)
+          .filter(Boolean)
+          .slice(0, 10);
 
         if (dueTopics.length > 0) {
-          // Grab tasks from due topics
-          for (const topic of dueTopics) {
-            if (tasksByTopic[topic]) {
-              // Shuffle and take a few from this topic
-              const shuffledTopicTasks = tasksByTopic[topic].sort(() => Math.random() - 0.5);
-              tasksToLoad.push(...shuffledTopicTasks.slice(0, 2));
-            }
-          }
+          const dueSnapshot = await getDocs(
+            query(collection(db, 'tasks'), where('curriculum_topic', 'in', dueTopics), limit(TASK_FETCH_LIMIT))
+          );
+          tasksToLoad.push(...dueSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as MathTask)));
         }
 
-        // Fill up to 5 tasks total with random other tasks or new tasks
-        if (tasksToLoad.length < 5) {
-          const remainingTasks = allTasks.filter(t => !tasksToLoad.find(loaded => loaded.id === t.id));
-          const fillTasks = remainingTasks.sort(() => Math.random() - 0.5).slice(0, 5 - tasksToLoad.length);
-          tasksToLoad.push(...fillTasks);
+        // Top up with a bounded page of other tasks rather than the whole collection.
+        if (tasksToLoad.length < SESSION_TASK_COUNT) {
+          const fillSnapshot = await getDocs(query(collection(db, 'tasks'), limit(TASK_FETCH_LIMIT)));
+          const fill = fillSnapshot.docs
+            .map(d => ({ id: d.id, ...d.data() } as MathTask))
+            .filter(t => !tasksToLoad.some(loaded => loaded.id === t.id));
+          tasksToLoad.push(...shuffle(fill).slice(0, SESSION_TASK_COUNT - tasksToLoad.length));
         }
       } else {
-        // Fallback for unauthenticated
-        tasksToLoad = allTasks.sort(() => Math.random() - 0.5).slice(0, 5);
+        const snapshot = await getDocs(query(collection(db, 'tasks'), limit(TASK_FETCH_LIMIT)));
+        tasksToLoad = shuffle(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as MathTask)));
       }
-      
-      setTasks(tasksToLoad.slice(0, 5).sort(() => Math.random() - 0.5)); // Randomize display order
+
+      setAbilities({});
+      setStopReason(null);
+      setTasks(shuffle(tasksToLoad).slice(0, SESSION_TASK_COUNT));
       setCurrentTaskIndex(0);
       setSessionScore(0);
       setSessionCount(0);
@@ -187,28 +198,44 @@ export const AdaptiveTest: React.FC = () => {
       }
       
       setTrajectory(prev => [...prev, { score: result.score, difficulty: task.difficulty || 'medium' }]);
-      
+
       // Update SRS data for this topic
       if (auth.currentUser && task.curriculum_topic) {
         await updateMastery(auth.currentUser.uid, task.curriculum_topic, quality);
       }
-      
-      // Computerized Adaptive Testing (CAT) Logic: Inject tasks based on performance
+
+      const answered = sessionCount + 1;
+      const topic = task.curriculum_topic;
+      const difficulty = (task.difficulty || 'medium') as Difficulty;
+
+      // Computerized Adaptive Testing: fold this answer into the topic estimate,
+      // then aim the next task at the ability the evidence now supports.
+      let updatedAbilities = abilities;
       setAdaptationState('neutral');
-      if (task.curriculum_topic) {
-        if (result.score < 50 && ['medium', 'hard'].includes(task.difficulty || 'medium')) {
-           // Target easier task
-           setAdaptationState('softening');
-           injectAdaptiveTask('easy', task.curriculum_topic);
-        } else if (result.score >= 80 && ['easy', 'medium'].includes(task.difficulty || 'medium')) {
-           // Target harder task
-           setAdaptationState('hardening');
-           injectAdaptiveTask('hard', task.curriculum_topic);
+
+      if (topic) {
+        const previous = abilities[topic] ?? createAbilityEstimate(topic);
+        const estimate = foldObservation(previous, result.score, difficulty);
+        updatedAbilities = { ...abilities, [topic]: estimate };
+        setAbilities(updatedAbilities);
+
+        const target = selectNextDifficulty(estimate.ability);
+        if (target !== difficulty) {
+          setAdaptationState(target === 'easy' || (target === 'medium' && difficulty === 'hard') ? 'softening' : 'hardening');
+          injectAdaptiveTask(target, topic);
         }
       }
-      
+
+      // Confidence-based stop: end the session once every topic under test is
+      // measured precisely enough, rather than always running a fixed count.
+      const decision = shouldStopSession(Object.values(updatedAbilities), answered, {
+        minItems: SESSION_TASK_COUNT,
+        maxItems: SESSION_TASK_COUNT * 3,
+      });
+      setStopReason(decision.stop ? decision.reason as 'confident' | 'max-items' : null);
+
       updateQuestProgress('solve');
-      setSessionCount(prev => prev + 1);
+      setSessionCount(answered);
       setIsGrading(false);
   };
 
@@ -228,6 +255,9 @@ export const AdaptiveTest: React.FC = () => {
       const result = await autoGradeSubmission(mockQuestion, studentAnswer);
       await processGradingResult(result, task);
     } catch (err) {
+      // No grade is recorded when grading fails. The alternative — writing the
+      // zero the grader used to return — moved a student's ability estimate on
+      // the strength of a parse error.
       console.error("Grading error:", err);
       showToast(t('toasts.gradeError'), 'error');
       setIsGrading(false);
@@ -259,24 +289,24 @@ export const AdaptiveTest: React.FC = () => {
     }, { merge: true });
   };
 
-  const injectAdaptiveTask = async (targetDifficulty: 'easy'|'medium'|'hard', topic: string) => {
+  const injectAdaptiveTask = async (targetDifficulty: Difficulty, topic: string) => {
      try {
-        const tasksQuery = query(collection(db, 'tasks'));
-        const tasksSnapshot = await getDocs(tasksQuery);
-        // Find one matching task not already in list
+        // Ask Firestore for the matching tasks instead of scanning the collection.
+        const tasksSnapshot = await getDocs(query(
+           collection(db, 'tasks'),
+           where('curriculum_topic', '==', topic),
+           where('difficulty', '==', targetDifficulty),
+           limit(10)
+        ));
         const pool = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MathTask));
-        const candidate = pool.find(t => 
-           t.curriculum_topic === topic && 
-           t.difficulty === targetDifficulty &&
-           !tasks.some(existing => existing.id === t.id)
-        );
+        const candidate = pool.find(t => !tasks.some(existing => existing.id === t.id));
         if (candidate) {
            setTasks(prev => {
               const newArr = [...prev];
               newArr.splice(currentTaskIndex + 1, 0, candidate);
               return newArr;
            });
-           showToast(t(targetDifficulty === 'easy' ? 'toasts.adaptiveAddedEasy' : 'toasts.adaptiveAddedHard'), 'info');
+           showToast(t(targetDifficulty === 'hard' ? 'toasts.adaptiveAddedHard' : 'toasts.adaptiveAddedEasy'), 'info');
         }
      } catch(e) {
         console.error("Adaptive fetch error", e);
@@ -284,14 +314,15 @@ export const AdaptiveTest: React.FC = () => {
   };
 
   const nextTask = () => {
-    if (currentTaskIndex < tasks.length - 1) {
-      setCurrentTaskIndex(prev => prev + 1);
-      setStudentAnswer('');
-      setFeedback(null);
-    } else {
-      // Session finished
+    // The confidence rule can end the session before the queue runs out —
+    // there is no point asking more once the estimate has settled.
+    if (stopReason || currentTaskIndex >= tasks.length - 1) {
       setCurrentTaskIndex(tasks.length);
+      return;
     }
+    setCurrentTaskIndex(prev => prev + 1);
+    setStudentAnswer('');
+    setFeedback(null);
   };
 
   if (isLoading) {
@@ -343,7 +374,58 @@ export const AdaptiveTest: React.FC = () => {
           {t('finish.sessionDone')} <br/>
           {t('finish.pointsEarned')} <span className="font-bold text-indigo-600">{sessionScore} XP</span>
         </p>
-        
+
+        {/* Measured ability per topic — an estimate with its own uncertainty,
+            not a raw score, so a short session is not read as a verdict. */}
+        {Object.values(abilities).some(a => a.samples > 0) && (
+          <div className="bg-slate-50 dark:bg-slate-900/40 rounded-2xl p-6 text-left border border-slate-200 dark:border-slate-700 mb-8 max-w-2xl mx-auto">
+            <h3 className="font-bold flex items-center gap-2 text-slate-800 dark:text-slate-200 mb-1">
+              <Target className="w-5 h-5 text-indigo-600" /> {t('finish.abilityTitle')}
+            </h3>
+            <p className="text-xs text-slate-500 mb-4">
+              {stopReason === 'confident' ? t('finish.stopConfident') : t('finish.stopMaxItems')}
+            </p>
+            <ul className="space-y-3">
+              {Object.values(abilities).filter(a => a.samples > 0).map(estimate => (
+                <li key={estimate.topic}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium text-slate-700 dark:text-slate-300">{estimate.topic}</span>
+                    <span className="text-slate-500">
+                      {t('finish.abilityValue', {
+                        value: Math.round(estimate.ability),
+                        error: Math.round(estimate.standardError),
+                        count: estimate.samples,
+                      })}
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                    <div
+                      className="bg-indigo-600 h-2 rounded-full"
+                      role="progressbar"
+                      aria-label={estimate.topic}
+                      aria-valuenow={Math.round(estimate.ability)}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      style={{ width: `${Math.round(estimate.ability)}%` }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {weakestTopics(Object.values(abilities), 1).map(weakest => (
+              <a
+                key={weakest.topic}
+                href={`/adaptive-test?topic=${encodeURIComponent(weakest.topic)}`}
+                className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-indigo-700 dark:text-indigo-400 hover:underline"
+              >
+                {t('finish.practiceWeakest', { topic: weakest.topic })} <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </a>
+            ))}
+          </div>
+        )}
+
+
         {detectedErrors.length > 0 && targetedTasks.length === 0 && (
            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-6 text-left border border-amber-200 dark:border-amber-800 mb-8 max-w-2xl mx-auto">
               <h3 className="font-bold flex items-center gap-2 text-amber-800 dark:text-amber-400 mb-2">

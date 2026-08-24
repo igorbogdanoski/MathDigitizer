@@ -1,19 +1,23 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Brain, CheckCircle2, XCircle, RotateCcw, Trophy, X } from 'lucide-react';
+import { Brain, CheckCircle2, XCircle, RotateCcw, Trophy, X, Undo2, Volume2, Loader2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { MathRenderer } from '../MathRenderer';
 import { Flashcard } from '../../lib/schema';
 import { motion, AnimatePresence } from 'motion/react';
 import { SessionStats } from './types';
+import { ReviewGrade } from '../../lib/fsrsLite';
 
 interface FlashcardStudyViewProps {
   studyCards: Flashcard[];
   currentIndex: number;
   isFlipped: boolean;
   onFlip: () => void;
-  onReview: (quality: number) => void;
+  onReview: (grade: ReviewGrade) => void;
   onExit: () => void;
+  /** Reads the visible side aloud; omitted where TTS is unavailable. */
+  onSpeak?: (text: string) => void;
+  isSpeaking?: boolean;
 }
 
 export const FlashcardStudyView: React.FC<FlashcardStudyViewProps> = ({
@@ -23,6 +27,8 @@ export const FlashcardStudyView: React.FC<FlashcardStudyViewProps> = ({
   onFlip,
   onReview,
   onExit,
+  onSpeak,
+  isSpeaking,
 }) => {
   const { t } = useTranslation('flashcards');
   return (
@@ -100,37 +106,61 @@ export const FlashcardStudyView: React.FC<FlashcardStudyViewProps> = ({
           >
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); onReview(1); }}
-              className="flex-1 sm:flex-none flex flex-col items-center justify-center px-6 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors group"
+              onClick={(e) => { e.stopPropagation(); onReview('again'); }}
+              className="flex-1 sm:flex-none flex flex-col items-center justify-center px-5 py-3 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 transition-colors group"
             >
-              <XCircle className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold">{t('hard1')}</span>
+              <Undo2 className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform" aria-hidden="true" />
+              <span className="text-xs font-bold">{t('again1')}</span>
             </button>
             <div className="w-px h-10 bg-slate-100 dark:bg-slate-700 mx-2"></div>
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); onReview(3); }}
-              className="flex-1 sm:flex-none flex flex-col items-center justify-center px-6 py-3 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 transition-colors group"
+              onClick={(e) => { e.stopPropagation(); onReview('hard'); }}
+              className="flex-1 sm:flex-none flex flex-col items-center justify-center px-5 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors group"
             >
-              <RotateCcw className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold">{t('good2')}</span>
+              <XCircle className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform" aria-hidden="true" />
+              <span className="text-xs font-bold">{t('hard2')}</span>
             </button>
             <div className="w-px h-10 bg-slate-100 dark:bg-slate-700 mx-2"></div>
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); onReview(5); }}
-              className="flex-1 sm:flex-none flex flex-col items-center justify-center px-6 py-3 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600 transition-colors group"
+              onClick={(e) => { e.stopPropagation(); onReview('good'); }}
+              className="flex-1 sm:flex-none flex flex-col items-center justify-center px-5 py-3 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 transition-colors group"
             >
-              <CheckCircle2 className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold">{t('easy3')}</span>
+              <RotateCcw className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform" aria-hidden="true" />
+              <span className="text-xs font-bold">{t('good3')}</span>
+            </button>
+            <div className="w-px h-10 bg-slate-100 dark:bg-slate-700 mx-2"></div>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onReview('easy'); }}
+              className="flex-1 sm:flex-none flex flex-col items-center justify-center px-5 py-3 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600 transition-colors group"
+            >
+              <CheckCircle2 className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform" aria-hidden="true" />
+              <span className="text-xs font-bold">{t('easy4')}</span>
             </button>
           </motion.div>
         )}
       </div>
 
       <div className="absolute top-0 right-[-60px] hidden lg:flex flex-col gap-2">
-         <Button variant="ghost" size="sm" className="rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-100" onClick={onExit}>
-            <X className="w-5 h-5 text-slate-500" />
+         {onSpeak && studyCards[currentIndex] && (
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={t('speakCard')}
+              title={t('speakCard')}
+              disabled={isSpeaking}
+              className="rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-100"
+              onClick={() => onSpeak(isFlipped ? studyCards[currentIndex].back : studyCards[currentIndex].front)}
+            >
+              {isSpeaking
+                ? <Loader2 className="w-5 h-5 text-slate-500 animate-spin" aria-hidden="true" />
+                : <Volume2 className="w-5 h-5 text-slate-500" aria-hidden="true" />}
+            </Button>
+         )}
+         <Button variant="ghost" size="sm" aria-label={t('cancelSession')} className="rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-100" onClick={onExit}>
+            <X className="w-5 h-5 text-slate-500" aria-hidden="true" />
          </Button>
       </div>
       <div className="mt-8 flex justify-center lg:hidden">

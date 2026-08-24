@@ -9,14 +9,38 @@
     "selected": "Selected"
   },
   "types": {
-    "worksheet": { "name": "Worksheet", "description": "Practice tasks for class or homework" },
-    "test": { "name": "Test / Assessment", "description": "Grading with points and solutions for the teacher" },
-    "collection": { "name": "Task Collection", "description": "Comprehensive collection divided by topic and difficulty" },
-    "quiz": { "name": "Interactive Quiz", "description": "Live quiz for students (Kahoot style)" },
-    "presentation": { "name": "Presentation", "description": "Slides with theory and tasks for class" },
-    "flashcards": { "name": "Flashcards", "description": "Cards for quick review of concepts" },
-    "homework": { "name": "Homework", "description": "Tasks for independent work at home" },
-    "study_guide": { "name": "Study Guide", "description": "Detailed overview of theory and key tasks" }
+    "worksheet": {
+      "name": "Worksheet",
+      "description": "Practice tasks for class or homework"
+    },
+    "test": {
+      "name": "Test / Assessment",
+      "description": "Grading with points and solutions for the teacher"
+    },
+    "collection": {
+      "name": "Task Collection",
+      "description": "Comprehensive collection divided by topic and difficulty"
+    },
+    "quiz": {
+      "name": "Interactive Quiz",
+      "description": "Live quiz for students (Kahoot style)"
+    },
+    "presentation": {
+      "name": "Presentation",
+      "description": "Slides with theory and tasks for class"
+    },
+    "flashcards": {
+      "name": "Flashcards",
+      "description": "Cards for quick review of concepts"
+    },
+    "homework": {
+      "name": "Homework",
+      "description": "Tasks for independent work at home"
+    },
+    "study_guide": {
+      "name": "Study Guide",
+      "description": "Detailed overview of theory and key tasks"
+    }
   },
   "settings": {
     "language": "Language:",
@@ -76,5 +100,76 @@
   },
   "ariaDocumentTitle": "Document title",
   "ariaAnswerKey": "Answer key",
-  "ariaMaterialPreview": "Material preview"
+  "ariaMaterialPreview": "Material preview",
+  "copyType": "Copy type",
+  "copyStudent": "Student",
+  "copyTeacher": "Teacher",
+  "vectorPdf": "Print (vector)",
+  "vectorPdfHint": "Print through the browser — text and formulas stay vector and sharp at any zoom.",
+  "converting": "Converting...",
+  "savePdf": "Save as PDF",
+  "template": {
+    "title": "Branded print template",
+    "hint": "Fill this in once — every exported document then carries your school identity.",
+    "uploadLogo": "Upload logo",
+    "removeLogo": "Remove logo",
+    "logoAlt": "School logo",
+    "logoTooLarge": "The logo is too large (about {{kb}} KB max after downscaling).",
+    "logoFailed": "The logo could not be loaded.",
+    "school": "School",
+    "municipality": "Municipality / place",
+    "schoolYear": "School year",
+    "subject": "Subject",
+    "grade": "Class",
+    "teacher": "Teacher",
+    "note": "Extra line (optional)",
+    "variant": "Layout",
+    "variant_official": "Official",
+    "variant_compact": "Compact",
+    "variant_minimal": "Minimal",
+    "accent": "Accent colour",
+    "showStudentFields": "Student fields",
+    "showPointsBox": "Points and grade box",
+    "showGradingScale": "Grading scale",
+    "showFooter": "Footer with reference",
+    "totalPoints": "Total points"
+  },
+  "letterhead": {
+    "subject": "Subject",
+    "grade": "Class",
+    "schoolYear": "School year",
+    "teacher": "Teacher",
+    "studentName": "Name",
+    "studentSurname": "Surname",
+    "studentClass": "Class",
+    "date": "Date",
+    "assessment": "Assessment",
+    "points": "Points",
+    "gradingScale": "Grading scale (points)",
+    "generatedBy": "Prepared with MathDigitizer Pro",
+    "gradeLabel": "Grade"
+  },
+  "preview": {
+    "enterQuestion": "Enter a question",
+    "enterOption": "Enter an option",
+    "front": "Front",
+    "back": "Back (answer)",
+    "enterSolution": "Enter the solution",
+    "enterSectionTitle": "Enter a section title",
+    "enterContent": "Enter the content",
+    "enterAnswerKey": "Enter the answer key",
+    "save": "Save",
+    "editText": "Edit text"
+  },
+  "grades": {
+    "allMixed": "All grades / mixed",
+    "primary": "Grade {{roman}}",
+    "secondary": "Year {{roman}} (secondary)"
+  },
+  "languages": {
+    "mk": "Macedonian",
+    "en": "English",
+    "ru": "Russian",
+    "tr": "Turkish"
+  }
 }

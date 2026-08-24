@@ -132,7 +132,67 @@ body.dyscalculia-mode .katex .mop {
   body * {
     visibility: hidden;
   }
-  
+
+  /* Vector PDF path (EXPERT_LEVEL_MASTER_PLAN 6.1): printing a student copy
+     removes the answer key entirely rather than merely hiding it visually. */
+  body.printing-student-copy [data-answer-key] {
+    display: none !important;
+  }
+
+  /* A task, a formula or a section heading must not be split across pages. */
+  [data-pdf-block] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .katex-display {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 15mm 15mm 18mm;
+
+    /* Page numbers belong to the print engine — only it knows the page count. */
+    @bottom-right {
+      content: counter(page) " / " counter(pages);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 9pt;
+      color: #64748b;
+    }
+  }
+
+  /* The letterhead accent must survive the browser's ink-saving pass, or the
+     school's identity prints as a grey smudge. */
+  [data-letterhead],
+  [data-letterhead] * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Identity and marking box stay together on the first page. */
+  [data-letterhead] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    page-break-after: avoid;
+  }
+
+  /* The answer key always starts its own sheet, so a teacher copy can be
+     separated from the student copy by tearing off the last page. */
+  [data-answer-key] {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  /* Fallback page number for engines without @page margin boxes. */
+  [data-print-footer]::after {
+    content: counter(page);
+    font-variant-numeric: tabular-nums;
+  }
+
   /* Make both the ExtractionEngine tasks container and the MaterialFactory modal printable */
   .printable-tasks-container,
   .printable-tasks-container *,

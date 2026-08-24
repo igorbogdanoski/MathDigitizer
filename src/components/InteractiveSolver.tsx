@@ -237,6 +237,9 @@ export const InteractiveSolver: React.FC<InteractiveSolverProps> = ({ task, onCl
         mistake_count: telemetrySteps.filter(s => !s.is_correct).length,
         curriculum_topic: task.curriculum_topic,
         curriculum_topic_id: task.curriculum_refs?.[0]?.topic_id,
+        // The full refs, not just the first topic id — mastery rolls up per
+        // БРО outcome code (Phase 7.1).
+        ...(task.curriculum_refs?.length ? { curriculum_refs: task.curriculum_refs } : {}),
         tags: task.tags,
       };
       

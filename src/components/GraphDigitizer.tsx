@@ -1,12 +1,14 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, Check, TrendingUp, RotateCcw } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card, CardContent } from './ui/Card';
 import { useToast } from '../contexts/ToastContext';
 import { db, auth } from '../lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
-import { analyzeGraphWithAI, GraphAnalysis } from '../lib/gemini';
+import { collection, addDoc, updateDoc } from 'firebase/firestore';
+import { analyzeGraphWithAI, classifyTaskCurriculum, GraphAnalysis } from '../lib/gemini';
+import type { MathTask } from '../lib/schema';
+import { applyAffine, fitAffineCalibration } from '../lib/graph/calibration';
 import { SEO } from './SEO';
 import { useModalA11y } from '../hooks/useModalA11y';
 import {
@@ -52,7 +54,14 @@ export const GraphDigitizer: React.FC = () => {
   // Calibration
   const [calibP1, setCalibP1] = useState<CalibPoint | null>(null);
   const [calibP2, setCalibP2] = useState<CalibPoint | null>(null);
-  const [waitingCalib, setWaitingCalib] = useState<1 | 2 | null>(null);
+  /**
+   * Optional third reference (Phase 8.2). Two points fix the mapping exactly,
+   * so an imprecise click becomes systematic error over the whole graph and is
+   * invisible. With three, a least-squares fit averages them and the residual
+   * reveals a misplaced reference.
+   */
+  const [calibP3, setCalibP3] = useState<CalibPoint | null>(null);
+  const [waitingCalib, setWaitingCalib] = useState<1 | 2 | 3 | null>(null);
   const [pendingPixel, setPendingPixel] = useState<{ x: number; y: number } | null>(null);
   const [calibDialog, setCalibDialog] = useState(false);
   const calibModalRef = useModalA11y<HTMLDivElement>(() => { setCalibDialog(false); setPendingPixel(null); }, calibDialog);
@@ -122,8 +131,11 @@ export const GraphDigitizer: React.FC = () => {
     if (waitingCalib === 1) {
       setCalibP1(point);
       setWaitingCalib(2);
-    } else {
+    } else if (waitingCalib === 2) {
       setCalibP2(point);
+      setWaitingCalib(null);
+    } else {
+      setCalibP3(point);
       setWaitingCalib(null);
     }
     setCalibDialog(false);
@@ -131,9 +143,32 @@ export const GraphDigitizer: React.FC = () => {
     setCalibInput({ x: '', y: '' });
   };
 
-  const clearCalibPoint = (slot: 1 | 2) => {
-    slot === 1 ? setCalibP1(null) : setCalibP2(null);
+  const clearCalibPoint = (slot: 1 | 2 | 3) => {
+    if (slot === 1) setCalibP1(null);
+    else if (slot === 2) setCalibP2(null);
+    else setCalibP3(null);
   };
+
+  /**
+   * Least-squares calibration when a third reference exists and both axes are
+   * linear. A log axis is not affine in pixel space, so it keeps the two-point
+   * mapping.
+   */
+  const affineCalibration = useMemo(() => {
+    if (!calibP1 || !calibP2 || !calibP3) return null;
+    if (xAxis.scale !== 'linear' || yAxis.scale !== 'linear') return null;
+    return fitAffineCalibration([calibP1, calibP2, calibP3]);
+  }, [calibP1, calibP2, calibP3, xAxis.scale, yAxis.scale]);
+
+  /** Pixel → real, through whichever calibration is available. */
+  const mapPixel = useCallback((px: number, py: number) => {
+    if (affineCalibration) {
+      const real = applyAffine(affineCalibration, px, py);
+      return { x: Math.round(real.x * 10000) / 10000, y: Math.round(real.y * 10000) / 10000 };
+    }
+    if (!calibP1 || !calibP2) return null;
+    return pixelToReal(px, py, calibP1, calibP2, xAxis.scale, yAxis.scale);
+  }, [affineCalibration, calibP1, calibP2, xAxis.scale, yAxis.scale]);
 
   // ── Canvas interaction ─────────────────────────────────────────────────────
 
@@ -168,7 +203,9 @@ export const GraphDigitizer: React.FC = () => {
     if (step === 'digitize') {
       if (mode === 'add') {
         if (!calibP1 || !calibP2) { showToast(t('toasts.calibrateFirst'), 'error'); return; }
-        const real = pixelToReal(px, py, calibP1, calibP2, xAxis.scale, yAxis.scale);
+        const real = mapPixel(px, py);
+        // A degenerate calibration silently produced NaN coordinates before.
+        if (!real) { showToast(t('toasts.badCalibration'), 'error'); return; }
         const newPt: DataPoint = { id: crypto.randomUUID(), px, py, rx: real.x, ry: real.y };
         setDatasets(prev => prev.map((ds, i) =>
           i === activeDs ? { ...ds, points: [...ds.points, newPt] } : ds
@@ -293,6 +330,13 @@ export const GraphDigitizer: React.FC = () => {
       const ref = await addDoc(collection(db, 'tasks'), task);
       setSavedId(ref.id);
       showToast(t('toasts.savedToLibrary'), 'success');
+
+      // Curriculum classification (Phase 8.5) — graph tasks were the only kind
+      // saved without curriculum_refs, so they never appeared in the mastery
+      // rollup. Non-blocking: it must never fail the save.
+      classifyTaskCurriculum(task as unknown as MathTask)
+        .then(async refs => { if (refs.length > 0) await updateDoc(ref, { curriculum_refs: refs }); })
+        .catch(err => console.warn('Curriculum classification failed for graph task:', err));
     } catch {
       showToast(t('toasts.errorSaving'), 'error');
     } finally {
@@ -303,8 +347,13 @@ export const GraphDigitizer: React.FC = () => {
   // ── Derived state ──────────────────────────────────────────────────────────
 
   const totalPoints = datasets.reduce((s, d) => s + d.points.length, 0);
+  /** Every digitized point in real coordinates — the evidence a fit is built on. */
+  const allRealPoints = useMemo(
+    () => datasets.flatMap(ds => ds.points.map(p => ({ x: p.rx, y: p.ry }))),
+    [datasets]
+  );
   const currentMouseReal = mousePos && calibP1 && calibP2
-    ? pixelToReal(mousePos.imgX, mousePos.imgY, calibP1, calibP2, xAxis.scale, yAxis.scale)
+    ? mapPixel(mousePos.imgX, mousePos.imgY)
     : null;
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -400,6 +449,8 @@ export const GraphDigitizer: React.FC = () => {
               <StepCalibrate
                 calibP1={calibP1}
                 calibP2={calibP2}
+                calibP3={calibP3}
+                affineResidual={affineCalibration?.maxResidual ?? null}
                 waitingCalib={waitingCalib}
                 onSetWaitingCalib={setWaitingCalib}
                 onClearPoint={clearCalibPoint}
@@ -428,6 +479,8 @@ export const GraphDigitizer: React.FC = () => {
             {step === 'analyze' && (
               <StepAnalyze
                 analysis={analysis}
+                points={allRealPoints}
+                onUseFit={(latex) => setAnalysis(prev => prev ? { ...prev, detected_equation: latex } : prev)}
                 isAnalyzing={isAnalyzing}
                 onRunAnalysis={runAnalysis}
                 onNext={() => setStep('export')}
@@ -438,6 +491,11 @@ export const GraphDigitizer: React.FC = () => {
             {step === 'export' && (
               <StepExport
                 analysis={analysis}
+                replotSeries={datasets.map(ds => ({
+                  points: ds.points.map(p => ({ x: p.rx, y: p.ry })),
+                  color: ds.color,
+                  name: ds.name,
+                }))}
                 onExportCSV={exportCSV}
                 onCopyGeoGebra={copyGeoGebra}
                 onSaveToLibrary={saveToLibrary}
