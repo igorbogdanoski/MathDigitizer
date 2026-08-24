@@ -11,6 +11,8 @@
  * Everything here is pure: the analytics view stays a renderer.
  */
 import { CurriculumRef } from '../schema';
+import { resolveOutcomeCode } from '../curriculumAliases';
+import { isCurrentOutcomeCode } from '../curriculumCodes';
 import {
   MathDomain,
   DOMAIN_LABELS,
@@ -61,6 +63,14 @@ export interface MasteryRollup {
   /** Graded work that carried no curriculum reference at all. */
   unclassifiedCount: number;
   totalEvidence: number;
+  /**
+   * Codes tagged before the 9.1 corpus repair that stood for several unrelated
+   * outcomes at once. Their evidence is counted in `totalEvidence` but not
+   * under any code: nothing in the saved ref says which outcome was meant, and
+   * attributing it to one of them would put a number on a school's screen that
+   * nobody can defend. Surfacing them is how a teacher knows to re-tag.
+   */
+  ambiguousLegacyCodes: string[];
 }
 
 const clampScore = (value: unknown): number | null => {
@@ -87,6 +97,7 @@ export function buildMasteryRollup(evidence: readonly GradedEvidence[]): Mastery
   }
 
   const byCode = new Map<string, Accumulator>();
+  const ambiguous = new Set<string>();
   let unclassifiedCount = 0;
   let totalEvidence = 0;
 
@@ -105,7 +116,17 @@ export function buildMasteryRollup(evidence: readonly GradedEvidence[]): Mastery
       continue;
     }
 
-    for (const { code, ref } of codes) {
+    for (const { code: tagged, ref } of codes) {
+      // A ref saved before the 9.1 repair may name a code that was renumbered.
+      // Following the alias recovers that evidence; without it the work simply
+      // vanished from the rollup while still counting toward totalEvidence.
+      const resolved = resolveOutcomeCode(tagged, isCurrentOutcomeCode);
+      if (resolved.status === 'ambiguous') {
+        ambiguous.add(resolved.code);
+        continue;
+      }
+      const code = resolved.code;
+
       let acc = byCode.get(code);
       if (!acc) {
         acc = {
@@ -157,7 +178,13 @@ export function buildMasteryRollup(evidence: readonly GradedEvidence[]): Mastery
     })
     .sort((a, b) => a.averageScore - b.averageScore);
 
-  return { domains, codes, unclassifiedCount, totalEvidence };
+  return {
+    domains,
+    codes,
+    unclassifiedCount,
+    totalEvidence,
+    ambiguousLegacyCodes: [...ambiguous].sort(),
+  };
 }
 
 export interface WeaknessInsight {

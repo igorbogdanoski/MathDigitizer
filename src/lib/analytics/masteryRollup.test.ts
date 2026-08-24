@@ -27,6 +27,40 @@ const evidence = (score: number, over: Partial<GradedEvidence> = {}): GradedEvid
   ...over,
 });
 
+describe('buildMasteryRollup with pre-repair curriculum tags', () => {
+  it('follows a renumbered code so its evidence is not lost', async () => {
+    // Phase 9.1 renumbered outcomes whose codes collided. Work tagged before
+    // that still names the old code, and without the alias it disappeared from
+    // the rollup entirely while still counting toward totalEvidence — a teacher
+    // saw fewer outcomes than they had actually assessed, with no error shown.
+    const { CURRICULUM_CODE_ALIASES } = await import('../curriculumAliases');
+    const [legacy, current] = Object.entries(CURRICULUM_CODE_ALIASES)[0];
+
+    const rollup = buildMasteryRollup([
+      evidence(50, { curriculum_refs: [ref({ outcome_codes: [legacy] })] }),
+    ]);
+
+    expect(rollup.codes.map(c => c.code)).toEqual([current]);
+    expect(rollup.ambiguousLegacyCodes).toEqual([]);
+  });
+
+  it('reports a code that stood for several outcomes instead of picking one', async () => {
+    const { AMBIGUOUS_LEGACY_CODES } = await import('../curriculumAliases');
+    const legacy = AMBIGUOUS_LEGACY_CODES[0];
+
+    const rollup = buildMasteryRollup([
+      evidence(50, { curriculum_refs: [ref({ outcome_codes: [legacy] })] }),
+    ]);
+
+    // Counted as seen, attributed to nothing: the saved ref does not say which
+    // of the outcomes it meant, and inventing one puts an indefensible number
+    // on a school's screen.
+    expect(rollup.codes).toEqual([]);
+    expect(rollup.ambiguousLegacyCodes).toEqual([legacy]);
+    expect(rollup.totalEvidence).toBe(1);
+  });
+});
+
 describe('buildMasteryRollup', () => {
   it('averages a code across attempts and records the worst single score', () => {
     const rollup = buildMasteryRollup([evidence(80), evidence(40), evidence(60)]);
@@ -110,7 +144,13 @@ describe('buildMasteryRollup', () => {
   });
 
   it('returns an empty rollup for no evidence', () => {
-    expect(buildMasteryRollup([])).toEqual({ domains: [], codes: [], unclassifiedCount: 0, totalEvidence: 0 });
+    expect(buildMasteryRollup([])).toEqual({
+      domains: [],
+      codes: [],
+      unclassifiedCount: 0,
+      totalEvidence: 0,
+      ambiguousLegacyCodes: [],
+    });
   });
 });
 

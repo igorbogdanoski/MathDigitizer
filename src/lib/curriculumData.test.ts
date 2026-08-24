@@ -86,6 +86,20 @@ describe('outcome codes', () => {
     expect(misfiled).toEqual([]);
   });
 
+  it('spell the subject prefix in Cyrillic', () => {
+    // 51 outcomes across the five geometry topics of IV година мат-инф were
+    // transcribed with a Latin `GE.` instead of Cyrillic `ГЕ.`. The two render
+    // identically, so nothing looked wrong — but a task tagged from those
+    // topics carried a code that could never equal the Cyrillic form, which
+    // silently excluded it from the mastery rollup and from every cross-app
+    // comparison the shared contract exists to make possible.
+    const latin = allOutcomes()
+      .filter(({ outcome }) => /[A-Za-z]/.test(outcome.code.split('.')[0]))
+      .map(({ outcome }) => outcome.code);
+
+    expect(latin).toEqual([]);
+  });
+
   it('are shaped like PREFIX.GRADE.TOPIC[.SUBTOPIC].OUTCOME', () => {
     // Grade 8 numbers an extra subtopic level; both depths are legitimate.
     const malformed = allOutcomes()
