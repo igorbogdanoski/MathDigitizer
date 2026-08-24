@@ -3,7 +3,7 @@
  * AnalyticsDashboard coverage panel.
  *
  * A single client-side snapshot of the `tasks` collection is fetched and
- * matched against ALL_MK_CURRICULUM topics:
+ * matched against CURRICULUM_INDEX topics:
  *   1. Primary match: task.curriculum_refs[].topic_id
  *   2. Fallback match: task.curriculum_topic string equals a topic name
  *      (only for tasks that have no curriculum_refs)
@@ -11,7 +11,9 @@
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 import { CurriculumRef, MathTask } from './schema';
-import { ALL_MK_CURRICULUM } from './curriculumData';
+// Coverage counts topics; it never reads their wording. The light index keeps
+// the 571 KB corpus out of the analytics bundle.
+import { CURRICULUM_INDEX } from './curriculumIndex';
 
 export interface CoverageTaskEntry {
   id: string;
@@ -117,7 +119,7 @@ export function buildCoverageSnapshot(tasks: CoverageTaskEntry[]): CoverageSnaps
   const gradeCoverage: GradeCoverage[] = [];
   const trackAgg = new Map<string, { totalTopics: number; coveredTopics: number; mappedTasks: number }>();
 
-  for (const grade of ALL_MK_CURRICULUM) {
+  for (const grade of CURRICULUM_INDEX) {
     let covered = 0;
     for (const topic of grade.topics) {
       const refSet = refIndex.get(topic.id);
@@ -179,7 +181,7 @@ export function buildCoverageSnapshot(tasks: CoverageTaskEntry[]): CoverageSnaps
 /** All topics that have zero mapped tasks (coverage gaps). */
 export function getZeroTaskTopics(snapshot: CoverageSnapshot) {
   const gaps: { topic_id: string; name: string; grade: string; level_label: string; track: string }[] = [];
-  for (const grade of ALL_MK_CURRICULUM) {
+  for (const grade of CURRICULUM_INDEX) {
     for (const topic of grade.topics) {
       if ((snapshot.topicCounts.get(topic.id) ?? 0) === 0) {
         gaps.push({

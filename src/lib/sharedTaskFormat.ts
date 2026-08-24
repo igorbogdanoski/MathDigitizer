@@ -20,7 +20,14 @@
  */
 
 import { MathTask } from './schema';
-import { ALL_MK_CURRICULUM, CurriculumGrade, CurriculumTopic } from './curriculumData';
+// The light index, not the corpus: this module only ever *names* curriculum
+// entries — it never renders outcome wording — and importing curriculumData
+// pulled 571 KB of prose into every route that saves or shares a task.
+import {
+  CURRICULUM_INDEX,
+  type CurriculumGradeIndex,
+  type CurriculumTopicIndex,
+} from './curriculumIndex';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -76,16 +83,16 @@ const ROMAN_GRADES: Record<string, string> = {
 /**
  * Best-effort normalization of MathTask.grade_level (free text coming from AI
  * extraction — "6", "6то одд.", "VI одделение", "1год"…) onto the canonical
- * CurriculumGrade entries of the БРО curriculum. Returns undefined when no
+ * CurriculumGradeIndex entries of the БРО curriculum. Returns undefined when no
  * confident match exists — consumers must treat curriculum data as optional.
  */
-function resolveCurriculumGrades(gradeLevel?: string): CurriculumGrade[] {
+function resolveCurriculumGrades(gradeLevel?: string): CurriculumGradeIndex[] {
   if (!gradeLevel) return [];
   const raw = gradeLevel.trim();
   if (!raw) return [];
 
   // 1) Exact key or label match ("6", "VI одделение", "1год", …)
-  const exact = ALL_MK_CURRICULUM.filter(
+  const exact = CURRICULUM_INDEX.filter(
     (g) => g.grade === raw || g.level_label === raw
   );
   if (exact.length > 0) return exact;
@@ -96,7 +103,7 @@ function resolveCurriculumGrades(gradeLevel?: string): CurriculumGrade[] {
   const romanMatch = lower.match(/^\s*([ivx]+)\s/);
   if (romanMatch && ROMAN_GRADES[romanMatch[1]]) {
     const digit = ROMAN_GRADES[romanMatch[1]];
-    return ALL_MK_CURRICULUM.filter(
+    return CURRICULUM_INDEX.filter(
       (g) => g.grade === digit && g.education_track === 'primary'
     );
   }
@@ -108,9 +115,9 @@ function resolveCurriculumGrades(gradeLevel?: string): CurriculumGrade[] {
     if (/год/i.test(raw)) {
       // "1 година" without further qualifier maps to the general gymnasium
       // track ("1год"); МИГ/стручно variants need the exact key.
-      return ALL_MK_CURRICULUM.filter((g) => g.grade === `${digit}год`);
+      return CURRICULUM_INDEX.filter((g) => g.grade === `${digit}год`);
     }
-    return ALL_MK_CURRICULUM.filter(
+    return CURRICULUM_INDEX.filter(
       (g) => g.grade === digit && g.education_track === 'primary'
     );
   }
@@ -125,9 +132,9 @@ function resolveCurriculumGrades(gradeLevel?: string): CurriculumGrade[] {
  * deliberately avoided (contract §3: never guess from text).
  */
 function resolveCurriculumTopic(
-  grades: CurriculumGrade[],
+  grades: CurriculumGradeIndex[],
   curriculumTopic?: string
-): { grade: CurriculumGrade; topic: CurriculumTopic } | undefined {
+): { grade: CurriculumGradeIndex; topic: CurriculumTopicIndex } | undefined {
   if (!curriculumTopic) return undefined;
   const wanted = curriculumTopic.trim().toLowerCase();
   if (!wanted) return undefined;

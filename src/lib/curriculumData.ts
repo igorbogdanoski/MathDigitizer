@@ -13,6 +13,13 @@ export interface CurriculumTopic {
   hours: number;        // Approximate teaching hours for this topic
   outcomes: LearningOutcome[];
   /**
+   * What the teacher assesses against for this topic, as the programme words it.
+   * Present on the imported secondary programmes.
+   */
+  assessment_standards?: string[];
+  /** Concepts from earlier grades this topic builds on, by their source ids. */
+  prerequisite_concept_ids?: string[];
+  /**
    * Cross-subject national standards (`III-A.*`) this topic contributes to.
    *
    * Kept apart from `outcomes`: the shared curriculum contract §7 excludes them
@@ -33,10 +40,21 @@ export interface CurriculumGrade {
 }
 
 export type EducationTrack =
-  | 'primary'             // Основно образование (1–9)
-  | 'secondary_general'   // Општа гимназија (4 години)
-  | 'secondary_math_info' // Математичко-информатичка гимназија
-  | 'secondary_vocational'; // Средно стручно образование
+  | 'primary'                 // Основно образование (1–9)
+  | 'secondary_general'       // Општа гимназија (4 години)
+  | 'secondary_math_info'     // Математичко-информатичка гимназија
+  | 'gymnasium_elective'      // Гимназиски изборни програми
+  /**
+   * Vocational is three distinct БРО programmes, not one. They differ in
+   * duration, weekly hours and themes; treating them as a single track meant a
+   * teacher in a two- or three-year profile saw another programme's outcomes.
+   * `secondary_vocational` is kept as the four-year track's historical key so
+   * existing tasks and saved references keep resolving.
+   */
+  | 'secondary_vocational'    // Стручно 4-годишно (историски клуч)
+  | 'secondary_vocational_2'  // Стручно 2-годишно
+  | 'secondary_vocational_3'  // Стручно 3-годишно
+  | 'secondary_vocational_4'; // Стручно 4-годишно (експлицитно)
 
 // ─── PRIMARY — Основно образование ──────────────────────────────────────────
 
@@ -3306,11 +3324,16 @@ const SECONDARY_VOCATIONAL_GRADES: CurriculumGrade[] = [
 
 // ─── Combined export ──────────────────────────────────────────────────────────
 
+import { SECONDARY_EXTRA_CURRICULUM } from './curriculumSecondary';
+
 export const ALL_MK_CURRICULUM: CurriculumGrade[] = [
   ...PRIMARY_GRADES,
   ...SECONDARY_GENERAL_GRADES,
   ...SECONDARY_MATH_INFO_GRADES,
   ...SECONDARY_VOCATIONAL_GRADES,
+  // The two- and three-year vocational programmes and the gymnasium electives,
+  // imported from the official БРО programmes (see curriculumSecondary.ts).
+  ...SECONDARY_EXTRA_CURRICULUM,
 ];
 
 // Legacy export — kept for backwards compat

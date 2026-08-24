@@ -123,6 +123,25 @@ describe('topic ids', () => {
   });
 });
 
+describe('grade tokens reach the model', () => {
+  it('every programme is listed in the extraction prompt', async () => {
+    // The model is told which grade tokens are valid. A programme missing from
+    // that list can never be assigned, however complete the corpus is — and a
+    // token in the list that no programme uses produces refs that resolve to
+    // nothing.
+    const { CURRICULUM_PROMPT_GRADE_TOKENS } = await import('./ai/extraction');
+
+    const inCorpus = new Set(ALL_MK_CURRICULUM.map(g => g.grade));
+    const inPrompt = new Set<string>(CURRICULUM_PROMPT_GRADE_TOKENS);
+
+    const missingFromPrompt = [...inCorpus].filter(g => !inPrompt.has(g));
+    const missingFromCorpus = [...inPrompt].filter(g => !inCorpus.has(g));
+
+    expect(missingFromPrompt).toEqual([]);
+    expect(missingFromCorpus).toEqual([]);
+  });
+});
+
 describe('grade coverage', () => {
   it('has a unique key per programme', () => {
     const keys = ALL_MK_CURRICULUM.map(g => g.grade);

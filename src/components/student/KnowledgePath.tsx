@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Lock, BookOpen } from 'lucide-react';
 import { TaskAttempt } from '../../lib/schema';
-import { ALL_MK_CURRICULUM, CurriculumTopic } from '../../lib/curriculumData';
+// Matches on topic ids and names only; see curriculumIndex.
+import { CURRICULUM_INDEX, type CurriculumTopicIndex } from '../../lib/curriculumIndex';
 
 interface KnowledgePathProps {
   completedAttempts: TaskAttempt[];
@@ -24,13 +25,13 @@ export const KnowledgePath: React.FC<KnowledgePathProps> = ({ completedAttempts,
 
   // Show primary grades 5-9, max 24 topics
   const displayTopics = useMemo(() => {
-    const grades = ALL_MK_CURRICULUM.filter(
+    const grades = CURRICULUM_INDEX.filter(
       g => g.education_track === 'primary' && ['5', '6', '7', '8', '9'].includes(g.grade)
     );
     return grades.flatMap(g => g.topics).slice(0, 24);
   }, []);
 
-  const isMastered = (topic: CurriculumTopic) =>
+  const isMastered = (topic: CurriculumTopicIndex) =>
     masteredKeys.has(topic.id.toLowerCase()) ||
     masteredKeys.has(topic.name.toLowerCase()) ||
     masteredKeys.has(topic.name_short.toLowerCase());
@@ -39,7 +40,7 @@ export const KnowledgePath: React.FC<KnowledgePathProps> = ({ completedAttempts,
   const pct = displayTopics.length > 0 ? Math.round((masteredCount / displayTopics.length) * 100) : 0;
 
   // Simple unlock logic: first topic is always unlocked, rest require previous or XP
-  const isUnlocked = (topic: CurriculumTopic, idx: number) =>
+  const isUnlocked = (topic: CurriculumTopicIndex, idx: number) =>
     isMastered(topic) || idx === 0 || masteredCount >= idx || userXP >= idx * 50;
 
   return (

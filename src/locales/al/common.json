@@ -162,6 +162,10 @@
     "trackPrimary": "Arsimi fillor",
     "trackSecondaryGeneral": "Gjimnazi i përgjithshëm",
     "trackSecondaryMathInfo": "Gjimnazi matematikë-informatikë",
-    "trackSecondaryVocational": "Arsimi profesional"
+    "trackSecondaryVocational": "Arsimi profesional",
+    "trackVocational2": "Profesionale 2-vjeçare",
+    "trackVocational3": "Profesionale 3-vjeçare",
+    "trackVocational4": "Profesionale 4-vjeçare",
+    "trackGymnasiumElective": "Gjimnaz — zgjedhore"
   }
 }

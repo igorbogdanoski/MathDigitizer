@@ -4,10 +4,16 @@
  */
 import { GoogleGenAI } from "@google/genai";
 
-// ─── Curriculum RAG helper (synchronous — no extra API call) ─────────────────
-import { searchCurriculumKeyword, buildCurriculumChunkText, ALL_MK_CURRICULUM } from "../curriculumData";
+// ─── Curriculum RAG helper (no extra API call) ───────────────────────────────
+//
+// The corpus is loaded on demand rather than imported at module scope. It is
+// 571 KB of curriculum prose, and this module is on the import path of nearly
+// every feature — a static import put the whole corpus into every route bundle,
+// including ones that never build curriculum context at all.
+export async function buildCurriculumContextBlock(query: string, gradeHint?: string): Promise<string> {
+  const { searchCurriculumKeyword, buildCurriculumChunkText, ALL_MK_CURRICULUM } =
+    await import("../curriculumData");
 
-export function buildCurriculumContextBlock(query: string, gradeHint?: string): string {
   const topics = searchCurriculumKeyword(query + (gradeHint ? ` ${gradeHint}` : ''));
   if (topics.length === 0) return '';
 

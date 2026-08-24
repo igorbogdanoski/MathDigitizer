@@ -162,6 +162,10 @@
     "trackPrimary": "Primary education",
     "trackSecondaryGeneral": "General gymnasium",
     "trackSecondaryMathInfo": "Math-IT gymnasium",
-    "trackSecondaryVocational": "Vocational education"
+    "trackSecondaryVocational": "Vocational education",
+    "trackVocational2": "Vocational (2-year)",
+    "trackVocational3": "Vocational (3-year)",
+    "trackVocational4": "Vocational (4-year)",
+    "trackGymnasiumElective": "Gymnasium electives"
   }
 }

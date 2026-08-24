@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BarChart2, BookOpen, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '../ui/Card';
-import { ALL_MK_CURRICULUM } from '../../lib/curriculumData';
+// Only ids, names and counts are read here — the light index keeps the
+// 571 KB corpus of outcome prose out of the analytics bundle.
+import { CURRICULUM_INDEX } from '../../lib/curriculumIndex';
 import {
   fetchCoverageTasks,
   buildCoverageSnapshot,
@@ -53,7 +55,7 @@ export const CurriculumCoveragePanel: React.FC = () => {
   const topTopics = useMemo(() => {
     if (!snapshot) return [];
     const rows: { topic_id: string; name: string; level_label: string; count: number }[] = [];
-    for (const grade of ALL_MK_CURRICULUM) {
+    for (const grade of CURRICULUM_INDEX) {
       for (const topic of grade.topics) {
         const count = snapshot.topicCounts.get(topic.id) ?? 0;
         if (count > 0) {
@@ -68,7 +70,7 @@ export const CurriculumCoveragePanel: React.FC = () => {
 
   const maxCount = topTopics.length > 0 ? topTopics[0].count : 1;
   const totalTopicCount = useMemo(
-    () => ALL_MK_CURRICULUM.reduce((sum, g) => sum + g.topics.length, 0),
+    () => CURRICULUM_INDEX.reduce((sum, g) => sum + g.topics.length, 0),
     [],
   );
   const coveredTopicCount = snapshot ? totalTopicCount - gaps.length : 0;

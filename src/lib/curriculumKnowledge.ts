@@ -19,14 +19,25 @@
 import { collection, query, where, getDocs, addDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 import { cosineSimilarity } from './ragContext';
-import {
-  ALL_MK_CURRICULUM,
-  buildCurriculumChunkText,
-  searchCurriculumKeyword,
-  type CurriculumGrade,
-  type CurriculumTopic,
-  type EducationTrack,
+import type {
+  CurriculumGrade,
+  CurriculumTopic,
+  EducationTrack,
 } from './curriculumData';
+import { CURRICULUM_INDEX } from './curriculumIndex';
+
+/**
+ * The corpus is loaded on demand.
+ *
+ * Only two functions here need the wording of the outcomes, and both are async.
+ * A static import put all 571 KB into every bundle that can reach this module —
+ * which, through the AI client, is nearly all of them.
+ */
+async function loadCorpus() {
+  const { ALL_MK_CURRICULUM, searchCurriculumKeyword, buildCurriculumChunkText } =
+    await import('./curriculumData');
+  return { ALL_MK_CURRICULUM, searchCurriculumKeyword, buildCurriculumChunkText };
+}
 
 export interface CurriculumChunk {
   id?: string;
@@ -142,10 +153,11 @@ export async function searchCurriculum(
   }
 
   // 3. Fallback: static keyword search (no Firestore)
+  const { ALL_MK_CURRICULUM, searchCurriculumKeyword, buildCurriculumChunkText } = await loadCorpus();
   const staticTopics = searchCurriculumKeyword(query);
   return staticTopics.slice(0, maxResults).map(topic => {
     const grade = ALL_MK_CURRICULUM.find(g => g.topics.some(t => t.id === topic.id))!;
-    const chunk = buildStaticChunk(grade, topic);
+    const chunk = buildStaticChunk(grade, topic, buildCurriculumChunkText);
     return { chunk, score: 0.5, retrieval_mode: 'keyword' as const };
   });
 }
@@ -170,7 +182,11 @@ export function formatCurriculumContext(results: CurriculumSearchResult[]): stri
 
 // ─── Ingest: populate from static data (fallback, no PDF needed) ──────────────
 
-function buildStaticChunk(grade: CurriculumGrade, topic: CurriculumTopic): CurriculumChunk {
+function buildStaticChunk(
+  grade: CurriculumGrade,
+  topic: CurriculumTopic,
+  buildChunkText: (g: CurriculumGrade, t: CurriculumTopic) => string,
+): CurriculumChunk {
   return {
     source: 'STATIC',
     education_track: grade.education_track,
@@ -178,7 +194,7 @@ function buildStaticChunk(grade: CurriculumGrade, topic: CurriculumTopic): Curri
     level_label: grade.level_label,
     topic_id: topic.id,
     topic_name: topic.name,
-    content: buildCurriculumChunkText(grade, topic),
+    content: buildChunkText(grade, topic),
     keywords: topic.keywords,
     example_tasks: topic.example_tasks,
     learning_outcomes: topic.outcomes.map(o => `[${o.code}] ${o.text}`),
@@ -192,10 +208,11 @@ export async function ingestStaticCurriculum(
   embedFn?: (text: string) => Promise<number[]>,
 ): Promise<{ ingested: number; errors: number }> {
   // Build all chunks
+  const { ALL_MK_CURRICULUM, buildCurriculumChunkText } = await loadCorpus();
   const allChunks: CurriculumChunk[] = [];
   for (const grade of ALL_MK_CURRICULUM) {
     for (const topic of grade.topics) {
-      allChunks.push(buildStaticChunk(grade, topic));
+      allChunks.push(buildStaticChunk(grade, topic, buildCurriculumChunkText));
     }
   }
 
@@ -243,5 +260,6 @@ export async function clearAllCurriculumChunks(): Promise<void> {
 }
 
 export function getTotalStaticChunkCount(): number {
-  return ALL_MK_CURRICULUM.reduce((sum, g) => sum + g.topics.length, 0);
+  // A count needs no prose — the index carries it.
+  return CURRICULUM_INDEX.reduce((sum, g) => sum + g.topics.length, 0);
 }

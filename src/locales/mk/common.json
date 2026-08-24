@@ -162,6 +162,10 @@
     "trackPrimary": "Основно образование",
     "trackSecondaryGeneral": "Општа гимназија",
     "trackSecondaryMathInfo": "Мат-инф гимназија",
-    "trackSecondaryVocational": "Стручно образование"
+    "trackSecondaryVocational": "Стручно образование",
+    "trackVocational2": "Стручно 2-годишно",
+    "trackVocational3": "Стручно 3-годишно",
+    "trackVocational4": "Стручно 4-годишно",
+    "trackGymnasiumElective": "Гимназија — изборни"
   }
 }

@@ -23,7 +23,19 @@ const MANIFEST_PATH = path.join(DIST_DIR, '.vite', 'manifest.json');
 // like compute-engine/docx/jspdf that a real user rarely downloads — crossed
 // the +10% threshold. Re-baselined for the same reason as above; teaching
 // this script to exclude lazy chunks remains a deferred methodology change.
-const BASELINE_JS_KB = Number(process.env.BASELINE_JS_KB || 8092);
+//
+// Baseline updated 2026-08-24 (master plan 9.2): the corpus went from 21 to 31
+// БРО programmes — the two- and three-year vocational tracks and the five
+// gymnasium electives, which teachers in those profiles previously had no
+// curriculum for at all — plus a 145 KB identity-only index built so screens
+// that merely name a topic no longer pull 571 KB of outcome prose. Net effect
+// on what a user actually downloads is strongly negative: / fell 1126→618 KB,
+// /extract 1988→1480, /smart-ocr 1138→630, /live-board 1176→667, /analytics
+// 1532→1244, /library 2114→1605. Only the whole-dist sum rose, and only by
+// 22 KB past the threshold, because it counts the new curriculum chunk that
+// no route loads eagerly. Same lazy-vs-eager methodology gap as the two
+// entries above.
+const BASELINE_JS_KB = Number(process.env.BASELINE_JS_KB || 8923);
 const BASELINE_CSS_KB = Number(process.env.BASELINE_CSS_KB || 270);
 const MAX_JS_REGRESSION_PCT = Number(process.env.MAX_JS_REGRESSION_PCT || 10);
 const MAX_CSS_REGRESSION_PCT = Number(process.env.MAX_CSS_REGRESSION_PCT || 10);

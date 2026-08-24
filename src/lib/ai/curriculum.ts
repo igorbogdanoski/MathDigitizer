@@ -16,7 +16,10 @@ import { db } from '../firebase';
 import { MathTask, CurriculumRef } from '../schema';
 import { searchCurriculum } from '../curriculumKnowledge';
 import type { CurriculumChunk } from '../curriculumKnowledge';
-import { ALL_MK_CURRICULUM } from '../curriculumData';
+// Classification needs identity — track, grade, topic name, outcome codes —
+// not the wording of the outcomes. The light index carries exactly that, and
+// keeps the 571 KB corpus out of every bundle that can classify a task.
+import { CURRICULUM_INDEX } from '../curriculumIndex';
 import { ai } from './client';
 import { parseGeminiResponse } from './utils';
 import { generateTaskEmbedding } from './embeddings';
@@ -39,14 +42,14 @@ let _staticIndex: Map<string, StaticTopicInfo> | null = null;
 function getStaticTopicIndex(): Map<string, StaticTopicInfo> {
   if (!_staticIndex) {
     _staticIndex = new Map();
-    for (const grade of ALL_MK_CURRICULUM) {
+    for (const grade of CURRICULUM_INDEX) {
       for (const topic of grade.topics) {
         if (_staticIndex.has(topic.id)) continue;
         _staticIndex.set(topic.id, {
           education_track: grade.education_track,
           grade: grade.grade,
           topic_name: topic.name,
-          outcome_codes: new Set(topic.outcomes.map(o => o.code)),
+          outcome_codes: new Set(topic.outcome_codes),
         });
       }
     }
