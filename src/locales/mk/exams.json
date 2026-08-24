@@ -31,7 +31,7 @@
     "grade": "Оценка",
     "gradeValue": "{{grade}}",
     "points": "{{earned}} / {{total}} поени",
-    "notGraded": "Не е оценето",
+    "notGraded": "без предлог",
     "openGradebook": "Отвори во дневник",
     "deadline": "Рок: {{date}}",
     "noDeadline": "Без рок",
@@ -57,7 +57,10 @@
     "warnSwitches": "Внимание: {{count}} напуштања на екранот",
     "noSwitches": "Испитот е решаван без напуштање",
     "aiAnalysis": "AI Анализа",
-    "pointsOf": "{{score}} / {{max}} поени"
+    "pointsOf": "{{score}} / {{max}} поени",
+    "noAnswerGiven": "Нема одговор.",
+    "aiGradingFailed": "Грешка при AI оценувањето.",
+    "questionNotGraded": "Ова прашање не е оценето — предлогот не успеа. Оцени го рачно."
   },
   "joinTitle": "Влез во испит",
   "joinDescription": "Придружете се на испитот преку Dugga режим.",

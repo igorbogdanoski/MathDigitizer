@@ -54,6 +54,8 @@ const IngestionSnapshotFlagProbe = lazy(() => import('./components/dev/Ingestion
 const InkPipelineProbe = lazy(() => import('./components/dev/InkPipelineProbe').then((m) => ({ default: m.InkPipelineProbe })));
 const LetterheadProbe = lazy(() => import('./components/dev/LetterheadProbe').then((m) => ({ default: m.LetterheadProbe })));
 const ConceptMapProbe = lazy(() => import('./components/dev/ConceptMapProbe').then((m) => ({ default: m.ConceptMapProbe })));
+const ConceptMapsPage = lazy(() => import('./components/mindmap/ConceptMapsPage').then((m) => ({ default: m.ConceptMapsPage })));
+const TextbookImportPage = lazy(() => import('./components/knowledge/TextbookImportPage').then((m) => ({ default: m.TextbookImportPage })));
 
 const RouteFallback = () => (
   <div className="min-h-[40vh] flex items-center justify-center text-slate-500 text-sm">Loading...</div>
@@ -198,6 +200,18 @@ const AppRoutes = () => {
           <Route path="factory" element={
             <ProtectedRoute allowedRoles={['teacher']} authFeatureName="Фабрика">
               <MaterialsFactory />
+            </ProtectedRoute>
+          } />
+
+          <Route path="mind-maps" element={
+            <ProtectedRoute allowedRoles={['teacher']} authFeatureName="Концепт-мапи">
+              <ConceptMapsPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="textbooks" element={
+            <ProtectedRoute allowedRoles={['teacher']} authFeatureName="Учебници">
+              <TextbookImportPage />
             </ProtectedRoute>
           } />
           

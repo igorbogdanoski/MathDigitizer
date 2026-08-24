@@ -5,26 +5,33 @@ const { mockGenerateContent } = vi.hoisted(() => ({
   mockGenerateContent: vi.fn(),
 }));
 
-vi.mock('./gemini', () => ({
-  ai: {
-    models: {
-      generateContent: mockGenerateContent,
+// `knowledgeModel` imports `ai` from the deprecated `./gemini` barrel, which
+// re-exports it from `./ai/client`. Mocking the barrel replaced the re-export
+// but not the module the barrel reads from, so the real client was still the
+// one called — which is why this suite sat on `describe.skip` with a note
+// blaming a Windows drive-letter bug. Mocking the client itself, the way the
+// other AI suites do, is what makes it work.
+vi.mock('@/src/lib/ai/client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/src/lib/ai/client')>();
+  return {
+    ...actual,
+    ai: {
+      models: { generateContent: mockGenerateContent, embedContent: vi.fn() },
+      chats: { create: vi.fn() },
     },
-  },
-  Type: {
-    OBJECT: 'OBJECT',
-    STRING: 'STRING',
-    ARRAY: 'ARRAY',
-    NUMBER: 'NUMBER',
-    BOOLEAN: 'BOOLEAN',
-  },
+  };
+});
+vi.mock('@/src/lib/ai/embeddings', () => ({
+  generateTaskEmbedding: vi.fn().mockResolvedValue([]),
 }));
+vi.mock('@/src/lib/ragContext', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/src/lib/ragContext')>();
+  return { ...actual, buildRagContextFromLibrary: vi.fn().mockResolvedValue('') };
+});
 
 import { generateHybridMathSolution } from './knowledgeModel';
 
-// SKIP: Mock doesn't work correctly due to Windows drive letter module duplication issue
-// See: scripts/fix-vitest-runner.cjs for the workaround
-describe.skip('KnowledgeModel (ToT + CoT)', () => {
+describe('KnowledgeModel (ToT + CoT)', () => {
   beforeEach(() => {
     mockGenerateContent.mockReset();
   });

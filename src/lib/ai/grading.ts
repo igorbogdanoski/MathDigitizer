@@ -3,7 +3,7 @@
  * Moved verbatim from the former gemini.ts god-object.
  */
 import { ai } from './client';
-import { MATH_PLOT_INSTRUCTION, ALGEBRA_TILES_INSTRUCTION } from './utils';
+import { MATH_PLOT_INSTRUCTION, ALGEBRA_TILES_INSTRUCTION, parseGeminiResponse } from './utils';
 import { MathTask } from '../schema';
 import { Type } from '@google/genai';
 import { DEFAULT_MODEL, PRO_MODEL } from './models';
@@ -67,10 +67,25 @@ ${knowledge ? `${knowledge}
     });
     
     if (!response.text) throw new Error("Нема одговор.");
-    return JSON.parse(response.text);
+
+    const parsed = parseGeminiResponse(response.text);
+    const score = typeof parsed?.score === 'number' ? parsed.score : Number(parsed?.score);
+    if (!Number.isFinite(score)) {
+      throw new Error('Оценувачот не врати важечки број на поени.');
+    }
+
+    return { ...parsed, score: Math.min(100, Math.max(0, score)) };
   } catch (error) {
+    // Deliberately rethrown rather than answered with `{ score: 0 }`.
+    //
+    // This used to swallow its own failure and return a zero, which the caller
+    // consumed as a real result: the try/catch around the call never fired, so
+    // a malformed response was recorded as a wrong answer. In AdaptiveTest that
+    // fed the ability estimate, and a student's estimated level fell because of
+    // a stray markdown fence. A grade is a claim about a person — when it
+    // cannot be made, the honest answer is that no grade was produced.
     console.error("Auto grading error:", error);
-    return { score: 0, feedback: "Грешка при автоматското оценување. Потребен е рачен преглед." };
+    throw error;
   }
 }
 
@@ -132,7 +147,7 @@ ${userStep}
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    return JSON.parse(response.text);
+    return parseGeminiResponse(response.text);
   } catch (error) {
     console.error("Error verifying step:", error);
     throw error;
@@ -269,7 +284,7 @@ ${studentHistory ? `ИСТОРИЈА И АНАЛИТИКА НА УЧЕНИКОТ
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    return JSON.parse(response.text);
+    return parseGeminiResponse(response.text);
   } catch (error) {
     console.error("Error analyzing solution image:", error);
     throw error;
@@ -376,7 +391,7 @@ ${studentHistory ? `\nИСТОРИЈА И АНАЛИТИКА НА УЧЕНИКО
     });
 
     if (!response.text) throw new Error("Нема одговор на сликата.");
-    const parsed = JSON.parse(response.text);
+    const parsed = parseGeminiResponse(response.text);
     return Array.isArray(parsed) ? parsed : [parsed];
   } catch (error) {
     console.error("Грешка при batch анализа на сликата:", error);

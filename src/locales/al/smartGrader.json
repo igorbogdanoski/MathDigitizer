@@ -20,7 +20,10 @@
     "enterStudentName": "Shkruaj emrin e nxënësit (p.sh. Marko M.)",
     "attachHandwriting": "Bashkëngjit shkrimin e dorës",
     "attachDesc": "Fotografoni testin ose fletoren e nxënësit për kontroll automatik.",
-    "selectFile": "Zgjidh Skedar"
+    "selectFile": "Zgjidh Skedar",
+    "pickStudent": "Zgjidhni një nxënës nga klasa",
+    "notInRoster": "— nuk është në asnjë klasë —",
+    "noGradebookEntry": "Analiza do të ruhet, por nuk do të shkruhet notë në ditar: zgjidhni një nxënës nga klasa që nota t'i takojë një personi të vërtetë."
   },
   "analysis": {
     "title": "Analiza",
@@ -70,6 +73,12 @@
     "enterStudentId": "Shkruani emrin ose identifikuesin e nxënësit për të ruajtur analitikën.",
     "gradeSaved": "Nota u ruajt në ditar",
     "batchGradesSaved": "{{count}} nota u ruajtën në ditar",
-    "analysisError": "Ndodhi një gabim gjatë analizës. Ju lutemi provoni përsëri."
+    "analysisError": "Ndodhi një gabim gjatë analizës. Ju lutemi provoni përsëri.",
+    "analysisSavedNoGrade": "Analiza u ruajt. Pa notë në ditar — nxënësi nuk u zgjodh nga një klasë."
+  },
+  "gradebook": {
+    "aiFeedback": "Vlerësim me AI: {{score}}/100",
+    "defaultTaskTitle": "Vlerësim me AI",
+    "batchTaskTitle": "Detyra {{index}}"
   }
 }

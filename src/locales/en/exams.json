@@ -31,7 +31,7 @@
     "grade": "Grade",
     "gradeValue": "{{grade}}",
     "points": "{{earned}} / {{total}} points",
-    "notGraded": "Not graded",
+    "notGraded": "no suggestion",
     "openGradebook": "Open in gradebook",
     "deadline": "Due: {{date}}",
     "noDeadline": "No deadline",
@@ -57,7 +57,10 @@
     "warnSwitches": "Warning: {{count}} tab switches",
     "noSwitches": "The exam was taken without leaving the tab",
     "aiAnalysis": "AI analysis",
-    "pointsOf": "{{score}} / {{max}} points"
+    "pointsOf": "{{score}} / {{max}} points",
+    "noAnswerGiven": "No answer given.",
+    "aiGradingFailed": "AI grading failed.",
+    "questionNotGraded": "This question was not graded — the suggestion failed. Grade it by hand."
   },
   "joinTitle": "Join exam",
   "joinDescription": "Join the exam in Dugga mode.",

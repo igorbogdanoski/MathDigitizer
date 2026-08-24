@@ -21,7 +21,15 @@ export const TeacherExamsDashboard = () => {
   const [attempts, setAttempts] = useState<SummativeAttempt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isGrading, setIsGrading] = useState<SummativeAttempt | null>(null);
-  const [aiFeedbacks, setAiFeedbacks] = useState<Record<number, {score: number, feedback: string}>>({});
+  /**
+   * A per-question suggestion, or the note that one could not be produced.
+   *
+   * The two are kept apart on purpose: a question the grader could not read is
+   * not a question the student got wrong, and must not be scored zero.
+   */
+  const [aiFeedbacks, setAiFeedbacks] = useState<
+    Record<number, { score?: number; feedback: string; failed?: boolean }>
+  >({});
   const [isAIGrading, setIsAIGrading] = useState(false);
   const [gradeFilter, setGradeFilter] = useState<string>('all');
 
@@ -101,11 +109,25 @@ export const TeacherExamsDashboard = () => {
           const studentAns = isGrading.answers[originalIndex];
           
           if (studentAns === undefined || studentAns === null || studentAns === '') {
-             newFeedbacks[originalIndex] = { score: 0, feedback: 'Нема одговор.' };
+             // A real zero: the student did not answer. Distinct from the case
+             // below, where the grader could not produce a result at all.
+             newFeedbacks[originalIndex] = { score: 0, feedback: tExams('dashboard.noAnswerGiven') };
           } else {
-             const result = await autoGradeSubmission(q, studentAns);
-             newFeedbacks[originalIndex] = result;
-             totalRecommended += (result.score || 0);
+             try {
+               const result = await autoGradeSubmission(q, studentAns);
+               newFeedbacks[originalIndex] = result;
+               totalRecommended += (result.score || 0);
+             } catch (questionError) {
+               // Caught per question, so one failed suggestion does not lose the
+               // other nineteen. The question is marked as ungraded rather than
+               // scored zero — the teacher grades it, and the recommended total
+               // does not silently count it as failed.
+               console.error('AI grading failed for one question:', questionError);
+               newFeedbacks[originalIndex] = {
+                 failed: true,
+                 feedback: tExams('dashboard.questionNotGraded'),
+               };
+             }
           }
        }
        setAiFeedbacks(newFeedbacks);
@@ -113,7 +135,7 @@ export const TeacherExamsDashboard = () => {
        const input = document.getElementById('final-score') as HTMLInputElement;
        if(input) input.value = totalRecommended.toString();
      } catch(e) {
-        showToast("Грешка при AI оценувањето.", 'error');
+        showToast(tExams('dashboard.aiGradingFailed'), 'error');
      } finally {
         setIsAIGrading(false);
      }
@@ -301,7 +323,11 @@ export const TeacherExamsDashboard = () => {
                                  <div className="mt-4 p-3 bg-indigo-50 border border-indigo-100 rounded-lg animate-in fade-in slide-in-from-top-2">
                                     <div className="flex justify-between items-center mb-1">
                                        <span className="text-xs font-bold text-indigo-500 uppercase flex items-center gap-1"><Wand2 className="w-3 h-3" /> {tExams('dashboard.aiAnalysis')}</span>
-                                       <span className="text-sm font-black text-indigo-700">{tExams('dashboard.pointsOf', { score: aiFeedbacks[originalIndex].score, max: q.points || 0 })}</span>
+                                       <span className="text-sm font-black text-indigo-700">
+                                          {aiFeedbacks[originalIndex].failed
+                                            ? tExams('dashboard.notGraded')
+                                            : tExams('dashboard.pointsOf', { score: aiFeedbacks[originalIndex].score, max: q.points || 0 })}
+                                       </span>
                                     </div>
                                     <p className="text-sm text-indigo-900 leading-relaxed font-medium">{aiFeedbacks[originalIndex].feedback}</p>
                                  </div>

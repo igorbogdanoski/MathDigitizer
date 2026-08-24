@@ -130,7 +130,7 @@ ${JSON.stringify(tasks.map(t => ({ title: t.title, text: t.original_text, topic:
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    return JSON.parse(response.text);
+    return parseGeminiResponse(response.text);
   } catch (error) {
     console.error("Грешка при генерирање диференциран тест:", error);
     throw error;
@@ -426,7 +426,7 @@ ${task.pedagogical_insights?.teaching_strategy}
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    const results = JSON.parse(response.text);
+    const results = parseGeminiResponse(response.text);
     return results.map((t: any) => ({
       ...t,
       type: "задача",
@@ -487,7 +487,7 @@ ${task.pedagogical_insights?.prerequisites?.join(', ')}
     });
 
     if (!response.text) throw new Error("Нема одговор.");
-    const results = JSON.parse(response.text);
+    const results = parseGeminiResponse(response.text);
     return results.map((t: any) => ({
       ...t,
       type: "задача",
@@ -599,7 +599,7 @@ export async function generateFlashcards(topic: string, count: number = 5): Prom
     });
 
     if (!response.text) throw new Error("Нема одговор од Gemini API.");
-    const parsed = JSON.parse(response.text);
+    const parsed = parseGeminiResponse(response.text);
     return parsed.flashcards;
   } catch (error) {
     console.error("Error generating flashcards:", error);

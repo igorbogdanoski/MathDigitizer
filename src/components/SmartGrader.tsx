@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
+import { currentSchoolYear, currentTerm } from '../lib/gradebook/schoolCalendar';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Upload, CheckCircle2, AlertTriangle, FileWarning, Search,
@@ -13,7 +14,7 @@ import { MathRenderer } from './MathRenderer';
 import { analyzeSolutionImage, generateTargetedPracticeTasks, analyzeBatchTestImage } from '../lib/gemini';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { addDoc, collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 // Helper: Convert score (0-100) to MK grade (1-5)
@@ -25,28 +26,43 @@ function scoreToMKGrade(score: number): MKGrade {
   return 1; // Недоволно
 }
 
-// Helper: Save grade to Gradebook
+/**
+ * Files a grade in the gradebook.
+ *
+ * Takes a real classroom and a real student uid, and nothing else will do. This
+ * used to derive `studentId` from the typed name — `име.toLowerCase()` with the
+ * spaces hyphenated — so two students called Ана Петрова became one record, a
+ * typo created a student who does not exist, and none of it joined with
+ * `task_attempts` or the mastery rollup, which key on the actual uid. It also
+ * wrote `classroomId: 'default'`, putting every class in one bucket.
+ *
+ * A gradebook entry is a formal record about a named person. When the app does
+ * not know which person, it does not write one — `SmartGrader` still keeps the
+ * softer `graded_submissions` analytics record, which has always been keyed on
+ * free text and is read as such.
+ */
 async function saveToGradebook(
-  studentName: string,
+  student: { uid: string; name: string; classroomId: string },
   score: number,
   taskTitle: string,
   teacherUid: string,
+  feedback: string,
   category: GradeCategory = 'test'
 ): Promise<void> {
   const gradeEntry: Omit<GradeEntry, 'id'> = {
-    classroomId: 'default', // TODO: Get from context or selection
-    studentId: studentName.toLowerCase().replace(/\s+/g, '-'),
-    studentName,
+    classroomId: student.classroomId,
+    studentId: student.uid,
+    studentName: student.name,
     taskTitle,
     category,
     grade: scoreToMKGrade(score),
     maxPoints: 100,
     earnedPoints: score,
-    feedback: `AI оценување: ${score}/100`,
+    feedback,
     gradedAt: new Date().toISOString(),
     gradedBy: teacherUid,
-    term: 'I', // TODO: Get current term
-    schoolYear: '2026/2027', // TODO: Get current school year
+    term: currentTerm(),
+    schoolYear: currentSchoolYear(),
   };
 
   await addDoc(collection(db, 'grade_entries'), gradeEntry);
@@ -63,6 +79,19 @@ export const SmartGrader: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageMimeType, setImageMimeType] = useState<string>('');
   const [studentIdentifier, setStudentIdentifier] = useState<string>('');
+  /**
+   * The classroom student this work belongs to, when the teacher picked one.
+   *
+   * Null means the name is free text: the analysis is still saved, but no
+   * gradebook entry is written, because a gradebook entry names a person and
+   * the app would be guessing which.
+   */
+  const [rosterStudent, setRosterStudent] = useState<
+    { uid: string; name: string; classroomId: string } | null
+  >(null);
+  const [classrooms, setClassrooms] = useState<
+    Array<{ id: string; name: string; students: Array<{ uid: string; name: string }> }>
+  >([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null); // For single mode
   const [batchResults, setBatchResults] = useState<any[] | null>(null); // For batch mode
@@ -71,6 +100,46 @@ export const SmartGrader: React.FC = () => {
   const [practiceTasks, setPracticeTasks] = useState<Record<number, MathTask[]>>({}); // Keyed by batch task index, or 0 for single
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // The teacher's classrooms, with each roster resolved to real names. A grade
+  // needs a real uid; this is where one comes from.
+  React.useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const snap = await getDocs(
+          query(collection(db, 'classrooms'), where('teacherId', '==', user.uid))
+        );
+
+        const loaded = await Promise.all(
+          snap.docs.map(async entry => {
+            const data = entry.data() as { name?: string; studentIds?: string[] };
+            const ids = Array.isArray(data.studentIds) ? data.studentIds : [];
+
+            const students = await Promise.all(
+              ids.map(async uid => {
+                const profile = await getDoc(doc(db, 'users', uid));
+                const name = (profile.data() as { displayName?: string } | undefined)?.displayName;
+                return { uid, name: name?.trim() || uid };
+              })
+            );
+
+            return { id: entry.id, name: data.name || entry.id, students };
+          })
+        );
+
+        if (!cancelled) setClassrooms(loaded.filter(c => c.students.length > 0));
+      } catch (error) {
+        // A teacher with no classrooms, or an offline load, simply grades by
+        // name — the analysis is still saved, only the gradebook entry is not.
+        console.warn('Could not load classrooms for grading:', error);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [user]);
 
   const filteredTasks = tasks.filter(t => 
     t.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -190,16 +259,21 @@ Feedback: ${doc.feedback_summary}`;
              };
              await addDoc(collection(db, 'graded_submissions'), submission);
 
-             // Save to Gradebook
-             if (studentIdentifier.trim()) {
+             // Only a student the teacher picked from a classroom reaches the
+             // gradebook; a typed name gets the analytics record above and a
+             // note saying why no grade was filed.
+             if (rosterStudent) {
                await saveToGradebook(
-                 studentIdentifier.trim(),
+                 rosterStudent,
                  analysisResult.score,
-                 selectedTask!.title || 'AI Оценување',
+                 selectedTask!.title || t('gradebook.defaultTaskTitle'),
                  user.uid,
+                 t('gradebook.aiFeedback', { score: analysisResult.score }),
                  'test'
                );
                showToast(t('toasts.gradeSaved'), 'success');
+             } else if (studentIdentifier.trim()) {
+               showToast(t('toasts.analysisSavedNoGrade'), 'info');
              }
            } catch (dbErr) {
              console.error("Failed to save student analytic profiling:", dbErr);
@@ -230,13 +304,13 @@ Feedback: ${doc.feedback_summary}`;
                };
                await addDoc(collection(db, 'graded_submissions'), submission);
 
-               // Save to Gradebook
-               if (studentIdentifier.trim()) {
+               if (rosterStudent) {
                  await saveToGradebook(
-                   studentIdentifier.trim(),
+                   rosterStudent,
                    br.score,
-                   br.extracted_task_text?.substring(0, 50) || `Задача ${i + 1}`,
+                   br.extracted_task_text?.substring(0, 50) || t('gradebook.batchTaskTitle', { index: i + 1 }),
                    user.uid,
+                   t('gradebook.aiFeedback', { score: br.score }),
                    'test'
                  );
                }
@@ -614,16 +688,62 @@ Feedback: ${doc.feedback_summary}`;
                   </div>
                 </div>
                 
-                {/* Identifier Input */}
-                <div className="h-[15%] w-full flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-                   <User className="text-indigo-400 w-5 h-5 shrink-0" />
-                   <input
-                     type="text"
-                     placeholder={t('upload.enterStudentName')}
-                     value={studentIdentifier}
-                     onChange={e => setStudentIdentifier(e.target.value)}
-                     className="w-full bg-transparent border-none outline-none text-sm font-semibold text-slate-700 dark:text-slate-200"
-                   />
+                {/* Who this work belongs to */}
+                <div className="w-full flex flex-col gap-2 bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                   <div className="flex items-center gap-3">
+                     <User className="text-indigo-400 w-5 h-5 shrink-0" />
+                     {classrooms.length > 0 ? (
+                       <select
+                         className="w-full bg-transparent border-none outline-none text-sm font-semibold text-slate-700 dark:text-slate-200"
+                         aria-label={t('upload.pickStudent')}
+                         value={rosterStudent ? `${rosterStudent.classroomId}|${rosterStudent.uid}` : ''}
+                         onChange={e => {
+                           const [classroomId, uid] = e.target.value.split('|');
+                           const room = classrooms.find(c => c.id === classroomId);
+                           const student = room?.students.find(st => st.uid === uid);
+                           if (student && room) {
+                             setRosterStudent({ uid: student.uid, name: student.name, classroomId: room.id });
+                             setStudentIdentifier(student.name);
+                           } else {
+                             setRosterStudent(null);
+                           }
+                         }}
+                       >
+                         <option value="">{t('upload.notInRoster')}</option>
+                         {classrooms.map(room => (
+                           <optgroup key={room.id} label={room.name}>
+                             {room.students.map(st => (
+                               <option key={st.uid} value={`${room.id}|${st.uid}`}>{st.name}</option>
+                             ))}
+                           </optgroup>
+                         ))}
+                       </select>
+                     ) : (
+                       <input
+                         type="text"
+                         placeholder={t('upload.enterStudentName')}
+                         value={studentIdentifier}
+                         onChange={e => { setStudentIdentifier(e.target.value); setRosterStudent(null); }}
+                         className="w-full bg-transparent border-none outline-none text-sm font-semibold text-slate-700 dark:text-slate-200"
+                       />
+                     )}
+                   </div>
+
+                   {classrooms.length > 0 && !rosterStudent && (
+                     <input
+                       type="text"
+                       placeholder={t('upload.enterStudentName')}
+                       value={studentIdentifier}
+                       onChange={e => { setStudentIdentifier(e.target.value); setRosterStudent(null); }}
+                       className="w-full bg-transparent border-none outline-none text-sm font-semibold text-slate-700 dark:text-slate-200 pl-8"
+                     />
+                   )}
+
+                   {studentIdentifier.trim() && !rosterStudent && (
+                     <p className="text-[11px] text-amber-700 dark:text-amber-400 pl-8 leading-snug">
+                       {t('upload.noGradebookEntry')}
+                     </p>
+                   )}
                 </div>
               </div>
             ) : (

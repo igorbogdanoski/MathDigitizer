@@ -49,6 +49,21 @@ const ROUTE_BUDGETS = [
   { route: '/dashboard', module: 'src/components/Dashboard.tsx', maxKb: 1100 },
   { route: '/live-board', module: 'src/components/live/VirtualWhiteboardPage.tsx', maxKb: 1500 },
   { route: '/analytics', module: 'src/components/AnalyticsDashboard.tsx', maxKb: 1700 },
+
+  // Added 2026-08-25 after the audit found the guard watched 8 of 26 routes —
+  // and none of the ones phases 6, 8 and 9 actually grew. A budget on a route
+  // nothing changed is a budget that can never fire.
+  //
+  // Each ceiling is the measured size at the time of writing plus ~25% head
+  // room: enough that ordinary feature work does not trip it, tight enough that
+  // pulling in another vendor chunk does.
+  { route: '/factory', module: 'src/components/MaterialsFactory.tsx', maxKb: 1800 },
+  { route: '/graph-digitizer', module: 'src/components/GraphDigitizer.tsx', maxKb: 800 },
+  { route: '/curriculum-admin', module: 'src/components/CurriculumAdmin.tsx', maxKb: 1450 },
+  { route: '/exams-grading', module: 'src/components/TeacherExamsDashboard.tsx', maxKb: 750 },
+  { route: '/flashcards', module: 'src/components/Flashcards.tsx', maxKb: 800 },
+  { route: '/smart-grader', module: 'src/components/SmartGrader.tsx', maxKb: 800 },
+  { route: '/adaptive-test', module: 'src/components/AdaptiveTest.tsx', maxKb: 750 },
 ];
 
 function toKb(bytes) {

@@ -255,6 +255,9 @@ export const AdaptiveTest: React.FC = () => {
       const result = await autoGradeSubmission(mockQuestion, studentAnswer);
       await processGradingResult(result, task);
     } catch (err) {
+      // No grade is recorded when grading fails. The alternative — writing the
+      // zero the grader used to return — moved a student's ability estimate on
+      // the strength of a parse error.
       console.error("Grading error:", err);
       showToast(t('toasts.gradeError'), 'error');
       setIsGrading(false);

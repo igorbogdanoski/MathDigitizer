@@ -20,7 +20,10 @@
     "enterStudentName": "Enter student name (e.g. Marko M.)",
     "attachHandwriting": "Attach handwriting",
     "attachDesc": "Photograph the student's test or notebook for automatic checking.",
-    "selectFile": "Select File"
+    "selectFile": "Select File",
+    "pickStudent": "Pick a student from a class",
+    "notInRoster": "— not in any class —",
+    "noGradebookEntry": "The analysis will be saved, but no gradebook entry: pick a student from a class so the grade lands on a real person."
   },
   "analysis": {
     "title": "Analysis",
@@ -70,6 +73,12 @@
     "enterStudentId": "Enter a student name or identifier to save the analytics.",
     "gradeSaved": "The grade has been saved to the gradebook",
     "batchGradesSaved": "{{count}} grades have been saved to the gradebook",
-    "analysisError": "An error occurred during analysis. Please try again."
+    "analysisError": "An error occurred during analysis. Please try again.",
+    "analysisSavedNoGrade": "Analysis saved. No gradebook entry — the student was not picked from a class."
+  },
+  "gradebook": {
+    "aiFeedback": "AI grading: {{score}}/100",
+    "defaultTaskTitle": "AI grading",
+    "batchTaskTitle": "Task {{index}}"
   }
 }

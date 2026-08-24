@@ -31,7 +31,7 @@
     "grade": "Nota",
     "gradeValue": "{{grade}}",
     "points": "{{earned}} / {{total}} pikë",
-    "notGraded": "E pavlerësuar",
+    "notGraded": "pa sugjerim",
     "openGradebook": "Hap në ditar",
     "deadline": "Afati: {{date}}",
     "noDeadline": "Pa afat",
@@ -57,7 +57,10 @@
     "warnSwitches": "Kujdes: {{count}} largime nga ekrani",
     "noSwitches": "Provimi u zgjidh pa u larguar",
     "aiAnalysis": "Analizë AI",
-    "pointsOf": "{{score}} / {{max}} pikë"
+    "pointsOf": "{{score}} / {{max}} pikë",
+    "noAnswerGiven": "Pa përgjigje.",
+    "aiGradingFailed": "Vlerësimi me AI dështoi.",
+    "questionNotGraded": "Kjo pyetje nuk u vlerësua — sugjerimi dështoi. Vlerësojeni me dorë."
   },
   "joinTitle": "Hyrje në provim",
   "joinDescription": "Bashkohu me provimin në modalitetin Dugga.",
