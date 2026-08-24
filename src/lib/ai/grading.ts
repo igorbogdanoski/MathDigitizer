@@ -8,17 +8,36 @@ import { MathTask } from '../schema';
 import { Type } from '@google/genai';
 import { DEFAULT_MODEL, PRO_MODEL } from './models';
 
+/**
+ * Grades one answer.
+ *
+ * `ownerId` opts this call into the teacher's own distilled textbooks
+ * (EXPERT_LEVEL_MASTER_PLAN, 10.1). Grading is where that material is worth
+ * most: a distilled chapter carries the specific wrong moves students make on
+ * that content, which is the difference between telling a student they are
+ * wrong and telling them why. Omitted, or with nothing imported, the prompt is
+ * exactly what it was.
+ */
 export async function autoGradeSubmission(
   question: any,
-  studentAnswer: any
+  studentAnswer: any,
+  ownerId?: string
 ): Promise<{ score: number, feedback: string, socratic_hint?: string, error_detected?: string }> {
   try {
+    const { buildKnowledgeContextBlock } = await import('../knowledge/context');
+    const knowledge = await buildKnowledgeContextBlock(
+      [question?.question, question?.title, question?.curriculum_topic].filter(Boolean).join(' '),
+      ownerId,
+      question?.curriculum_refs?.flatMap((r: any) => r?.outcome_codes ?? []) ?? [],
+    );
+
     const prompt = `Ти си Стручен Оценувач и Интерактивен Сократски Ментор по математика. 
 За дадената задача и одговорот на ученикот, треба да пресметаш поени и да дадеш фидбек.
 Ако одговорот не е целосно точен, ТИ НЕ СМЕЕШ ДА ГО ДАДЕШ ГОТОВИОТ ОДГОВОР. 
 Наместо тоа, детектирај каде точно ученикот згрешил во чекорите (error_detected) и дај му Сократски хинт (socratic_hint) за да се поправи сам. 
 
-ПОДАТОЦИ:
+${knowledge ? `${knowledge}
+` : ''}ПОДАТОЦИ:
 ЗАДАЧА: ${JSON.stringify(question, null, 2)}
 УЧЕНИК ОДГОВАРА: ${JSON.stringify(studentAnswer)}
 МАКСИМАЛНИ ПОЕНИ: ${question.points || 100}
@@ -28,6 +47,9 @@ export async function autoGradeSubmission(
 2. ДЕТЕКТИРАЈ ГРЕШКА: Ако згрешил, објасни прецизно каде е грешката (пр. "Заборави да го промениш знакот при префрлање од другата страна").
 3. СОКРАТСКИ ХИНТ: Постави прашање што ќе го наведе сам да ја најде грешката.
 4. Ако одговорот е целосно точен (100 поени), пофали го и не мораш да даваш socratic_hint.
+4а. Ако има белешки од учебникот погоре и грешката на ученикот се совпаѓа со
+    типична грешка наведена таму, искористи го тоа објаснување — тоа е
+    материјалот по кој наставникот предава.
 5. Врати СТРОГО JSON формат: 
 { 
   "score": <број>, 

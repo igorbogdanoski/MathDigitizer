@@ -338,6 +338,99 @@ describe('Firestore Security Rules', () => {
   });
 
   // ── Exam window enforcement (EXPERT_LEVEL_MASTER_PLAN, 5.3) ───────────────
+  describe('knowledge_skills collection', () => {
+    const asTeacher = async (uid: string) => {
+      const teacher = testEnv.authenticatedContext(uid);
+      await setDoc(doc(teacher.firestore(), 'users', uid), {
+        uid, email: `${uid}@test.com`, displayName: 'Teacher', role: 'teacher',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      });
+      return teacher;
+    };
+
+    const skill = (over: Record<string, unknown> = {}) => ({
+      ownerId: 'teacher1',
+      bookId: 'teacher1:matematika-5',
+      bookTitle: 'Математика 5',
+      chapterIndex: 0,
+      chapterTitle: 'Дропки',
+      coreIdea: 'Дропките се делови од целина.',
+      concepts: [], methods: [], misconceptions: [],
+      workedExample: '', takeaways: [], outcomeCodes: [],
+      createdAt: '2026-08-25T10:00:00.000Z',
+      usage: {
+        basis: 'own_work',
+        declaredBy: 'teacher1',
+        declaredAt: '2026-08-25T10:00:00.000Z',
+      },
+      ...over,
+    });
+
+    it('should ALLOW a teacher to store a chapter they distilled', async () => {
+      const teacher = await asTeacher('teacher1');
+      await assertSucceeds(setDoc(doc(teacher.firestore(), 'knowledge_skills', 'k1'), skill()));
+    });
+
+    it('should DENY storing a chapter without a right-to-use declaration', async () => {
+      // Distillation keeps a derived copy of somebody's book. A record with no
+      // declaration cannot answer for why it exists.
+      const teacher = await asTeacher('teacher1');
+      const { usage, ...withoutUsage } = skill();
+      await assertFails(setDoc(doc(teacher.firestore(), 'knowledge_skills', 'k1'), withoutUsage));
+    });
+
+    it('should DENY a declaration made in another teacher name', async () => {
+      const teacher = await asTeacher('teacher1');
+      await assertFails(setDoc(doc(teacher.firestore(), 'knowledge_skills', 'k1'), skill({
+        usage: { basis: 'own_work', declaredBy: 'teacher2', declaredAt: '2026-08-25T10:00:00.000Z' },
+      })));
+    });
+
+    it('should DENY storing a chapter under another teacher uid', async () => {
+      const teacher = await asTeacher('teacher1');
+      await assertFails(setDoc(doc(teacher.firestore(), 'knowledge_skills', 'k1'), skill({
+        ownerId: 'teacher2',
+      })));
+    });
+
+    it('should DENY another teacher reading it', async () => {
+      // The declared right covers their own teaching, not redistribution.
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'knowledge_skills', 'k1'), skill());
+      });
+
+      const other = await asTeacher('teacher2');
+      await assertFails(getDoc(doc(other.firestore(), 'knowledge_skills', 'k1')));
+    });
+
+    it('should ALLOW the owner to link curriculum outcomes to it', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'knowledge_skills', 'k1'), skill());
+      });
+
+      const teacher = await asTeacher('teacher1');
+      await assertSucceeds(updateDoc(doc(teacher.firestore(), 'knowledge_skills', 'k1'), {
+        outcomeCodes: ['МА.5.2.1'],
+      }));
+    });
+
+    it('should DENY rewriting the distilled content or the declaration', async () => {
+      // What the model produced, and what permitted producing it, are what they
+      // were when the record was written.
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'knowledge_skills', 'k1'), skill());
+      });
+
+      const teacher = await asTeacher('teacher1');
+      await assertFails(updateDoc(doc(teacher.firestore(), 'knowledge_skills', 'k1'), {
+        coreIdea: 'нешто друго',
+      }));
+      await assertFails(updateDoc(doc(teacher.firestore(), 'knowledge_skills', 'k1'), {
+        usage: { basis: 'public_domain', declaredBy: 'teacher1', declaredAt: '2026-08-25T10:00:00.000Z' },
+      }));
+    });
+  });
+
   describe('summative_attempts collection', () => {
     const HOUR = 60 * 60 * 1000;
 

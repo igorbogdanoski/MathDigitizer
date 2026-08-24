@@ -572,5 +572,37 @@ service cloud.firestore {
       allow create, delete: if isTeacher();
       allow update: if false;
     }
+
+    // Distilled textbooks (EXPERT_LEVEL_MASTER_PLAN, 10.1).
+    //
+    // Unlike curriculum_knowledge, which holds the state curriculum and is
+    // readable by everyone, this holds a derived version of a book someone
+    // uploaded under their own declared right to use it. That declaration
+    // covers their teaching, not redistribution — so a record is visible only
+    // to the teacher who imported it, and the rules, not the query, are what
+    // enforce it.
+    match /knowledge_skills/{skillId} {
+      function isOwner() {
+        return isAuthenticated() && request.auth.uid == resource.data.ownerId;
+      }
+
+      allow read, delete: if isOwner();
+
+      allow create: if isTeacher()
+        && request.resource.data.ownerId == request.auth.uid
+        // The right-to-use declaration is not optional and must name the
+        // person who made it: a record without one cannot answer for itself.
+        && request.resource.data.usage.declaredBy == request.auth.uid
+        && request.resource.data.usage.basis is string
+        && request.resource.data.usage.declaredAt is string;
+
+      // Only the teacher's own curriculum links may change; the distilled
+      // content and the declaration are what they were when it was written.
+      allow update: if isOwner()
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.usage == resource.data.usage
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['outcomeCodes']);
+    }
   }
 }
