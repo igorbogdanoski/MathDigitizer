@@ -8,6 +8,7 @@
  * DOCX, plain decoding for text. Both libraries were already installed and
  * unused.
  */
+import { sanitizeExtractedText } from './sanitizeText';
 
 export interface ExtractedDocument {
   text: string;
@@ -16,6 +17,14 @@ export interface ExtractedDocument {
   source: 'pdf' | 'docx' | 'text';
   /** True when the file yielded no usable text (e.g. a scanned PDF). */
   empty: boolean;
+  /**
+   * Invisible characters removed before the text was normalized.
+   *
+   * This text goes into a model prompt, so an uploaded file is untrusted input
+   * with a path into the model's context. A handful is typesetting; a large
+   * count is text written to be read by the model and not by the teacher.
+   */
+  invisiblesRemoved: number;
 }
 
 /** Characters below which a document is treated as having no usable text. */
@@ -36,7 +45,13 @@ export function isPlainText(file: { name: string; type?: string }): boolean {
   return (file.type ?? '').startsWith('text/') || /\.(txt|md|csv)$/i.test(file.name);
 }
 
-/** Collapses the ragged whitespace PDF text layers produce. */
+/**
+ * Collapses the ragged whitespace PDF text layers produce.
+ *
+ * Note this does not remove invisible characters — `[ 	]+` does not match a
+ * zero-width space, and they are letters as far as trimming is concerned.
+ * `sanitizeExtractedText` runs first, in `extractDocumentText`.
+ */
 export function normalizeExtractedText(raw: string): string {
   return raw
     .replace(/\r\n?/g, '\n')
@@ -79,23 +94,38 @@ async function extractDocx(buffer: ArrayBuffer): Promise<string> {
  * `empty: true` — the caller must say so rather than quietly inventing content.
  */
 export async function extractDocumentText(file: File): Promise<ExtractedDocument> {
+  const finish = (
+    raw: string,
+    pageCount: number,
+    source: ExtractedDocument['source'],
+  ): ExtractedDocument => {
+    // Sanitize before normalizing: whitespace collapsing would otherwise glue
+    // hidden characters to their neighbours and hide how many there were.
+    const { text: visible, removed } = sanitizeExtractedText(raw);
+    const text = normalizeExtractedText(visible);
+    return {
+      text,
+      pageCount,
+      source,
+      empty: text.length < MIN_USEFUL_TEXT,
+      invisiblesRemoved: removed,
+    };
+  };
+
   if (isPdf(file)) {
     const { text, pageCount } = await extractPdf(await file.arrayBuffer());
-    const normalized = normalizeExtractedText(text);
-    return { text: normalized, pageCount, source: 'pdf', empty: normalized.length < MIN_USEFUL_TEXT };
+    return finish(text, pageCount, 'pdf');
   }
 
   if (isDocx(file)) {
-    const normalized = normalizeExtractedText(await extractDocx(await file.arrayBuffer()));
-    return { text: normalized, pageCount: 1, source: 'docx', empty: normalized.length < MIN_USEFUL_TEXT };
+    return finish(await extractDocx(await file.arrayBuffer()), 1, 'docx');
   }
 
   if (isPlainText(file)) {
-    const normalized = normalizeExtractedText(await file.text());
-    return { text: normalized, pageCount: 1, source: 'text', empty: normalized.length < MIN_USEFUL_TEXT };
+    return finish(await file.text(), 1, 'text');
   }
 
-  return { text: '', pageCount: 0, source: 'text', empty: true };
+  return { text: '', pageCount: 0, source: 'text', empty: true, invisiblesRemoved: 0 };
 }
 
 /**
