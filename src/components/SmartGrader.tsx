@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
 import { currentSchoolYear, currentTerm } from '../lib/gradebook/schoolCalendar';
 import { trackActivation } from '../lib/analytics';
+import { TextbookGradingHint } from './knowledge/TextbookGradingHint';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Upload, CheckCircle2, AlertTriangle, FileWarning, Search,
@@ -782,9 +783,14 @@ Feedback: ${doc.feedback_summary}`;
           
           <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm h-[600px] overflow-y-auto">
             {!result && !batchResults && !isAnalyzing && (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 text-center px-6">
-                <Calculator className="w-16 h-16 mb-4 opacity-20" />
-                <p>{t('analysis.emptyState')}</p>
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 text-center px-6 gap-6">
+                <div className="flex flex-col items-center">
+                  <Calculator className="w-16 h-16 mb-4 opacity-20" />
+                  <p>{t('analysis.emptyState')}</p>
+                </div>
+                {/* Offered here rather than as a menu tile: this is the screen
+                    where importing a textbook changes what the teacher gets. */}
+                <TextbookGradingHint />
               </div>
             )}
 
