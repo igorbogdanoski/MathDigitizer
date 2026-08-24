@@ -4,5 +4,28 @@
   "eraser": "Gomë",
   "thickness": "Trashësia",
   "undo": "Kthe mbrapa",
-  "clearAll": "Pastro të gjitha"
+  "clearAll": "Pastro të gjitha",
+  "board": {
+    "pen": "Stilolaps",
+    "eraser": "Fshirëse",
+    "undo": "Zhbëj vijën time të fundit",
+    "redo": "Ribëj vijën e zhbërë",
+    "setColor": "Vendos ngjyrën: {{color}}",
+    "colorIndigo": "Indigo",
+    "colorRose": "Trëndafili",
+    "colorGreen": "E gjelbër",
+    "colorDark": "E errët",
+    "shapeFromText": "Formë nga teksti",
+    "shapePlaceholder": "p.sh. trekëndësh ABC",
+    "shapeHint": "Vizatim determinist nga teksti (pa AI)",
+    "drawShape": "Vizato formën nga teksti",
+    "inkFailed": "Shkrimi me dorë nuk u njoh.",
+    "shapeNotUnderstood": "Forma nuk u kuptua: „{{description}}\"",
+    "shapePartial": "U vizatua, përveç: {{items}}",
+    "pdfFailed": "Eksportimi në PDF dështoi.",
+    "sessionUpdated": "Sesioni u përditësua.",
+    "sessionSaved": "Sesioni u ruajt përgjithmonë.",
+    "sessionSaveFailed": "Sesioni nuk u ruajt.",
+    "sessionName": "Sesioni {{date}}"
+  }
 }

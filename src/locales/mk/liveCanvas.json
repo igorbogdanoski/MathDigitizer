@@ -4,5 +4,28 @@
   "eraser": "Бришач",
   "thickness": "Дебелина",
   "undo": "Врати назад (Undo)",
-  "clearAll": "Избриши сè"
+  "clearAll": "Избриши сè",
+  "board": {
+    "pen": "Пенкало",
+    "eraser": "Бришач",
+    "undo": "Врати го мојот последен потег",
+    "redo": "Повтори го вратениот потег",
+    "setColor": "Постави боја: {{color}}",
+    "colorIndigo": "Индиго",
+    "colorRose": "Розева",
+    "colorGreen": "Зелена",
+    "colorDark": "Темна",
+    "shapeFromText": "Форма од текст",
+    "shapePlaceholder": "пр. триаголник ABC",
+    "shapeHint": "Детерминистички цртеж од текст (без AI)",
+    "drawShape": "Нацртај форма од текст",
+    "inkFailed": "Не успеавме да го препознаеме ракописот.",
+    "shapeNotUnderstood": "Не ја разбрав формата: „{{description}}\"",
+    "shapePartial": "Нацртано, освен: {{items}}",
+    "pdfFailed": "Грешка при експортирање во PDF.",
+    "sessionUpdated": "Сесијата е успешно ажурирана!",
+    "sessionSaved": "Сесијата е успешно зачувана трајно!",
+    "sessionSaveFailed": "Грешка при зачувување на сесијата.",
+    "sessionName": "Сесија {{date}}"
+  }
 }

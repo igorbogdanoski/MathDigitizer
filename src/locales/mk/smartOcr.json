@@ -50,7 +50,8 @@
     "scanningTitle": "Gemini 3.1 Pro OCR...",
     "scanningSubtitle": "Анализа на пиксели во тек",
     "drawHint": "Цртајте овде...",
-    "attachImageOrPdf": "Прикачи слика или PDF"
+    "attachImageOrPdf": "Прикачи слика или PDF",
+    "canvasLabel": "Платно за исечок: повлечи за да означиш дел од сликата"
   },
   "palette": {
     "insertSymbol": "Вметни симбол {{label}}"

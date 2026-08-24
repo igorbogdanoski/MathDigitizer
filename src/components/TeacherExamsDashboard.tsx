@@ -125,8 +125,8 @@ export const TeacherExamsDashboard = () => {
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
          <div>
-            <h1 className="text-3xl font-black text-slate-800">Dugga Центар за Оценување</h1>
-            <p className="text-slate-500">Управувајте со дигитални испити и прегледувајте ги решенијата.</p>
+            <h1 className="text-3xl font-black text-slate-800">{tExams('dashboard.title')}</h1>
+            <p className="text-slate-500">{tExams('dashboard.subtitle')}</p>
          </div>
       </div>
 
@@ -134,7 +134,7 @@ export const TeacherExamsDashboard = () => {
          {/* EXAM LIST */}
          <div className="lg:col-span-1 space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-2 mb-2 gap-2">
-               <h2 className="text-xl font-bold text-slate-700">Ваши Испити</h2>
+               <h2 className="text-xl font-bold text-slate-700">{tExams('dashboard.yourExams')}</h2>
                {uniqueGrades.length > 0 && (
                  <select
                    value={gradeFilter}
@@ -143,7 +143,7 @@ export const TeacherExamsDashboard = () => {
                    aria-label={t('ariaFilterByGrade')}
                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
                  >
-                   <option value="all">Сите Одделенија</option>
+                   <option value="all">{tExams('dashboard.allGrades')}</option>
                    {uniqueGrades.map(grade => (
                      <option key={grade as string} value={grade as string}>{grade as string}</option>
                    ))}
@@ -173,7 +173,7 @@ export const TeacherExamsDashboard = () => {
             {!selectedExam && (
                <div className="bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 h-96 flex flex-col items-center justify-center text-slate-400">
                   <FileText className="w-16 h-16 mb-4 opacity-50" />
-                  <p className="font-medium text-lg">Изберете испит за преглед</p>
+                  <p className="font-medium text-lg">{tExams('dashboard.pickExam')}</p>
                </div>
             )}
 
@@ -181,11 +181,11 @@ export const TeacherExamsDashboard = () => {
                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                   <div className="bg-slate-900 p-6 text-white">
                      <h2 className="text-2xl font-black">{selectedExam.test_data.title}</h2>
-                     <p className="text-slate-300 font-medium">Вкупно предавања: {attempts.length}</p>
+                     <p className="text-slate-300 font-medium">{tExams('dashboard.totalSubmissions', { count: attempts.length })}</p>
                   </div>
                   
                   <div className="divide-y divide-slate-100">
-                     {attempts.length === 0 && <div className="p-8 text-center text-slate-500">Сеуште нема предадени трудови.</div>}
+                     {attempts.length === 0 && <div className="p-8 text-center text-slate-500">{tExams('dashboard.noSubmissions')}</div>}
                      {attempts.map(attempt => (
                         <div key={attempt.id} className="p-6 hover:bg-slate-50 transition-colors flex flex-col md:flex-row gap-4 items-center justify-between">
                            <div className="flex-1 w-full">
@@ -193,11 +193,11 @@ export const TeacherExamsDashboard = () => {
                               <div className="flex flex-wrap gap-4 mt-2 text-sm font-medium text-slate-600">
                                  <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {attempt.anti_cheat?.time_spent_seconds ? Math.floor(attempt.anti_cheat.time_spent_seconds / 60) : 0} мин.</span>
                                  {attempt.anti_cheat && attempt.anti_cheat.tab_switches > 0 ? (
-                                    <span className="flex items-center gap-1 text-red-600 bg-red-50 px-2 rounded-md"><AlertTriangle className="w-4 h-4" /> {attempt.anti_cheat.tab_switches} напуштања</span>
+                                    <span className="flex items-center gap-1 text-red-600 bg-red-50 px-2 rounded-md"><AlertTriangle className="w-4 h-4" /> {tExams('dashboard.tabSwitches', { count: attempt.anti_cheat.tab_switches })}</span>
                                  ) : (
-                                    <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 rounded-md"><CheckCircle className="w-4 h-4" /> Чист фокус</span>
+                                    <span className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 rounded-md"><CheckCircle className="w-4 h-4" /> {tExams('dashboard.cleanFocus')}</span>
                                  )}
-                                 <span className="text-slate-400">• Предадено во {new Date(attempt.submitted_at).toLocaleTimeString('mk-MK')}</span>
+                                 <span className="text-slate-400">{tExams('dashboard.submittedAt', { time: new Date(attempt.submitted_at).toLocaleTimeString('mk-MK') })}</span>
                               </div>
                            </div>
                            <div className="flex items-center gap-4 w-full md:w-auto">
@@ -234,13 +234,13 @@ export const TeacherExamsDashboard = () => {
                <div className="space-y-6">
                   <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 sticky top-4 z-10 flex flex-col md:flex-row justify-between items-center gap-4">
                      <div>
-                        <Button variant="ghost" className="mb-2 text-slate-500 -ml-2" onClick={() => setIsGrading(null)}>← Назад кон листа</Button>
+                        <Button variant="ghost" className="mb-2 text-slate-500 -ml-2" onClick={() => setIsGrading(null)}>{tExams('dashboard.backToList')}</Button>
                         <h2 className="text-2xl font-black text-slate-800">{isGrading.student_name}</h2>
                         <div className="flex gap-2 mt-1">
                            {isGrading.anti_cheat && isGrading.anti_cheat.tab_switches > 0 ? (
-                              <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md flex items-center gap-1"><AlertTriangle className="w-3 h-3"/> Warning: {isGrading.anti_cheat.tab_switches} Напуштања на екран</span>
+                              <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md flex items-center gap-1"><AlertTriangle className="w-3 h-3"/> {tExams('dashboard.warnSwitches', { count: isGrading.anti_cheat.tab_switches })}</span>
                            ) : (
-                              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Испитот е решаван без напуштање</span>
+                              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md flex items-center gap-1"><CheckCircle className="w-3 h-3"/> {tExams('dashboard.noSwitches')}</span>
                            )}
                            <Button onClick={runAIGrading} disabled={isAIGrading} size="sm" className="ml-4 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 h-6 px-2 text-xs">
                               {isAIGrading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Wand2 className="w-3 h-3 mr-1" />} AI Сугестија
@@ -252,7 +252,7 @@ export const TeacherExamsDashboard = () => {
                           type="number" 
                           id="final-score"
                           defaultValue={isGrading.score ?? ''}
-                          placeholder="Поени..." 
+                          placeholder={tExams('dashboard.pointsPlaceholder')} 
                           className="w-24 h-12 text-center text-xl font-black border-2 border-slate-300 rounded-xl focus:border-indigo-500"
                         />
                         <Button 
@@ -261,7 +261,7 @@ export const TeacherExamsDashboard = () => {
                              if(input && input.value) handleUpdateScore(isGrading.id, Number(input.value));
                           }}
                           className="h-12 bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 rounded-xl"
-                        >Зачувај Оценка</Button>
+                        >{tExams('dashboard.saveGrade')}</Button>
                      </div>
                   </div>
 
@@ -284,9 +284,9 @@ export const TeacherExamsDashboard = () => {
                            </div>
                            
                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 ml-12">
-                              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Одговор од студент:</h4>
+                              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">{tExams('dashboard.studentAnswer')}</h4>
                               {studentAns === undefined || studentAns === null || studentAns === '' ? (
-                                 <span className="text-red-500 font-bold italic">Нема одговорено</span>
+                                 <span className="text-red-500 font-bold italic">{tExams('dashboard.noAnswer')}</span>
                               ) : (
                                  <div className="text-lg font-bold text-indigo-900">
                                     {q.type === 'multiple' || q.type === 'true-false' ? (
@@ -300,15 +300,15 @@ export const TeacherExamsDashboard = () => {
                               {aiFeedbacks[originalIndex] && (
                                  <div className="mt-4 p-3 bg-indigo-50 border border-indigo-100 rounded-lg animate-in fade-in slide-in-from-top-2">
                                     <div className="flex justify-between items-center mb-1">
-                                       <span className="text-xs font-bold text-indigo-500 uppercase flex items-center gap-1"><Wand2 className="w-3 h-3" /> AI Анализа</span>
-                                       <span className="text-sm font-black text-indigo-700">{aiFeedbacks[originalIndex].score} / {q.points || 0} поени</span>
+                                       <span className="text-xs font-bold text-indigo-500 uppercase flex items-center gap-1"><Wand2 className="w-3 h-3" /> {tExams('dashboard.aiAnalysis')}</span>
+                                       <span className="text-sm font-black text-indigo-700">{tExams('dashboard.pointsOf', { score: aiFeedbacks[originalIndex].score, max: q.points || 0 })}</span>
                                     </div>
                                     <p className="text-sm text-indigo-900 leading-relaxed font-medium">{aiFeedbacks[originalIndex].feedback}</p>
                                  </div>
                               )}
                            </div>
                            <div className="ml-12 mt-3 flex justify-between items-center text-sm">
-                               <div className="text-slate-500 font-medium">Максимални поени за задачата: <span className="font-bold text-slate-800">{q.points || 0}</span></div>
+                               <div className="text-slate-500 font-medium">{tExams('dashboard.maxPoints')} <span className="font-bold text-slate-800">{q.points || 0}</span></div>
                            </div>
                         </div>
                      );

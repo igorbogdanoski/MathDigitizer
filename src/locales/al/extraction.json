@@ -176,5 +176,8 @@
   "progressAnalyzingAi": "Duke analizuar përmes teknologjisë AI...",
   "progressAnalyzingDescription": "Gemini po analizon vizualisht dhe në mënyrë dëgjimore të gjitha shprehjet matematikore, grafikët dhe udhëzimet tekstuale në këtë moment. Procesi është kompleks për të ofruar saktësi maksimale 100%.",
   "seoDescription": "Vendosni një lidhje YouTube, imazh ose PDF për të nxjerrë detyra matematikore me dixhitalizim AI dhe LaTeX.",
-  "seoKeywords": "ekstraktim ai, matematikë, youtube matematikë, pdf ocr"
+  "seoKeywords": "ekstraktim ai, matematikë, youtube matematikë, pdf ocr",
+  "engine": {
+    "segmentedHint": "Nxjerrje agjentike e segmentuar për video të gjata: transkript i saktë sipas dritareve plus një kalim vizual për vizatimet dhe formulat në tabelë"
+  }
 }

@@ -148,5 +148,28 @@
     "gradingScale": "Скала на оценување (поени)",
     "generatedBy": "Изготвено со MathDigitizer Pro",
     "gradeLabel": "Оценка"
+  },
+  "preview": {
+    "enterQuestion": "Внеси прашање",
+    "enterOption": "Внеси опција",
+    "front": "Предна страна",
+    "back": "Задна страна (Решение)",
+    "enterSolution": "Внеси решение",
+    "enterSectionTitle": "Внеси наслов на секција",
+    "enterContent": "Внеси содржина",
+    "enterAnswerKey": "Внеси клуч со решенија",
+    "save": "Зачувај",
+    "editText": "Уреди Текст"
+  },
+  "grades": {
+    "allMixed": "Сите Одделенија / Мешано",
+    "primary": "{{roman}} Одделение",
+    "secondary": "{{roman}} Година (Средно)"
+  },
+  "languages": {
+    "mk": "Македонски",
+    "en": "English (Англиски)",
+    "ru": "Русский (Руски)",
+    "tr": "Türkçe (Турски)"
   }
 }

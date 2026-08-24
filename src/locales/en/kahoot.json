@@ -46,5 +46,31 @@
     "podiumPlace": "Place {{place}}: {{name}}, {{score}} points",
     "points": "{{score}} points",
     "leaveGame": "Leave game"
+  },
+  "player": {
+    "title": "Live Classroom",
+    "pinPlaceholder": "Game PIN",
+    "namePlaceholder": "Your name",
+    "join": "Join",
+    "joined": "You are in!",
+    "waitingTeacher": "Waiting for the teacher to start…",
+    "gameOver": "Game over!",
+    "seeBoard": "Look at the board at the front.",
+    "yourScore": "Your score",
+    "timeUp": "Time is up!",
+    "correct": "Correct!",
+    "wrong": "Wrong",
+    "points": "Points: {{score}}",
+    "pointsShort": "{{score}} points",
+    "waitingOthers": "Waiting for the other players…",
+    "timeUpShort": "Time is up",
+    "noAnswer": "You did not answer in time.",
+    "answerRecorded": "Your answer was recorded.",
+    "aiHelp": "AI help",
+    "answerOption": "Answer {{letter}}",
+    "errNotFound": "That game does not exist or has finished.",
+    "errBadPin": "Invalid PIN.",
+    "errStarted": "That game has already started.",
+    "errJoin": "Could not join the game."
   }
 }

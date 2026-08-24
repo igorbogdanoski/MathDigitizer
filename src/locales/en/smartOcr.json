@@ -50,7 +50,8 @@
     "scanningTitle": "Gemini 3.1 Pro OCR...",
     "scanningSubtitle": "Pixel analysis in progress",
     "drawHint": "Draw here...",
-    "attachImageOrPdf": "Attach image or PDF"
+    "attachImageOrPdf": "Attach image or PDF",
+    "canvasLabel": "Crop canvas: drag to select part of the image"
   },
   "palette": {
     "insertSymbol": "Insert symbol {{label}}"

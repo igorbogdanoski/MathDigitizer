@@ -145,6 +145,31 @@
       "confirm": "Confirm",
       "confirmSuccess": "Mapping confirmed.",
       "confirmError": "Could not confirm the mapping"
+    },
+    "status": {
+      "teachersOnly": "Teachers only.",
+      "officialSource": "Official curricula — BRO.GOV.MK ·",
+      "hours": "Hours",
+      "inFirestore": "In Firestore",
+      "staticTopics": "Static topics",
+      "coverage": "Coverage",
+      "firestoreEmpty": "Firestore is empty — AI generation is using static keyword RAG only. Run ingestion to enable embeddings.",
+      "rich_good": "good",
+      "rich_partial": "partial",
+      "rich_missing": "missing",
+      "model": "Model:",
+      "dimensions": "Dimensions:",
+      "context": "Context:",
+      "contextValue": "8,192 tokens",
+      "multimodal": "Multimodal:",
+      "languages": "Languages:",
+      "languagesValue": "100+ (including Macedonian)",
+      "consistency": "Consistency",
+      "ingesting": "Ingesting…",
+      "ingested": "topics ingested",
+      "working": "Working…",
+      "ingestTopics": "Ingest {{count}} topics",
+      "nextStep": "Next step (rich content):"
     }
   },
   "curriculumTestGen": {

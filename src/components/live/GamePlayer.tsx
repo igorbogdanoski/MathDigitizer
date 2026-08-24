@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { db } from '../../lib/firebase';
 import { doc, onSnapshot, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { LiveKahootSession } from '../../lib/schema';
@@ -9,6 +10,7 @@ import { playSound } from '../../lib/sound';
 import { generateKahootHint } from '../../lib/gemini';
 
 export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
+  const { t } = useTranslation('kahoot');
   const [pin, setPin] = useState(sessionPin || '');
   const [name, setName] = useState('');
   const [session, setSession] = useState<LiveKahootSession | null>(null);
@@ -43,7 +45,7 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
            return data;
         });
       } else {
-        setError('Играта не постои или е завршена.');
+        setError(t('player.errNotFound'));
       }
     });
     return () => unsub();
@@ -58,14 +60,14 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
       const docRef = doc(db, 'live_sessions', pin);
       const snap = await getDoc(docRef);
       if (!snap.exists()) {
-        setError('Неважечки ПИН код.');
+        setError(t('player.errBadPin'));
         setIsJoining(false);
         return;
       }
       
       const data = snap.data() as LiveKahootSession;
       if (data.status !== 'lobby') {
-        setError('Играта е веќе започната.');
+        setError(t('player.errStarted'));
         setIsJoining(false);
         return;
       }
@@ -83,7 +85,7 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
       window.location.search = `?pin=${pin}`;
 
     } catch (err) {
-      setError('Грешка при приклучување.');
+      setError(t('player.errJoin'));
     } finally {
       setIsJoining(false);
     }
@@ -122,7 +124,7 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white relative">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
         <div className="bg-white p-8 rounded-3xl max-w-sm w-full mx-auto relative z-10 shadow-2xl">
-          <h1 className="text-3xl font-black text-slate-900 text-center mb-8 tracking-tight">Жива Училница<span className="text-indigo-600">.</span></h1>
+          <h1 className="text-3xl font-black text-slate-900 text-center mb-8 tracking-tight">{t('player.title')}<span className="text-indigo-600">.</span></h1>
           
           <form onSubmit={joinGame} className="space-y-4">
             <div>
@@ -130,7 +132,7 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
                  type="text" 
                  value={pin}
                  onChange={(e) => setPin(e.target.value)}
-                 placeholder="ПИН на играта"
+                 placeholder={t('player.pinPlaceholder')}
                  disabled={!!sessionPin && sessionPin !== ''}
                  className="w-full h-16 text-center text-2xl font-bold rounded-xl bg-slate-100 border-2 border-slate-200 text-slate-900 focus:border-indigo-500 focus:outline-none placeholder:font-medium placeholder:text-slate-400"
                  required
@@ -141,7 +143,7 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
                  type="text" 
                  value={name}
                  onChange={(e) => setName(e.target.value)}
-                 placeholder="Твоето Име"
+                 placeholder={t('player.namePlaceholder')}
                  className="w-full h-16 text-center text-xl font-bold rounded-xl bg-slate-100 border-2 border-slate-200 text-slate-900 focus:border-indigo-500 focus:outline-none placeholder:font-medium placeholder:text-slate-400"
                  required
                />
@@ -150,7 +152,7 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
             {error && <p className="text-red-500 text-center font-bold text-sm">{error}</p>}
             
             <Button type="submit" disabled={isJoining} className="w-full h-16 text-xl font-black bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-xl shadow-slate-900/20">
-              {isJoining ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'Влези'}
+              {isJoining ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : t('player.join')}
             </Button>
           </form>
         </div>
@@ -164,8 +166,8 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
   if (session.status === 'lobby') {
     return (
       <div className="min-h-screen bg-indigo-600 flex flex-col items-center justify-center p-6 text-white text-center">
-        <h2 className="text-4xl font-black mb-4">Се приклучивте!</h2>
-        <p className="text-2xl font-bold opacity-80 mb-12">Го чекаме наставникот да започне...</p>
+        <h2 className="text-4xl font-black mb-4">{t('player.joined')}</h2>
+        <p className="text-2xl font-bold opacity-80 mb-12">{t('player.waitingTeacher')}</p>
         <div className="bg-white/20 px-8 py-4 rounded-full text-2xl font-black">
           {me?.name}
         </div>
@@ -178,10 +180,10 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
     return (
       <div className="min-h-screen bg-emerald-600 flex flex-col items-center justify-center p-6 text-white text-center">
         <Trophy className="w-24 h-24 mb-6 shadow-black/20 drop-shadow-xl" />
-        <h2 className="text-5xl font-black mb-4">Играта Заврши!</h2>
-        <p className="text-2xl font-bold opacity-80 mb-12">Погледнете ја таблата кај наставникот.</p>
+        <h2 className="text-5xl font-black mb-4">{t('player.gameOver')}</h2>
+        <p className="text-2xl font-bold opacity-80 mb-12">{t('player.seeBoard')}</p>
         <div className="bg-white/20 px-8 py-4 rounded-3xl text-3xl font-black text-center min-w-[200px]">
-          <span className="block text-sm opacity-70 uppercase tracking-widest mb-1">Твој резултат</span>
+          <span className="block text-sm opacity-70 uppercase tracking-widest mb-1">{t('player.yourScore')}</span>
           {me?.score}
         </div>
       </div>
@@ -233,23 +235,23 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
               <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-6">
                 <span className="text-5xl font-black">⏳</span>
               </div>
-              <h2 className="text-4xl font-black mb-4">Времето истече!</h2>
+              <h2 className="text-4xl font-black mb-4">{t('player.timeUp')}</h2>
             </>
           ) : iWasCorrect ? (
             <>
               <CheckCircle2 className="w-24 h-24 mb-6" />
-              <h2 className="text-4xl font-black mb-4">Точно!</h2>
+              <h2 className="text-4xl font-black mb-4">{t('player.correct')}</h2>
             </>
           ) : (
             <>
               <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-6">
                 <span className="text-5xl font-black">X</span>
               </div>
-              <h2 className="text-4xl font-black mb-4">Погрешно</h2>
+              <h2 className="text-4xl font-black mb-4">{t('player.wrong')}</h2>
             </>
           )}
           <div className="bg-black/20 px-8 py-4 rounded-full text-2xl font-black mt-8">
-            Бодови: {me?.score}
+            {t('player.points', { score: me?.score ?? 0 })}
           </div>
         </div>
       );
@@ -258,8 +260,8 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
     return (
       <div className="min-h-screen bg-slate-200 flex flex-col items-center justify-center p-6 text-slate-800 text-center">
         <div className="w-16 h-16 border-4 border-slate-400 border-t-slate-800 rounded-full animate-spin mb-8"></div>
-        <h2 className="text-3xl font-black mb-4">{isTimeout ? 'Времето истече' : 'Чекаме другите играчи...'}</h2>
-        <p className="text-xl font-bold opacity-60">{isTimeout ? 'За жал не стигнавте да одговорите.' : 'Одговорот е забележан.'}</p>
+        <h2 className="text-3xl font-black mb-4">{isTimeout ? t('player.timeUpShort') : t('player.waitingOthers')}</h2>
+        <p className="text-xl font-bold opacity-60">{isTimeout ? t('player.noAnswer') : t('player.answerRecorded')}</p>
       </div>
     );
   }
@@ -311,10 +313,10 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
            {!activeHint && (
              <Button size="sm" variant="outline" onClick={requestHint} disabled={isHintLoading} className="text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100 font-bold hidden sm:flex">
                {isHintLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lightbulb className="w-4 h-4 mr-1" />}
-               AI Помош
+               {t('player.aiHelp')}
              </Button>
            )}
-           <span className="font-black text-indigo-600 px-3 py-1 bg-indigo-50 rounded-lg">{me?.score} бодови</span>
+           <span className="font-black text-indigo-600 px-3 py-1 bg-indigo-50 rounded-lg">{t('player.pointsShort', { score: me?.score ?? 0 })}</span>
         </div>
       </div>
       
@@ -335,7 +337,7 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
           <button
             key={i}
             onClick={() => submitAnswer(i)}
-            aria-label={`Одговор ${String.fromCharCode(65 + i)}`}
+            aria-label={t('player.answerOption', { letter: String.fromCharCode(65 + i) })}
             className={`${colors[i % colors.length]} rounded-2xl shadow-[0_6px_0_rgba(0,0,0,0.2)] active:shadow-none active:translate-y-[6px] transition-all flex flex-col items-center justify-center p-4 min-h-[120px]`}
           >
             <span className="text-white/50 font-black text-2xl mb-2">{String.fromCharCode(65+i)}</span>

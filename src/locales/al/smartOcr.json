@@ -50,7 +50,8 @@
     "scanningTitle": "Gemini 3.1 Pro OCR...",
     "scanningSubtitle": "Analiza e pikselave në progres",
     "drawHint": "Vizatoni këtu...",
-    "attachImageOrPdf": "Bashkëngjit imazh ose PDF"
+    "attachImageOrPdf": "Bashkëngjit imazh ose PDF",
+    "canvasLabel": "Kanavacë prerjeje: tërhiqni për të zgjedhur një pjesë të imazhit"
   },
   "palette": {
     "insertSymbol": "Fut simbolin {{label}}"

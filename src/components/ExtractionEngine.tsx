@@ -688,7 +688,7 @@ export const ExtractionEngine: React.FC<ExtractionEngineProps> = ({ setActiveTut
                     </select>
                     <label
                       className="flex items-center gap-1.5 text-xs text-indigo-100 cursor-pointer select-none"
-                      title="Сегментна агентска екстракција за долги видеа: прецизен транскрипт по прозорци + визуелен пасус за цртежи и формули на табла"
+                      title={t('engine.segmentedHint')}
                     >
                       <input
                         type="checkbox"

@@ -145,6 +145,31 @@
       "confirm": "Потврди",
       "confirmSuccess": "Мапирањето е потврдено.",
       "confirmError": "Грешка при потврдување"
+    },
+    "status": {
+      "teachersOnly": "Само за наставници.",
+      "officialSource": "Официјални наставни програми — БРО.ГОВ.МК ·",
+      "hours": "Часови",
+      "inFirestore": "Во Firestore",
+      "staticTopics": "Static теми",
+      "coverage": "Покриеност",
+      "firestoreEmpty": "Firestore е празен — AI генерацијата користи само static keyword RAG. Изврши ингестија за да ги активираш embeddings.",
+      "rich_good": "добро",
+      "rich_partial": "делумно",
+      "rich_missing": "недостасува",
+      "model": "Модел:",
+      "dimensions": "Димензии:",
+      "context": "Контекст:",
+      "contextValue": "8 192 токени",
+      "multimodal": "Мулти-модален:",
+      "languages": "Јазици:",
+      "languagesValue": "100+ (вклучувајќи македонски)",
+      "consistency": "Конзистентност",
+      "ingesting": "Внесување…",
+      "ingested": "теми внесени",
+      "working": "Работи…",
+      "ingestTopics": "Ингестирај {{count}} теми",
+      "nextStep": "Следен чекор (богата содржина):"
     }
   },
   "curriculumTestGen": {

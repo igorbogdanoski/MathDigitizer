@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Stage, Layer, Line as KonvaLine } from 'react-konva';
 import { io, Socket } from 'socket.io-client';
 import { Brain, Eraser, PenTool, Save, Loader2, Download, Undo2, Redo2, Shapes } from 'lucide-react';
@@ -46,6 +47,7 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
   roomId = 'global-math-board',
   isTeacher = false
 }) => {
+  const { t } = useTranslation('liveCanvas');
   const [socket, setSocket] = useState<Socket | null>(null);
   const [board, setBoard] = useState<BoardState>(() => createBoardState());
   const [tool, setTool] = useState<'pen' | 'eraser'>('pen');
@@ -332,7 +334,7 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
       }
     } catch (e) {
       console.error("Failed to recognize ink:", e);
-      showToast("Не успеавме да го препознаеме ракописот.", 'error');
+      showToast(t('board.inkFailed'), 'error');
     } finally {
       setIsRecognizing(false);
     }
@@ -349,7 +351,7 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
 
     const { code, unrecognized } = describeToJsxGraphBlock(description);
     if (!code) {
-      showToast(`Не ја разбрав формата: „${description}"`, 'error');
+      showToast(t('board.shapeNotUnderstood', { description }), 'error');
       return;
     }
 
@@ -366,7 +368,7 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
     setShapeText('');
 
     if (unrecognized.length > 0) {
-      showToast(`Нацртано, освен: ${unrecognized.join('; ')}`, 'info');
+      showToast(t('board.shapePartial', { items: unrecognized.join('; ') }), 'info');
     }
   };
 
@@ -400,7 +402,7 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
        pdf.save(`Сесија_${new Date().toLocaleDateString('mk-MK')}.pdf`);
      } catch (e) {
        console.error("PDF Export error:", e);
-       showToast("Грешка при експортирање во PDF.", 'error');
+       showToast(t('board.pdfFailed'), 'error');
      }
   };
 
@@ -414,22 +416,22 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
              ...payload,
              updatedAt: serverTimestamp()
           });
-          showToast("Сесијата е успешно ажурирана!", 'success');
+          showToast(t('board.sessionUpdated'), 'success');
        } else {
           const docRef = await addDoc(collection(db, 'whiteboard_sessions'), {
              roomId,
-             title: 'Сесија ' + new Date().toLocaleDateString('mk-MK'),
+             title: t('board.sessionName', { date: new Date().toLocaleDateString('mk-MK') }),
              ...payload,
              authorId: auth.currentUser.uid,
              createdAt: serverTimestamp(),
              updatedAt: serverTimestamp()
           });
           setSessionId(docRef.id);
-          showToast("Сесијата е успешно зачувана трајно!", 'success');
+          showToast(t('board.sessionSaved'), 'success');
        }
      } catch (e) {
        console.error("Save error:", e);
-       showToast("Грешка при зачувување на сесијата.", 'error');
+       showToast(t('board.sessionSaveFailed'), 'error');
      } finally {
        setIsSaving(false);
      }
@@ -457,9 +459,9 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
             <Button
                variant={tool === 'pen' ? 'default' : 'outline'}
                onClick={() => setTool('pen')}
-               aria-label="Пенкало"
+               aria-label={t('board.pen')}
                aria-pressed={tool === 'pen'}
-               title="Пенкало"
+               title={t('board.pen')}
                className={`h-10 w-10 p-0 rounded-xl ${tool === 'pen' ? 'bg-indigo-600 shadow-md' : 'shadow-sm'}`}
             >
                <PenTool className="w-5 h-5" aria-hidden="true" />
@@ -467,9 +469,9 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
             <Button
                variant={tool === 'eraser' ? 'default' : 'outline'}
                onClick={() => setTool('eraser')}
-               aria-label="Бришач"
+               aria-label={t('board.eraser')}
                aria-pressed={tool === 'eraser'}
-               title="Бришач"
+               title={t('board.eraser')}
                className={`h-10 w-10 p-0 rounded-xl ${tool === 'eraser' ? 'bg-slate-800 shadow-md text-white' : 'shadow-sm text-slate-600'}`}
             >
                <Eraser className="w-5 h-5" aria-hidden="true" />
@@ -480,8 +482,8 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
                   variant="outline"
                   onClick={handleUndo}
                   disabled={!ownLastStroke}
-                  aria-label="Врати го мојот последен потег"
-                  title="Врати го мојот последен потег"
+                  aria-label={t('board.undo')}
+                  title={t('board.undo')}
                   className="h-10 w-10 p-0 rounded-xl shadow-sm text-slate-600"
                >
                   <Undo2 className="w-5 h-5" aria-hidden="true" />
@@ -490,8 +492,8 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
                   variant="outline"
                   onClick={handleRedo}
                   disabled={!canRedo}
-                  aria-label="Повтори го вратениот потег"
-                  title="Повтори го вратениот потег"
+                  aria-label={t('board.redo')}
+                  title={t('board.redo')}
                   className="h-10 w-10 p-0 rounded-xl shadow-sm text-slate-600"
                >
                   <Redo2 className="w-5 h-5" aria-hidden="true" />
@@ -500,17 +502,17 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
 
             <div className="flex items-center gap-2 px-3 border-l border-slate-200 ml-2">
                {[
-                 { value: '#4f46e5', className: 'bg-indigo-600', label: 'Индиго' },
-                 { value: '#e11d48', className: 'bg-rose-600', label: 'Розева' },
-                 { value: '#16a34a', className: 'bg-green-600', label: 'Зелена' },
-                 { value: '#0f172a', className: 'bg-slate-900', label: 'Темна' }
+                 { value: '#4f46e5', className: 'bg-indigo-600', label: t('board.colorIndigo') },
+                 { value: '#e11d48', className: 'bg-rose-600', label: t('board.colorRose') },
+                 { value: '#16a34a', className: 'bg-green-600', label: t('board.colorGreen') },
+                 { value: '#0f172a', className: 'bg-slate-900', label: t('board.colorDark') }
                ].map((swatch) => (
                  <button
                    type="button"
                    key={swatch.value}
                    onClick={() => { setColor(swatch.value); setTool('pen'); }}
-                   aria-label={`Постави боја: ${swatch.label}`}
-                   title={`Постави боја: ${swatch.label}`}
+                   aria-label={t('board.setColor', { color: swatch.label })}
+                   title={t('board.setColor', { color: swatch.label })}
                    className={`w-7 h-7 rounded-full transition-transform shadow-sm ${swatch.className} ${color === swatch.value && tool === 'pen' ? 'scale-125 ring-2 ring-offset-2 ring-indigo-500' : ''}`}
                  />
                ))}
@@ -518,23 +520,23 @@ export const MultiplayerCanvas: React.FC<MultiplayerCanvasProps> = ({
          </div>
          <div className="flex items-center gap-3">
              <div className="flex items-center gap-2">
-               <label htmlFor="shape-from-text" className="sr-only">Форма од текст</label>
+               <label htmlFor="shape-from-text" className="sr-only">{t('board.shapeFromText')}</label>
                <input
                  id="shape-from-text"
                  type="text"
                  value={shapeText}
                  onChange={(e) => setShapeText(e.target.value)}
                  onKeyDown={(e) => { if (e.key === 'Enter') insertShapeFromText(); }}
-                 placeholder="пр. триаголник ABC"
-                 title="Детерминистички цртеж од текст (без AI)"
+                 placeholder={t('board.shapePlaceholder')}
+                 title={t('board.shapeHint')}
                  className="h-10 w-44 px-3 rounded-xl border border-slate-300 text-sm text-slate-700 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                />
                <Button
                  onClick={insertShapeFromText}
                  disabled={!shapeText.trim()}
                  variant="outline"
-                 aria-label="Нацртај форма од текст"
-                 title="Нацртај форма од текст"
+                 aria-label={t('board.drawShape')}
+                 title={t('board.drawShape')}
                  className="h-10 w-10 p-0 rounded-xl shadow-sm text-slate-600"
                >
                  <Shapes className="w-5 h-5" aria-hidden="true" />

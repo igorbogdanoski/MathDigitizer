@@ -145,6 +145,31 @@
       "confirm": "Konfirmo",
       "confirmSuccess": "Lidhja u konfirmua.",
       "confirmError": "Nuk u konfirmua lidhja"
+    },
+    "status": {
+      "teachersOnly": "Vetëm për mësues.",
+      "officialSource": "Programet zyrtare — BRO.GOV.MK ·",
+      "hours": "Orë",
+      "inFirestore": "Në Firestore",
+      "staticTopics": "Tema statike",
+      "coverage": "Mbulimi",
+      "firestoreEmpty": "Firestore është bosh — gjenerimi me AI po përdor vetëm RAG me fjalë kyçe. Kryeni importimin për të aktivizuar embeddings.",
+      "rich_good": "mirë",
+      "rich_partial": "pjesërisht",
+      "rich_missing": "mungon",
+      "model": "Modeli:",
+      "dimensions": "Dimensionet:",
+      "context": "Konteksti:",
+      "contextValue": "8 192 tokena",
+      "multimodal": "Multimodal:",
+      "languages": "Gjuhët:",
+      "languagesValue": "100+ (përfshirë maqedonishten)",
+      "consistency": "Qëndrueshmëria",
+      "ingesting": "Duke importuar…",
+      "ingested": "tema të importuara",
+      "working": "Duke punuar…",
+      "ingestTopics": "Importo {{count}} tema",
+      "nextStep": "Hapi tjetër (përmbajtje e pasur):"
     }
   },
   "curriculumTestGen": {

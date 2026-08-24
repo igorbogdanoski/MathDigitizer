@@ -148,5 +148,28 @@
     "gradingScale": "Grading scale (points)",
     "generatedBy": "Prepared with MathDigitizer Pro",
     "gradeLabel": "Grade"
+  },
+  "preview": {
+    "enterQuestion": "Enter a question",
+    "enterOption": "Enter an option",
+    "front": "Front",
+    "back": "Back (answer)",
+    "enterSolution": "Enter the solution",
+    "enterSectionTitle": "Enter a section title",
+    "enterContent": "Enter the content",
+    "enterAnswerKey": "Enter the answer key",
+    "save": "Save",
+    "editText": "Edit text"
+  },
+  "grades": {
+    "allMixed": "All grades / mixed",
+    "primary": "Grade {{roman}}",
+    "secondary": "Year {{roman}} (secondary)"
+  },
+  "languages": {
+    "mk": "Macedonian",
+    "en": "English",
+    "ru": "Russian",
+    "tr": "Turkish"
   }
 }

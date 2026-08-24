@@ -176,5 +176,8 @@
   "progressAnalyzingAi": "Analyzing via AI technology...",
   "progressAnalyzingDescription": "Gemini is visually and audibly analyzing all math expressions, charts and textual directions at this moment. The process is complex to offer maximum 100% accuracy.",
   "seoDescription": "Enter a YouTube link, image or PDF to extract math tasks with AI digitization and LaTeX.",
-  "seoKeywords": "ai extraction, mathematics, youtube math, pdf ocr"
+  "seoKeywords": "ai extraction, mathematics, youtube math, pdf ocr",
+  "engine": {
+    "segmentedHint": "Segmented agentic extraction for long videos: a precise transcript per window plus a visual pass for board drawings and formulas"
+  }
 }

@@ -46,5 +46,31 @@
     "podiumPlace": "Vendi {{place}}: {{name}}, {{score}} pikë",
     "points": "{{score}} pikë",
     "leaveGame": "Dil nga loja"
+  },
+  "player": {
+    "title": "Klasa e drejtpërdrejtë",
+    "pinPlaceholder": "PIN-i i lojës",
+    "namePlaceholder": "Emri yt",
+    "join": "Hyr",
+    "joined": "U bashkuat!",
+    "waitingTeacher": "Po presim mësuesin të fillojë…",
+    "gameOver": "Loja mbaroi!",
+    "seeBoard": "Shikoni tabelën te mësuesi.",
+    "yourScore": "Rezultati yt",
+    "timeUp": "Koha mbaroi!",
+    "correct": "Saktë!",
+    "wrong": "Gabim",
+    "points": "Pikë: {{score}}",
+    "pointsShort": "{{score}} pikë",
+    "waitingOthers": "Po presim lojtarët e tjerë…",
+    "timeUpShort": "Koha mbaroi",
+    "noAnswer": "Nuk arritët të përgjigjeni në kohë.",
+    "answerRecorded": "Përgjigjja u regjistrua.",
+    "aiHelp": "Ndihmë AI",
+    "answerOption": "Përgjigjja {{letter}}",
+    "errNotFound": "Kjo lojë nuk ekziston ose ka përfunduar.",
+    "errBadPin": "PIN i pavlefshëm.",
+    "errStarted": "Kjo lojë ka filluar tashmë.",
+    "errJoin": "Bashkimi në lojë dështoi."
   }
 }

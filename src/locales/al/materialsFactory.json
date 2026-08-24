@@ -148,5 +148,28 @@
     "gradingScale": "Shkalla e vlerësimit (pikë)",
     "generatedBy": "Përgatitur me MathDigitizer Pro",
     "gradeLabel": "Nota"
+  },
+  "preview": {
+    "enterQuestion": "Shkruani pyetjen",
+    "enterOption": "Shkruani opsionin",
+    "front": "Ana e parme",
+    "back": "Ana e pasme (zgjidhja)",
+    "enterSolution": "Shkruani zgjidhjen",
+    "enterSectionTitle": "Shkruani titullin e seksionit",
+    "enterContent": "Shkruani përmbajtjen",
+    "enterAnswerKey": "Shkruani çelësin e zgjidhjeve",
+    "save": "Ruaj",
+    "editText": "Redakto tekstin"
+  },
+  "grades": {
+    "allMixed": "Të gjitha klasat / të përziera",
+    "primary": "Klasa {{roman}}",
+    "secondary": "Viti {{roman}} (i mesëm)"
+  },
+  "languages": {
+    "mk": "Maqedonisht",
+    "en": "Anglisht",
+    "ru": "Rusisht",
+    "tr": "Turqisht"
   }
 }

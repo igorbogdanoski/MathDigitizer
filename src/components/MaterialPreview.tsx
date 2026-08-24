@@ -248,7 +248,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                         onChange={(e) => updateNestedField(`questions.${idx}.question`, e.target.value)}
                         title={`Прашање ${idx + 1}`}
                         aria-label={`Прашање ${idx + 1}`}
-                        placeholder="Внеси прашање"
+                        placeholder={t('materialsFactory:preview.enterQuestion')}
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                       />
                     ) : (
@@ -272,7 +272,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                               onChange={(e) => updateNestedField(`questions.${idx}.options.${optIdx}`, e.target.value)}
                               title={`Опција ${String.fromCharCode(65 + optIdx)} за прашање ${idx + 1}`}
                               aria-label={`Опција ${String.fromCharCode(65 + optIdx)} за прашање ${idx + 1}`}
-                              placeholder="Внеси опција"
+                              placeholder={t('materialsFactory:preview.enterOption')}
                               className="flex-1 bg-transparent border-none focus:ring-0 text-sm outline-none"
                             />
                           ) : (
@@ -300,14 +300,14 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                 {/* Front */}
                 <Card className="absolute inset-0 h-full w-full bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 [backface-visibility:hidden]">
                   <CardContent className="h-full flex flex-col items-center justify-center p-6 text-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Предна страна</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">{t('materialsFactory:preview.front')}</span>
                     {isEditing ? (
                       <textarea
                         value={card.front}
                         onChange={(e) => updateNestedField(`cards.${idx}.front`, e.target.value)}
                         title={`Предна страна на картичка ${idx + 1}`}
                         aria-label={`Предна страна на картичка ${idx + 1}`}
-                        placeholder="Внеси прашање"
+                        placeholder={t('materialsFactory:preview.enterQuestion')}
                         className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none h-32"
                       />
                     ) : (
@@ -320,14 +320,14 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                 {/* Back */}
                 <Card className="absolute inset-0 h-full w-full bg-indigo-600 text-white [backface-visibility:hidden] [transform:rotateY(180deg)]">
                   <CardContent className="h-full flex flex-col items-center justify-center p-6 text-center">
-                    <span className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-4">Задна страна (Решение)</span>
+                    <span className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-4">{t('materialsFactory:preview.back')}</span>
                     {isEditing ? (
                       <textarea
                         value={card.back}
                         onChange={(e) => updateNestedField(`cards.${idx}.back`, e.target.value)}
                         title={`Задна страна на картичка ${idx + 1}`}
                         aria-label={`Задна страна на картичка ${idx + 1}`}
-                        placeholder="Внеси решение"
+                        placeholder={t('materialsFactory:preview.enterSolution')}
                         className="w-full bg-indigo-700 border border-indigo-500 rounded-xl p-3 text-sm text-white focus:ring-2 focus:ring-white/30 outline-none h-32"
                       />
                     ) : (
@@ -422,7 +422,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                            onChange={(e) => updateNestedField(`sections.${idx}.heading`, e.target.value)}
                            title={`Наслов на секција ${idx + 1}`}
                            aria-label={`Наслов на секција ${idx + 1}`}
-                           placeholder="Внеси наслов на секција"
+                           placeholder={t('materialsFactory:preview.enterSectionTitle')}
                            className="bg-indigo-50/50 border-b border-indigo-200 focus:border-indigo-500 outline-none font-bold w-full"
                          />
                        ) : (
@@ -436,7 +436,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                           onChange={(e) => updateNestedField(`sections.${idx}.content`, e.target.value)}
                           title={`Содржина на секција ${idx + 1}`}
                           aria-label={`Содржина на секција ${idx + 1}`}
-                          placeholder="Внеси содржина"
+                          placeholder={t('materialsFactory:preview.enterContent')}
                           className="w-full bg-amber-50/50 border border-amber-200 rounded-xl p-4 text-sm focus:ring-2 focus:ring-amber-500 outline-none h-40"
                         />
                       ) : (
@@ -469,7 +469,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
                   onChange={(e) => updateNestedField('answerKey', e.target.value)}
                   title={t('materialsFactory:ariaAnswerKey')}
                   aria-label={t('materialsFactory:ariaAnswerKey')}
-                  placeholder="Внеси клуч со решенија"
+                  placeholder={t('materialsFactory:preview.enterAnswerKey')}
                   className="w-full bg-white border border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-indigo-500 outline-none h-64"
                 />
               ) : (
@@ -527,7 +527,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
               onClick={() => setIsEditing(!isEditing)}
               className={`${isEditing ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-inner' : 'bg-white text-slate-700 hover:bg-slate-50 hover:text-indigo-600'} rounded-xl h-11`}
             >
-              {isEditing ? <><Save className="w-4 h-4 mr-2" />Зачувај</> : <><Edit3 className="w-4 h-4 mr-2" />Уреди Текст</>}
+              {isEditing ? <><Save className="w-4 h-4 mr-2" />{t('materialsFactory:preview.save')}</> : <><Edit3 className="w-4 h-4 mr-2" />{t('materialsFactory:preview.editText')}</>}
             </Button>
 
             {type === 'quiz' && (

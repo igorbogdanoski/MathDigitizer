@@ -232,10 +232,10 @@ export default function MaterialsFactory() {
               title={t('settings.languageTitle')}
               className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="mk">Македонски</option>
-              <option value="en">English (Англиски)</option>
-              <option value="ru">Русский (Руски)</option>
-              <option value="tr">Türkçe (Турски)</option>
+              <option value="mk">{t('languages.mk')}</option>
+              <option value="en">{t('languages.en')}</option>
+              <option value="ru">{t('languages.ru')}</option>
+              <option value="tr">{t('languages.tr')}</option>
             </select>
           </div>
           
@@ -249,20 +249,20 @@ export default function MaterialsFactory() {
                title={t('settings.gradeTitle')}
                className="text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 min-w-40"
              >
-               <option value="Сите Одделенија / Мешано">Сите Одделенија / Мешано</option>
-               <option value="I Одделение">I Одделение</option>
-               <option value="II Одделение">II Одделение</option>
-               <option value="III Одделение">III Одделение</option>
-               <option value="IV Одделение">IV Одделение</option>
-               <option value="V Одделение">V Одделение</option>
-               <option value="VI Одделение">VI Одделение</option>
-               <option value="VII Одделение">VII Одделение</option>
-               <option value="VIII Одделение">VIII Одделение</option>
-               <option value="IX Одделение">IX Одделение</option>
-               <option value="I Година (Средно)">I Година (Средно)</option>
-               <option value="II Година (Средно)">II Година (Средно)</option>
-               <option value="III Година (Средно)">III Година (Средно)</option>
-               <option value="IV Година (Средно)">IV Година (Средно)</option>
+               <option value="Сите Одделенија / Мешано">{t('grades.allMixed')}</option>
+               <option value="I Одделение">{t('grades.primary', { roman: 'I' })}</option>
+               <option value="II Одделение">{t('grades.primary', { roman: 'II' })}</option>
+               <option value="III Одделение">{t('grades.primary', { roman: 'III' })}</option>
+               <option value="IV Одделение">{t('grades.primary', { roman: 'IV' })}</option>
+               <option value="V Одделение">{t('grades.primary', { roman: 'V' })}</option>
+               <option value="VI Одделение">{t('grades.primary', { roman: 'VI' })}</option>
+               <option value="VII Одделение">{t('grades.primary', { roman: 'VII' })}</option>
+               <option value="VIII Одделение">{t('grades.primary', { roman: 'VIII' })}</option>
+               <option value="IX Одделение">{t('grades.primary', { roman: 'IX' })}</option>
+               <option value="I Година (Средно)">{t('grades.secondary', { roman: 'I' })}</option>
+               <option value="II Година (Средно)">{t('grades.secondary', { roman: 'II' })}</option>
+               <option value="III Година (Средно)">{t('grades.secondary', { roman: 'III' })}</option>
+               <option value="IV Година (Средно)">{t('grades.secondary', { roman: 'IV' })}</option>
              </select>
           </div>
         </div>

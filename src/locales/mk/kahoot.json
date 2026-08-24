@@ -46,5 +46,31 @@
     "podiumPlace": "{{place}}. место: {{name}}, {{score}} бодови",
     "points": "{{score}} бодови",
     "leaveGame": "Напушти ја играта"
+  },
+  "player": {
+    "title": "Жива Училница",
+    "pinPlaceholder": "ПИН на играта",
+    "namePlaceholder": "Твоето Име",
+    "join": "Влези",
+    "joined": "Се приклучивте!",
+    "waitingTeacher": "Го чекаме наставникот да започне…",
+    "gameOver": "Играта Заврши!",
+    "seeBoard": "Погледнете ја таблата кај наставникот.",
+    "yourScore": "Твој резултат",
+    "timeUp": "Времето истече!",
+    "correct": "Точно!",
+    "wrong": "Погрешно",
+    "points": "Бодови: {{score}}",
+    "pointsShort": "{{score}} бодови",
+    "waitingOthers": "Чекаме други играчи…",
+    "timeUpShort": "Времето истече",
+    "noAnswer": "За жал не стигнавте да одговорите.",
+    "answerRecorded": "Одговорот е забележан.",
+    "aiHelp": "AI Помош",
+    "answerOption": "Одговор {{letter}}",
+    "errNotFound": "Играта не постои или е завршена.",
+    "errBadPin": "Неважечки ПИН код.",
+    "errStarted": "Играта е веќе започната.",
+    "errJoin": "Грешка при приклучување."
   }
 }
