@@ -431,6 +431,93 @@ describe('Firestore Security Rules', () => {
     });
   });
 
+  describe('concept_maps collection', () => {
+    const asTeacher = async (uid: string) => {
+      const teacher = testEnv.authenticatedContext(uid);
+      await setDoc(doc(teacher.firestore(), 'users', uid), {
+        uid, email: `${uid}@test.com`, displayName: 'Teacher', role: 'teacher',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      });
+      return teacher;
+    };
+
+    const map = (over: Record<string, unknown> = {}) => ({
+      id: 'cm1',
+      ownerId: 'teacher1',
+      title: 'Дропки',
+      nodes: [{ id: 'a', label: 'Дропка', x: 0, y: 0, taskIds: [], outcomeCodes: [] }],
+      edges: [],
+      updatedAt: '2026-08-25T10:00:00.000Z',
+      ...over,
+    });
+
+    it('should ALLOW a teacher to create their own map', async () => {
+      const teacher = await asTeacher('teacher1');
+      await assertSucceeds(setDoc(doc(teacher.firestore(), 'concept_maps', 'cm1'), map()));
+    });
+
+    it('should DENY creating a map owned by somebody else', async () => {
+      const teacher = await asTeacher('teacher1');
+      await assertFails(setDoc(doc(teacher.firestore(), 'concept_maps', 'cm1'), map({
+        ownerId: 'teacher2',
+      })));
+    });
+
+    it('should DENY another teacher reading it', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'concept_maps', 'cm1'), map());
+      });
+
+      const other = await asTeacher('teacher2');
+      await assertFails(getDoc(doc(other.firestore(), 'concept_maps', 'cm1')));
+    });
+
+    it('should ALLOW the owner to rewrite the whole map', async () => {
+      // The map IS the edit: nodes and edges change together on every save.
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'concept_maps', 'cm1'), map());
+      });
+
+      const teacher = await asTeacher('teacher1');
+      await assertSucceeds(updateDoc(doc(teacher.firestore(), 'concept_maps', 'cm1'), {
+        nodes: [
+          { id: 'a', label: 'Дропка', x: 10, y: 10, taskIds: [], outcomeCodes: ['МА.5.2.1'] },
+          { id: 'b', label: 'Именител', x: 90, y: 10, taskIds: [], outcomeCodes: [] },
+        ],
+        edges: [{ id: 'e1', source: 'a', target: 'b', kind: 'relates' }],
+      }));
+    });
+
+    it('should DENY handing a map to another account', async () => {
+      // Reassigning ownerId would move a teacher's work out of their own
+      // account, and nothing in this feature needs to.
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'concept_maps', 'cm1'), map());
+      });
+
+      const teacher = await asTeacher('teacher1');
+      await assertFails(updateDoc(doc(teacher.firestore(), 'concept_maps', 'cm1'), {
+        ownerId: 'teacher2',
+      }));
+    });
+
+    it('should DENY a map whose nodes are not a list', async () => {
+      const teacher = await asTeacher('teacher1');
+      await assertFails(setDoc(doc(teacher.firestore(), 'concept_maps', 'cm1'), map({
+        nodes: 'сите',
+      })));
+    });
+
+    it('should ALLOW the owner to delete their map', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'concept_maps', 'cm1'), map());
+      });
+
+      const teacher = await asTeacher('teacher1');
+      await assertSucceeds(deleteDoc(doc(teacher.firestore(), 'concept_maps', 'cm1')));
+    });
+  });
+
   describe('summative_attempts collection', () => {
     const HOUR = 60 * 60 * 1000;
 

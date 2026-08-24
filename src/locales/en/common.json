@@ -176,5 +176,23 @@
     "suggested": "AI suggestion",
     "confirmedHint": "A teacher confirmed this curriculum mapping.",
     "suggestedHint": "Suggested by AI and not yet confirmed. Does not count as coverage."
+  },
+  "conceptMap": {
+    "newNode": "New concept",
+    "addNode": "Add concept",
+    "link": "Link",
+    "linkPickTarget": "Pick a target…",
+    "linkKind": "Link type",
+    "relates": "relates to",
+    "requires": "requires first",
+    "arrange": "Arrange",
+    "undo": "Undo",
+    "redo": "Redo",
+    "save": "Save",
+    "removeNode": "Delete concept",
+    "removeLink": "Delete link",
+    "label": "Label",
+    "toolbar": "Concept map tools",
+    "canvasLabel": "Concept map: {{title}}"
   }
 }

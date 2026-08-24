@@ -604,5 +604,31 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['outcomeCodes']);
     }
+
+    // Concept maps a teacher authors (EXPERT_LEVEL_MASTER_PLAN, 11.1).
+    //
+    // The whole document is rewritten on save, so unlike knowledge_skills there
+    // is no field-level restriction — the map *is* the teacher's edit. What the
+    // rules hold is that it stays theirs and cannot be handed to someone else.
+    match /concept_maps/{mapId} {
+      function ownsExisting() {
+        return isAuthenticated() && request.auth.uid == resource.data.ownerId;
+      }
+
+      allow read, delete: if ownsExisting();
+
+      allow create: if isTeacher()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.nodes is list
+        && request.resource.data.edges is list;
+
+      // A map cannot change hands: reassigning ownerId would move a teacher's
+      // work into another account, and no edit in this feature needs to.
+      allow update: if ownsExisting()
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.nodes is list
+        && request.resource.data.edges is list;
+    }
   }
 }

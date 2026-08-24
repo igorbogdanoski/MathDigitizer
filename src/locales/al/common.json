@@ -176,5 +176,23 @@
     "suggested": "Sugjerim i AI-së",
     "confirmedHint": "Një mësues e konfirmoi këtë lidhje me programin mësimor.",
     "suggestedHint": "Sugjeruar nga AI dhe ende e pakonfirmuar. Nuk numërohet si mbulim."
+  },
+  "conceptMap": {
+    "newNode": "Koncept i ri",
+    "addNode": "Shto koncept",
+    "link": "Lidh",
+    "linkPickTarget": "Zgjidh objektivin…",
+    "linkKind": "Lloji i lidhjes",
+    "relates": "lidhet me",
+    "requires": "kërkon më parë",
+    "arrange": "Rendit",
+    "undo": "Zhbëj",
+    "redo": "Ribëj",
+    "save": "Ruaj",
+    "removeNode": "Fshi konceptin",
+    "removeLink": "Fshi lidhjen",
+    "label": "Emërtimi",
+    "toolbar": "Mjetet e hartës së koncepteve",
+    "canvasLabel": "Harta e koncepteve: {{title}}"
   }
 }
