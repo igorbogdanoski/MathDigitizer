@@ -1,3 +1,4 @@
+import { trackActivation } from '../lib/analytics';
 import React, { useState } from 'react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -28,6 +29,7 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ user, onComplete }
       };
 
       await setDoc(doc(db, 'users', user.uid), newProfile);
+      trackActivation('role_chosen');
       
       // Initialize user stats
       const today = new Date().toISOString().split('T')[0];

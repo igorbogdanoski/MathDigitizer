@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
 import { currentSchoolYear, currentTerm } from '../lib/gradebook/schoolCalendar';
+import { trackActivation } from '../lib/analytics';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Upload, CheckCircle2, AlertTriangle, FileWarning, Search,
@@ -258,6 +259,7 @@ Feedback: ${doc.feedback_summary}`;
                 ...(selectedTask?.curriculum_topic ? { curriculum_topic: selectedTask.curriculum_topic } : {}),
              };
              await addDoc(collection(db, 'graded_submissions'), submission);
+             trackActivation('first_grade');
 
              // Only a student the teacher picked from a classroom reaches the
              // gradebook; a typed name gets the analytics record above and a
@@ -303,6 +305,7 @@ Feedback: ${doc.feedback_summary}`;
                   ...(selectedTask?.curriculum_topic ? { curriculum_topic: selectedTask.curriculum_topic } : {}),
                };
                await addDoc(collection(db, 'graded_submissions'), submission);
+             trackActivation('first_grade');
 
                if (rosterStudent) {
                  await saveToGradebook(
