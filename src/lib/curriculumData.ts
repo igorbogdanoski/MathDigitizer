@@ -3369,11 +3369,21 @@ export function getCurriculumGrade(grade: string, track: EducationTrack): Curric
   return ALL_MK_CURRICULUM.find(g => g.grade === grade && g.education_track === track);
 }
 
-export function searchCurriculumKeyword(query: string): CurriculumTopic[] {
+/**
+ * Topics whose text matches the query, best first.
+ *
+ * `gradeToken` must already be canonical (see `resolveGradeToken`). When given,
+ * only that programme is searched. Callers used to fold the grade into the
+ * query string instead, which did the opposite of filtering: a hint of `7`
+ * raised the score of every topic that happened to mention a 7 anywhere in its
+ * outcomes or examples, and left every other programme in the running.
+ */
+export function searchCurriculumKeyword(query: string, gradeToken?: string): CurriculumTopic[] {
   const tokens = query.toLowerCase().split(/\s+/);
   const results: { topic: CurriculumTopic; score: number }[] = [];
 
   for (const grade of ALL_MK_CURRICULUM) {
+    if (gradeToken && grade.grade !== gradeToken) continue;
     for (const topic of grade.topics) {
       const haystack = [
         topic.name, topic.name_short,
@@ -3393,15 +3403,37 @@ export function searchCurriculumKeyword(query: string): CurriculumTopic[] {
     .map(r => r.topic);
 }
 
+/**
+ * The retrieval context for one topic.
+ *
+ * `assessment_standards` and `prerequisite_concept_ids` were imported with the
+ * programmes but read by nothing — they shipped to every browser and never
+ * reached a prompt. They are the two things a generator most needs and cannot
+ * infer: what the outcome is actually assessed against, and what a student is
+ * assumed to know already. Both are emitted only when the programme carries
+ * them, so topics without them read exactly as before.
+ */
 export function buildCurriculumChunkText(grade: CurriculumGrade, topic: CurriculumTopic): string {
-  return [
+  const lines = [
     `НАСТАВНА ПРОГРАМА — МАТЕМАТИКА — БРО`,
     `Ниво: ${grade.level_label} | Образовен тип: ${grade.education_track}`,
     `Тема: ${topic.name}`,
     `Часови: ${topic.hours}`,
     `Исходи на учење:`,
     ...topic.outcomes.map(o => `  [${o.code}] ${o.text}`),
-    `Клучни зборови: ${topic.keywords.join(', ')}`,
-    `Примери задачи: ${topic.example_tasks.join(' | ')}`,
-  ].join('\n');
+  ];
+
+  if (topic.assessment_standards?.length) {
+    lines.push(`Стандарди за оценување:`);
+    lines.push(...topic.assessment_standards.map(s => `  • ${s}`));
+  }
+
+  if (topic.prerequisite_concept_ids?.length) {
+    lines.push(`Претходно знаење: ${topic.prerequisite_concept_ids.join(', ')}`);
+  }
+
+  lines.push(`Клучни зборови: ${topic.keywords.join(', ')}`);
+  lines.push(`Примери задачи: ${topic.example_tasks.join(' | ')}`);
+
+  return lines.join('\n');
 }

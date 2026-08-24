@@ -14,7 +14,15 @@ export async function buildCurriculumContextBlock(query: string, gradeHint?: str
   const { searchCurriculumKeyword, buildCurriculumChunkText, ALL_MK_CURRICULUM } =
     await import("../curriculumData");
 
-  const topics = searchCurriculumKeyword(query + (gradeHint ? ` ${gradeHint}` : ''));
+  // The grade restricts which programme is searched; it is not a search term.
+  // Appending it to the query — which is what this did — scored every topic
+  // that merely mentioned that number higher, and still searched all 31
+  // programmes, so a third-grade task could be "aligned" against gymnasium
+  // outcomes that the prompt then presented to the model as mandatory.
+  const { resolveGradeToken } = await import('../curriculumGrade');
+  const gradeToken = resolveGradeToken(gradeHint);
+
+  const topics = searchCurriculumKeyword(query, gradeToken ?? undefined);
   if (topics.length === 0) return '';
 
   const lines = [
