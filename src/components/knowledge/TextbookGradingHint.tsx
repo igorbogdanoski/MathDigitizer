@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { BookOpen, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { hasStored, writeStored } from '../../lib/safeStorage';
 
 const DISMISSED_KEY = 'md.hint.textbookGrading.dismissed';
 
@@ -29,11 +30,10 @@ export const TextbookGradingHint: React.FC = () => {
 
     let cancelled = false;
     (async () => {
-      try {
-        if (localStorage.getItem(DISMISSED_KEY)) return;
-      } catch {
-        // Storage blocked. Showing the hint is the safe side of that.
-      }
+      // Storage blocked reads as "not dismissed", which shows the hint. That is
+      // the safe side: a hint shown twice costs a glance, one never shown costs
+      // a teacher the feature.
+      if (hasStored(DISMISSED_KEY)) return;
 
       try {
         const { getChapterSkills } = await import('../../lib/knowledge/store');
@@ -52,11 +52,8 @@ export const TextbookGradingHint: React.FC = () => {
 
   const dismiss = () => {
     setShow(false);
-    try {
-      localStorage.setItem(DISMISSED_KEY, new Date().toISOString());
-    } catch {
-      // Refused storage means it returns next visit. Acceptable for a hint.
-    }
+    // If storage refuses, the hint returns next visit. Acceptable for a hint.
+    writeStored(DISMISSED_KEY, new Date().toISOString());
   };
 
   return (

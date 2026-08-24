@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { writeStoredJson } from '../lib/safeStorage';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -217,7 +218,7 @@ export const Library: React.FC = () => {
     newOrder.splice(targetIdx, 0, store.draggedTaskId);
 
     filters.setCustomOrder(newOrder);
-    localStorage.setItem('libraryCustomOrder', JSON.stringify(newOrder));
+    writeStoredJson('libraryCustomOrder', newOrder);
   };
 
   const handleExportCSV = () => {

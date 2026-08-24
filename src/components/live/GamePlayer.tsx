@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { readStored, writeStored } from '../../lib/safeStorage';
 import { db } from '../../lib/firebase';
 import { doc, onSnapshot, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { LiveKahootSession } from '../../lib/schema';
@@ -24,10 +25,13 @@ export const GamePlayer = ({ sessionPin }: { sessionPin?: string }) => {
 
   // Generate a random UID for anonymous student if none exists
   useEffect(() => {
-    let storedUid = localStorage.getItem('kahoot_guest_uid');
+    // Falls back to a fresh id when storage is unavailable, so a student on a
+    // locked-down browser can still join — they simply get a new identity if
+    // they reload, which is better than not getting into the game at all.
+    let storedUid = readStored('kahoot_guest_uid');
     if (!storedUid) {
       storedUid = 'guest_' + Math.random().toString(36).substring(2, 15);
-      localStorage.setItem('kahoot_guest_uid', storedUid);
+      writeStored('kahoot_guest_uid', storedUid);
     }
     setUid(storedUid);
   }, []);

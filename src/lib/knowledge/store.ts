@@ -12,13 +12,12 @@
  * checkbox somebody clicked once.
  */
 import {
-  addDoc,
   collection,
-  deleteDoc,
   doc,
   getDocs,
   query,
   where,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ChapterSkill } from './skillSchema';
@@ -55,15 +54,40 @@ export function bookIdFor(ownerId: string, bookTitle: string): string {
   return `${ownerId}:${slug || 'book'}`;
 }
 
+/**
+ * Firestore's limit on operations in one batch.
+ *
+ * A textbook of more than 500 chapters would need more than one batch, and each
+ * batch is atomic only within itself. No book seen so far comes close, but the
+ * chunking is here so that one that does is written in whole batches rather
+ * than failing.
+ */
+const BATCH_LIMIT = 500;
+
+/**
+ * Stores a distilled book.
+ *
+ * Written in batches rather than one document at a time. Speed is the smaller
+ * reason: forty chapters used to be forty sequential round trips. The one that
+ * matters is atomicity — a loop that failed on the twentieth chapter left
+ * nineteen in the knowledge base with nothing to say the book was incomplete,
+ * and retrieval would then answer from half a textbook without anything looking
+ * wrong.
+ */
 export async function saveChapterSkills(
   skills: readonly StoredChapterSkill[],
 ): Promise<number> {
-  let written = 0;
-  for (const skill of skills) {
-    await addDoc(collection(db, KNOWLEDGE_COLLECTION), skill);
-    written++;
+  const target = collection(db, KNOWLEDGE_COLLECTION);
+
+  for (let start = 0; start < skills.length; start += BATCH_LIMIT) {
+    const batch = writeBatch(db);
+    for (const skill of skills.slice(start, start + BATCH_LIMIT)) {
+      batch.set(doc(target), skill);
+    }
+    await batch.commit();
   }
-  return written;
+
+  return skills.length;
 }
 
 /** Every distilled chapter a teacher has, newest book first. */
@@ -87,8 +111,16 @@ export async function deleteBook(ownerId: string, bookId: string): Promise<numbe
     ),
   );
 
-  for (const entry of snap.docs) {
-    await deleteDoc(doc(db, KNOWLEDGE_COLLECTION, entry.id));
+  // Batched for the same reason as the write: a deletion that stops halfway
+  // leaves a book that is partly gone, which reads as a smaller book rather
+  // than as a failure.
+  for (let start = 0; start < snap.docs.length; start += BATCH_LIMIT) {
+    const batch = writeBatch(db);
+    for (const entry of snap.docs.slice(start, start + BATCH_LIMIT)) {
+      batch.delete(doc(db, KNOWLEDGE_COLLECTION, entry.id));
+    }
+    await batch.commit();
   }
+
   return snap.size;
 }

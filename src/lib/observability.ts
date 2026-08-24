@@ -1,3 +1,4 @@
+import { readStoredJson, writeStoredJson } from './safeStorage';
 import * as Sentry from '@sentry/react';
 
 export type ObservabilitySeverity = 'info' | 'warning' | 'error';
@@ -17,37 +18,16 @@ export interface ObservabilityEvent {
 const STORAGE_KEY = 'mathdigitizer.observability.v1';
 const MAX_EVENTS = 50;
 
-function safeStorage(): Storage | null {
-  try {
-    return typeof window !== 'undefined' ? window.localStorage : null;
-  } catch {
-    return null;
-  }
-}
-
+// This module's own guard used to check that `window.localStorage` existed,
+// which proves nothing: when site data is blocked the object is there and the
+// methods throw. The shared layer probes with a real write.
 function readEvents(): ObservabilityEvent[] {
-  const storage = safeStorage();
-  if (!storage) return [];
-
-  try {
-    const raw = storage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as ObservabilityEvent[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+  const parsed = readStoredJson<ObservabilityEvent[]>(STORAGE_KEY, []);
+  return Array.isArray(parsed) ? parsed : [];
 }
 
 function writeEvents(events: ObservabilityEvent[]) {
-  const storage = safeStorage();
-  if (!storage) return;
-
-  try {
-    storage.setItem(STORAGE_KEY, JSON.stringify(events.slice(0, MAX_EVENTS)));
-  } catch {
-    // Best-effort only.
-  }
+  writeStoredJson(STORAGE_KEY, events.slice(0, MAX_EVENTS));
 }
 
 function pushEvent(event: ObservabilityEvent) {

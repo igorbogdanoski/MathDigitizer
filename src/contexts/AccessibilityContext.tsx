@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { readStoredJson, writeStoredJson } from '../lib/safeStorage';
 
 interface AccessibilityState {
   dyslexiaMode: boolean;
@@ -18,13 +19,18 @@ const defaultState: AccessibilityState = {
 const AccessibilityContext = createContext<AccessibilityContextType | undefined>(undefined);
 
 export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<AccessibilityState>(() => {
-    const saved = localStorage.getItem('accessibility_settings');
-    return saved ? JSON.parse(saved) : defaultState;
-  });
+  // Read through the safe layer. This provider wraps the whole app and this
+  // runs in a state initialiser, so a browser that blocks site data used to
+  // throw here on the very first render — and the accessibility provider was
+  // then the reason the app was unreachable. The parse is guarded too: a
+  // settings shape written by an older release must not crash the one reading
+  // it.
+  const [state, setState] = useState<AccessibilityState>(
+    () => readStoredJson<AccessibilityState>('accessibility_settings', defaultState),
+  );
 
   useEffect(() => {
-    localStorage.setItem('accessibility_settings', JSON.stringify(state));
+    writeStoredJson('accessibility_settings', state);
     
     if (state.dyslexiaMode) {
       document.body.classList.add('dyslexia-font');
