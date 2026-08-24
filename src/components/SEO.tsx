@@ -1,5 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import { SITE_NAME, composeTitle } from '../lib/seoHtml';
 
 type JsonLdPayload = Record<string, unknown>;
 
@@ -37,7 +38,9 @@ export const SEO: React.FC<SEOProps> = ({
   structuredData,
   hreflangAlternates
 }) => {
-  const siteTitle = `${title} | ${siteName}`;
+  // Composed by the shared helper, not here: the build-time prerender uses the
+  // same function, so the served <title> and the rendered one cannot drift.
+  const siteTitle = siteName === SITE_NAME ? composeTitle(title) : `${title} | ${siteName}`;
   const canonicalHref = canonical && typeof window !== 'undefined'
     ? new URL(canonical, window.location.origin).toString()
     : canonical;
