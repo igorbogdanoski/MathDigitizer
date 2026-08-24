@@ -212,7 +212,7 @@ export const TodoList: React.FC<TodoListProps> = ({ user, onTaskComplete }) => {
                 <button
                   type="button"
                   onClick={() => toggleComplete(todo)}
-                  className="flex-shrink-0 focus:outline-none"
+                  className="flex-shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1"
                 >
                   {todo.completed ? (
                     <CheckCircle2 className="w-6 h-6 text-green-500" />

@@ -276,5 +276,10 @@
       "public_domain": "Public domain",
       "institutional_copy": "A copy the school bought"
     }
+  },
+  "textbookHint": {
+    "body": "Grading can say WHY an answer is wrong, not only that it is, once you import your own textbook — the mistakes students typically make on that content come from it.",
+    "action": "Import a textbook",
+    "dismiss": "Dismiss this hint"
   }
 }

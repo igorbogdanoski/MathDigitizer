@@ -276,5 +276,10 @@
       "public_domain": "Domen publik",
       "institutional_copy": "Kopje e blerë nga shkolla"
     }
+  },
+  "textbookHint": {
+    "body": "Vlerësimi mund të thotë edhe PSE përgjigjja është e gabuar, nëse importoni tekstin tuaj — prej tij nxirren gabimet tipike të nxënësve për atë përmbajtje.",
+    "action": "Importo një tekst",
+    "dismiss": "Mbyll këtë sugjerim"
   }
 }

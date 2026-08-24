@@ -179,5 +179,8 @@
   "seoKeywords": "ekstraktim ai, matematikë, youtube matematikë, pdf ocr",
   "engine": {
     "segmentedHint": "Nxjerrje agjentike e segmentuar për video të gjata: transkript i saktë sipas dritareve plus një kalim vizual për vizatimet dhe formulat në tabelë"
+  },
+  "taskCard": {
+    "promptSettings": "Cilësimet e promptit"
   }
 }

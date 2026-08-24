@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { hasStored, readStored, writeStored } from '../lib/safeStorage';
 import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, GraduationCap, Inbox, Settings as SettingsIcon, Check, Sparkles, TrendingUp, AlertTriangle, Search, Network } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useAuth } from '../contexts/AuthContext';
@@ -61,7 +62,7 @@ export const Layout: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
+    const savedTheme = readStored('theme');
     if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       setIsDarkMode(true);
       document.documentElement.classList.add('dark');
@@ -69,7 +70,7 @@ export const Layout: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (userProfile && !localStorage.getItem('onboarding_complete')) {
+    if (userProfile && !hasStored('onboarding_complete')) {
       setShowOnboarding(true);
     }
   }, [userProfile]);
@@ -79,10 +80,10 @@ export const Layout: React.FC = () => {
       const newTheme = !prev;
       if (newTheme) {
         document.documentElement.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
+        writeStored('theme', 'dark');
       } else {
         document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
+        writeStored('theme', 'light');
       }
       return newTheme;
     });
@@ -605,7 +606,7 @@ export const Layout: React.FC = () => {
         <OnboardingWizard
           userName={userProfile.displayName?.split(' ')[0] ?? 'Наставник'}
           onComplete={() => {
-            localStorage.setItem('onboarding_complete', 'true');
+            writeStored('onboarding_complete', 'true');
             setShowOnboarding(false);
           }}
         />

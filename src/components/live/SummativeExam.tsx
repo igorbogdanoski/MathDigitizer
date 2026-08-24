@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { readStoredJson, removeStored, writeStoredJson } from '../../lib/safeStorage';
 import { db, auth } from '../../lib/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -43,15 +44,15 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
       return cred.user.uid;
     };
 
-    // Auto-load saved answers
-    const savedAnswers = localStorage.getItem(`dugga_answers_${examId}`);
-    if (savedAnswers) {
-      try {
-        setAnswers(JSON.parse(savedAnswers));
-      } catch (e) {
-        // Corrupted JSON
-      }
-    }
+    // Auto-load saved answers. Reading through the safe layer because a browser
+    // with site data blocked throws here, and an exception in this effect takes
+    // the exam screen down with it — for a student who is part way through a
+    // graded test.
+    const savedAnswers = readStoredJson<Record<number, string> | null>(
+      `dugga_answers_${examId}`,
+      null,
+    );
+    if (savedAnswers) setAnswers(savedAnswers);
 
     const fetchExam = async () => {
       try {
@@ -129,7 +130,7 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
     setAnswers(prev => {
       const updated = { ...prev, [questionIndex]: value };
       // Auto-save
-      localStorage.setItem(`dugga_answers_${examId}`, JSON.stringify(updated));
+      writeStoredJson(`dugga_answers_${examId}`, updated);
       return updated;
     });
   };
@@ -157,7 +158,7 @@ export const SummativeExam = ({ examId }: { examId: string }) => {
         await setDoc(doc(db, 'summative_attempts', attemptId), attemptData);
         setIsSubmitted(true);
         // Clear autosave
-        localStorage.removeItem(`dugga_answers_${examId}`);
+        removeStored(`dugga_answers_${examId}`);
      } catch (err) {
         console.error(err);
         showToast(t('errors.submitFailed'), 'error');

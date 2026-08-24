@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { readStoredJson, writeStoredJson } from '../lib/safeStorage';
 import { MathTask } from '../lib/schema';
 
 interface LibraryState {
@@ -152,14 +153,17 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   setDokFilter: (dokFilter) => set({ dokFilter }),
   sortDifficulty: 'none',
   setSortDifficulty: (sortDifficulty) => set({ sortDifficulty }),
-  searchHistory: JSON.parse(localStorage.getItem('searchHistory') || '[]'),
+  // Read at store creation, which happens on module import — before React
+  // renders anything. A browser that blocks site data threw here and took
+  // the whole app down before it could draw a single screen.
+  searchHistory: readStoredJson<string[]>('searchHistory', []),
   setSearchHistory: (searchHistory) => {
-    localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+    writeStoredJson('searchHistory', searchHistory);
     set({ searchHistory });
   },
-  customOrder: JSON.parse(localStorage.getItem('libraryCustomOrder') || '[]'),
+  customOrder: readStoredJson<string[]>('libraryCustomOrder', []),
   setCustomOrder: (customOrder) => {
-    localStorage.setItem('libraryCustomOrder', JSON.stringify(customOrder));
+    writeStoredJson('libraryCustomOrder', customOrder);
     set({ customOrder });
   },
   clearFilters: () => set({

@@ -179,5 +179,8 @@
   "seoKeywords": "ai extraction, mathematics, youtube math, pdf ocr",
   "engine": {
     "segmentedHint": "Segmented agentic extraction for long videos: a precise transcript per window plus a visual pass for board drawings and formulas"
+  },
+  "taskCard": {
+    "promptSettings": "Prompt settings"
   }
 }

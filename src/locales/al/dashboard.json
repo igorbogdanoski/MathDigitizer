@@ -37,22 +37,18 @@
   "viewDetails": "Shiko detajet",
   "exportReport": "Eksporto raportin",
   "shareProgress": "Ndaj progresin",
-
   "seoTitle": "Telemetria dhe Progresi",
   "seoDescription": "Ndiqni progresin tuaj personal, nivelet, stemat dhe performancën arsimore përmes telemetrisë së avancuar DOK.",
   "seoKeywords": "telemetri, matematikë, panel, progres, stema, xp, edukim",
-
   "paymentApproved": "Pagesa juaj u miratua. Qasja Pro u aktivizua.",
   "statsErrorTitle": "Gabim gjatë ngarkimit të statistikave",
   "statsErrorDescription": "Të dhënat tuaja telemetrike nuk mund të gjenden. Provoni të rifreskoni faqen ose të zgjidhni një detyrë për të aktivizuar një regjistrim.",
   "refreshPage": "Rifresko Faqen",
-
   "proActivated": "Pro u aktivizua",
   "proActivatedDesc": "Pagesa juaj u miratua dhe qasja Pro është aktive.",
   "activatedAt": "Aktivizuar:",
   "paymentInReview": "Pagesa është në shqyrtim",
   "paymentInReviewDesc": "Ekipi po shqyrton vërtetimin e dorëzuar. Pro do të aktivizohet menjëherë pas miratimit.",
-
   "billingHealth": "Shëndeti i Faturimit",
   "statusGuide": "Udhëzues i statusit",
   "currentFocus": "Fokusi aktual:",
@@ -64,7 +60,6 @@
   "resubmitProof": "Ridorëzo vërtetimin",
   "checkBillingDetails": "Kontrollo detajet e faturimit",
   "activateProAndSubmit": "Aktivizo Pro dhe dorëzo vërtetimin",
-
   "billingGuide": {
     "pending": {
       "title": "Në pritje të shqyrtimit",
@@ -87,43 +82,35 @@
       "description": "Gjithçka u verifikua me sukses, qasja është aktive."
     }
   },
-
   "teacher": "Mësues",
   "student": "Nxënës",
   "totalXp": "XP Gjithsej:",
   "progressToLevel": "Progresi drejt Nivelit {{level}}",
   "dailyStreak": "Seria Ditore",
   "solvedTasks": "Detyra të Zgjidhura",
-
   "dailyQuests": "Sfidat Ditore",
   "questsRefreshing": "Sfidat ditore po rifreskohen...",
-
   "masteryByTopics": "Mjeshtëria sipas Temave",
   "skillAnalysis": "Analiza e Aftësive",
   "skillAnalysisText": "Lënda juaj më e fortë është <strong>Logjika</strong>. Nevojitet më shumë ushtrim në fushën e <strong>Trigonometrisë</strong>.",
   "generateAdaptiveTask": "Gjenero Detyrë Adaptive",
   "aiTutorGenerating": "AI Tutor po gjeneron një detyrë adaptive mbi Trigonometrinë...",
-
   "masteryAlgebra": "Algjebra",
   "masteryGeometry": "Gjeometria",
   "masteryTrigonometry": "Trigonometria",
   "masteryStatistics": "Statistika",
   "masteryLogic": "Logjika",
   "masteryAnalysis": "Analiza",
-
   "yourBadges": "Stemat Tuaja",
-
   "recentProgress": "Progresi i Fundit",
   "generatedSimilarTask": "U gjenerua detyrë e ngjashme",
   "twoHoursAgo": "Para 2 orësh",
   "completedFlashcardSession": "U përfundua sesioni me kartela",
   "fiveHoursAgo": "Para 5 orësh",
-
   "rankUser": "Renditja / Përdoruesi",
   "you": "Ju",
   "user": "Përdorues",
   "viewFullLeaderboard": "Shiko tabelën e plotë",
-
   "quickAccess": "Qasje e Shpejtë në Ekosistem",
   "allToolsOnePlace": "Të gjitha mjetet në një vend",
   "scanTasks": "Skano detyra",
@@ -133,5 +120,8 @@
   "fromYouTubeVideos": "Nga video YouTube",
   "testFactory": "Fabrika e Testeve",
   "generateTestsInSecond": "Gjenero teste në sekonda",
-  "subscriptionAndPayments": "Abonimi dhe pagesat"
+  "subscriptionAndPayments": "Abonimi dhe pagesat",
+  "conceptMaps": "Harta konceptesh",
+  "buildConceptMap": "Konceptet dhe lidhjet mes tyre",
+  "billing": "Faturimi"
 }

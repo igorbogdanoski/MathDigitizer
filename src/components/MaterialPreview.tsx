@@ -374,8 +374,12 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
     }
 
     // Default rendering for worksheet, test, collection, homework, study_guide, quiz
+    // The document keeps its own width and scrolls inside its own frame. Without
+    // that, the page itself scrolls sideways on a phone, which carries every
+    // control off screen along with the preview.
     return (
-      <div ref={printRef} className="bg-white text-slate-900 p-10 rounded-2xl print:p-0">
+      <div className="overflow-x-auto print:overflow-visible">
+      <div ref={printRef} className="bg-white text-slate-900 p-4 sm:p-10 rounded-2xl print:p-0">
         {/* Branded letterhead (school identity, marking box, grading legend) */}
         {isEditing && (
           <div className="mb-8 not-prose">
@@ -482,6 +486,7 @@ export const MaterialPreview: React.FC<MaterialPreviewProps> = ({ type, data, on
         )}
 
         <DocumentFooter template={template} title={editedData.title} issuedAt={issuedAtRef.current} />
+      </div>
       </div>
     );
   };
