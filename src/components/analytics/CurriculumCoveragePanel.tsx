@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BarChart2, BookOpen, Loader2 } from 'lucide-react';
+import { BarChart2, BookOpen, Loader2, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '../ui/Card';
 // Only ids, names and counts are read here — the light index keeps the
 // 571 KB corpus of outcome prose out of the analytics bundle.
@@ -78,6 +78,17 @@ export const CurriculumCoveragePanel: React.FC = () => {
     ? Math.round((coveredTopicCount / totalTopicCount) * 100)
     : 0;
 
+  // Coverage is reported on what a teacher confirmed, with the AI's
+  // unreviewed suggestions shown beside it rather than folded in. Summing them
+  // let a school read "85% покриеност" off guesses nobody had looked at.
+  const confirmedTopicCount = useMemo(
+    () => snapshot ? snapshot.gradeCoverage.reduce((sum, g) => sum + g.confirmedTopics, 0) : 0,
+    [snapshot],
+  );
+  const confirmedPct = totalTopicCount > 0 && snapshot
+    ? Math.round((confirmedTopicCount / totalTopicCount) * 100)
+    : 0;
+
   return (
     <Card className="bg-white dark:bg-slate-900/60 dark:backdrop-blur-xl border-slate-200 dark:border-white/10 shadow-sm rounded-5xl xl:col-span-3">
       <CardContent className="p-8 md:p-10">
@@ -110,20 +121,32 @@ export const CurriculumCoveragePanel: React.FC = () => {
                 </div>
               </div>
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-center">
-                <div className="text-2xl font-black text-emerald-500 font-mono">{coveredTopicCount}</div>
+                <div className="text-2xl font-black text-emerald-500 font-mono">{confirmedTopicCount}</div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1 font-bold">
-                  {t('curriculumCoverage.summary.coveredTopics')}
+                  {t('curriculumCoverage.summary.confirmedTopics')}
                 </div>
               </div>
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-center">
-                <div className={`text-2xl font-black font-mono ${overallPct >= 70 ? 'text-emerald-500' : overallPct > 0 ? 'text-amber-500' : 'text-red-500'}`}>
-                  {overallPct}%
+                <div className={`text-2xl font-black font-mono ${confirmedPct >= 70 ? 'text-emerald-500' : confirmedPct > 0 ? 'text-amber-500' : 'text-red-500'}`}>
+                  {confirmedPct}%
                 </div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1 font-bold">
-                  {t('curriculumCoverage.summary.coveragePct')}
+                  {t('curriculumCoverage.summary.confirmedPct')}
                 </div>
               </div>
             </div>
+
+            {snapshot.suggestedTasks > 0 && (
+              <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 max-w-xl">
+                <Sparkles className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+                  {t('curriculumCoverage.summary.awaitingReview', {
+                    tasks: snapshot.suggestedTasks,
+                    topics: coveredTopicCount - confirmedTopicCount,
+                  })}
+                </p>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Tasks per topic — bar list */}
@@ -170,12 +193,20 @@ export const CurriculumCoveragePanel: React.FC = () => {
                         </span>
                         <div className="flex-1 bg-slate-100 dark:bg-white/5 rounded-full h-2">
                           <div
-                            className={`h-2 rounded-full transition-all duration-500 ${heatColor(gc.pct)}`}
-                            style={{ width: `${Math.max(gc.pct > 0 ? 4 : 0, gc.pct)}%` }}
+                            className={`h-2 rounded-full transition-all duration-500 ${heatColor(gc.confirmedPct)}`}
+                            style={{ width: `${Math.max(gc.confirmedPct > 0 ? 4 : 0, gc.confirmedPct)}%` }}
                           />
+                          {/* The unconfirmed remainder, drawn behind but never
+                              counted: visible as potential, not as coverage. */}
+                          {gc.pct > gc.confirmedPct && (
+                            <div
+                              className="h-2 -mt-2 rounded-full bg-amber-300/50 dark:bg-amber-500/25"
+                              style={{ width: `${gc.pct}%` }}
+                            />
+                          )}
                         </div>
                         <span className="w-24 shrink-0 text-right text-slate-400 font-mono">
-                          {t('curriculumCoverage.byGrade.topicsCovered', { covered: gc.coveredTopics, total: gc.totalTopics })}
+                          {t('curriculumCoverage.byGrade.topicsCovered', { covered: gc.confirmedTopics, total: gc.totalTopics })}
                         </span>
                       </div>
                     ))}

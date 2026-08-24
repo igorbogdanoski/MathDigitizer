@@ -119,7 +119,10 @@
     "summary": {
       "totalTopics": "Curriculum topics",
       "coveredTopics": "Covered topics",
-      "coveragePct": "Coverage"
+      "coveragePct": "Coverage",
+      "confirmedTopics": "Confirmed topics",
+      "confirmedPct": "Confirmed coverage",
+      "awaitingReview": "{{tasks}} tasks were mapped by AI and await confirmation. They touch a further {{topics}} topics, which are not counted until a teacher reviews them."
     }
   },
   "mastery": {

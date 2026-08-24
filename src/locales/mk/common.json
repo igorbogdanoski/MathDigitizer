@@ -141,7 +141,10 @@
       "assignSuccess": "Темата е рачно доделена.",
       "assignError": "Грешка при доделување тема.",
       "empty": "Сите задачи се мапирани со висока сигурност.",
-      "showingFirst": "Прикажани први {{count}} задачи"
+      "showingFirst": "Прикажани први {{count}} задачи",
+      "confirm": "Потврди",
+      "confirmSuccess": "Мапирањето е потврдено.",
+      "confirmError": "Грешка при потврдување"
     }
   },
   "curriculumTestGen": {
@@ -167,5 +170,11 @@
     "trackVocational3": "Стручно 3-годишно",
     "trackVocational4": "Стручно 4-годишно",
     "trackGymnasiumElective": "Гимназија — изборни"
+  },
+  "curriculumRef": {
+    "confirmed": "Потврдено",
+    "suggested": "AI предлог",
+    "confirmedHint": "Наставник ја потврди оваа врска со наставната програма.",
+    "suggestedHint": "Предложено од AI, сè уште непотврдено. Не се брои како покриеност."
   }
 }

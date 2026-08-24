@@ -119,7 +119,10 @@
     "summary": {
       "totalTopics": "Наставни теми",
       "coveredTopics": "Покриени теми",
-      "coveragePct": "Покриеност"
+      "coveragePct": "Покриеност",
+      "confirmedTopics": "Потврдени теми",
+      "confirmedPct": "Потврдена покриеност",
+      "awaitingReview": "{{tasks}} задачи се мапирани од AI и чекаат потврда. Тие покриваат уште {{topics}} теми, но не се бројат додека наставник не ги провери."
     }
   },
   "mastery": {

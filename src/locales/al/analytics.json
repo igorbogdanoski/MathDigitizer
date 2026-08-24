@@ -119,7 +119,10 @@
     "summary": {
       "totalTopics": "Tema mësimore",
       "coveredTopics": "Tema të mbuluara",
-      "coveragePct": "Mbulimi"
+      "coveragePct": "Mbulimi",
+      "confirmedTopics": "Tema të konfirmuara",
+      "confirmedPct": "Mbulim i konfirmuar",
+      "awaitingReview": "{{tasks}} detyra u lidhën nga AI dhe presin konfirmim. Ato prekin edhe {{topics}} tema, të cilat nuk numërohen derisa një mësues t'i shqyrtojë."
     }
   },
   "mastery": {

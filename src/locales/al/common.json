@@ -141,7 +141,10 @@
       "assignSuccess": "Tema u caktua manualisht.",
       "assignError": "Gabim në caktimin e temës.",
       "empty": "Të gjitha detyrat janë hartëzuar me besim të lartë.",
-      "showingFirst": "Po shfaqen {{count}} detyrat e para"
+      "showingFirst": "Po shfaqen {{count}} detyrat e para",
+      "confirm": "Konfirmo",
+      "confirmSuccess": "Lidhja u konfirmua.",
+      "confirmError": "Nuk u konfirmua lidhja"
     }
   },
   "curriculumTestGen": {
@@ -167,5 +170,11 @@
     "trackVocational3": "Profesionale 3-vjeçare",
     "trackVocational4": "Profesionale 4-vjeçare",
     "trackGymnasiumElective": "Gjimnaz — zgjedhore"
+  },
+  "curriculumRef": {
+    "confirmed": "E konfirmuar",
+    "suggested": "Sugjerim i AI-së",
+    "confirmedHint": "Një mësues e konfirmoi këtë lidhje me programin mësimor.",
+    "suggestedHint": "Sugjeruar nga AI dhe ende e pakonfirmuar. Nuk numërohet si mbulim."
   }
 }

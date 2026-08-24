@@ -141,7 +141,10 @@
       "assignSuccess": "Topic manually assigned.",
       "assignError": "Error assigning topic.",
       "empty": "All tasks are mapped with high confidence.",
-      "showingFirst": "Showing first {{count}} tasks"
+      "showingFirst": "Showing first {{count}} tasks",
+      "confirm": "Confirm",
+      "confirmSuccess": "Mapping confirmed.",
+      "confirmError": "Could not confirm the mapping"
     }
   },
   "curriculumTestGen": {
@@ -167,5 +170,11 @@
     "trackVocational3": "Vocational (3-year)",
     "trackVocational4": "Vocational (4-year)",
     "trackGymnasiumElective": "Gymnasium electives"
+  },
+  "curriculumRef": {
+    "confirmed": "Confirmed",
+    "suggested": "AI suggestion",
+    "confirmedHint": "A teacher confirmed this curriculum mapping.",
+    "suggestedHint": "Suggested by AI and not yet confirmed. Does not count as coverage."
   }
 }

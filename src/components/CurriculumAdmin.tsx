@@ -28,6 +28,7 @@ import {
   type CoverageTaskEntry,
 } from '../lib/curriculumCoverage';
 import type { MathTask, CurriculumRef } from '../lib/schema';
+import CurriculumRefBadge from './curriculum/CurriculumRefBadge';
 import { SEO } from './SEO';
 
 type IngestStatus = 'idle' | 'running' | 'done' | 'error';
@@ -235,6 +236,32 @@ export const CurriculumAdmin: React.FC = () => {
     }
   };
 
+  /**
+   * Accepts the AI's mapping as it stands.
+   *
+   * Rewrites `source` to `manual`, which is the only thing that separates a
+   * proposal from knowledge in the shared contract. Confidence goes to 1 for
+   * the same reason: after a teacher has looked, the model's own estimate of
+   * how sure it was is no longer what the number means.
+   */
+  const handleConfirm = async (entry: CoverageTaskEntry) => {
+    const refs = entry.curriculum_refs ?? [];
+    if (refs.length === 0 || busyTaskId) return;
+
+    setBusyTaskId(entry.id);
+    try {
+      const confirmed: CurriculumRef[] = refs.map(r => ({ ...r, source: 'manual', confidence: 1 }));
+      await updateDoc(doc(db, 'tasks', entry.id), { curriculum_refs: confirmed });
+      applyLocalRefs(entry.id, confirmed);
+      showToast(t('curriculumAdmin.queue.confirmSuccess'), 'success');
+    } catch (e) {
+      console.error('Confirm error:', e);
+      showToast(t('curriculumAdmin.queue.confirmError'), 'error');
+    } finally {
+      setBusyTaskId(null);
+    }
+  };
+
   const handleManualAssign = async (entryId: string, value: string) => {
     if (!value || busyTaskId) return;
     const [education_track, grade, topic_id] = value.split('|');
@@ -288,6 +315,14 @@ export const CurriculumAdmin: React.FC = () => {
     return [
       ...snapshot.unmappedList.map(e => ({ entry: e, kind: 'unmapped' as const, confidence: undefined as number | undefined })),
       ...snapshot.lowConfidenceList.map(e => ({ entry: e, kind: 'low' as const, confidence: e.bestConfidence })),
+      // Confident AI mappings nobody has looked at. They never reached this
+      // queue before — it held only unmapped and low-confidence tasks — so a
+      // confident wrong guess counted as coverage and was shown to no one.
+      ...snapshot.suggestedList.map(e => ({
+        entry: e,
+        kind: 'suggested' as const,
+        confidence: Math.max(...(e.curriculum_refs ?? []).map(r => r.confidence ?? 0)),
+      })),
     ];
   }, [snapshot]);
 
@@ -462,14 +497,18 @@ export const CurriculumAdmin: React.FC = () => {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{entry.title}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          {kind === 'unmapped' ? (
+                          {kind === 'unmapped' && (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
                               {t('curriculumAdmin.queue.unmapped')}
                             </span>
-                          ) : (
+                          )}
+                          {kind === 'low' && (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                               {t('curriculumAdmin.queue.lowConfidence', { value: confidence })}
                             </span>
+                          )}
+                          {kind === 'suggested' && (
+                            <CurriculumRefBadge ref_={entry.curriculum_refs?.[0]} showConfidence />
                           )}
                           {entry.curriculum_topic && (
                             <span className="text-[11px] text-slate-400 truncate">{entry.curriculum_topic}</span>
@@ -478,6 +517,16 @@ export const CurriculumAdmin: React.FC = () => {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
+                        {kind === 'suggested' && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleConfirm(entry)}
+                            disabled={busyTaskId !== null}
+                          >
+                            <Check className="w-3.5 h-3.5 mr-1.5" />
+                            {t('curriculumAdmin.queue.confirm')}
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
