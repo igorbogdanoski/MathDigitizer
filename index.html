@@ -3,7 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
+
+    <!--
+      Set the theme before the first paint.
+
+      This has to run here rather than in React, because it must apply to every
+      route — including /pricing, /play and /exam/:id, which are mounted outside
+      the app shell and so never saw the shell's theme effect. It also removes
+      the flash of the wrong theme on a slow connection.
+
+      Both accesses are wrapped: reading localStorage *throws* when a browser is
+      set to block site data, and a theme is not worth a blank page.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = null;
+          try { stored = localStorage.getItem('theme'); } catch (e) { /* site data blocked */ }
+          var dark = stored ? stored === 'dark'
+            : window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) { /* light is a fine fallback */ }
+      })();
+    </script>
+
+
     <!-- Primary Meta Tags -->
     <title>MathDigitizer Pro | Помалку хаос. Повеќе математика.</title>
     <meta name="title" content="MathDigitizer Pro | Помалку хаос. Повеќе математика." />

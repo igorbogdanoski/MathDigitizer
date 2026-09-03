@@ -16,7 +16,7 @@ export const BentoFeaturesGrid: React.FC = () => {
         <motion.div
           whileHover={{ y: -8, scale: 1.01 }}
           onClick={() => navigate('/library')}
-          className="md:col-span-12 bg-gradient-to-br from-rose-500 to-orange-500 dark:from-rose-900 dark:to-orange-900 p-10 md:p-14 rounded-7xl shadow-2xl hover:shadow-rose-500/30 transition-all duration-500 cursor-pointer group relative overflow-hidden"
+          className="md:col-span-12 bg-gradient-to-br from-rose-700 to-orange-700 dark:from-rose-900 dark:to-orange-900 p-10 md:p-14 rounded-7xl shadow-2xl hover:shadow-rose-500/30 transition-all duration-500 cursor-pointer group relative overflow-hidden"
         >
           <div className="absolute -right-20 -top-20 w-[600px] h-[600px] bg-white/10 blur-[80px] rounded-full mix-blend-overlay"></div>
           <div className="relative z-10 flex flex-col h-full w-full md:w-2/3">
@@ -24,7 +24,7 @@ export const BentoFeaturesGrid: React.FC = () => {
                <Play className="w-10 h-10 text-white fill-white" />
              </div>
              <h3 className="text-4xl md:text-5xl font-black text-white mb-6 leading-tight">MathKahoot!<br/>Жива Училница</h3>
-             <p className="text-xl text-rose-50/90 mb-10 leading-relaxed font-semibold">
+             <p className="text-xl text-rose-50 mb-10 leading-relaxed font-semibold">
                Претворете ги задачите во интерактивна трка. Прикажете го PIN-от на проектор и гледајте како гемификацијата го зголемува фокусот 10x.
              </p>
              <div className="mt-auto inline-flex items-center bg-white text-rose-600 font-black text-lg px-8 py-4 rounded-2xl w-max shadow-xl group-hover:scale-105 transition-transform">
