@@ -1,4 +1,11 @@
-import { ActivationMilestone, markReached, milestoneStep } from './activation';
+import { ActivationMilestone, MilestoneStore, markReached, milestoneStep } from './activation';
+import { readStored, writeStored } from './safeStorage';
+
+/** Milestones go through the safe layer; nothing here may throw at a caller. */
+const activationStore: MilestoneStore = {
+  getItem: key => readStored(key),
+  setItem: (key, value) => { writeStored(key, value); },
+};
 
 declare function gtag(...args: any[]): void;
 
@@ -71,10 +78,13 @@ export function trackTrialUrgency(days_left: number) {
  * the price, and those need opposite fixes.
  */
 export function trackActivation(milestone: ActivationMilestone): void {
-  const store = typeof localStorage !== 'undefined' ? localStorage : null;
-  if (!store) return;
-
-  if (!markReached(store, milestone)) return;
+  // `typeof localStorage` is itself enough to throw: when a browser blocks site
+  // data the property is a getter that raises. This is called straight after
+  // the profile write in role selection, inside that function's try — so a
+  // throw here surfaced as "Настана грешка при зачувување на улогата" and left
+  // a new teacher unable to finish signing up. An analytics call must never be
+  // able to do that.
+  if (!markReached(activationStore, milestone)) return;
 
   g('event', 'activation_milestone', {
     event_category: 'activation_funnel',
