@@ -22,6 +22,7 @@
   "studentsNeedAttention": "Nxënës që kanë nevojë për vëmendje",
   "noStrugglingStudents": "Nuk u zbuluan nxënës me vështirësi nga telemetria e fundit.",
   "average": "mesatare",
+  "mistakesOverAttempts": "gabime në {{attempts}} tentativa",
   "problemWith": "Problem me:",
   "telemetryAiAssistant": "Asistenti AI i Telemetrisë",
   "dataSynthesis": "Sinteza e të Dhënave",
