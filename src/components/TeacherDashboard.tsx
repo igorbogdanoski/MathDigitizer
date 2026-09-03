@@ -3,7 +3,7 @@ import { Users, BookOpen, TrendingUp, AlertTriangle, Award, BarChart3, ChevronRi
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { db, auth } from '../lib/firebase';
-import { collection, query, where, getDocs, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit, onSnapshot, type Unsubscribe } from 'firebase/firestore';
 import { Classroom, UserProfile, TaskAttempt } from '../lib/schema';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
@@ -13,6 +13,7 @@ import { Skeleton } from './ui/Skeleton';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { SystemIntegrityCheck } from './SystemIntegrityCheck';
 import { useTranslation } from 'react-i18next';
+import { pupilChunks, ownedBy } from '../lib/teacherScope';
 
 interface TeacherDashboardProps {
   userProfile: UserProfile;
@@ -29,33 +30,72 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
 
   useEffect(() => {
     if (!auth.currentUser) return;
-    
+
     setIsLoading(true);
+    const teacherId = auth.currentUser.uid;
+    let attemptListeners: Unsubscribe[] = [];
 
     // Real-time listener for Classrooms
-    const qClass = query(collection(db, 'classrooms'), where('teacherId', '==', auth.currentUser.uid));
+    const qClass = query(collection(db, 'classrooms'), where('teacherId', '==', teacherId));
     const unsubscribeClassrooms = onSnapshot(qClass, (snapshot) => {
       const fetchedClassrooms = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as Classroom));
       setClassrooms(fetchedClassrooms);
-      // We will set loading to false here or rely on attempts below
+
+      // The attempts must be the teacher's own pupils'.
+      //
+      // This used to read `task_attempts` with no `where` clause at all — the
+      // last 100 attempts in the entire system. Every number on this screen,
+      // and the "cognitive alarm" that decides which topic to generate an
+      // intervention for, was therefore computed from other teachers' pupils.
+      // The Firestore rule allows any teacher to read any attempt, so the query
+      // succeeded and the screen looked authoritative while being about
+      // somebody else's class.
+      attemptListeners.forEach(unsubscribe => unsubscribe());
+      attemptListeners = [];
+
+      // `ownedBy` is belt and braces: the query already filters on teacherId,
+      // but the scope of this screen should not depend on a query staying
+      // right. Firestore caps an `in` filter at 30 values, so a teacher with
+      // more pupils than that needs several listeners merged together.
+      const chunks = pupilChunks(ownedBy(fetchedClassrooms, teacherId));
+      if (chunks.length === 0) {
+        setAttempts([]);
+        setIsLoading(false);
+        return;
+      }
+
+      const byChunk = new Map<number, TaskAttempt[]>();
+      attemptListeners = chunks.map((chunk, index) => onSnapshot(
+        query(
+          collection(db, 'task_attempts'),
+          where('user_id', 'in', chunk),
+          orderBy('start_time', 'desc'),
+          limit(100),
+        ),
+        (attemptSnapshot) => {
+          byChunk.set(index, attemptSnapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as TaskAttempt)));
+
+          setAttempts(
+            [...byChunk.values()]
+              .flat()
+              .sort((a, b) => Number(b.start_time ?? 0) - Number(a.start_time ?? 0))
+              .slice(0, 100),
+          );
+          setIsLoading(false);
+        },
+        (error) => {
+          console.error('Error listening to attempts:', error);
+          setIsLoading(false);
+        },
+      ));
     }, (error) => {
       console.error("Error listening to classrooms:", error);
-    });
-
-    // Real-time listener for Attempts
-    const qAttempts = query(collection(db, 'task_attempts'), orderBy('start_time', 'desc'), limit(100));
-    const unsubscribeAttempts = onSnapshot(qAttempts, (snapshot) => {
-      const fetchedAttempts = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) } as TaskAttempt));
-      setAttempts(fetchedAttempts);
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Error listening to attempts:", error);
       setIsLoading(false);
     });
 
     return () => {
       unsubscribeClassrooms();
-      unsubscribeAttempts();
+      attemptListeners.forEach(unsubscribe => unsubscribe());
     };
   }, []);
 
@@ -87,14 +127,6 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
 
     return { total, completionRate, struggleTopics };
   }, [attempts]);
-
-  // Mock data for overall analytics
-  const classPerformanceData = [
-    { name: 'Мат 8-1', score: 85, target: 80 },
-    { name: 'Мат 8-2', score: 72, target: 80 },
-    { name: 'Мат 9-1', score: 90, target: 85 },
-    { name: 'Мат 9-3', score: 65, target: 85 },
-  ];
 
   const weeklyActivityData = useMemo(() => {
     const days = [t('daySun'), t('dayMon'), t('dayTue'), t('dayWed'), t('dayThu'), t('dayFri'), t('daySat')];
@@ -144,7 +176,13 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
         name: t('studentName', { id: s.userId.substring(0, 4) }), // We don't have user profiles joined here, so using ID mask
         class: s.attempts > 3 ? t('highActivity') : t('lowActivity'),
         topic: s.topic,
-        score: Math.max(0, 100 - (s.mistakes * 5)) // Mock score drop based on mistakes
+        // Mistakes and attempts, which are measured. There used to be a
+        // `score: 100 - mistakes * 5` here, invented from the mistake count and
+        // shown on a screen titled "realtime telemetry" as though a pupil had
+        // been assessed. A number a teacher might act on has to be one that was
+        // actually measured.
+        mistakes: s.mistakes,
+        attempts: s.attempts,
       }));
   }, [attempts]);
 
@@ -401,8 +439,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ userProfile 
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
-                            <p className="text-sm font-bold text-red-600 dark:text-red-400">{student.score}%</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">{t('average')}</p>
+                            <p className="text-sm font-bold text-red-600 dark:text-red-400">
+                              {student.mistakes}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {t('mistakesOverAttempts', { attempts: student.attempts })}
+                            </p>
                           </div>
                           <ChevronRight className="w-5 h-5 text-slate-400 opacity-50" />
                         </div>

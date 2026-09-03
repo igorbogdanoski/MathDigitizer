@@ -22,6 +22,7 @@
   "studentsNeedAttention": "Students needing attention",
   "noStrugglingStudents": "No struggling students detected from the latest telemetry.",
   "average": "average",
+  "mistakesOverAttempts": "mistakes over {{attempts}} attempts",
   "problemWith": "Problem with:",
   "telemetryAiAssistant": "Telemetry AI Assistant",
   "dataSynthesis": "Data Synthesis",

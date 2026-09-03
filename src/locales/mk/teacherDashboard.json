@@ -22,6 +22,7 @@
   "studentsNeedAttention": "Студенти на кои им треба внимание",
   "noStrugglingStudents": "Нема детектирано ученици со потешкотии од последната телеметрија.",
   "average": "просек",
+  "mistakesOverAttempts": "грешки во {{attempts}} обиди",
   "problemWith": "Проблем со:",
   "telemetryAiAssistant": "Телеметриски AI Асистент",
   "dataSynthesis": "Синтеза на податоци",
