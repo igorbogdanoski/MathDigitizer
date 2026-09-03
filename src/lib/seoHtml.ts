@@ -145,5 +145,14 @@ export function applyRouteSeo(
   html = replaceMetaContent(html, 'name', 'twitter:title', title);
   html = replaceMetaContent(html, 'name', 'twitter:description', seo.description);
 
+  // The card a chat app shows. Routes without their own keep the default, which
+  // the template already carries — replacing it with the same value is a no-op.
+  if (seo.ogImage) {
+    const image = `${SITE_URL}${seo.ogImage}`;
+    html = replaceMetaContent(html, 'property', 'og:image', image);
+    html = replaceMetaContent(html, 'name', 'twitter:image', image);
+    html = replaceMetaContent(html, 'property', 'og:image:alt', seo.title);
+  }
+
   return injectStructuredData(html, seo.structuredData);
 }

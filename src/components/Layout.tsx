@@ -184,6 +184,7 @@ export const Layout: React.FC = () => {
         keywords={routeSeo.keywords}
         canonical={routeSeo.canonical}
         noindex={routeSeo.noindex}
+        image={routeSeo.ogImage ?? '/og/default.png'}
         structuredData={routeSeo.structuredData}
       />
       {(() => {

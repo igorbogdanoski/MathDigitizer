@@ -26,8 +26,10 @@ const template = `<!doctype html>
 <meta property="og:description" content="старо" />
 <meta property="og:url" content="https://math.mismath.net/" />
 <meta property="og:image" content="https://math.mismath.net/og-image.png" />
+<meta property="og:image:alt" content="старо" />
 <meta name="twitter:title" content="старо" />
 <meta name="twitter:description" content="старо" />
+<meta name="twitter:image" content="https://math.mismath.net/og-image.png" />
 </head>
 <body><div id="root"></div></body>
 </html>`;
@@ -61,6 +63,37 @@ describe('applyRouteSeo', () => {
     expect(html).toContain('<meta property="og:title" content="Цени | MathDigitizer Pro"');
     expect(html).toContain('<meta name="twitter:title" content="Цени | MathDigitizer Pro"');
     expect(html).toContain('<meta property="og:url" content="https://math.mismath.net/pricing"');
+  });
+
+  it('gives a route with its own card that card', () => {
+    const html = applyRouteSeo(template, '/pricing', {
+      title: 'Цени', description: 'о', keywords: 'к', ogImage: '/og/pricing.png',
+    });
+
+    expect(html).toContain('<meta property="og:image" content="https://math.mismath.net/og/pricing.png"');
+    expect(html).toContain('<meta name="twitter:image" content="https://math.mismath.net/og/pricing.png"');
+    // Absolute, always: a relative og:image is ignored by every scraper.
+    expect(html).not.toContain('content="/og/pricing.png"');
+  });
+
+  it('describes the card it just swapped in', () => {
+    // og:image:alt is read aloud by screen readers on Facebook and Mastodon; a
+    // new card with the previous card's description is worse than none.
+    const html = applyRouteSeo(template, '/pricing', {
+      title: 'Цени', description: 'о', keywords: 'к', ogImage: '/og/pricing.png',
+    });
+
+    expect(html).toContain('<meta property="og:image:alt" content="Цени"');
+  });
+
+  it('leaves the default card in place for a route without one', () => {
+    // Gated screens have no card of their own and need none — nobody shares a
+    // link to a page that asks them to sign in.
+    const html = applyRouteSeo(template, '/library', {
+      title: 'Библиотека', description: 'о', keywords: 'к',
+    });
+
+    expect(html).toContain('<meta property="og:image" content="https://math.mismath.net/og-image.png"');
   });
 
   it('marks a gated route noindex', () => {
