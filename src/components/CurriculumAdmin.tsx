@@ -30,6 +30,7 @@ import {
 import type { MathTask, CurriculumRef } from '../lib/schema';
 import CurriculumRefBadge from './curriculum/CurriculumRefBadge';
 import { SEO } from './SEO';
+import { EMBEDDING_MODEL } from '../lib/ai/models';
 
 type IngestStatus = 'idle' | 'running' | 'done' | 'error';
 
@@ -773,7 +774,7 @@ export const CurriculumAdmin: React.FC = () => {
                 <div className="mt-2 space-y-1 text-xs text-slate-500">
                   <div className="flex items-center gap-2">
                     <span className="w-28 text-slate-400">{t('curriculumAdmin.status.model')}</span>
-                    <code className="bg-slate-900 text-emerald-400 px-2 py-0.5 rounded">gemini-embedding-2</code>
+                    <code className="bg-slate-900 text-emerald-400 px-2 py-0.5 rounded">{EMBEDDING_MODEL}</code>
                     <span className="text-emerald-600 font-semibold text-[10px] bg-emerald-100 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded-full">GA</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -827,7 +828,7 @@ export const CurriculumAdmin: React.FC = () => {
               </div>
               <div>
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                  Генерирај embeddings (gemini-embedding-2)
+                  Генерирај embeddings ({EMBEDDING_MODEL})
                 </span>
                 <p className="text-xs text-slate-400">
                   {useEmbeddings
