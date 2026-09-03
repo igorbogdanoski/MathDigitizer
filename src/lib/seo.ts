@@ -7,6 +7,14 @@ export interface RouteSeoConfig {
   canonical?: string;
   noindex?: boolean;
   structuredData?: Record<string, unknown> | Array<Record<string, unknown>>;
+  /**
+   * Path to this route's share card, under `/og/`.
+   *
+   * Routes without one fall back to the default card, which is correct for
+   * every gated screen — nobody shares a link to a page that asks them to sign
+   * in. Regenerate the images with `npm run og:image`.
+   */
+  ogImage?: string;
 }
 
 const SITE_URL = 'https://math.mismath.net';
@@ -160,6 +168,7 @@ const routeEntries: Array<{ match: RegExp; seo: RouteSeoConfig }> = [
       description: 'Водечка AI едукативна платформа за математика на македонски јазик. Дигитализација, OCR екстракција, автоматско оценување и интерактивни математички алатки.',
       keywords: 'математика, AI, OCR, едукација, mathdigitizer, наставници, ученици',
       canonical: '/',
+      ogImage: '/og/default.png',
       structuredData: buildDefaultStructuredData('/'),
     },
   },
@@ -247,6 +256,7 @@ const routeEntries: Array<{ match: RegExp; seo: RouteSeoConfig }> = [
       description: 'Изберете помеѓу месечен и годишен Pro Teacher план, со school licensing и локални payment опции.',
       keywords: 'pricing, saas, pro teacher, annual plan, school licensing, банка, bank transfer, македонија',
       canonical: '/pricing',
+      ogImage: '/og/pricing.png',
       structuredData: buildPricingStructuredData(),
     },
   },
@@ -413,6 +423,7 @@ const routeEntries: Array<{ match: RegExp; seo: RouteSeoConfig }> = [
       description: 'Практичен водич за наставници: претворете ракописни задачи, фотографии и PDF документи во дигитален LaTeX формат за секунди со AI OCR.',
       keywords: 'OCR математика, дигитализација математички задачи, AI OCR наставници, LaTeX конвертор, математика македонија',
       canonical: '/blog/ocr-matematika',
+      ogImage: '/og/blog-ocr-matematika.png',
       structuredData: buildArticleStructuredData(
         '/blog/ocr-matematika',
         'Како да дигитализирате математички задачи со AI',
@@ -427,6 +438,7 @@ const routeEntries: Array<{ match: RegExp; seo: RouteSeoConfig }> = [
       description: 'Научете како да извлечете LaTeX формули и математички задачи директно од YouTube образовни видеа со еден клик. Без рачно препишување.',
       keywords: 'LaTeX екстракција, YouTube математика, LaTeX генератор македонија, математика видеа, автоматска дигитализација LaTeX',
       canonical: '/blog/latex-ekstrakcija',
+      ogImage: '/og/blog-latex-ekstrakcija.png',
       structuredData: buildArticleStructuredData(
         '/blog/latex-ekstrakcija',
         'LaTeX екстракција од YouTube видеа — автоматска дигитализација',
@@ -441,6 +453,7 @@ const routeEntries: Array<{ match: RegExp; seo: RouteSeoConfig }> = [
       description: 'Организирајте интерактивни live математички квизови за ученици во реално време — без потреба за посебна апликација.',
       keywords: 'математички квиз, live натпревар ученици, Math Kahoot македонија, интерактивна настава математика, live classroom математика',
       canonical: '/blog/live-mathkahoot',
+      ogImage: '/og/blog-live-mathkahoot.png',
       structuredData: buildArticleStructuredData(
         '/blog/live-mathkahoot',
         'Live математички натпревари во училница',
