@@ -3,6 +3,7 @@ import { ai, generateTaskEmbedding } from "./gemini";
 import { MathTask } from "./schema";
 import { buildPromptEnvelope, buildRagTaskContext, PromptStrategy } from "./promptEngineering";
 import { buildRagContextFromLibrary } from "./ragContext";
+import { PRO_MODEL } from "./ai/models";
 
 export interface KnowledgeModelResponse {
   problem_text: string;
@@ -86,7 +87,7 @@ export async function generateHybridMathSolution(
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
+      model: PRO_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BrainCircuit, X, Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { PRO_MODEL } from '../lib/ai/models';
 
 const LazyMathRenderer = lazy(() => import('./MathRenderer').then(m => ({ default: m.MathRenderer })));
 
@@ -30,7 +31,7 @@ export const GlobalAITutor: React.FC = () => {
     try {
       const { ai } = await import('../lib/gemini');
       const session = await ai.chats.create({
-        model: 'gemini-3.1-pro-preview',
+        model: PRO_MODEL,
         config: {
           systemInstruction: 'Ти си Сократов Педагошки AI Асистент. Се обраќаш на Македонски јазик. Твојата цел е никогаш да не го даваш крајниот резултат, туку да го водиш ученикот кон решението преку прашања. Можеш да користиш LaTeX $inline$ или $$display$$ за формули.',
           temperature: 0.5

@@ -9,6 +9,7 @@
  * unused.
  */
 import { sanitizeExtractedText } from './sanitizeText';
+import { reconstructPageText, htmlTablesToMarkdown, type TextFragment } from './layout';
 
 export interface ExtractedDocument {
   text: string;
@@ -74,7 +75,14 @@ async function extractPdf(buffer: ArrayBuffer): Promise<{ text: string; pageCoun
   for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber++) {
     const page = await doc.getPage(pageNumber);
     const content = await page.getTextContent();
-    pages.push(content.items.map((item: any) => item.str ?? '').join(' '));
+
+    // Every fragment used to be joined with a single space, which threw away
+    // the lines along with the columns: a three-column table of tasks became
+    // one run of words, and nothing downstream could tell which answer went
+    // with which task. `reconstructPageText` reads the positions pdfjs already
+    // reports and puts the rows and tables back.
+    const fragments = (content.items as any[]).filter(item => typeof item?.str === 'string');
+    pages.push(reconstructPageText(fragments as TextFragment[]));
   }
 
   await doc.destroy?.();
@@ -83,6 +91,20 @@ async function extractPdf(buffer: ArrayBuffer): Promise<{ text: string; pageCoun
 
 async function extractDocx(buffer: ArrayBuffer): Promise<string> {
   const mammoth: any = await import('mammoth');
+
+  // `extractRawText` loses DOCX tables the same way the old PDF path lost them.
+  // The HTML output keeps the `<table>`, so the tables survive as Markdown and
+  // everything else is reduced to plain lines.
+  try {
+    const html = await mammoth.convertToHtml({ arrayBuffer: buffer });
+    const converted = htmlTablesToMarkdown(html?.value ?? '');
+    if (converted.trim().length > 0) return converted;
+  } catch (error) {
+    // A document mammoth can read as text but not as HTML is rare, and a
+    // partial import is worse than a plain one — fall through.
+    console.warn('DOCX HTML conversion failed; falling back to raw text:', error);
+  }
+
   const result = await mammoth.extractRawText({ arrayBuffer: buffer });
   return result?.value ?? '';
 }

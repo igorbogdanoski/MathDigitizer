@@ -8,6 +8,7 @@ import {
 import { useLibraryStore } from '../store/useLibraryStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { updateDoc } from 'firebase/firestore';
+import { PRO_MODEL } from '../lib/ai/models';
 
 export function useTaskActions() {
   const store = useLibraryStore();
@@ -110,7 +111,7 @@ export function useTaskActions() {
     try {
       const prompt = `За секој од следните математички концепти (тагови), врати ја основната LaTeX формула која го претставува.\nТагови: ${task.tags.join(', ')}\n\nВрати СТРОГО JSON објект каде клучот е тагот, а вредноста е LaTeX формулата (без $$). Пример: {"Квадратна равенка": "ax^2 + bx + c = 0"}`;
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
+        model: PRO_MODEL,
         contents: prompt,
         config: { responseMimeType: "application/json" }
       });

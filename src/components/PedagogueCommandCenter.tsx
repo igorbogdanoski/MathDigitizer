@@ -17,6 +17,7 @@ import {
   CommandCenterSidebar,
 } from './pedagogue-command-center';
 import type { SimMessage, CognitiveFingerprint } from './pedagogue-command-center';
+import { DEFAULT_MODEL } from '../lib/ai/models';
 
 export const PedagogueCommandCenter: React.FC = () => {
   const { t } = useTranslation('pedagogue');
@@ -128,7 +129,7 @@ export const PedagogueCommandCenter: React.FC = () => {
     try {
       const [{ ai }, { Type }] = await Promise.all([import('../lib/gemini'), import('@google/genai')]);
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: DEFAULT_MODEL,
         contents: `Analyze this math task and provide a cognitive fingerprint (scores 0-100):
         Title: ${selectedTask.title}
         Text: ${selectedTask.original_text}
