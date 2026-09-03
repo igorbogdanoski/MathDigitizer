@@ -239,7 +239,7 @@ export const Pricing: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-10">
+    <div className="max-w-6xl mx-auto space-y-10">
       <SEO
         title={t('title')}
         description={t('subtitle')}
@@ -367,9 +367,9 @@ export const Pricing: React.FC = () => {
             ))}
           </div>
 
-          <div className="text-sm font-bold text-slate-500 dark:text-slate-300 mb-1">{selectedPlan.label}</div>
+          <div className="text-sm font-bold text-slate-600 dark:text-slate-300 mb-1">{selectedPlan.label}</div>
           <div className="text-4xl font-black text-slate-900 dark:text-white mb-1">{formatPrice(selectedPlan.priceMkd)}</div>
-          <div className="text-sm text-slate-500 dark:text-slate-300 mb-2">{selectedPlan.billingLabel}</div>
+          <div className="text-sm text-slate-600 dark:text-slate-300 mb-2">{selectedPlan.billingLabel}</div>
           <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">{selectedPlan.description}</p>
 
           {selectedPlan.savingsLabel && selectedPlan.savingsAmountMkd ? (
@@ -414,7 +414,7 @@ export const Pricing: React.FC = () => {
             ))}
           </div>
 
-          <div className="text-xs text-slate-500 dark:text-slate-300 space-y-2">
+          <div className="text-xs text-slate-600 dark:text-slate-300 space-y-2">
             <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4" /> Поддржани канали: Stripe, PayPal и директна банка (според конфигурација)</div>
             <div className="flex items-center gap-2"><BrainCircuit className="w-4 h-4" /> Целта е јасна вредност за наставникот, а не сложен ценовник</div>
           </div>

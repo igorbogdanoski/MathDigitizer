@@ -89,6 +89,11 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home setActiveTab={() => {}} user={user} signInWithGoogle={signInWithGoogle} />} />
+
+          {/* Public, and inside the shell on purpose: the header links here, so
+              a page without the header is a page a visitor cannot leave except
+              by buying something or pressing Back. */}
+          <Route path="pricing" element={<Pricing />} />
           
           {/* Protected Routes */}
           <Route path="extract" element={
@@ -314,7 +319,6 @@ const AppRoutes = () => {
         } />
         <Route path="/play" element={<GamePlayerWrapper />} />
         <Route path="/exam/:examId" element={<SummativeExamWrapper />} />
-        <Route path="/pricing" element={<Pricing />} />
 
         {import.meta.env.DEV && (
           <Route path="/__e2e__/ingestion-snapshot" element={<IngestionSnapshotFlagProbe />} />

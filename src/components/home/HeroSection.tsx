@@ -170,7 +170,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             transition={{ delay: 0.75, duration: 1 }}
             className="mt-8 w-full max-w-lg"
           >
-            <p className="text-xs font-semibold text-slate-500 mb-2.5 flex items-center gap-2">
+            <p className="text-xs font-semibold text-slate-400 mb-2.5 flex items-center gap-2">
               <Users className="w-3.5 h-3.5" />
               Ученик? Влези со PIN за игра или испит
             </p>

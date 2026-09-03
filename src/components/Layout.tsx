@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { hasStored, readStored, writeStored } from '../lib/safeStorage';
+import { hasStored, writeStored } from '../lib/safeStorage';
+import { isDark, setTheme } from '../lib/theme';
 import { BrainCircuit, HomeIcon, Wand2, Factory, BookOpen, Library as LibraryIcon, CheckCircle, Brain, Trophy, Sun, Moon, LogOut, LogIn, Users, ScanLine, Menu, X, Zap, Layers, Monitor, Type, Palette, MoreHorizontal, ChevronDown, GraduationCap, Inbox, Settings as SettingsIcon, Check, Sparkles, TrendingUp, AlertTriangle, Search, Network } from 'lucide-react';
 import { Button } from './ui/Button';
 import { useAuth } from '../contexts/AuthContext';
@@ -30,7 +31,9 @@ export const Layout: React.FC = () => {
   const { user, userProfile, isLoading, setUserProfile } = useAuth();
   const { dyslexiaMode, toggleDyslexiaMode, dyscalculiaMode, toggleDyscalculiaMode } = useAccessibility();
   const location = useLocation();
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  // index.html already applied the theme before the first paint, so read the
+  // document rather than deciding again — two deciders is how they drift.
+  const [isDarkMode, setIsDarkMode] = useState(isDark);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [trialExpiredDismissed, setTrialExpiredDismissed] = useState(false);
@@ -62,14 +65,6 @@ export const Layout: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const savedTheme = readStored('theme');
-    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      setIsDarkMode(true);
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
-
-  useEffect(() => {
     if (userProfile && !hasStored('onboarding_complete')) {
       setShowOnboarding(true);
     }
@@ -77,15 +72,9 @@ export const Layout: React.FC = () => {
 
   const toggleTheme = () => {
     setIsDarkMode(prev => {
-      const newTheme = !prev;
-      if (newTheme) {
-        document.documentElement.classList.add('dark');
-        writeStored('theme', 'dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        writeStored('theme', 'light');
-      }
-      return newTheme;
+      const next = !prev;
+      setTheme(next ? 'dark' : 'light');
+      return next;
     });
   };
 
@@ -249,7 +238,7 @@ export const Layout: React.FC = () => {
         );
       })()}
 
-      <header className="sticky top-0 z-50 transition-colors duration-300 border-b border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60">
+      <header className="sticky top-0 z-50 transition-colors duration-300 border-b border-slate-200/50 dark:border-slate-800/50 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl supports-[backdrop-filter]:bg-white/78 dark:supports-[backdrop-filter]:bg-slate-900/78">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           
           <div className="flex items-center gap-3">
@@ -271,7 +260,7 @@ export const Layout: React.FC = () => {
                 <h1 className="text-xl font-heading font-black tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent leading-none">
                   MathDigitizer <span className="bg-gradient-to-br from-indigo-500 to-blue-500 bg-clip-text text-transparent">Pro</span>
                 </h1>
-                <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-slate-400 dark:text-slate-500 mt-1">
+                <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-slate-600 dark:text-slate-300 mt-1">
                   EdTech Platform
                 </span>
               </div>
@@ -290,7 +279,7 @@ export const Layout: React.FC = () => {
                     className={`flex items-center gap-1.5 2xl:gap-2 px-2 2xl:px-3 py-2 text-sm font-semibold rounded-xl transition-all duration-300 relative whitespace-nowrap flex-shrink-0 ${
                       isActive 
                         ? 'text-indigo-600 dark:text-indigo-400' 
-                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/50'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/50 dark:hover:bg-slate-800/50'
                     }`}
                   >
                     {isActive && (
@@ -309,7 +298,7 @@ export const Layout: React.FC = () => {
                     onClick={() => setIsToolsMenuOpen((prev) => !prev)}
                     aria-haspopup="menu"
                     aria-expanded={isToolsMenuOpen}
-                    className="flex items-center gap-1.5 px-2 2xl:px-3 py-2 text-sm font-semibold rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
+                    className="flex items-center gap-1.5 px-2 2xl:px-3 py-2 text-sm font-semibold rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
                   >
                     <MoreHorizontal className="w-4 h-4" />
                     <span>Алатки</span>

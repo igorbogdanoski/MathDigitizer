@@ -185,7 +185,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
             </div>
           ))}
         </div>
-        <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-3">* Проценки базирани на beta период со реални наставници</p>
+        <p className="text-center text-xs text-slate-600 dark:text-slate-400 mt-3">* Проценки базирани на beta период со реални наставници</p>
       </section>
 
       {/* Advanced Bento Grid Features */}
@@ -248,7 +248,7 @@ export const Home: React.FC<HomeProps> = ({ user, signInWithGoogle }) => {
             <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-1.5 rounded-lg">
               <BrainCircuit className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-slate-700 dark:text-slate-300">MathDigitizer <span className="text-blue-500">Pro</span></span>
+            <span className="font-bold text-slate-700 dark:text-slate-300">MathDigitizer <span className="text-blue-600 dark:text-blue-400">Pro</span></span>
           </div>
           <div className="text-sm text-slate-500 dark:text-slate-400 text-center">
             Креирано од <span className="font-semibold text-slate-700 dark:text-slate-300">Игор Богданоски</span>
