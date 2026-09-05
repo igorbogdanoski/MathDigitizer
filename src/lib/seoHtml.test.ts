@@ -25,11 +25,11 @@ const template = `<!doctype html>
 <meta property="og:title" content="старо" />
 <meta property="og:description" content="старо" />
 <meta property="og:url" content="https://math.mismath.net/" />
-<meta property="og:image" content="https://math.mismath.net/og-image.png" />
+<meta property="og:image" content="https://math.mismath.net/og/default.png" />
 <meta property="og:image:alt" content="старо" />
 <meta name="twitter:title" content="старо" />
 <meta name="twitter:description" content="старо" />
-<meta name="twitter:image" content="https://math.mismath.net/og-image.png" />
+<meta name="twitter:image" content="https://math.mismath.net/og/default.png" />
 </head>
 <body><div id="root"></div></body>
 </html>`;
@@ -93,7 +93,7 @@ describe('applyRouteSeo', () => {
       title: 'Библиотека', description: 'о', keywords: 'к',
     });
 
-    expect(html).toContain('<meta property="og:image" content="https://math.mismath.net/og-image.png"');
+    expect(html).toContain('<meta property="og:image" content="https://math.mismath.net/og/default.png"');
   });
 
   it('marks a gated route noindex', () => {
@@ -117,7 +117,7 @@ describe('applyRouteSeo', () => {
     const html = applyRouteSeo(template, '/pricing', { title: 'Ц', description: 'о', keywords: 'к' });
 
     expect(html).toContain('<div id="root"></div>');
-    expect(html).toContain('<meta property="og:image" content="https://math.mismath.net/og-image.png"');
+    expect(html).toContain('<meta property="og:image" content="https://math.mismath.net/og/default.png"');
     expect(html).toContain('<html lang="mk">');
   });
 

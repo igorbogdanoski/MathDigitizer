@@ -171,6 +171,7 @@ const page = await browser.newPage({ viewport: { width: WIDTH, height: HEIGHT },
 
 mkdirSync(OUT_DIR, { recursive: true });
 
+let defaultCard;
 for (const card of CARDS) {
   await page.setContent(html(card), { waitUntil: 'networkidle' });
   // The webfont must be in before the shot, or the card ships in a fallback.
@@ -178,16 +179,19 @@ for (const card of CARDS) {
 
   const png = await page.screenshot({ type: 'png' });
   writeFileSync(`${OUT_DIR}/${card.file}`, png);
+  if (card.file === 'default.png') defaultCard = png;
   console.log(`  ${card.file.padEnd(30)} ${(png.length / 1024).toFixed(0)} KB`);
 }
 
-// The historical path, kept because links already shared point at it.
-writeFileSync('public/og-image.png', await (async () => {
-  await page.setContent(html(CARDS[0]), { waitUntil: 'networkidle' });
-  await page.evaluate(() => document.fonts.ready);
-  return page.screenshot({ type: 'png' });
-})());
-console.log('  og-image.png (legacy path, same as default)');
+// The historical path, kept because links already shared point at it — and
+// because a scraper caches a page's card for as long as it likes, some of them
+// will keep asking for this file long after nothing links to it.
+//
+// Copied rather than re-rendered. Screenshotting the same HTML twice does not
+// reliably give the same bytes, and a second render is a second thing that can
+// fail on its own, leaving this path holding a card nobody has ever seen.
+writeFileSync('public/og-image.png', defaultCard);
+console.log('  og-image.png (legacy path, copy of default.png)');
 
 await browser.close();
 console.log(`\n${CARDS.length} cards written to ${OUT_DIR}/`);

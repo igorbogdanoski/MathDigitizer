@@ -31,7 +31,7 @@ export const SEO: React.FC<SEOProps> = ({
   type = "website",
   canonical,
   noindex = false,
-  image = '/og-image.png',
+  image = '/og/default.png',
   siteName = 'MathDigitizer Pro',
   locale = 'mk_MK',
   twitterCard = 'summary_large_image',

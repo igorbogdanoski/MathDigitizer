@@ -20,11 +20,25 @@ export interface RouteSeoConfig {
 const SITE_URL = 'https://math.mismath.net';
 const SITE_NAME = 'MathDigitizer Pro';
 
+/**
+ * The card a route falls back to when it has none of its own.
+ *
+ * The structured data used to name `/og-image.png` everywhere — the legacy path
+ * kept alive only so links shared before the per-route cards existed still
+ * resolve. Nothing regenerates that file against the cards, so it is the one
+ * image on the site that can silently fall behind, and pointing Google at it
+ * meant every page asked to be illustrated by a file it never shares itself.
+ */
+const DEFAULT_OG_IMAGE = '/og/default.png';
+
 function absoluteUrl(path: string): string {
   return new URL(path, SITE_URL).toString();
 }
 
-function buildDefaultStructuredData(pathname: string): Array<Record<string, unknown>> {
+function buildDefaultStructuredData(
+  pathname: string,
+  ogImage: string = DEFAULT_OG_IMAGE,
+): Array<Record<string, unknown>> {
   return [
     {
       '@context': 'https://schema.org',
@@ -64,7 +78,7 @@ function buildDefaultStructuredData(pathname: string): Array<Record<string, unkn
       inLanguage: 'mk',
       screenshot: {
         '@type': 'ImageObject',
-        url: absoluteUrl('/og-image.png'),
+        url: absoluteUrl(ogImage),
         width: 1200,
         height: 630
       },
@@ -86,7 +100,7 @@ function buildDefaultStructuredData(pathname: string): Array<Record<string, unkn
 
 function buildPricingStructuredData(): Array<Record<string, unknown>> {
   return [
-    ...buildDefaultStructuredData('/pricing'),
+    ...buildDefaultStructuredData('/pricing', '/og/pricing.png'),
     {
       '@context': 'https://schema.org',
       '@type': 'OfferCatalog',
@@ -137,9 +151,14 @@ function buildPricingStructuredData(): Array<Record<string, unknown>> {
  * That is true but useless for them: it tells a search engine what the product
  * is, not what the page says.
  */
-function buildArticleStructuredData(path: string, headline: string, description: string) {
+function buildArticleStructuredData(
+  path: string,
+  headline: string,
+  description: string,
+  ogImage: string,
+) {
   return [
-    ...buildDefaultStructuredData(path),
+    ...buildDefaultStructuredData(path, ogImage),
     {
       '@context': 'https://schema.org',
       '@type': 'Article',
@@ -148,7 +167,7 @@ function buildArticleStructuredData(path: string, headline: string, description:
       inLanguage: 'mk',
       url: absoluteUrl(path),
       mainEntityOfPage: { '@type': 'WebPage', '@id': absoluteUrl(path) },
-      image: absoluteUrl('/og-image.png'),
+      image: absoluteUrl(ogImage),
       datePublished: '2026-05-16',
       author: { '@type': 'Person', name: 'Игор Богданоски' },
       publisher: {
@@ -428,6 +447,7 @@ const routeEntries: Array<{ match: RegExp; seo: RouteSeoConfig }> = [
         '/blog/ocr-matematika',
         'Како да дигитализирате математички задачи со AI',
         'Практичен водич за наставници: претворете ракописни задачи, фотографии и PDF документи во дигитален LaTeX формат за секунди со AI OCR.',
+        '/og/blog-ocr-matematika.png',
       ),
     },
   },
@@ -443,6 +463,7 @@ const routeEntries: Array<{ match: RegExp; seo: RouteSeoConfig }> = [
         '/blog/latex-ekstrakcija',
         'LaTeX екстракција од YouTube видеа — автоматска дигитализација',
         'Научете како да извлечете LaTeX формули и математички задачи директно од YouTube образовни видеа со еден клик. Без рачно препишување.',
+        '/og/blog-latex-ekstrakcija.png',
       ),
     },
   },
@@ -458,6 +479,7 @@ const routeEntries: Array<{ match: RegExp; seo: RouteSeoConfig }> = [
         '/blog/live-mathkahoot',
         'Live математички натпревари во училница',
         'Организирајте интерактивни live математички квизови за ученици во реално време — без потреба за посебна апликација.',
+        '/og/blog-live-mathkahoot.png',
       ),
     },
   },

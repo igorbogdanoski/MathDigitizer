@@ -72,8 +72,27 @@ jobs:
             if [ -n "$CD_CMD" ]; then
               echo "$CD_CMD"
             fi
-            for f in index.html .htaccess vite.svg robots.txt manifest.json .ftp-deploy-sync-state.json; do
-              echo "rm -f $f"
+            # Hostinger's FTP does not overwrite. STOR on a file that already
+            # exists returns 226, and the old bytes stay. Only creating a file
+            # that is not there works, so anything keeping its name across
+            # deploys has to be removed first or it silently stays at whatever
+            # it was the first time it landed.
+            #
+            # This list used to be six hardcoded names, which meant every other
+            # stable-named file was frozen on the server. It cost us
+            # og-image.png: the pre-redesign card — 8 KB, no text on it at all —
+            # was still what every previously shared link resolved to, months
+            # and many green deploys after the card was redrawn. sitemap.xml,
+            # robots.txt, the PWA icons and the per-route share cards were all
+            # sitting in the same trap.
+            #
+            # Everything under assets/ is content-hashed, so a change arrives
+            # under a new name and is always a create — those must NOT be
+            # deleted, or the currently-live page loses the chunks it is asking
+            # for during the upload window.
+            echo "rm -f .ftp-deploy-sync-state.json"
+            find . -type f -not -path './assets/*' | sed 's|^\./||' | sort | while read -r f; do
+              echo "rm -f \"$f\""
             done
             find . -mindepth 1 -type d | sed 's|^\./||' | sort | while read -r d; do
               echo "mkdir -p \"$d\""
@@ -167,9 +186,43 @@ jobs:
 
             if [ "$LIVE_BUNDLE" = "$EXPECTED_BUNDLE" ]; then
               echo "Verified: live site is serving the bundle just deployed."
-              exit 0
+              BUNDLE_OK=1
+              break
             fi
           done
 
-          echo "::error::Deployment verification failed — after 6 attempts (~60s) the live site at https://math.mismath.net/ is still not serving $EXPECTED_BUNDLE. The lftp step reported success, but the uploaded files are not visible on the live site. Check that the FTP_SERVER_DIR secret points at the actual document root for math.mismath.net." >&2
-          exit 1
+          if [ -z "$BUNDLE_OK" ]; then
+            echo "::error::Deployment verification failed — after 6 attempts (~60s) the live site at https://math.mismath.net/ is still not serving $EXPECTED_BUNDLE. The lftp step reported success, but the uploaded files are not visible on the live site. Check that the FTP_SERVER_DIR secret points at the actual document root for math.mismath.net." >&2
+            exit 1
+          fi
+
+          # The share cards, checked from outside.
+          #
+          # A stale card is invisible from every angle this job had until now:
+          # the bundle hash was fresh, the HTML was right, and the image the
+          # whole internet saw was still the 8 KB one with no text on it. It is
+          # only visible by fetching the bytes, so fetch the bytes. 40 KB is the
+          # same floor src/lib/ogImages.test.ts holds the committed files to —
+          # a real 1200x630 card is ~180 KB, flat colour compresses to single
+          # digits.
+          CARDS_OK=1
+          for CARD in /og-image.png /og/default.png /og/pricing.png \
+                      /og/blog-ocr-matematika.png /og/blog-latex-ekstrakcija.png \
+                      /og/blog-live-mathkahoot.png; do
+            BYTES=$(curl -s --max-time 20 -o /dev/null -w '%{size_download}' \
+              "https://math.mismath.net${CARD}?cachebust=$(date +%s)")
+
+            if [ "${BYTES:-0}" -gt 40000 ]; then
+              echo "  ${CARD} — $((BYTES / 1024)) KB"
+            else
+              echo "::error::${CARD} is ${BYTES:-0} bytes on the live site — too flat to hold text, so the upload did not replace it."
+              CARDS_OK=""
+            fi
+          done
+
+          if [ -z "$CARDS_OK" ]; then
+            echo "::error::Share cards on the live site are stale. Hostinger's FTP silently keeps the old bytes when a file already exists; check that the deploy step's delete-first phase ran." >&2
+            exit 1
+          fi
+
+          echo "Verified: bundle and all six share cards are live."
