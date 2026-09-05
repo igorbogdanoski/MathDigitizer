@@ -36,7 +36,7 @@ export const BlogArticle: React.FC<BlogArticleProps> = ({
     url,
     datePublished: date,
     dateModified: date,
-    image: 'https://math.mismath.net/og-image.png',
+    image: `https://math.mismath.net/og/blog-${slug}.png`,
     inLanguage: 'mk',
     author: {
       '@type': 'Organization',

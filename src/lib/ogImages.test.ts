@@ -74,5 +74,21 @@ describe('share cards', () => {
     // default card, so those keep resolving.
     expect(existsSync('public/og-image.png')).toBe(true);
     expect(pngSize('public/og-image.png')).toEqual({ width: 1200, height: 630 });
+
+    // Size and dimensions alone let the flat 8 KB card sit here unnoticed: it
+    // was also 1200x630, and for months it was what every previously shared
+    // link resolved to. Hold the legacy path to the same "has text on it" bar
+    // as the cards above.
+    const bytes = statSync('public/og-image.png').size;
+    expect(bytes, `og-image.png is ${(bytes / 1024).toFixed(0)} KB — too flat to hold text`)
+      .toBeGreaterThan(40_000);
+  });
+
+  it('keep the legacy path byte-identical to the default card', () => {
+    // Nothing regenerates og-image.png against the cards, so the one file the
+    // generator writes twice is the one that can quietly drift. Old shared
+    // links should show what a new one shows.
+    expect(readFileSync('public/og-image.png').equals(readFileSync('public/og/default.png')))
+      .toBe(true);
   });
 });
